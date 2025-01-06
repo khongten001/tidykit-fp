@@ -52,7 +52,7 @@ type
     function Right(const Length: Integer): IStringKit;
     function Extract(const Pattern: string): TStringMatches;
     function ExtractAll(const Pattern: string): TStringArray;
-    function Words: TStringArray;  // Split into words
+    function GetWords: TStringArray;  // Split into words
     
     { Tests }
     function IsEmpty: Boolean;
@@ -65,6 +65,7 @@ type
     
     { Properties }
     property Content: string read GetContent;
+    property Words: TStringArray read GetWords;
   end;
 
   { Implementation of string operations }
@@ -102,7 +103,7 @@ type
     function Right(const Length: Integer): IStringKit;
     function Extract(const Pattern: string): TStringMatches;
     function ExtractAll(const Pattern: string): TStringArray;
-    function Words: TStringArray;
+    function GetWords: TStringArray;
     
     function IsEmpty: Boolean;
     function Contains(const SubStr: string; const CaseSensitive: Boolean = True): Boolean;
@@ -176,10 +177,59 @@ begin
 end;
 
 function TStringKit.Capitalize: IStringKit;
+var
+  Words: TStringList;
+  I: Integer;
+  S: string;
 begin
   Result := Self;
   if TextLength > 0 then
-    FValue := UpperCase(FValue[1]) + Copy(FValue, 2, System.Length(FValue));
+  begin
+    Words := TStringList.Create;
+    try
+      Words.Delimiter := ',';
+      Words.StrictDelimiter := True;
+      Words.DelimitedText := FValue;
+      for I := 0 to Words.Count - 1 do
+        if Words[I] <> '' then
+        begin
+          S := Words[I];
+          while (Length(S) > 0) and IsWhiteSpace(S[1]) do
+            Delete(S, 1, 1);
+          if Length(S) > 0 then
+            Words[I] := UpperCase(S[1]) + Copy(S, 2, Length(S));
+        end;
+      FValue := StringReplace(Words.DelimitedText, ',', ', ', [rfReplaceAll]);
+    finally
+      Words.Free;
+    end;
+  end;
+end;
+
+function TStringKit.GetWords: TStringArray;
+var
+  List: TStringList;
+  I: Integer;
+  Temp: string;
+begin
+  Result := nil;
+  List := TStringList.Create;
+  try
+    // First, replace commas with spaces and collapse whitespace
+    Temp := StringReplace(FValue, ', ', ' ', [rfReplaceAll]);
+    Temp := StringReplace(Temp, ',', ' ', [rfReplaceAll]);
+    Temp := CollapseWhitespace.From(Temp).Trim.GetContent;
+    
+    List.Delimiter := ' ';
+    List.StrictDelimiter := True;
+    List.DelimitedText := Temp;
+    
+    SetLength(Result, List.Count);
+    for I := 0 to List.Count - 1 do
+      Result[I] := SysUtils.Trim(List[I]);
+  finally
+    List.Free;
+  end;
 end;
 
 function TStringKit.Replace(const OldPattern, NewPattern: string): IStringKit;
@@ -383,24 +433,6 @@ begin
   SetLength(Result, System.Length(Matches));
   for I := 0 to High(Matches) do
     Result[I] := Matches[I].Text;
-end;
-
-function TStringKit.Words: TStringArray;
-var
-  List: TStringList;
-begin
-  Result := nil;
-  SetLength(Result, 0);
-  List := TStringList.Create;
-  try
-    List.Delimiter := ' ';
-    List.DelimitedText := CollapseWhitespace.Trim.GetContent;
-    SetLength(Result, List.Count);
-    if List.Count > 0 then
-      Move(List.Strings[0], Result[0], List.Count * SizeOf(string));
-  finally
-    List.Free;
-  end;
 end;
 
 function TStringKit.CountSubString(const SubStr: string): Integer;

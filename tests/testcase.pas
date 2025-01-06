@@ -936,7 +936,7 @@ begin
   FFS.From(FTestFile)
      .SetContent('Test')
      .WriteFile;
-     
+
   AssertTrue('Last access time should be recent',
     Abs(Now - FFS.From(FTestFile).LastAccessTime) < 1);
 end;

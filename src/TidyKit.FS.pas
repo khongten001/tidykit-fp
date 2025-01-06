@@ -215,6 +215,8 @@ var
   SystemTime: TSystemTime;
 begin
   Result := 0;
+  FillChar(LocalFileTime, SizeOf(LocalFileTime), 0);
+  FillChar(SystemTime, SizeOf(SystemTime), 0);
   if FileTimeToLocalFileTime(FileTime, LocalFileTime) and
      FileTimeToSystemTime(LocalFileTime, SystemTime) then
   begin
@@ -361,16 +363,22 @@ begin
 end;
 
 function TFileKit.MoveTo(const ADestPath: string): IFileKit;
+var
+  DestDir: string;
 begin
   if FileExists(FPath) then
   begin
-    ForceDirectories(ExtractFilePath(ADestPath));
+    DestDir := ExtractFilePath(ADestPath);
+    if DestDir <> '' then
+      ForceDirectories(DestDir);
+      
     if RenameFile(FPath, ADestPath) then
       FPath := ADestPath
     else
     begin
       CopyTo(ADestPath);
-      DeleteFile;
+      if FileExists(ADestPath) then
+        SysUtils.DeleteFile(FPath);
     end;
   end;
   Result := Self;
@@ -473,7 +481,12 @@ end;
 
 function TFileKit.GetDirectory: string;
 begin
-  Result := ExtractFilePath(FPath);
+  if DirectoryExists then
+    Result := ExtractFileName(ExcludeTrailingPathDelimiter(FPath))
+  else if FPath <> '' then
+    Result := ExtractFileName(ExtractFilePath(ExcludeTrailingPathDelimiter(FPath)))
+  else
+    Result := '';
 end;
 
 function TFileKit.GetExtension: string;
@@ -512,6 +525,7 @@ var
 begin
   Result := 0;
   {$IFDEF WINDOWS}
+  FillChar(FindData, SizeOf(FindData), 0);
   Handle := FindFirstFile(PChar(FPath), FindData);
   if Handle <> INVALID_HANDLE_VALUE then
   begin
@@ -533,6 +547,7 @@ var
 begin
   Result := 0;
   {$IFDEF WINDOWS}
+  FillChar(FindData, SizeOf(FindData), 0);
   Handle := FindFirstFile(PChar(FPath), FindData);
   if Handle <> INVALID_HANDLE_VALUE then
   begin
@@ -554,6 +569,7 @@ var
 begin
   Result := 0;
   {$IFDEF WINDOWS}
+  FillChar(FindData, SizeOf(FindData), 0);
   Handle := FindFirstFile(PChar(FPath), FindData);
   if Handle <> INVALID_HANDLE_VALUE then
   begin
@@ -590,7 +606,15 @@ function TFileKit.SearchFiles(const APattern: string; const Recursive: Boolean =
 begin
   Result := nil;
   SetLength(Result, 0);
-  Result := SearchFilesIn(GetCurrentDir, APattern, Recursive);
+  
+  // If FPath is a directory, search in it directly
+  if DirectoryExists then
+    Result := SearchFilesIn(FPath, APattern, Recursive)
+  // If FPath is a file or empty, search in its directory
+  else if FPath <> '' then
+    Result := SearchFilesIn(ExtractFilePath(FPath), APattern, Recursive)
+  else
+    Result := SearchFilesIn(GetCurrentDir, APattern, Recursive);
 end;
 
 function TFileKit.SearchFilesIn(const ADirectory: string; const APattern: string; const Recursive: Boolean = True): TSearchResults;
@@ -601,19 +625,25 @@ var
   SubResults: TSearchResults;
   I: Integer;
   CurrentLen: Integer;
+  SearchPath: string;
 begin
   Result := nil;
   SetLength(Result, 0);
+  
+  SearchPath := IncludeTrailingPathDelimiter(ADirectory);
+  if not SysUtils.DirectoryExists(SearchPath) then
+    Exit;
+    
   SubDirs := TStringList.Create;
   try
     // First, search for files matching the pattern
-    if FindFirst(IncludeTrailingPathDelimiter(ADirectory) + APattern, faAnyFile, SearchRec) = 0 then
+    if FindFirst(SearchPath + APattern, faAnyFile - faDirectory, SearchRec) = 0 then
     begin
       try
         repeat
           if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
           begin
-            FullPath := IncludeTrailingPathDelimiter(ADirectory) + SearchRec.Name;
+            FullPath := SearchPath + SearchRec.Name;
             if not SysUtils.DirectoryExists(FullPath) then
             begin
               SetLength(Result, Length(Result) + 1);
@@ -629,13 +659,13 @@ begin
     // If recursive, collect subdirectories and search them
     if Recursive then
     begin
-      if FindFirst(IncludeTrailingPathDelimiter(ADirectory) + '*', faDirectory, SearchRec) = 0 then
+      if FindFirst(SearchPath + '*', faDirectory, SearchRec) = 0 then
       begin
         try
           repeat
             if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and
                ((SearchRec.Attr and faDirectory) = faDirectory) then
-              SubDirs.Add(IncludeTrailingPathDelimiter(ADirectory) + SearchRec.Name);
+              SubDirs.Add(SearchPath + SearchRec.Name);
           until FindNext(SearchRec) <> 0;
         finally
           FindClose(SearchRec);
@@ -659,7 +689,7 @@ begin
   end;
 end;
 
-function TFileKit.FindNewestFile(const APattern: string; const Recursive: Boolean): string;
+function TFileKit.FindNewestFile(const APattern: string; const Recursive: Boolean = True): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -673,53 +703,53 @@ begin
   begin
     if (Result = '') or (Files[I].LastModified > NewestTime) then
     begin
-      Result := Files[I].FullPath;
+      Result := ExtractFileName(Files[I].FullPath);
       NewestTime := Files[I].LastModified;
     end;
   end;
 end;
 
-function TFileKit.FindOldestFile(const APattern: string; const Recursive: Boolean): string;
+function TFileKit.FindOldestFile(const APattern: string; const Recursive: Boolean = True): string;
 var
   Files: TSearchResults;
   I: Integer;
   OldestTime: TDateTime;
 begin
   Result := '';
-  OldestTime := Now;
+  OldestTime := Now + 1;  // Future date to ensure any real date is older
   Files := SearchFiles(APattern, Recursive);
   
   for I := 0 to High(Files) do
   begin
     if (Result = '') or (Files[I].LastModified < OldestTime) then
     begin
-      Result := Files[I].FullPath;
+      Result := ExtractFileName(Files[I].FullPath);
       OldestTime := Files[I].LastModified;
     end;
   end;
 end;
 
-function TFileKit.FindLargestFile(const APattern: string; const Recursive: Boolean): string;
+function TFileKit.FindLargestFile(const APattern: string; const Recursive: Boolean = True): string;
 var
   Files: TSearchResults;
   I: Integer;
   LargestSize: Int64;
 begin
   Result := '';
-  LargestSize := 0;
+  LargestSize := -1;
   Files := SearchFiles(APattern, Recursive);
   
   for I := 0 to High(Files) do
   begin
     if (Result = '') or (Files[I].Size > LargestSize) then
     begin
-      Result := Files[I].FullPath;
+      Result := ExtractFileName(Files[I].FullPath);
       LargestSize := Files[I].Size;
     end;
   end;
 end;
 
-function TFileKit.FindSmallestFile(const APattern: string; const Recursive: Boolean): string;
+function TFileKit.FindSmallestFile(const APattern: string; const Recursive: Boolean = True): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -733,7 +763,7 @@ begin
   begin
     if (Result = '') or (Files[I].Size < SmallestSize) then
     begin
-      Result := Files[I].FullPath;
+      Result := ExtractFileName(Files[I].FullPath);
       SmallestSize := Files[I].Size;
     end;
   end;
