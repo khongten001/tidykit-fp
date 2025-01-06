@@ -10,7 +10,7 @@ uses
 type
   { Interface for DateTime operations }
   IDateTimeKit = interface(IChainable)
-    ['{A1B2C3D4-E5F6-G7H8-I9J0-K1L2M3N4O5P6}']
+    ['{A1B2C3D4-E5F6-4789-A0B1-123456789ABC}']
     function GetValue: TDateTime;
     
     { Basic operations }
@@ -80,7 +80,7 @@ type
     function Now: IDateTimeKit;
     function Today: IDateTimeKit;
     function ToDateTime: TDateTime;
-    function ToString(const AFormat: string = ''): string; override;
+    function ToString(const AFormat: string = ''): string;
     
     function Year(const AValue: Integer = -1): IDateTimeKit;
     function Month(const AValue: Integer = -1): IDateTimeKit;
@@ -153,11 +153,17 @@ begin
 end;
 
 function TDateTimeKit.FromString(const AValue: string; const AFormat: string): IDateTimeKit;
+var
+  FormatSettings: TFormatSettings;
 begin
+  FormatSettings := DefaultFormatSettings;
   if AFormat = '' then
-    FValue := StrToDateTime(AValue)
+    FValue := StrToDateTime(AValue, FormatSettings)
   else
-    FValue := StrToDateTime(AValue, AFormat);
+  begin
+    FormatSettings.ShortDateFormat := AFormat;
+    FValue := StrToDateTime(AValue, FormatSettings);
+  end;
   Result := Self;
 end;
 
@@ -166,7 +172,7 @@ begin
   Result := FValue;
 end;
 
-function TDateTimeKit.ToString(const AFormat: string): string;
+function TDateTimeKit.ToString(const AFormat: string = ''): string;
 begin
   if AFormat = '' then
     Result := DateTimeToStr(FValue)
@@ -333,8 +339,11 @@ begin
 end;
 
 function TDateTimeKit.StartOfHour: IDateTimeKit;
+var
+  H, M, S, MS: Word;
 begin
-  FValue := StartOfTheHour(FValue);
+  DecodeTime(FValue, H, M, S, MS);
+  FValue := Trunc(FValue) + EncodeTime(H, 0, 0, 0);
   Result := Self;
 end;
 
@@ -363,8 +372,11 @@ begin
 end;
 
 function TDateTimeKit.EndOfHour: IDateTimeKit;
+var
+  H, M, S, MS: Word;
 begin
-  FValue := EndOfTheHour(FValue);
+  DecodeTime(FValue, H, M, S, MS);
+  FValue := Trunc(FValue) + EncodeTime(H, 59, 59, 999);
   Result := Self;
 end;
 
@@ -392,6 +404,16 @@ end;
 function TDateTimeKit.IsSameYear(const ADateTime: TDateTime): Boolean;
 begin
   Result := YearOf(FValue) = YearOf(ADateTime);
+end;
+
+function TDateTimeKit.DayOfWeek: Integer;
+begin
+  Result := SysUtils.DayOfWeek(FValue);
+end;
+
+function TDateTimeKit.DayOfYear: Integer;
+begin
+  Result := DateUtils.DayOfTheYear(FValue);
 end;
 
 end. 

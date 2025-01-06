@@ -5,7 +5,7 @@ unit TidyKit.Strings;
 interface
 
 uses
-  Classes, SysUtils, RegExpr, TidyKit.Core;
+  Classes, SysUtils, RegExpr, StrUtils, TidyKit.Core;
 
 type
   { String match result }
@@ -18,8 +18,8 @@ type
 
   { Interface for string operations }
   IStringKit = interface(IChainable)
-    ['{F1A2B3C4-D5E6-F7G8-H9I0-J1K2L3M4N5O6}']
-    function GetValue: string;
+    ['{A1B2C3D4-5678-9ABC-DEF0-123456789ABC}']
+    function GetContent: string;
     
     { Basic operations }
     function From(const AValue: string): IStringKit;
@@ -59,19 +59,19 @@ type
     function Contains(const SubStr: string; const CaseSensitive: Boolean = True): Boolean;
     function StartsWith(const Prefix: string; const CaseSensitive: Boolean = True): Boolean;
     function EndsWith(const Suffix: string; const CaseSensitive: Boolean = True): Boolean;
-    function Matches(const Pattern: string): Boolean;
-    function Length: Integer;
+    function MatchesPattern(const Pattern: string): Boolean;
+    function TextLength: Integer;
     function CountSubString(const SubStr: string): Integer;
     
     { Properties }
-    property Value: string read GetValue;
+    property Content: string read GetContent;
   end;
 
   { Implementation of string operations }
   TStringKit = class(TKitBase, IStringKit)
   private
     FValue: string;
-    function GetValue: string;
+    function GetContent: string;
   public
     constructor Create;
     
@@ -108,12 +108,18 @@ type
     function Contains(const SubStr: string; const CaseSensitive: Boolean = True): Boolean;
     function StartsWith(const Prefix: string; const CaseSensitive: Boolean = True): Boolean;
     function EndsWith(const Suffix: string; const CaseSensitive: Boolean = True): Boolean;
-    function Matches(const Pattern: string): Boolean;
-    function Length: Integer;
+    function MatchesPattern(const Pattern: string): Boolean;
+    function TextLength: Integer;
     function CountSubString(const SubStr: string): Integer;
   end;
 
 implementation
+
+{ Helper functions }
+function IsWhiteSpace(const C: Char): Boolean;
+begin
+  Result := C in [' ', #9, #10, #13];
+end;
 
 { TStringKit }
 
@@ -123,7 +129,7 @@ begin
   FValue := '';
 end;
 
-function TStringKit.GetValue: string;
+function TStringKit.GetContent: string;
 begin
   Result := FValue;
 end;
@@ -171,9 +177,9 @@ end;
 
 function TStringKit.Capitalize: IStringKit;
 begin
-  if Length(FValue) > 0 then
-    FValue := UpperCase(FValue[1]) + Copy(FValue, 2, Length(FValue));
   Result := Self;
+  if TextLength > 0 then
+    FValue := UpperCase(FValue[1]) + Copy(FValue, 2, System.Length(FValue));
 end;
 
 function TStringKit.Replace(const OldPattern, NewPattern: string): IStringKit;
@@ -184,16 +190,16 @@ end;
 
 function TStringKit.PadLeft(const TotalWidth: Integer; const PadChar: Char): IStringKit;
 begin
-  while Length(FValue) < TotalWidth do
-    FValue := PadChar + FValue;
   Result := Self;
+  while TextLength < TotalWidth do
+    FValue := PadChar + FValue;
 end;
 
 function TStringKit.PadRight(const TotalWidth: Integer; const PadChar: Char): IStringKit;
 begin
-  while Length(FValue) < TotalWidth do
-    FValue := FValue + PadChar;
   Result := Self;
+  while TextLength < TotalWidth do
+    FValue := FValue + PadChar;
 end;
 
 function TStringKit.SubString(const StartPos: Integer; const Length: Integer): IStringKit;
@@ -233,30 +239,29 @@ end;
 function TStringKit.StartsWith(const Prefix: string; const CaseSensitive: Boolean): Boolean;
 begin
   if CaseSensitive then
-    Result := Copy(FValue, 1, Length(Prefix)) = Prefix
+    Result := Copy(FValue, 1, System.Length(Prefix)) = Prefix
   else
-    Result := Copy(LowerCase(FValue), 1, Length(Prefix)) = LowerCase(Prefix);
+    Result := Copy(LowerCase(FValue), 1, System.Length(Prefix)) = LowerCase(Prefix);
 end;
 
 function TStringKit.EndsWith(const Suffix: string; const CaseSensitive: Boolean): Boolean;
 begin
   if CaseSensitive then
-    Result := Copy(FValue, Length(FValue) - Length(Suffix) + 1, Length(Suffix)) = Suffix
+    Result := Copy(FValue, System.Length(FValue) - System.Length(Suffix) + 1, System.Length(Suffix)) = Suffix
   else
-    Result := Copy(LowerCase(FValue), Length(FValue) - Length(Suffix) + 1, Length(Suffix)) = LowerCase(Suffix);
+    Result := Copy(LowerCase(FValue), System.Length(FValue) - System.Length(Suffix) + 1, System.Length(Suffix)) = LowerCase(Suffix);
 end;
 
 function TStringKit.Reverse: IStringKit;
 var
   I: Integer;
-  Len: Integer;
+  Temp: string;
 begin
-  Len := System.Length(FValue);
-  SetLength(Result, Len);
-  for I := 1 to Len do
-    Result[I] := FValue[Len - I + 1];
-  FValue := Result;
   Result := Self;
+  Temp := '';
+  for I := System.Length(FValue) downto 1 do
+    Temp := Temp + FValue[I];
+  FValue := Temp;
 end;
 
 function TStringKit.Duplicate(const Count: Integer): IStringKit;
@@ -275,6 +280,7 @@ function TStringKit.PadCenter(const TotalWidth: Integer; const PadChar: Char): I
 var
   CurrentLen, PadLen, LeftPad: Integer;
 begin
+  Result := Self;
   CurrentLen := System.Length(FValue);
   if CurrentLen < TotalWidth then
   begin
@@ -284,7 +290,6 @@ begin
               FValue + 
               StringOfChar(PadChar, PadLen - LeftPad);
   end;
-  Result := Self;
 end;
 
 function TStringKit.RemoveWhitespace: IStringKit;
@@ -292,12 +297,12 @@ var
   I: Integer;
   Temp: string;
 begin
+  Result := Self;
   Temp := '';
   for I := 1 to System.Length(FValue) do
     if not IsWhiteSpace(FValue[I]) then
       Temp := Temp + FValue[I];
   FValue := Temp;
-  Result := Self;
 end;
 
 function TStringKit.CollapseWhitespace: IStringKit;
@@ -306,6 +311,7 @@ var
   Temp: string;
   LastWasSpace: Boolean;
 begin
+  Result := Self;
   Temp := '';
   LastWasSpace := False;
   for I := 1 to System.Length(FValue) do
@@ -325,7 +331,6 @@ begin
     end;
   end;
   FValue := Temp;
-  Result := Self;
 end;
 
 function TStringKit.ReplaceRegEx(const Pattern, Replacement: string): IStringKit;
@@ -347,6 +352,7 @@ var
   RegEx: TRegExpr;
   MatchCount: Integer;
 begin
+  Result := nil;
   SetLength(Result, 0);
   RegEx := TRegExpr.Create;
   try
@@ -354,7 +360,7 @@ begin
     if RegEx.Exec(FValue) then
     begin
       repeat
-        MatchCount := Length(Result);
+        MatchCount := System.Length(Result);
         SetLength(Result, MatchCount + 1);
         Result[MatchCount].Text := RegEx.Match[0];
         Result[MatchCount].Position := RegEx.MatchPos[0];
@@ -371,8 +377,10 @@ var
   Matches: TStringMatches;
   I: Integer;
 begin
+  Result := nil;
+  SetLength(Result, 0);
   Matches := Extract(Pattern);
-  SetLength(Result, Length(Matches));
+  SetLength(Result, System.Length(Matches));
   for I := 0 to High(Matches) do
     Result[I] := Matches[I].Text;
 end;
@@ -381,12 +389,15 @@ function TStringKit.Words: TStringArray;
 var
   List: TStringList;
 begin
+  Result := nil;
+  SetLength(Result, 0);
   List := TStringList.Create;
   try
     List.Delimiter := ' ';
-    List.DelimitedText := CollapseWhitespace.Trim.Value;
+    List.DelimitedText := CollapseWhitespace.Trim.GetContent;
     SetLength(Result, List.Count);
-    Move(List.Strings[0], Result[0], List.Count * SizeOf(string));
+    if List.Count > 0 then
+      Move(List.Strings[0], Result[0], List.Count * SizeOf(string));
   finally
     List.Free;
   end;
@@ -394,24 +405,25 @@ end;
 
 function TStringKit.CountSubString(const SubStr: string): Integer;
 var
-  Offset: Integer;
+  P: Integer;
 begin
   Result := 0;
-  Offset := 1;
-  while True do
+  if SubStr = '' then
+    Exit;
+    
+  P := Pos(SubStr, FValue);
+  while P > 0 do
   begin
-    Offset := PosEx(SubStr, FValue, Offset);
-    if Offset = 0 then
-      Break;
     Inc(Result);
-    Inc(Offset);
+    P := Pos(SubStr, FValue, P + 1);
   end;
 end;
 
-function TStringKit.Matches(const Pattern: string): Boolean;
+function TStringKit.MatchesPattern(const Pattern: string): Boolean;
 var
   RegEx: TRegExpr;
 begin
+  Result := False;
   RegEx := TRegExpr.Create;
   try
     RegEx.Expression := Pattern;
@@ -419,6 +431,11 @@ begin
   finally
     RegEx.Free;
   end;
+end;
+
+function TStringKit.TextLength: Integer;
+begin
+  Result := System.Length(FValue);
 end;
 
 end. 
