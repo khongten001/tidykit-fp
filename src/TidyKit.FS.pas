@@ -42,15 +42,15 @@ type
 
   { Interface for file operations }
   IFileKit = interface(IChainable)
-    ['{B1C2D3E4-5678-9ABC-DEF0-123456789ABC}']
+    ['{B1B2C3D4-5678-9ABC-DEF0-123456789ABC}']
     function GetContent: string;
     function GetPath: string;
     
     { Basic operations }
     function From(const APath: string): IFileKit;
-    function ReadFile(const APath: string): IFileKit;
-    function WriteFile(const APath: string): IFileKit;
-    function AppendFile(const APath: string): IFileKit;
+    function ReadFile: IFileKit;
+    function WriteFile: IFileKit;
+    function AppendFile: IFileKit;
     function DeleteFile: IFileKit;
     function CopyTo(const ADestPath: string): IFileKit;
     function MoveTo(const ADestPath: string): IFileKit;
@@ -109,9 +109,9 @@ type
     
     { Interface implementations }
     function From(const APath: string): IFileKit;
-    function ReadFile(const APath: string): IFileKit;
-    function WriteFile(const APath: string): IFileKit;
-    function AppendFile(const APath: string): IFileKit;
+    function ReadFile: IFileKit;
+    function WriteFile: IFileKit;
+    function AppendFile: IFileKit;
     function DeleteFile: IFileKit;
     function CopyTo(const ADestPath: string): IFileKit;
     function MoveTo(const ADestPath: string): IFileKit;
@@ -209,6 +209,20 @@ begin
   Result := ExpandFileName(Result);
 end;
 
+function FileTimeToDateTime(const FileTime: TFileTime): TDateTime;
+var
+  LocalFileTime: TFileTime;
+  SystemTime: TSystemTime;
+begin
+  Result := 0;
+  if FileTimeToLocalFileTime(FileTime, LocalFileTime) and
+     FileTimeToSystemTime(LocalFileTime, SystemTime) then
+  begin
+    Result := EncodeDate(SystemTime.wYear, SystemTime.wMonth, SystemTime.wDay) +
+              EncodeTime(SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond, SystemTime.wMilliseconds);
+  end;
+end;
+
 { TFileKit }
 
 constructor TFileKit.Create;
@@ -271,27 +285,31 @@ begin
   end;
 end;
 
-function TFileKit.ReadFile(const APath: string): IFileKit;
+function TFileKit.ReadFile: IFileKit;
 begin
-  FPath := NormalizePath(APath);
+  if FPath = '' then
+    raise Exception.Create('No file path specified. Use From() first.');
   LoadContent;
   Result := Self;
 end;
 
-function TFileKit.WriteFile(const APath: string): IFileKit;
+function TFileKit.WriteFile: IFileKit;
 begin
-  FPath := NormalizePath(APath);
+  if FPath = '' then
+    raise Exception.Create('No file path specified. Use From() first.');
   SaveContent;
   Result := Self;
 end;
 
-function TFileKit.AppendFile(const APath: string): IFileKit;
+function TFileKit.AppendFile: IFileKit;
 var
   ExistingContent: string;
   FileStream: TFileStream;
   StringStream: TStringStream;
 begin
-  FPath := ExpandFileName(APath);
+  if FPath = '' then
+    raise Exception.Create('No file path specified. Use From() first.');
+    
   if FileExists(FPath) then
   begin
     FileStream := TFileStream.Create(FPath, fmOpenRead or fmShareDenyWrite);
@@ -486,18 +504,66 @@ begin
 end;
 
 function TFileKit.CreationTime: TDateTime;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+  FindData: TWin32FindData;
+{$ENDIF}
 begin
+  Result := 0;
+  {$IFDEF WINDOWS}
+  Handle := FindFirstFile(PChar(FPath), FindData);
+  if Handle <> INVALID_HANDLE_VALUE then
+  begin
+    Windows.FindClose(Handle);
+    Result := FileTimeToDateTime(FindData.ftCreationTime);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
   Result := FileDateToDateTime(FileAge(FPath));
+  {$ENDIF}
 end;
 
 function TFileKit.LastAccessTime: TDateTime;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+  FindData: TWin32FindData;
+{$ENDIF}
 begin
+  Result := 0;
+  {$IFDEF WINDOWS}
+  Handle := FindFirstFile(PChar(FPath), FindData);
+  if Handle <> INVALID_HANDLE_VALUE then
+  begin
+    Windows.FindClose(Handle);
+    Result := FileTimeToDateTime(FindData.ftLastAccessTime);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
   Result := FileDateToDateTime(FileAge(FPath));
+  {$ENDIF}
 end;
 
 function TFileKit.LastWriteTime: TDateTime;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+  FindData: TWin32FindData;
+{$ENDIF}
 begin
+  Result := 0;
+  {$IFDEF WINDOWS}
+  Handle := FindFirstFile(PChar(FPath), FindData);
+  if Handle <> INVALID_HANDLE_VALUE then
+  begin
+    Windows.FindClose(Handle);
+    Result := FileTimeToDateTime(FindData.ftLastWriteTime);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
   Result := FileDateToDateTime(FileAge(FPath));
+  {$ENDIF}
 end;
 
 function TFileKit.CreateSearchResult(const APath: string): TSearchResult;
@@ -522,6 +588,8 @@ end;
 
 function TFileKit.SearchFiles(const APattern: string; const Recursive: Boolean = True): TSearchResults;
 begin
+  Result := nil;
+  SetLength(Result, 0);
   Result := SearchFilesIn(GetCurrentDir, APattern, Recursive);
 end;
 
@@ -534,6 +602,7 @@ var
   I: Integer;
   CurrentLen: Integer;
 begin
+  Result := nil;
   SetLength(Result, 0);
   SubDirs := TStringList.Create;
   try

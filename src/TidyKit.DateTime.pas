@@ -27,6 +27,13 @@ type
     function Day(const AValue: Integer = -1): IDateTimeKit;
     function DayOfWeek: Integer;
     function DayOfYear: Integer;
+    function GetYear: Integer;
+    function GetMonth: Integer;
+    function GetDay: Integer;
+    function GetHour: Integer;
+    function GetMinute: Integer;
+    function GetSecond: Integer;
+    function GetMillisecond: Integer;
     
     { Time parts - both getters and setters }
     function Hour(const AValue: Integer = -1): IDateTimeKit;
@@ -117,6 +124,14 @@ type
     function IsSameDay(const ADateTime: TDateTime): Boolean;
     function IsSameMonth(const ADateTime: TDateTime): Boolean;
     function IsSameYear(const ADateTime: TDateTime): Boolean;
+    
+    function GetYear: Integer;
+    function GetMonth: Integer;
+    function GetDay: Integer;
+    function GetHour: Integer;
+    function GetMinute: Integer;
+    function GetSecond: Integer;
+    function GetMillisecond: Integer;
   end;
 
 implementation
@@ -396,14 +411,21 @@ begin
 end;
 
 function TDateTimeKit.IsSameMonth(const ADateTime: TDateTime): Boolean;
+var
+  Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  Result := (YearOf(FValue) = YearOf(ADateTime)) and
-           (MonthOf(FValue) = MonthOf(ADateTime));
+  DecodeDate(FValue, Y1, M1, D1);
+  DecodeDate(ADateTime, Y2, M2, D2);
+  Result := (Y1 = Y2) and (M1 = M2);
 end;
 
 function TDateTimeKit.IsSameYear(const ADateTime: TDateTime): Boolean;
+var
+  Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  Result := YearOf(FValue) = YearOf(ADateTime);
+  DecodeDate(FValue, Y1, M1, D1);
+  DecodeDate(ADateTime, Y2, M2, D2);
+  Result := Y1 = Y2;
 end;
 
 function TDateTimeKit.DayOfWeek: Integer;
@@ -414,6 +436,62 @@ end;
 function TDateTimeKit.DayOfYear: Integer;
 begin
   Result := DateUtils.DayOfTheYear(FValue);
+end;
+
+function TDateTimeKit.GetYear: Integer;
+var
+  Y, M, D: Word;
+begin
+  DecodeDate(FValue, Y, M, D);
+  Result := Y;
+end;
+
+function TDateTimeKit.GetMonth: Integer;
+var
+  Y, M, D: Word;
+begin
+  DecodeDate(FValue, Y, M, D);
+  Result := M;
+end;
+
+function TDateTimeKit.GetDay: Integer;
+var
+  Y, M, D: Word;
+begin
+  DecodeDate(FValue, Y, M, D);
+  Result := D;
+end;
+
+function TDateTimeKit.GetHour: Integer;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(FValue, H, M, S, MS);
+  Result := H;
+end;
+
+function TDateTimeKit.GetMinute: Integer;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(FValue, H, M, S, MS);
+  Result := M;
+end;
+
+function TDateTimeKit.GetSecond: Integer;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(FValue, H, M, S, MS);
+  Result := S;
+end;
+
+function TDateTimeKit.GetMillisecond: Integer;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(FValue, H, M, S, MS);
+  Result := MS;
 end;
 
 end. 
