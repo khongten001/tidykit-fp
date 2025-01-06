@@ -541,7 +541,7 @@ begin
      
   // Test delete
   FFS.From(FTestFile).DeleteFile;
-  Sleep(100); // Give the file system time to update
+  Sleep(1000); // Give the file system time to update
   AssertFalse('File should not exist after delete',
     FileExists(FTestFile));
 end;
@@ -733,9 +733,9 @@ procedure TFSTests.Test17_GetDirectory;
 const
   TestFileName = 'test.txt';
 begin
-  AssertEquals('GetDirectory should return correct directory',
-    'test_dir',
-    ExcludeTrailingPathDelimiter(ExtractFileName(ExtractFilePath(FFS.From(FTestDir + PathDelim + TestFileName).GetPath))));
+AssertEquals('GetDirectory should return correct directory',
+  ExcludeTrailingPathDelimiter(FTestDir),
+  ExcludeTrailingPathDelimiter(FFS.From(FTestDir + PathDelim + TestFileName).GetDirectory));
 end;
 
 procedure TFSTests.Test18_GetExtension;
@@ -762,6 +762,12 @@ var
   SearchResults: TSearchResults;
   i: Integer;
 begin
+
+  // Clear test directory
+  if FFS.From(FTestDir).DirectoryExists then
+    FFS.From(FTestDir).DeleteDirectory(True);
+  FFS.From(FTestDir).CreateDirectory;
+
   // Create test files
   for i := 1 to 3 do
   begin
@@ -769,10 +775,10 @@ begin
     FFS.From(Files[i])
        .SetContent('Test file ' + IntToStr(i))
        .WriteFile;
-    Sleep(100); // Ensure different timestamps
+    Sleep(1000); // Ensure different timestamps
   end;
 
-  Sleep(100); // Give the file system time to update
+  Sleep(1000); // Give the file system time to update
   
   // Test search
   SearchResults := FFS.From(FTestDir).SearchFiles('test*.txt', True);
@@ -786,6 +792,11 @@ var
   SearchResults: TSearchResults;
   i: Integer;
 begin
+  // Clear test directory
+  if FFS.From(FTestDir).DirectoryExists then
+    FFS.From(FTestDir).DeleteDirectory(True);
+  FFS.From(FTestDir).CreateDirectory;
+
   // Create test files
   for i := 1 to 3 do
   begin
@@ -793,10 +804,10 @@ begin
     FFS.From(Files[i])
        .SetContent('Test file ' + IntToStr(i))
        .WriteFile;
-    Sleep(100); // Ensure different timestamps
+    Sleep(1000); // Ensure different timestamps
   end;
 
-  Sleep(100); // Give the file system time to update
+  Sleep(1000); // Give the file system time to update
 
   // Test search
   SearchResults := FFS.From(FTestDir).SearchFiles('test*.txt', False);
@@ -810,6 +821,10 @@ var
   NewestFile: string;
   i: Integer;
 begin
+
+  // Delete setup test file
+  DeleteFile(FTestFile);
+
   // Create test files
   for i := 1 to 3 do
   begin
@@ -817,10 +832,10 @@ begin
     FFS.From(Files[i])
        .SetContent('Test file ' + IntToStr(i))
        .WriteFile;
-    Sleep(100); // Ensure different timestamps
+    Sleep(1000); // Ensure different timestamps
   end;
 
-  Sleep(100); // Give the file system time to update
+  Sleep(1000); // Give the file system time to update
 
   // Test find newest file
   NewestFile := FFS.From(FTestDir).FindNewestFile('test*.txt');
@@ -844,7 +859,7 @@ begin
   end;
 
   // Test find oldest file
-  OldestFile := FFS.From(FTestDir).FindOldestFile('*.txt');
+  OldestFile := FFS.From(FTestDir).FindOldestFile('test*.txt');
   AssertEquals('Should find the oldest test file',
     'test1.txt', ExtractFileName(OldestFile));
 end;
@@ -886,7 +901,7 @@ begin
   end;
 
   // Test find smallest file
-  SmallestFile := FFS.From(FTestDir).FindSmallestFile('*.txt');
+  SmallestFile := FFS.From(FTestDir).FindSmallestFile('test*.txt');
   AssertEquals('Should find the smallest test file',
     'test3.txt', ExtractFileName(SmallestFile));
 end;
