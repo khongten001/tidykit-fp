@@ -552,13 +552,22 @@ var
 begin
   CopyDir := FTestDir + PathDelim + 'copy_dir';
   
-  // Test create directory
+  // Create the destination directory
   FFS.From(CopyDir).CreateDirectory;
   AssertTrue('Directory should exist after creation',
     DirectoryExists(CopyDir));
 
-  // Test copy
+  // Ensure the source file exists
+  FFS.From(FTestFile)
+     .SetContent('Test Content for CopyTo')
+     .WriteFile;
+  AssertTrue('Source file should exist before copying',
+    FileExists(FTestFile));
+
+  // Perform the copy operation
   FFS.From(FTestFile).CopyTo(CopyDir + PathDelim + 'test.txt');
+  
+  // Verify the copy was successful
   AssertTrue('File should exist after copy',
     FileExists(CopyDir + PathDelim + 'test.txt'));
 end;
