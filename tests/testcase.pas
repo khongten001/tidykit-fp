@@ -827,10 +827,14 @@ begin
   // Create test files
   TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   TFileKit.WriteFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
-  
+
   Results := TFileKit.SearchFiles(FTestDir, '*.txt', False);
-  AssertEquals('SearchFiles should find correct number of files',
-    2, Length(Results));
+  try
+    AssertEquals('SearchFiles should find correct number of files',
+      2, Length(Results));
+  finally
+    SetLength(Results, 0); // Explicitly free the array
+  end;
 end;
 
 procedure TFSTests.Test25_FindNewestFile;
@@ -850,8 +854,9 @@ begin
 
   // Create test files with delay to ensure different timestamps
   TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
-  Sleep(1000); // Wait 1 second
+  Sleep(2000); // Wait 2 seconds to ensure timestamp difference
   TFileKit.WriteFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
+  Sleep(1000); // Wait another second to ensure filesystem updates
   
   NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt', False);
   AssertEquals('FindNewestFile should find the newest file',

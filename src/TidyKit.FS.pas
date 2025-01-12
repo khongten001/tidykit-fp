@@ -103,7 +103,16 @@ var
   Attrs: DWord;
 {$ENDIF}
 begin
-  FillChar(Result, SizeOf(Result), 0);
+  // Initialize record fields directly
+  Result.ReadOnly := False;
+  Result.Hidden := False;
+  Result.System := False;
+  Result.Directory := False;
+  Result.Archive := False;
+  Result.SymLink := False;
+  Result.Owner := '';
+  Result.Group := '';
+  Result.Permissions := '';
   
   {$IFDEF UNIX}
   if FpStat(APath, Info) = 0 then
@@ -141,14 +150,17 @@ begin
 end;
 
 function NormalizePath(const APath: string): string;
+var
+  TempPath: string;
 begin
-  Result := APath;
+  TempPath := APath;
   {$IFDEF WINDOWS}
-  Result := StringReplace(Result, '/', '\', [rfReplaceAll]);
+  TempPath := StringReplace(TempPath, '/', '\', [rfReplaceAll]);
   {$ELSE}
-  Result := StringReplace(Result, '\', '/', [rfReplaceAll]);
+  TempPath := StringReplace(TempPath, '\', '/', [rfReplaceAll]);
   {$ENDIF}
-  Result := ExpandFileName(Result); // Ensure full path is returned
+  Result := ExpandFileName(TempPath);
+  TempPath := '';
 end;
 
 function FileTimeToDateTime(const FileTime: TFileTime): TDateTime;
@@ -157,8 +169,16 @@ var
   SystemTime: TSystemTime;
 begin
   Result := 0;
-  FillChar(LocalFileTime, SizeOf(LocalFileTime), 0);
-  FillChar(SystemTime, SizeOf(SystemTime), 0);
+  LocalFileTime.dwLowDateTime := 0;
+  LocalFileTime.dwHighDateTime := 0;
+  SystemTime.wYear := 0;
+  SystemTime.wMonth := 0;
+  SystemTime.wDay := 0;
+  SystemTime.wHour := 0;
+  SystemTime.wMinute := 0;
+  SystemTime.wSecond := 0;
+  SystemTime.wMilliseconds := 0;
+  
   if FileTimeToLocalFileTime(FileTime, LocalFileTime) and
      FileTimeToSystemTime(LocalFileTime, SystemTime) then
   begin
@@ -216,19 +236,44 @@ end;
 class function TFileKit.CreateSearchResult(const APath: string): TSearchResult;
 var
   SearchRec: TSearchRec;
+  Found: Boolean;
+  NormalPath: string;
 begin
-  FillChar(Result, SizeOf(Result), 0);
-  Result.FullPath := NormalizePath(APath);
-  Result.FileName := ExtractFileName(APath);
-  Result.IsDirectory := IsDirectory(APath);
-  Result.Attributes := GetFileAttributes(APath);
-  // Use FileAge for last modified:
-  if FileExists(APath) or Result.IsDirectory then
-    Result.LastModified := FileDateToDateTime(FileAge(APath));
-  // Set file size:
-  if FindFirst(APath, faAnyFile, SearchRec) = 0 then
+  // Initialize record fields directly
+  Result.FileName := '';
+  Result.FullPath := '';
+  Result.Size := 0;
+  Result.LastModified := 0;
+  Result.IsDirectory := False;
+  with Result.Attributes do
   begin
+    ReadOnly := False;
+    Hidden := False;
+    System := False;
+    Directory := False;
+    Archive := False;
+    SymLink := False;
+    Owner := '';
+    Group := '';
+    Permissions := '';
+  end;
+  
+  NormalPath := NormalizePath(APath);
+  Result.FullPath := NormalPath;
+  Result.FileName := ExtractFileName(NormalPath);
+  Result.IsDirectory := IsDirectory(NormalPath);
+  Result.Attributes := GetFileAttributes(NormalPath);
+  NormalPath := '';
+  
+  Found := FindFirst(APath, faAnyFile, SearchRec) = 0;
+  try
+    if Found then
+    begin
       Result.Size := SearchRec.Size;
+      Result.LastModified := FileDateToDateTime(SearchRec.Time);
+    end;
+  finally
+    if Found then
       FindClose(SearchRec);
   end;
 end;
@@ -546,6 +591,7 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
     SubResults: TSearchResults;
     FullPath: string;
     I, J, OldLen: Integer;
+    Found: Boolean;
   begin
     SetLength(Result, 0);
     NDir := NormalizePath(RawDir);
@@ -559,23 +605,27 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
     
     SubDirs := TStringList.Create;
     try
-      if FindFirst(IncludeTrailingPathDelimiter(NDir) + Pat, faAnyFile, SearchRec) = 0 then
+      Found := FindFirst(IncludeTrailingPathDelimiter(NDir) + Pat, faAnyFile, SearchRec) = 0;
       try
-        repeat
+        while Found do
+        begin
           if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
           begin
             FullPath := IncludeTrailingPathDelimiter(NDir) + SearchRec.Name;
-            if (SearchRec.Attr and faDirectory) = 0 then // Only add files, not directories
+            if (SearchRec.Attr and faDirectory) = 0 then
             begin
-              SetLength(Result, Length(Result) + 1);
-              Result[High(Result)] := CreateSearchResult(FullPath);
+              OldLen := Length(Result);
+              SetLength(Result, OldLen + 1);
+              Result[OldLen] := CreateSearchResult(FullPath);
             end
             else if Rec and ((SearchRec.Attr and faSymLink) = 0) then
               SubDirs.Add(FullPath);
           end;
-        until FindNext(SearchRec) <> 0;
+          Found := FindNext(SearchRec) = 0;
+        end;
       finally
-        FindClose(SearchRec);
+        if Found then
+          FindClose(SearchRec);
       end;
 
       if Rec then
@@ -590,10 +640,13 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
             for J := 0 to High(SubResults) do
               Result[OldLen + J] := SubResults[J];
           end;
+          SetLength(SubResults, 0);
         end;
       end;
     finally
       SubDirs.Free;
+      NDir := '';
+      FullPath := '';
     end;
   end;
 
@@ -616,21 +669,48 @@ var
   Files: TSearchResults;
   I: Integer;
   NewestTime: TDateTime;
+  SearchRec: TSearchRec;
 begin
   Result := '';
   NewestTime := 0;
-  Files := SearchFiles(APath, APattern, Recursive);
+  
+  // First try direct search without using SearchFiles for better performance
+  if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
   try
-    for I := 0 to High(Files) do
-    begin
-      if not Files[I].IsDirectory and ((Result = '') or (Files[I].LastModified > NewestTime)) then
+    repeat
+      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+         ((SearchRec.Attr and faDirectory) = 0) then
       begin
-        Result := Files[I].FileName;
-        NewestTime := Files[I].LastModified;
+        if (Result = '') or (FileDateToDateTime(SearchRec.Time) > NewestTime) then
+        begin
+          Result := SearchRec.Name;
+          NewestTime := FileDateToDateTime(SearchRec.Time);
+        end;
       end;
-    end;
+    until FindNext(SearchRec) <> 0;
   finally
-    SetLength(Files, 0);
+    FindClose(SearchRec);
+  end;
+  
+  // If recursive is needed, use SearchFiles
+  if Recursive and (ExtractFilePath(APath) <> '') then
+  begin
+    Files := SearchFiles(APath, APattern, True);
+    try
+      for I := 0 to High(Files) do
+      begin
+        if not Files[I].IsDirectory then
+        begin
+          if (Result = '') or (FileDateToDateTime(FileAge(Files[I].FullPath)) > NewestTime) then
+          begin
+            Result := ExtractFileName(Files[I].FullPath);
+            NewestTime := FileDateToDateTime(FileAge(Files[I].FullPath));
+          end;
+        end;
+      end;
+    finally
+      SetLength(Files, 0);
+    end;
   end;
 end;
 
@@ -641,19 +721,22 @@ var
   OldestTime: TDateTime;
 begin
   Result := '';
-  OldestTime := Now + 1;  // Future date to ensure any real date is older
+  OldestTime := MaxDateTime;
   Files := SearchFiles(APath, APattern, Recursive);
-  
-  for I := 0 to High(Files) do
-  begin
-    if not Files[I].IsDirectory then
+  try
+    for I := 0 to High(Files) do
     begin
-      if (Result = '') or (CompareDateTime(Files[I].LastModified, OldestTime) < 0) then
+      if not Files[I].IsDirectory then
       begin
-        Result := ExtractFileName(Files[I].FullPath);
-        OldestTime := Files[I].LastModified;
+        if (Result = '') or (Files[I].LastModified < OldestTime) then
+        begin
+          Result := ExtractFileName(Files[I].FullPath);
+          OldestTime := Files[I].LastModified;
+        end;
       end;
     end;
+  finally
+    SetLength(Files, 0); // Clean up Files array
   end;
 end;
 
@@ -666,17 +749,20 @@ begin
   Result := '';
   LargestSize := -1;
   Files := SearchFiles(APath, APattern, Recursive);
-  
-  for I := 0 to High(Files) do
-  begin
-    if not Files[I].IsDirectory then
+  try
+    for I := 0 to High(Files) do
     begin
-      if (Result = '') or (Files[I].Size > LargestSize) then
+      if not Files[I].IsDirectory then
       begin
-        Result := ExtractFileName(Files[I].FullPath);
-        LargestSize := Files[I].Size;
+        if (Result = '') or (Files[I].Size > LargestSize) then
+        begin
+          Result := ExtractFileName(Files[I].FullPath);
+          LargestSize := Files[I].Size;
+        end;
       end;
     end;
+  finally
+    SetLength(Files, 0); // Clean up Files array
   end;
 end;
 
@@ -689,17 +775,20 @@ begin
   Result := '';
   SmallestSize := High(Int64);
   Files := SearchFiles(APath, APattern, Recursive);
-  
-  for I := 0 to High(Files) do
-  begin
-    if not Files[I].IsDirectory then
+  try
+    for I := 0 to High(Files) do
     begin
-      if (Result = '') or (Files[I].Size < SmallestSize) then
+      if not Files[I].IsDirectory then
       begin
-        Result := ExtractFileName(Files[I].FullPath);
-        SmallestSize := Files[I].Size;
+        if (Result = '') or (Files[I].Size < SmallestSize) then
+        begin
+          Result := ExtractFileName(Files[I].FullPath);
+          SmallestSize := Files[I].Size;
+        end;
       end;
     end;
+  finally
+    SetLength(Files, 0); // Clean up Files array
   end;
 end;
 

@@ -208,7 +208,7 @@ SmallestFile := TFileKit.FindSmallestFile(Path);// Find smallest file
 
 // File information
 if TFileKit.Exists(Path) then           // Check if exists
-if TFileKit.DirectoryExists(Path) then // Check if directory
+if TFileKit.IsDirectory(Path) then    // Check if directory
 Size := TFileKit.GetSize(Path);       // Get file size
 Time := TFileKit.GetCreationTime(Path);// Get creation time
 Time := TFileKit.GetLastWriteTime(Path);// Get last write time
