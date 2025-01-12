@@ -51,7 +51,7 @@ type
     class function ReplaceText(const Text, OldText, NewText: string): string; static;
     
     // Word operations
-    class function GetWords(const Text: string): TStringArray; static;
+    class function GetWords(const AText: string): TStringArray; static;
     class function CountSubString(const Text, SubStr: string): Integer; static;
     
     // String tests
@@ -289,30 +289,43 @@ begin
   Result := StringReplace(Text, OldText, NewText, [rfReplaceAll]);
 end;
 
-class function TStringKit.GetWords(const Text: string): TStringArray;
+class function TStringKit.GetWords(const AText: string): TStringArray;
 var
-  List: TStringList;
+  WordList: TStringList;
   I: Integer;
-  Temp: string;
+  Word: string;
+  Ch: Char;
+  InWord: Boolean;
 begin
-  Result := nil;
-  List := TStringList.Create;
+  WordList := TStringList.Create;
   try
-    // First, replace commas with spaces and collapse whitespace
-    Temp := StringReplace(Text, ', ', ' ', [rfReplaceAll]);
-    Temp := StringReplace(Temp, ',', ' ', [rfReplaceAll]);
-    Temp := CollapseWhitespace(Temp);
-    Temp := Trim(Temp);
+    Word := '';
+    InWord := False;
     
-    List.Delimiter := ' ';
-    List.StrictDelimiter := True;
-    List.DelimitedText := Temp;
+    for Ch in AText do
+    begin
+      if Ch in ['A'..'Z', 'a'..'z', '0'..'9'] then
+      begin
+        Word := Word + Ch;
+        InWord := True;
+      end
+      else if InWord then
+      begin
+        if Word <> '' then
+          WordList.Add(Word);
+        Word := '';
+        InWord := False;
+      end;
+    end;
     
-    SetLength(Result, List.Count);
-    for I := 0 to List.Count - 1 do
-      Result[I] := Trim(List[I]);
+    if Word <> '' then
+      WordList.Add(Word);
+      
+    SetLength(Result, WordList.Count);
+    for I := 0 to WordList.Count - 1 do
+      Result[I] := WordList[I];
   finally
-    List.Free;
+    WordList.Free;
   end;
 end;
 
