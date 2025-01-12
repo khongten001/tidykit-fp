@@ -5,493 +5,397 @@ unit TidyKit.DateTime;
 interface
 
 uses
-  Classes, SysUtils, DateUtils, TidyKit.Core;
+  Classes, SysUtils, DateUtils;
 
 type
-  { Interface for DateTime operations }
-  IDateTimeKit = interface(IChainable)
-    ['{A1B2C3D4-E5F6-4789-A0B1-123456789ABC}']
-    function GetValue: TDateTime;
-    
+  { DateTime operations }
+  TDateTimeKit = class
+  public
     { Basic operations }
-    function From(const AValue: TDateTime): IDateTimeKit;
-    function FromString(const AValue: string; const AFormat: string = ''): IDateTimeKit;
-    function Now: IDateTimeKit;
-    function Today: IDateTimeKit;
-    function ToDateTime: TDateTime;
-    function ToString(const AFormat: string = ''): string;
+    class function GetNow: TDateTime; static;
+    class function GetToday: TDateTime; static;
+    class function GetDateTime(const AValue: TDateTime): TDateTime; static;
+    class function GetAsString(const AValue: TDateTime; const AFormat: string = ''): string; static;
+    class function FromString(const AValue: string; const AFormat: string = ''): TDateTime; static;
     
-    { Date parts - both getters and setters }
-    function Year(const AValue: Integer = -1): IDateTimeKit;
-    function Month(const AValue: Integer = -1): IDateTimeKit;
-    function Day(const AValue: Integer = -1): IDateTimeKit;
-    function DayOfWeek: Integer;
-    function DayOfYear: Integer;
-    function GetYear: Integer;
-    function GetMonth: Integer;
-    function GetDay: Integer;
-    function GetHour: Integer;
-    function GetMinute: Integer;
-    function GetSecond: Integer;
-    function GetMillisecond: Integer;
+    { Date parts - getters }
+    class function GetYear(const AValue: TDateTime): Integer; static;
+    class function GetMonth(const AValue: TDateTime): Integer; static;
+    class function GetDay(const AValue: TDateTime): Integer; static;
+    class function GetDayOfWeek(const AValue: TDateTime): Integer; static;
+    class function GetDayOfYear(const AValue: TDateTime): Integer; static;
+    class function GetHour(const AValue: TDateTime): Integer; static;
+    class function GetMinute(const AValue: TDateTime): Integer; static;
+    class function GetSecond(const AValue: TDateTime): Integer; static;
+    class function GetMillisecond(const AValue: TDateTime): Integer; static;
     
-    { Time parts - both getters and setters }
-    function Hour(const AValue: Integer = -1): IDateTimeKit;
-    function Minute(const AValue: Integer = -1): IDateTimeKit;
-    function Second(const AValue: Integer = -1): IDateTimeKit;
-    function MilliSecond(const AValue: Integer = -1): IDateTimeKit;
+    { Date parts - setters }
+    class function SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime; static;
+    class function SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime; static;
+    class function SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime; static;
+    class function SetHour(const AValue: TDateTime; const AHour: Integer): TDateTime; static;
+    class function SetMinute(const AValue: TDateTime; const AMinute: Integer): TDateTime; static;
+    class function SetSecond(const AValue: TDateTime; const ASecond: Integer): TDateTime; static;
+    class function SetMilliSecond(const AValue: TDateTime; const AMilliSecond: Integer): TDateTime; static;
     
     { Modifications }
-    function AddYears(const AYears: Integer): IDateTimeKit;
-    function AddMonths(const AMonths: Integer): IDateTimeKit;
-    function AddDays(const ADays: Integer): IDateTimeKit;
-    function AddHours(const AHours: Integer): IDateTimeKit;
-    function AddMinutes(const AMinutes: Integer): IDateTimeKit;
-    function AddSeconds(const ASeconds: Integer): IDateTimeKit;
+    class function AddYears(const AValue: TDateTime; const AYears: Integer): TDateTime; static;
+    class function AddMonths(const AValue: TDateTime; const AMonths: Integer): TDateTime; static;
+    class function AddDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
+    class function AddHours(const AValue: TDateTime; const AHours: Integer): TDateTime; static;
+    class function AddMinutes(const AValue: TDateTime; const AMinutes: Integer): TDateTime; static;
+    class function AddSeconds(const AValue: TDateTime; const ASeconds: Integer): TDateTime; static;
     
     { Truncations }
-    function StartOfYear: IDateTimeKit;
-    function StartOfMonth: IDateTimeKit;
-    function StartOfWeek: IDateTimeKit;
-    function StartOfDay: IDateTimeKit;
-    function StartOfHour: IDateTimeKit;
+    class function StartOfYear(const AValue: TDateTime): TDateTime; static;
+    class function StartOfMonth(const AValue: TDateTime): TDateTime; static;
+    class function StartOfWeek(const AValue: TDateTime): TDateTime; static;
+    class function StartOfDay(const AValue: TDateTime): TDateTime; static;
+    class function StartOfHour(const AValue: TDateTime): TDateTime; static;
     
-    function EndOfYear: IDateTimeKit;
-    function EndOfMonth: IDateTimeKit;
-    function EndOfWeek: IDateTimeKit;
-    function EndOfDay: IDateTimeKit;
-    function EndOfHour: IDateTimeKit;
+    class function EndOfYear(const AValue: TDateTime): TDateTime; static;
+    class function EndOfMonth(const AValue: TDateTime): TDateTime; static;
+    class function EndOfWeek(const AValue: TDateTime): TDateTime; static;
+    class function EndOfDay(const AValue: TDateTime): TDateTime; static;
+    class function EndOfHour(const AValue: TDateTime): TDateTime; static;
     
     { Comparisons }
-    function IsBefore(const ADateTime: TDateTime): Boolean;
-    function IsAfter(const ADateTime: TDateTime): Boolean;
-    function IsSameDay(const ADateTime: TDateTime): Boolean;
-    function IsSameMonth(const ADateTime: TDateTime): Boolean;
-    function IsSameYear(const ADateTime: TDateTime): Boolean;
+    class function IsBefore(const AValue, ADateTime: TDateTime): Boolean; static;
+    class function IsAfter(const AValue, ADateTime: TDateTime): Boolean; static;
+    class function IsSameDay(const AValue, ADateTime: TDateTime): Boolean; static;
+    class function IsSameMonth(const AValue, ADateTime: TDateTime): Boolean; static;
+    class function IsSameYear(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Properties }
-    property Value: TDateTime read GetValue;
-  end;
-
-  { Implementation of DateTime operations }
-  TDateTimeKit = class(TKitBase, IDateTimeKit)
-  private
-    FValue: TDateTime;
-    function GetValue: TDateTime;
-  public
-    constructor Create;
-    
-    { Interface implementations }
-    function From(const AValue: TDateTime): IDateTimeKit;
-    function FromString(const AValue: string; const AFormat: string = ''): IDateTimeKit;
-    function Now: IDateTimeKit;
-    function Today: IDateTimeKit;
-    function ToDateTime: TDateTime;
-    function ToString(const AFormat: string = ''): string;
-    
-    function Year(const AValue: Integer = -1): IDateTimeKit;
-    function Month(const AValue: Integer = -1): IDateTimeKit;
-    function Day(const AValue: Integer = -1): IDateTimeKit;
-    function DayOfWeek: Integer;
-    function DayOfYear: Integer;
-    
-    function Hour(const AValue: Integer = -1): IDateTimeKit;
-    function Minute(const AValue: Integer = -1): IDateTimeKit;
-    function Second(const AValue: Integer = -1): IDateTimeKit;
-    function MilliSecond(const AValue: Integer = -1): IDateTimeKit;
-    
-    function AddYears(const AYears: Integer): IDateTimeKit;
-    function AddMonths(const AMonths: Integer): IDateTimeKit;
-    function AddDays(const ADays: Integer): IDateTimeKit;
-    function AddHours(const AHours: Integer): IDateTimeKit;
-    function AddMinutes(const AMinutes: Integer): IDateTimeKit;
-    function AddSeconds(const ASeconds: Integer): IDateTimeKit;
-    
-    function StartOfYear: IDateTimeKit;
-    function StartOfMonth: IDateTimeKit;
-    function StartOfWeek: IDateTimeKit;
-    function StartOfDay: IDateTimeKit;
-    function StartOfHour: IDateTimeKit;
-    
-    function EndOfYear: IDateTimeKit;
-    function EndOfMonth: IDateTimeKit;
-    function EndOfWeek: IDateTimeKit;
-    function EndOfDay: IDateTimeKit;
-    function EndOfHour: IDateTimeKit;
-    
-    function IsBefore(const ADateTime: TDateTime): Boolean;
-    function IsAfter(const ADateTime: TDateTime): Boolean;
-    function IsSameDay(const ADateTime: TDateTime): Boolean;
-    function IsSameMonth(const ADateTime: TDateTime): Boolean;
-    function IsSameYear(const ADateTime: TDateTime): Boolean;
-    
-    function GetYear: Integer;
-    function GetMonth: Integer;
-    function GetDay: Integer;
-    function GetHour: Integer;
-    function GetMinute: Integer;
-    function GetSecond: Integer;
-    function GetMillisecond: Integer;
+    { Business day calculations }
+    class function IsBusinessDay(const AValue: TDateTime): Boolean; static;
+    class function NextBusinessDay(const AValue: TDateTime): TDateTime; static;
+    class function PreviousBusinessDay(const AValue: TDateTime): TDateTime; static;
+    class function AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
   end;
 
 implementation
 
 { TDateTimeKit }
 
-constructor TDateTimeKit.Create;
+class function TDateTimeKit.GetNow: TDateTime;
 begin
-  inherited Create;
-  FValue := 0;
+  Result := SysUtils.Now;
 end;
 
-function TDateTimeKit.GetValue: TDateTime;
+class function TDateTimeKit.GetToday: TDateTime;
 begin
-  Result := FValue;
+  Result := Trunc(SysUtils.Now);
 end;
 
-function TDateTimeKit.From(const AValue: TDateTime): IDateTimeKit;
+class function TDateTimeKit.GetDateTime(const AValue: TDateTime): TDateTime;
 begin
-  FValue := AValue;
-  Result := Self;
+  Result := AValue;
 end;
 
-function TDateTimeKit.Now: IDateTimeKit;
+class function TDateTimeKit.GetAsString(const AValue: TDateTime; const AFormat: string): string;
 begin
-  FValue := SysUtils.Now;
-  Result := Self;
+  if AFormat = '' then
+    Result := DateTimeToStr(AValue)
+  else
+    Result := FormatDateTime(AFormat, AValue);
 end;
 
-function TDateTimeKit.Today: IDateTimeKit;
-begin
-  FValue := Trunc(SysUtils.Now);
-  Result := Self;
-end;
-
-function TDateTimeKit.FromString(const AValue: string; const AFormat: string): IDateTimeKit;
+class function TDateTimeKit.FromString(const AValue: string; const AFormat: string): TDateTime;
 var
   FormatSettings: TFormatSettings;
 begin
   FormatSettings := DefaultFormatSettings;
   if AFormat = '' then
-    FValue := StrToDateTime(AValue, FormatSettings)
+    Result := StrToDateTime(AValue, FormatSettings)
   else
   begin
     FormatSettings.ShortDateFormat := AFormat;
-    FValue := StrToDateTime(AValue, FormatSettings);
+    Result := StrToDateTime(AValue, FormatSettings);
   end;
-  Result := Self;
 end;
 
-function TDateTimeKit.ToDateTime: TDateTime;
-begin
-  Result := FValue;
-end;
-
-function TDateTimeKit.ToString(const AFormat: string = ''): string;
-begin
-  if AFormat = '' then
-    Result := DateTimeToStr(FValue)
-  else
-    Result := FormatDateTime(AFormat, FValue);
-end;
-
-function TDateTimeKit.Year(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetYear(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeDate(FValue, Y, M, D);
-    FValue := EncodeDate(AValue, M, D) + Frac(FValue);
-    Result := Self;
-  end;
+  DecodeDate(AValue, Y, M, D);
+  Result := Y;
 end;
 
-function TDateTimeKit.Month(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetMonth(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeDate(FValue, Y, M, D);
-    FValue := EncodeDate(Y, AValue, D) + Frac(FValue);
-    Result := Self;
-  end;
+  DecodeDate(AValue, Y, M, D);
+  Result := M;
 end;
 
-function TDateTimeKit.Day(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetDay(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeDate(FValue, Y, M, D);
-    FValue := EncodeDate(Y, M, AValue) + Frac(FValue);
-    Result := Self;
-  end;
+  DecodeDate(AValue, Y, M, D);
+  Result := D;
 end;
 
-function TDateTimeKit.Hour(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetDayOfWeek(const AValue: TDateTime): Integer;
+begin
+  Result := SysUtils.DayOfWeek(AValue);
+end;
+
+class function TDateTimeKit.GetDayOfYear(const AValue: TDateTime): Integer;
+begin
+  Result := DateUtils.DayOfTheYear(AValue);
+end;
+
+class function TDateTimeKit.GetHour(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeTime(FValue, H, M, S, MS);
-    FValue := Trunc(FValue) + EncodeTime(AValue, M, S, MS);
-    Result := Self;
-  end;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := H;
 end;
 
-function TDateTimeKit.Minute(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetMinute(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeTime(FValue, H, M, S, MS);
-    FValue := Trunc(FValue) + EncodeTime(H, AValue, S, MS);
-    Result := Self;
-  end;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := M;
 end;
 
-function TDateTimeKit.Second(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetSecond(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeTime(FValue, H, M, S, MS);
-    FValue := Trunc(FValue) + EncodeTime(H, M, AValue, MS);
-    Result := Self;
-  end;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := S;
 end;
 
-function TDateTimeKit.MilliSecond(const AValue: Integer = -1): IDateTimeKit;
+class function TDateTimeKit.GetMillisecond(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  if AValue = -1 then
-    Result := Self
-  else
-  begin
-    DecodeTime(FValue, H, M, S, MS);
-    FValue := Trunc(FValue) + EncodeTime(H, M, S, AValue);
-    Result := Self;
-  end;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := MS;
 end;
 
-function TDateTimeKit.AddYears(const AYears: Integer): IDateTimeKit;
+class function TDateTimeKit.SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime;
+var
+  Y, M, D: Word;
 begin
-  FValue := IncYear(FValue, AYears);
-  Result := Self;
+  DecodeDate(AValue, Y, M, D);
+  Result := EncodeDate(AYear, M, D) + Frac(AValue);
 end;
 
-function TDateTimeKit.AddMonths(const AMonths: Integer): IDateTimeKit;
+class function TDateTimeKit.SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime;
+var
+  Y, M, D: Word;
 begin
-  FValue := IncMonth(FValue, AMonths);
-  Result := Self;
+  DecodeDate(AValue, Y, M, D);
+  Result := EncodeDate(Y, AMonth, D) + Frac(AValue);
 end;
 
-function TDateTimeKit.AddDays(const ADays: Integer): IDateTimeKit;
+class function TDateTimeKit.SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime;
+var
+  Y, M, D: Word;
 begin
-  FValue := IncDay(FValue, ADays);
-  Result := Self;
+  DecodeDate(AValue, Y, M, D);
+  Result := EncodeDate(Y, M, ADay) + Frac(AValue);
 end;
 
-function TDateTimeKit.AddHours(const AHours: Integer): IDateTimeKit;
-begin
-  FValue := IncHour(FValue, AHours);
-  Result := Self;
-end;
-
-function TDateTimeKit.AddMinutes(const AMinutes: Integer): IDateTimeKit;
-begin
-  FValue := IncMinute(FValue, AMinutes);
-  Result := Self;
-end;
-
-function TDateTimeKit.AddSeconds(const ASeconds: Integer): IDateTimeKit;
-begin
-  FValue := IncSecond(FValue, ASeconds);
-  Result := Self;
-end;
-
-function TDateTimeKit.StartOfYear: IDateTimeKit;
-begin
-  FValue := StartOfTheYear(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.StartOfMonth: IDateTimeKit;
-begin
-  FValue := StartOfTheMonth(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.StartOfWeek: IDateTimeKit;
-begin
-  FValue := StartOfTheWeek(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.StartOfDay: IDateTimeKit;
-begin
-  FValue := DateOf(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.StartOfHour: IDateTimeKit;
+class function TDateTimeKit.SetHour(const AValue: TDateTime; const AHour: Integer): TDateTime;
 var
   H, M, S, MS: Word;
 begin
-  DecodeTime(FValue, H, M, S, MS);
-  FValue := Trunc(FValue) + EncodeTime(H, 0, 0, 0);
-  Result := Self;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(AHour, M, S, MS);
 end;
 
-function TDateTimeKit.EndOfYear: IDateTimeKit;
-begin
-  FValue := EndOfTheYear(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.EndOfMonth: IDateTimeKit;
-begin
-  FValue := EndOfTheMonth(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.EndOfWeek: IDateTimeKit;
-begin
-  FValue := EndOfTheWeek(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.EndOfDay: IDateTimeKit;
-begin
-  FValue := EndOfTheDay(FValue);
-  Result := Self;
-end;
-
-function TDateTimeKit.EndOfHour: IDateTimeKit;
+class function TDateTimeKit.SetMinute(const AValue: TDateTime; const AMinute: Integer): TDateTime;
 var
   H, M, S, MS: Word;
 begin
-  DecodeTime(FValue, H, M, S, MS);
-  FValue := Trunc(FValue) + EncodeTime(H, 59, 59, 999);
-  Result := Self;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(H, AMinute, S, MS);
 end;
 
-function TDateTimeKit.IsBefore(const ADateTime: TDateTime): Boolean;
+class function TDateTimeKit.SetSecond(const AValue: TDateTime; const ASecond: Integer): TDateTime;
+var
+  H, M, S, MS: Word;
 begin
-  Result := CompareDateTime(FValue, ADateTime) < 0;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(H, M, ASecond, MS);
 end;
 
-function TDateTimeKit.IsAfter(const ADateTime: TDateTime): Boolean;
+class function TDateTimeKit.SetMilliSecond(const AValue: TDateTime; const AMilliSecond: Integer): TDateTime;
+var
+  H, M, S, MS: Word;
 begin
-  Result := CompareDateTime(FValue, ADateTime) > 0;
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(H, M, S, AMilliSecond);
 end;
 
-function TDateTimeKit.IsSameDay(const ADateTime: TDateTime): Boolean;
+class function TDateTimeKit.AddYears(const AValue: TDateTime; const AYears: Integer): TDateTime;
 begin
-  Result := SameDate(FValue, ADateTime);
+  Result := IncYear(AValue, AYears);
 end;
 
-function TDateTimeKit.IsSameMonth(const ADateTime: TDateTime): Boolean;
+class function TDateTimeKit.AddMonths(const AValue: TDateTime; const AMonths: Integer): TDateTime;
+begin
+  Result := IncMonth(AValue, AMonths);
+end;
+
+class function TDateTimeKit.AddDays(const AValue: TDateTime; const ADays: Integer): TDateTime;
+begin
+  Result := IncDay(AValue, ADays);
+end;
+
+class function TDateTimeKit.AddHours(const AValue: TDateTime; const AHours: Integer): TDateTime;
+begin
+  Result := IncHour(AValue, AHours);
+end;
+
+class function TDateTimeKit.AddMinutes(const AValue: TDateTime; const AMinutes: Integer): TDateTime;
+begin
+  Result := IncMinute(AValue, AMinutes);
+end;
+
+class function TDateTimeKit.AddSeconds(const AValue: TDateTime; const ASeconds: Integer): TDateTime;
+begin
+  Result := IncSecond(AValue, ASeconds);
+end;
+
+class function TDateTimeKit.StartOfYear(const AValue: TDateTime): TDateTime;
+begin
+  Result := StartOfTheYear(AValue);
+end;
+
+class function TDateTimeKit.StartOfMonth(const AValue: TDateTime): TDateTime;
+begin
+  Result := StartOfTheMonth(AValue);
+end;
+
+class function TDateTimeKit.StartOfWeek(const AValue: TDateTime): TDateTime;
+begin
+  Result := StartOfTheWeek(AValue);
+end;
+
+class function TDateTimeKit.StartOfDay(const AValue: TDateTime): TDateTime;
+begin
+  Result := DateOf(AValue);
+end;
+
+class function TDateTimeKit.StartOfHour(const AValue: TDateTime): TDateTime;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
+end;
+
+class function TDateTimeKit.EndOfYear(const AValue: TDateTime): TDateTime;
+begin
+  Result := EndOfTheYear(AValue);
+end;
+
+class function TDateTimeKit.EndOfMonth(const AValue: TDateTime): TDateTime;
+begin
+  Result := EndOfTheMonth(AValue);
+end;
+
+class function TDateTimeKit.EndOfWeek(const AValue: TDateTime): TDateTime;
+begin
+  Result := EndOfTheWeek(AValue);
+end;
+
+class function TDateTimeKit.EndOfDay(const AValue: TDateTime): TDateTime;
+begin
+  Result := EndOfTheDay(AValue);
+end;
+
+class function TDateTimeKit.EndOfHour(const AValue: TDateTime): TDateTime;
+var
+  H, M, S, MS: Word;
+begin
+  DecodeTime(AValue, H, M, S, MS);
+  Result := Trunc(AValue) + EncodeTime(H, 59, 59, 999);
+end;
+
+class function TDateTimeKit.IsBefore(const AValue, ADateTime: TDateTime): Boolean;
+begin
+  Result := CompareDateTime(AValue, ADateTime) < 0;
+end;
+
+class function TDateTimeKit.IsAfter(const AValue, ADateTime: TDateTime): Boolean;
+begin
+  Result := CompareDateTime(AValue, ADateTime) > 0;
+end;
+
+class function TDateTimeKit.IsSameDay(const AValue, ADateTime: TDateTime): Boolean;
+begin
+  Result := SameDate(AValue, ADateTime);
+end;
+
+class function TDateTimeKit.IsSameMonth(const AValue, ADateTime: TDateTime): Boolean;
 var
   Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  DecodeDate(FValue, Y1, M1, D1);
+  DecodeDate(AValue, Y1, M1, D1);
   DecodeDate(ADateTime, Y2, M2, D2);
   Result := (Y1 = Y2) and (M1 = M2);
 end;
 
-function TDateTimeKit.IsSameYear(const ADateTime: TDateTime): Boolean;
+class function TDateTimeKit.IsSameYear(const AValue, ADateTime: TDateTime): Boolean;
 var
   Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  DecodeDate(FValue, Y1, M1, D1);
+  DecodeDate(AValue, Y1, M1, D1);
   DecodeDate(ADateTime, Y2, M2, D2);
   Result := Y1 = Y2;
 end;
 
-function TDateTimeKit.DayOfWeek: Integer;
-begin
-  Result := SysUtils.DayOfWeek(FValue);
-end;
-
-function TDateTimeKit.DayOfYear: Integer;
-begin
-  Result := DateUtils.DayOfTheYear(FValue);
-end;
-
-function TDateTimeKit.GetYear: Integer;
+class function TDateTimeKit.IsBusinessDay(const AValue: TDateTime): Boolean;
 var
-  Y, M, D: Word;
+  DayOfWeek: Integer;
 begin
-  DecodeDate(FValue, Y, M, D);
-  Result := Y;
+  DayOfWeek := GetDayOfWeek(AValue);
+  Result := (DayOfWeek > 1) and (DayOfWeek < 7); // Monday to Friday
 end;
 
-function TDateTimeKit.GetMonth: Integer;
-var
-  Y, M, D: Word;
+class function TDateTimeKit.NextBusinessDay(const AValue: TDateTime): TDateTime;
 begin
-  DecodeDate(FValue, Y, M, D);
-  Result := M;
+  Result := AValue;
+  repeat
+    Result := AddDays(Result, 1);
+  until IsBusinessDay(Result);
 end;
 
-function TDateTimeKit.GetDay: Integer;
-var
-  Y, M, D: Word;
+class function TDateTimeKit.PreviousBusinessDay(const AValue: TDateTime): TDateTime;
 begin
-  DecodeDate(FValue, Y, M, D);
-  Result := D;
+  Result := AValue;
+  repeat
+    Result := AddDays(Result, -1);
+  until IsBusinessDay(Result);
 end;
 
-function TDateTimeKit.GetHour: Integer;
+class function TDateTimeKit.AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime;
 var
-  H, M, S, MS: Word;
+  Step, RemainingDays: Integer;
 begin
-  DecodeTime(FValue, H, M, S, MS);
-  Result := H;
-end;
-
-function TDateTimeKit.GetMinute: Integer;
-var
-  H, M, S, MS: Word;
-begin
-  DecodeTime(FValue, H, M, S, MS);
-  Result := M;
-end;
-
-function TDateTimeKit.GetSecond: Integer;
-var
-  H, M, S, MS: Word;
-begin
-  DecodeTime(FValue, H, M, S, MS);
-  Result := S;
-end;
-
-function TDateTimeKit.GetMillisecond: Integer;
-var
-  H, M, S, MS: Word;
-begin
-  DecodeTime(FValue, H, M, S, MS);
-  Result := MS;
+  Result := AValue;
+  if ADays = 0 then
+    Exit;
+    
+  Step := ADays div Abs(ADays); // 1 or -1
+  RemainingDays := Abs(ADays);
+  
+  while RemainingDays > 0 do
+  begin
+    Result := AddDays(Result, Step);
+    if IsBusinessDay(Result) then
+      Dec(RemainingDays);
+  end;
 end;
 
 end. 

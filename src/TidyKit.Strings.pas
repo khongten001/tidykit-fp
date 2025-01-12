@@ -5,7 +5,7 @@ unit TidyKit.Strings;
 interface
 
 uses
-  Classes, SysUtils, RegExpr, StrUtils, TidyKit.Core;
+  Classes, SysUtils, RegExpr, StrUtils;
 
 type
   { String match result }
@@ -15,181 +15,193 @@ type
     Length: Integer;
   end;
   TStringMatches = array of TStringMatch;
+  TStringArray = array of string;
 
-  { Interface for string operations }
-  IStringKit = interface(IChainable)
-    ['{A1B2C3D4-5678-9ABC-DEF0-123456789ABC}']
-    function GetContent: string;
-    
-    { Basic operations }
-    function From(const AValue: string): IStringKit;
-    function ToString: string;
-    
-    { Transformations - Basic }
-    function Trim: IStringKit;
-    function TrimLeft: IStringKit;
-    function TrimRight: IStringKit;
-    function ToUpper: IStringKit;
-    function ToLower: IStringKit;
-    function Capitalize: IStringKit;
-    
-    { Transformations - Advanced }
-    function Reverse: IStringKit;
-    function Duplicate(const Count: Integer): IStringKit;
-    function PadCenter(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
-    function RemoveWhitespace: IStringKit;
-    function CollapseWhitespace: IStringKit;  // Multiple spaces to single space
-    
-    { Modifications }
-    function Replace(const OldPattern, NewPattern: string): IStringKit;
-    function ReplaceRegEx(const Pattern, Replacement: string): IStringKit;
-    function PadLeft(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
-    function PadRight(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
-    
-    { Extractions }
-    function SubString(const StartPos: Integer; const Length: Integer = -1): IStringKit;
-    function Left(const Length: Integer): IStringKit;
-    function Right(const Length: Integer): IStringKit;
-    function Extract(const Pattern: string): TStringMatches;
-    function ExtractAll(const Pattern: string): TStringArray;
-    function GetWords: TStringArray;  // Split into words
-    
-    { Tests }
-    function IsEmpty: Boolean;
-    function Contains(const SubStr: string; const CaseSensitive: Boolean = True): Boolean;
-    function StartsWith(const Prefix: string; const CaseSensitive: Boolean = True): Boolean;
-    function EndsWith(const Suffix: string; const CaseSensitive: Boolean = True): Boolean;
-    function MatchesPattern(const Pattern: string): Boolean;
-    function TextLength: Integer;
-    function CountSubString(const SubStr: string): Integer;
-    
-    { Properties }
-    property Content: string read GetContent;
-    property Words: TStringArray read GetWords;
-  end;
-
-  { Implementation of string operations }
-  TStringKit = class(TKitBase, IStringKit)
+  { String operations }
+  TStringKit = class
   private
-    FValue: string;
-    function GetContent: string;
+    class function IsWhiteSpace(const C: Char): Boolean; static;
   public
-    constructor Create;
+    // Basic string operations
+    class function Trim(const Text: string): string; static;
+    class function TrimLeft(const Text: string): string; static;
+    class function TrimRight(const Text: string): string; static;
+    class function ToUpper(const Text: string): string; static;
+    class function ToLower(const Text: string): string; static;
     
-    { Interface implementations }
-    function From(const AValue: string): IStringKit;
-    function ToString: string; override;
+    // Advanced string operations
+    class function PadCenter(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
+    class function PadLeft(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
+    class function PadRight(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
     
-    function Trim: IStringKit;
-    function TrimLeft: IStringKit;
-    function TrimRight: IStringKit;
-    function ToUpper: IStringKit;
-    function ToLower: IStringKit;
-    function Capitalize: IStringKit;
+    // Whitespace handling
+    class function CollapseWhitespace(const Text: string): string; static;
+    class function RemoveWhitespace(const Text: string): string; static;
     
-    function Reverse: IStringKit;
-    function Duplicate(const Count: Integer): IStringKit;
-    function PadCenter(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
-    function RemoveWhitespace: IStringKit;
-    function CollapseWhitespace: IStringKit;
+    // Text manipulation
+    class function DuplicateText(const Text: string; Count: Integer): string; static;
+    class function ReverseText(const Text: string): string; static;
+    class function CapitalizeText(const Text: string): string; static;
     
-    function Replace(const OldPattern, NewPattern: string): IStringKit;
-    function ReplaceRegEx(const Pattern, Replacement: string): IStringKit;
-    function PadLeft(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
-    function PadRight(const TotalWidth: Integer; const PadChar: Char = ' '): IStringKit;
+    // Pattern matching and extraction
+    class function ExtractMatches(const Text, Pattern: string): TStringMatches; static;
+    class function ExtractAllMatches(const Text, Pattern: string): TStringArray; static;
+    class function MatchesPattern(const Text, Pattern: string): Boolean; static;
+    class function ReplaceRegEx(const Text, Pattern, Replacement: string): string; static;
+    class function ReplaceText(const Text, OldText, NewText: string): string; static;
     
-    function SubString(const StartPos: Integer; const Length: Integer = -1): IStringKit;
-    function Left(const Length: Integer): IStringKit;
-    function Right(const Length: Integer): IStringKit;
-    function Extract(const Pattern: string): TStringMatches;
-    function ExtractAll(const Pattern: string): TStringArray;
-    function GetWords: TStringArray;
+    // Word operations
+    class function GetWords(const Text: string): TStringArray; static;
+    class function CountSubString(const Text, SubStr: string): Integer; static;
     
-    function IsEmpty: Boolean;
-    function Contains(const SubStr: string; const CaseSensitive: Boolean = True): Boolean;
-    function StartsWith(const Prefix: string; const CaseSensitive: Boolean = True): Boolean;
-    function EndsWith(const Suffix: string; const CaseSensitive: Boolean = True): Boolean;
-    function MatchesPattern(const Pattern: string): Boolean;
-    function TextLength: Integer;
-    function CountSubString(const SubStr: string): Integer;
+    // String tests
+    class function Contains(const Text, SubStr: string): Boolean; static;
+    class function StartsWith(const Text, Prefix: string): Boolean; static;
+    class function EndsWith(const Text, Suffix: string): Boolean; static;
+    class function IsEmpty(const Text: string): Boolean; static;
+    class function GetLength(const Text: string): Integer; static;
+    
+    // Substring operations
+    class function SubString(const Text: string; StartPos, Length: Integer): string; static;
+    class function LeftStr(const Text: string; Length: Integer): string; static;
+    class function RightStr(const Text: string; Length: Integer): string; static;
   end;
 
 implementation
 
-{ Helper functions }
-function IsWhiteSpace(const C: Char): Boolean;
+{ TStringKit }
+
+class function TStringKit.IsWhiteSpace(const C: Char): Boolean;
 begin
   Result := C in [' ', #9, #10, #13];
 end;
 
-{ TStringKit }
-
-constructor TStringKit.Create;
+class function TStringKit.Trim(const Text: string): string;
 begin
-  inherited Create;
-  FValue := '';
+  Result := SysUtils.Trim(Text);
 end;
 
-function TStringKit.GetContent: string;
+class function TStringKit.TrimLeft(const Text: string): string;
 begin
-  Result := FValue;
+  Result := SysUtils.TrimLeft(Text);
 end;
 
-function TStringKit.From(const AValue: string): IStringKit;
+class function TStringKit.TrimRight(const Text: string): string;
 begin
-  FValue := AValue;
-  Result := Self;
+  Result := SysUtils.TrimRight(Text);
 end;
 
-function TStringKit.ToString: string;
+class function TStringKit.ToUpper(const Text: string): string;
 begin
-  Result := FValue;
+  Result := UpperCase(Text);
 end;
 
-function TStringKit.Trim: IStringKit;
+class function TStringKit.ToLower(const Text: string): string;
 begin
-  FValue := SysUtils.Trim(FValue);
-  Result := Self;
+  Result := LowerCase(Text);
 end;
 
-function TStringKit.TrimLeft: IStringKit;
+class function TStringKit.PadCenter(const Text: string; Width: Integer; PadChar: Char): string;
+var
+  CurrentLen, PadLen, LeftPad: Integer;
 begin
-  FValue := SysUtils.TrimLeft(FValue);
-  Result := Self;
+  CurrentLen := Length(Text);
+  if CurrentLen < Width then
+  begin
+    PadLen := Width - CurrentLen;
+    LeftPad := PadLen div 2;
+    Result := StringOfChar(PadChar, LeftPad) + 
+              Text + 
+              StringOfChar(PadChar, PadLen - LeftPad);
+  end
+  else
+    Result := Text;
 end;
 
-function TStringKit.TrimRight: IStringKit;
+class function TStringKit.PadLeft(const Text: string; Width: Integer; PadChar: Char): string;
 begin
-  FValue := SysUtils.TrimRight(FValue);
-  Result := Self;
+  if Length(Text) < Width then
+    Result := StringOfChar(PadChar, Width - Length(Text)) + Text
+  else
+    Result := Text;
 end;
 
-function TStringKit.ToUpper: IStringKit;
+class function TStringKit.PadRight(const Text: string; Width: Integer; PadChar: Char): string;
 begin
-  FValue := UpperCase(FValue);
-  Result := Self;
+  if Length(Text) < Width then
+    Result := Text + StringOfChar(PadChar, Width - Length(Text))
+  else
+    Result := Text;
 end;
 
-function TStringKit.ToLower: IStringKit;
+class function TStringKit.CollapseWhitespace(const Text: string): string;
+var
+  I: Integer;
+  LastWasSpace: Boolean;
 begin
-  FValue := LowerCase(FValue);
-  Result := Self;
+  Result := '';
+  LastWasSpace := False;
+  for I := 1 to Length(Text) do
+  begin
+    if IsWhiteSpace(Text[I]) then
+    begin
+      if not LastWasSpace then
+      begin
+        Result := Result + ' ';
+        LastWasSpace := True;
+      end;
+    end
+    else
+    begin
+      Result := Result + Text[I];
+      LastWasSpace := False;
+    end;
+  end;
 end;
 
-function TStringKit.Capitalize: IStringKit;
+class function TStringKit.RemoveWhitespace(const Text: string): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Length(Text) do
+    if not IsWhiteSpace(Text[I]) then
+      Result := Result + Text[I];
+end;
+
+class function TStringKit.DuplicateText(const Text: string; Count: Integer): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Count do
+    Result := Result + Text;
+end;
+
+class function TStringKit.ReverseText(const Text: string): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := Length(Text) downto 1 do
+    Result := Result + Text[I];
+end;
+
+class function TStringKit.CapitalizeText(const Text: string): string;
 var
   Words: TStringList;
   I: Integer;
   S: string;
 begin
-  Result := Self;
-  if TextLength > 0 then
+  Result := Text;
+  if Length(Text) > 0 then
   begin
     Words := TStringList.Create;
     try
-      Words.Delimiter := ',';
+      Words.Delimiter := ' ';
       Words.StrictDelimiter := True;
-      Words.DelimitedText := FValue;
+      Words.DelimitedText := Text;
+      
       for I := 0 to Words.Count - 1 do
         if Words[I] <> '' then
         begin
@@ -199,205 +211,15 @@ begin
           if Length(S) > 0 then
             Words[I] := UpperCase(S[1]) + Copy(S, 2, Length(S));
         end;
-      FValue := StringReplace(Words.DelimitedText, ',', ', ', [rfReplaceAll]);
+      
+      Result := StringReplace(Words.DelimitedText, Words.Delimiter, ' ', [rfReplaceAll]);
     finally
       Words.Free;
     end;
   end;
 end;
 
-function TStringKit.GetWords: TStringArray;
-var
-  List: TStringList;
-  I: Integer;
-  Temp: string;
-begin
-  Result := nil;
-  List := TStringList.Create;
-  try
-    // First, replace commas with spaces and collapse whitespace
-    Temp := StringReplace(FValue, ', ', ' ', [rfReplaceAll]);
-    Temp := StringReplace(Temp, ',', ' ', [rfReplaceAll]);
-    Temp := CollapseWhitespace.From(Temp).Trim.GetContent;
-    
-    List.Delimiter := ' ';
-    List.StrictDelimiter := True;
-    List.DelimitedText := Temp;
-    
-    SetLength(Result, List.Count);
-    for I := 0 to List.Count - 1 do
-      Result[I] := SysUtils.Trim(List[I]);
-  finally
-    List.Free;
-  end;
-end;
-
-function TStringKit.Replace(const OldPattern, NewPattern: string): IStringKit;
-begin
-  FValue := StringReplace(FValue, OldPattern, NewPattern, [rfReplaceAll]);
-  Result := Self;
-end;
-
-function TStringKit.PadLeft(const TotalWidth: Integer; const PadChar: Char): IStringKit;
-begin
-  Result := Self;
-  while TextLength < TotalWidth do
-    FValue := PadChar + FValue;
-end;
-
-function TStringKit.PadRight(const TotalWidth: Integer; const PadChar: Char): IStringKit;
-begin
-  Result := Self;
-  while TextLength < TotalWidth do
-    FValue := FValue + PadChar;
-end;
-
-function TStringKit.SubString(const StartPos: Integer; const Length: Integer): IStringKit;
-begin
-  if Length < 0 then
-    FValue := Copy(FValue, StartPos, System.Length(FValue))
-  else
-    FValue := Copy(FValue, StartPos, Length);
-  Result := Self;
-end;
-
-function TStringKit.Left(const Length: Integer): IStringKit;
-begin
-  FValue := Copy(FValue, 1, Length);
-  Result := Self;
-end;
-
-function TStringKit.Right(const Length: Integer): IStringKit;
-begin
-  FValue := Copy(FValue, System.Length(FValue) - Length + 1, Length);
-  Result := Self;
-end;
-
-function TStringKit.IsEmpty: Boolean;
-begin
-  Result := FValue = '';
-end;
-
-function TStringKit.Contains(const SubStr: string; const CaseSensitive: Boolean): Boolean;
-begin
-  if CaseSensitive then
-    Result := Pos(SubStr, FValue) > 0
-  else
-    Result := Pos(LowerCase(SubStr), LowerCase(FValue)) > 0;
-end;
-
-function TStringKit.StartsWith(const Prefix: string; const CaseSensitive: Boolean): Boolean;
-begin
-  if CaseSensitive then
-    Result := Copy(FValue, 1, System.Length(Prefix)) = Prefix
-  else
-    Result := Copy(LowerCase(FValue), 1, System.Length(Prefix)) = LowerCase(Prefix);
-end;
-
-function TStringKit.EndsWith(const Suffix: string; const CaseSensitive: Boolean): Boolean;
-begin
-  if CaseSensitive then
-    Result := Copy(FValue, System.Length(FValue) - System.Length(Suffix) + 1, System.Length(Suffix)) = Suffix
-  else
-    Result := Copy(LowerCase(FValue), System.Length(FValue) - System.Length(Suffix) + 1, System.Length(Suffix)) = LowerCase(Suffix);
-end;
-
-function TStringKit.Reverse: IStringKit;
-var
-  I: Integer;
-  Temp: string;
-begin
-  Result := Self;
-  Temp := '';
-  for I := System.Length(FValue) downto 1 do
-    Temp := Temp + FValue[I];
-  FValue := Temp;
-end;
-
-function TStringKit.Duplicate(const Count: Integer): IStringKit;
-var
-  I: Integer;
-  Temp: string;
-begin
-  Temp := '';
-  for I := 1 to Count do
-    Temp := Temp + FValue;
-  FValue := Temp;
-  Result := Self;
-end;
-
-function TStringKit.PadCenter(const TotalWidth: Integer; const PadChar: Char): IStringKit;
-var
-  CurrentLen, PadLen, LeftPad: Integer;
-begin
-  Result := Self;
-  CurrentLen := System.Length(FValue);
-  if CurrentLen < TotalWidth then
-  begin
-    PadLen := TotalWidth - CurrentLen;
-    LeftPad := PadLen div 2;
-    FValue := StringOfChar(PadChar, LeftPad) + 
-              FValue + 
-              StringOfChar(PadChar, PadLen - LeftPad);
-  end;
-end;
-
-function TStringKit.RemoveWhitespace: IStringKit;
-var
-  I: Integer;
-  Temp: string;
-begin
-  Result := Self;
-  Temp := '';
-  for I := 1 to System.Length(FValue) do
-    if not IsWhiteSpace(FValue[I]) then
-      Temp := Temp + FValue[I];
-  FValue := Temp;
-end;
-
-function TStringKit.CollapseWhitespace: IStringKit;
-var
-  I: Integer;
-  Temp: string;
-  LastWasSpace: Boolean;
-begin
-  Result := Self;
-  Temp := '';
-  LastWasSpace := False;
-  for I := 1 to System.Length(FValue) do
-  begin
-    if IsWhiteSpace(FValue[I]) then
-    begin
-      if not LastWasSpace then
-      begin
-        Temp := Temp + ' ';
-        LastWasSpace := True;
-      end;
-    end
-    else
-    begin
-      Temp := Temp + FValue[I];
-      LastWasSpace := False;
-    end;
-  end;
-  FValue := Temp;
-end;
-
-function TStringKit.ReplaceRegEx(const Pattern, Replacement: string): IStringKit;
-var
-  RegEx: TRegExpr;
-begin
-  RegEx := TRegExpr.Create;
-  try
-    RegEx.Expression := Pattern;
-    FValue := RegEx.Replace(FValue, Replacement, True);
-  finally
-    RegEx.Free;
-  end;
-  Result := Self;
-end;
-
-function TStringKit.Extract(const Pattern: string): TStringMatches;
+class function TStringKit.ExtractMatches(const Text, Pattern: string): TStringMatches;
 var
   RegEx: TRegExpr;
   MatchCount: Integer;
@@ -407,10 +229,10 @@ begin
   RegEx := TRegExpr.Create;
   try
     RegEx.Expression := Pattern;
-    if RegEx.Exec(FValue) then
+    if RegEx.Exec(Text) then
     begin
       repeat
-        MatchCount := System.Length(Result);
+        MatchCount := Length(Result);
         SetLength(Result, MatchCount + 1);
         Result[MatchCount].Text := RegEx.Match[0];
         Result[MatchCount].Position := RegEx.MatchPos[0];
@@ -422,36 +244,20 @@ begin
   end;
 end;
 
-function TStringKit.ExtractAll(const Pattern: string): TStringArray;
+class function TStringKit.ExtractAllMatches(const Text, Pattern: string): TStringArray;
 var
   Matches: TStringMatches;
   I: Integer;
 begin
   Result := nil;
   SetLength(Result, 0);
-  Matches := Extract(Pattern);
-  SetLength(Result, System.Length(Matches));
+  Matches := ExtractMatches(Text, Pattern);
+  SetLength(Result, Length(Matches));
   for I := 0 to High(Matches) do
     Result[I] := Matches[I].Text;
 end;
 
-function TStringKit.CountSubString(const SubStr: string): Integer;
-var
-  P: Integer;
-begin
-  Result := 0;
-  if SubStr = '' then
-    Exit;
-    
-  P := Pos(SubStr, FValue);
-  while P > 0 do
-  begin
-    Inc(Result);
-    P := Pos(SubStr, FValue, P + 1);
-  end;
-end;
-
-function TStringKit.MatchesPattern(const Pattern: string): Boolean;
+class function TStringKit.MatchesPattern(const Text, Pattern: string): Boolean;
 var
   RegEx: TRegExpr;
 begin
@@ -459,15 +265,111 @@ begin
   RegEx := TRegExpr.Create;
   try
     RegEx.Expression := Pattern;
-    Result := RegEx.Exec(FValue);
+    Result := RegEx.Exec(Text);
   finally
     RegEx.Free;
   end;
 end;
 
-function TStringKit.TextLength: Integer;
+class function TStringKit.ReplaceRegEx(const Text, Pattern, Replacement: string): string;
+var
+  RegEx: TRegExpr;
 begin
-  Result := System.Length(FValue);
+  RegEx := TRegExpr.Create;
+  try
+    RegEx.Expression := Pattern;
+    Result := RegEx.Replace(Text, Replacement, True);
+  finally
+    RegEx.Free;
+  end;
+end;
+
+class function TStringKit.ReplaceText(const Text, OldText, NewText: string): string;
+begin
+  Result := StringReplace(Text, OldText, NewText, [rfReplaceAll]);
+end;
+
+class function TStringKit.GetWords(const Text: string): TStringArray;
+var
+  List: TStringList;
+  I: Integer;
+  Temp: string;
+begin
+  Result := nil;
+  List := TStringList.Create;
+  try
+    // First, replace commas with spaces and collapse whitespace
+    Temp := StringReplace(Text, ', ', ' ', [rfReplaceAll]);
+    Temp := StringReplace(Temp, ',', ' ', [rfReplaceAll]);
+    Temp := CollapseWhitespace(Temp);
+    Temp := Trim(Temp);
+    
+    List.Delimiter := ' ';
+    List.StrictDelimiter := True;
+    List.DelimitedText := Temp;
+    
+    SetLength(Result, List.Count);
+    for I := 0 to List.Count - 1 do
+      Result[I] := Trim(List[I]);
+  finally
+    List.Free;
+  end;
+end;
+
+class function TStringKit.CountSubString(const Text, SubStr: string): Integer;
+var
+  P: Integer;
+begin
+  Result := 0;
+  if SubStr = '' then
+    Exit;
+    
+  P := Pos(SubStr, Text);
+  while P > 0 do
+  begin
+    Inc(Result);
+    P := Pos(SubStr, Text, P + 1);
+  end;
+end;
+
+class function TStringKit.Contains(const Text, SubStr: string): Boolean;
+begin
+  Result := Pos(SubStr, Text) > 0;
+end;
+
+class function TStringKit.StartsWith(const Text, Prefix: string): Boolean;
+begin
+  Result := Copy(Text, 1, Length(Prefix)) = Prefix;
+end;
+
+class function TStringKit.EndsWith(const Text, Suffix: string): Boolean;
+begin
+  Result := Copy(Text, Length(Text) - Length(Suffix) + 1, Length(Suffix)) = Suffix;
+end;
+
+class function TStringKit.IsEmpty(const Text: string): Boolean;
+begin
+  Result := Text = '';
+end;
+
+class function TStringKit.GetLength(const Text: string): Integer;
+begin
+  Result := Length(Text);
+end;
+
+class function TStringKit.SubString(const Text: string; StartPos, Length: Integer): string;
+begin
+  Result := Copy(Text, StartPos, Length);
+end;
+
+class function TStringKit.LeftStr(const Text: string; Length: Integer): string;
+begin
+  Result := Copy(Text, 1, Length);
+end;
+
+class function TStringKit.RightStr(const Text: string; Length: Integer): string;
+begin
+  Result := Copy(Text, System.Length(Text) - Length + 1, Length);
 end;
 
 end. 
