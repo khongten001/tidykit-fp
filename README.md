@@ -4,12 +4,13 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
 
 ## Features
 
-- 🗂️FileSystem Operations: Modern FS operations inspired by Node.js fs module
+- 🗂️ FileSystem Operations: Modern FS operations inspired by Node.js fs module
 - 📝 String Operations: Modern string handling with comprehensive methods
 - 📅 DateTime Operations: Modern date and time manipulation
 - 🎯 FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
 - 💻 Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
-- 🚀 Static Functions: No instance management, just call and use
+- 🚀 Static Functions: No instance management or memory leaks, just call and use
+- 🔒 Memory Safe: Proper resource management with no memory leaks
 
 ## Platform Compatibility
 
@@ -159,8 +160,12 @@ begin
   
   // Search operations
   Files := TFileKit.SearchFiles('.', '*.txt', True);  // True for recursive
-  for FileItem in Files do
-    WriteLn(FileItem.FullPath);
+  try
+    for FileItem in Files do
+      WriteLn(FileItem.FullPath);
+  finally
+    SetLength(Files, 0);  // Clean up search results
+  end;
   
   // File information
   WriteLn('Size: ', TFileKit.GetSize('file.txt'));
@@ -175,44 +180,44 @@ TidyKit provides a comprehensive set of filesystem operations:
 
 ```pascal
 // Basic file operations
-Content := TFileKit.ReadFile(Path);           // Read file content
-TFileKit.WriteFile(Path, Content);           // Write to file
-TFileKit.AppendFile(Path, Content);         // Append to file
-TFileKit.DeleteFile(Path);                 // Delete file
-TFileKit.CopyFile(Source, Dest);          // Copy file
-TFileKit.MoveFile(Source, Dest);         // Move/rename file
+Content := TFileKit.ReadFile(Path);  // Read file content
+TFileKit.WriteFile(Path, Content);   // Write to file
+TFileKit.AppendFile(Path, Content);  // Append to file
+TFileKit.DeleteFile(Path);           // Delete file
+TFileKit.CopyFile(Source, Dest);     // Copy file
+TFileKit.MoveFile(Source, Dest);     // Move/rename file
 
 // Content operations
-TFileKit.AppendText(Path, Text);          // Append text
-TFileKit.PrependText(Path, Text);        // Prepend text
-TFileKit.ReplaceText(Path, Old, New);   // Replace in content
+TFileKit.AppendText(Path, Text);       // Append text
+TFileKit.PrependText(Path, Text);      // Prepend text
+TFileKit.ReplaceText(Path, Old, New);  // Replace in content
 
 // Directory operations
-TFileKit.CreateDirectory(Path);          // Create directory
-TFileKit.DeleteDirectory(Path);         // Delete directory
-TFileKit.EnsureDirectory(Path);        // Ensure parent exists
+TFileKit.CreateDirectory(Path);  // Create directory
+TFileKit.DeleteDirectory(Path);  // Delete directory
+TFileKit.EnsureDirectory(Path);  // Ensure parent exists
 
 // Path operations
 NewPath := TFileKit.ChangeExtension(Path, Ext); // Change extension
-Name := TFileKit.GetFileName(Path);            // Get file name
-Dir := TFileKit.GetDirectory(Path);           // Get directory path
-Ext := TFileKit.GetExtension(Path);          // Get file extension
+Name := TFileKit.GetFileName(Path);             // Get file name
+Dir := TFileKit.GetDirectory(Path);             // Get directory path
+Ext := TFileKit.GetExtension(Path);             // Get file extension
 
 // Search operations
 Files := TFileKit.SearchFiles(Path, Pattern);    // Search files
-Files := TFileKit.SearchFilesIn(Dir, Pattern);  // Search in directory
-NewestFile := TFileKit.FindNewestFile(Path);   // Find newest file
-OldestFile := TFileKit.FindOldestFile(Path);  // Find oldest file
-LargestFile := TFileKit.FindLargestFile(Path);// Find largest file
-SmallestFile := TFileKit.FindSmallestFile(Path);// Find smallest file
+Files := TFileKit.SearchFilesIn(Dir, Pattern);   // Search in directory
+NewestFile := TFileKit.FindNewestFile(Path);     // Find newest file
+OldestFile := TFileKit.FindOldestFile(Path);     // Find oldest file
+LargestFile := TFileKit.FindLargestFile(Path);   // Find largest file
+SmallestFile := TFileKit.FindSmallestFile(Path); // Find smallest file
 
 // File information
-if TFileKit.Exists(Path) then           // Check if exists
-if TFileKit.IsDirectory(Path) then    // Check if directory
-Size := TFileKit.GetSize(Path);       // Get file size
-Time := TFileKit.GetCreationTime(Path);// Get creation time
-Time := TFileKit.GetLastWriteTime(Path);// Get last write time
-Attrs := TFileKit.GetAttributes(Path); // Get file attributes
+if TFileKit.Exists(Path) then            // Check if exists
+if TFileKit.IsDirectory(Path) then       // Check if directory
+Size := TFileKit.GetSize(Path);          // Get file size
+Time := TFileKit.GetCreationTime(Path);  // Get creation time
+Time := TFileKit.GetLastWriteTime(Path); // Get last write time
+Attrs := TFileKit.GetAttributes(Path);   // Get file attributes
 ```
 
 ## String Operations
@@ -221,30 +226,30 @@ TidyKit provides a rich set of string manipulation functions:
 
 ```pascal
 // Basic transformations
-OutStr := TStringKit.Trim(Text);         // Remove whitespace
-OutStr := TStringKit.TrimLeft(Text);    // Remove left whitespace
-OutStr := TStringKit.TrimRight(Text);  // Remove right whitespace
+OutStr := TStringKit.Trim(Text);      // Remove whitespace
+OutStr := TStringKit.TrimLeft(Text);  // Remove left whitespace
+OutStr := TStringKit.TrimRight(Text); // Remove right whitespace
 OutStr := TStringKit.ToUpper(Text);   // Convert to uppercase
-OutStr := TStringKit.ToLower(Text);  // Convert to lowercase
+OutStr := TStringKit.ToLower(Text);   // Convert to lowercase
 
 // Advanced transformations
-OutStr := TStringKit.ReverseText(Text);      // Reverse string
-OutStr := TStringKit.DuplicateText(Text, 2); // Repeat string
-OutStr := TStringKit.PadLeft(Text, 10, '*'); // Left padding
-OutStr := TStringKit.PadRight(Text, 10, '*');// Right padding
-OutStr := TStringKit.PadCenter(Text, 10, '*');// Center text
+OutStr := TStringKit.ReverseText(Text);        // Reverse string
+OutStr := TStringKit.DuplicateText(Text, 2);   // Repeat string
+OutStr := TStringKit.PadLeft(Text, 10, '*');   // Left padding
+OutStr := TStringKit.PadRight(Text, 10, '*');  // Right padding
+OutStr := TStringKit.PadCenter(Text, 10, '*'); // Center text
 
 // Pattern matching
-if TStringKit.MatchesPattern(Text, Pattern) then    // Check pattern
+if TStringKit.MatchesPattern(Text, Pattern) then   // Check pattern
 if TStringKit.Contains(Text, SubStr) then          // Check contains
-if TStringKit.StartsWith(Text, Prefix) then       // Check starts with
-if TStringKit.EndsWith(Text, Suffix) then        // Check ends with
+if TStringKit.StartsWith(Text, Prefix) then        // Check starts with
+if TStringKit.EndsWith(Text, Suffix) then          // Check ends with
 
 // Extraction and splitting
-Words := TStringKit.GetWords(Text);              // Get words
-OutStr := TStringKit.SubString(Text, Start, Len);// Get substring
-OutStr := TStringKit.LeftStr(Text, Len);        // Get left part
-OutStr := TStringKit.RightStr(Text, Len);      // Get right part
+Words := TStringKit.GetWords(Text);               // Get words
+OutStr := TStringKit.SubString(Text, Start, Len); // Get substring
+OutStr := TStringKit.LeftStr(Text, Len);          // Get left part
+OutStr := TStringKit.RightStr(Text, Len);         // Get right part
 ```
 
 ## DateTime Operations
@@ -253,37 +258,37 @@ TidyKit provides comprehensive date and time manipulation functions:
 
 ```pascal
 // Current date/time
-Now := TDateTimeKit.GetNow;           // Current date and time
-Today := TDateTimeKit.GetToday;      // Current date at midnight
+Now := TDateTimeKit.GetNow;       // Current date and time
+Today := TDateTimeKit.GetToday;   // Current date at midnight
 
 // Date parts
-Year := TDateTimeKit.GetYear(Date);        // Get year
-Month := TDateTimeKit.GetMonth(Date);     // Get month
-Day := TDateTimeKit.GetDay(Date);        // Get day
+Year := TDateTimeKit.GetYear(Date);     // Get year
+Month := TDateTimeKit.GetMonth(Date);   // Get month
+Day := TDateTimeKit.GetDay(Date);       // Get day
 Hour := TDateTimeKit.GetHour(Date);     // Get hour
 Minute := TDateTimeKit.GetMinute(Date); // Get minute
 
 // Date manipulations
-NewDate := TDateTimeKit.AddYears(Date, 1);   // Add years
+NewDate := TDateTimeKit.AddYears(Date, 1);  // Add years
 NewDate := TDateTimeKit.AddMonths(Date, 1); // Add months
-NewDate := TDateTimeKit.AddDays(Date, 1);  // Add days
-NewDate := TDateTimeKit.AddHours(Date, 1); // Add hours
+NewDate := TDateTimeKit.AddDays(Date, 1);   // Add days
+NewDate := TDateTimeKit.AddHours(Date, 1);  // Add hours
 
 // Date truncation
 NewDate := TDateTimeKit.StartOfYear(Date);  // Start of year
-NewDate := TDateTimeKit.StartOfMonth(Date);// Start of month
-NewDate := TDateTimeKit.StartOfDay(Date); // Start of day
-NewDate := TDateTimeKit.EndOfYear(Date); // End of year
+NewDate := TDateTimeKit.StartOfMonth(Date); // Start of month
+NewDate := TDateTimeKit.StartOfDay(Date);   // Start of day
+NewDate := TDateTimeKit.EndOfYear(Date);    // End of year
 
 // Business days
-if TDateTimeKit.IsBusinessDay(Date) then       // Check business day
-NewDate := TDateTimeKit.NextBusinessDay(Date); // Next business day
+if TDateTimeKit.IsBusinessDay(Date) then           // Check business day
+NewDate := TDateTimeKit.NextBusinessDay(Date);     // Next business day
 NewDate := TDateTimeKit.PreviousBusinessDay(Date); // Previous business day
 NewDate := TDateTimeKit.AddBusinessDays(Date, 5);  // Add business days
 
 // Comparisons
-if TDateTimeKit.IsBefore(Date1, Date2) then    // Compare dates
-if TDateTimeKit.IsAfter(Date1, Date2) then    // Compare dates
+if TDateTimeKit.IsBefore(Date1, Date2) then  // Compare dates
+if TDateTimeKit.IsAfter(Date1, Date2) then   // Compare dates
 if TDateTimeKit.IsSameDay(Date1, Date2) then // Check same day
 ```
 
