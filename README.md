@@ -2,6 +2,29 @@
 
 A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified interface for common operations. TidyKit brings modern functionality to Free Pascal while maintaining traditional Pascal programming style.
 
+
+> [!WARNING]
+> This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
+
+## TODO
+
+- [ ] Add comprehensive documentation
+  - [ ] Add detailed API reference
+  - [ ] Add more code examples
+  - [ ] Add best practices guide
+  - [ ] Add troubleshooting guide
+  - [ ] Add contribution guidelines
+  
+- [ ] Expand test coverage
+  - [ ] Add more unit tests
+  - [ ] Add edge case tests
+  
+- [ ] Add more examples
+  - [ ] Add real-world usage examples
+  - [ ] Add cookbook with common patterns
+  - [ ] Add sample applications
+
+
 ## Features
 
 - 🗂️ FileSystem Operations: Modern FS operations inspired by Node.js fs module
@@ -59,10 +82,6 @@ uses
   Classes, SysUtils,
   TidyKit;  // Add this line to use TidyKit
 ```
-
-### Using with MSBuild/Delphi
-
-Add the `src` directory to your project's search path in the project options.
 
 ## Quick Start
 
@@ -174,7 +193,9 @@ begin
 end;
 ```
 
-## FileSystem Operations
+## Cheat Sheet
+
+### FileSystem Operations
 
 TidyKit provides a comprehensive set of filesystem operations:
 
@@ -193,37 +214,147 @@ TFileKit.PrependText(Path, Text);      // Prepend text
 TFileKit.ReplaceText(Path, Old, New);  // Replace in content
 
 // Directory operations
-TFileKit.CreateDirectory(Path);  // Create directory
-TFileKit.DeleteDirectory(Path);  // Delete directory
-TFileKit.EnsureDirectory(Path);  // Ensure parent exists
+TFileKit.CreateDirectory(Path);              // Create directory
+TFileKit.DeleteDirectory(Path, Recursive);   // Delete directory
+TFileKit.EnsureDirectory(Path);              // Ensure parent exists
 
 // Path operations
-NewPath := TFileKit.ChangeExtension(Path, Ext); // Change extension
-Name := TFileKit.GetFileName(Path);             // Get file name
-Dir := TFileKit.GetDirectory(Path);             // Get directory path
-Ext := TFileKit.GetExtension(Path);             // Get file extension
+Name := TFileKit.GetFileName(Path);              // Get file name
+Name := TFileKit.GetFileNameWithoutExt(Path);    // Get file name without extension
+Dir := TFileKit.GetDirectory(Path);              // Get directory path
+Ext := TFileKit.GetExtension(Path);              // Get file extension
+Parent := TFileKit.GetParentDir(Path);           // Get parent directory
+Combined := TFileKit.CombinePaths(Path1, Path2); // Combine paths
+Normalized := TFileKit.NormalizePath(Path);      // Normalize path separators
 
-// Search operations (recursive search is off by default)
-Files := TFileKit.SearchFiles(Path, Pattern);              // Search files non-recursively
+// Search operations
+Files := TFileKit.SearchFiles(Path, Pattern);              // Search files
 Files := TFileKit.SearchFiles(Path, Pattern, True);        // Search files recursively
-Files := TFileKit.SearchFilesIn(Dir, Pattern);            // Search in directory non-recursively
-Files := TFileKit.SearchFilesIn(Dir, Pattern, True);      // Search in directory recursively
-LastModified := TFileKit.FindLastModifiedFile(Path);      // Find most recently modified file
-FirstModified := TFileKit.FindFirstModifiedFile(Path);    // Find first modified file
-LargestFile := TFileKit.FindLargestFile(Path);           // Find largest file
-SmallestFile := TFileKit.FindSmallestFile(Path);         // Find smallest file
+LastModified := TFileKit.FindLastModifiedFile(Path, Pattern);    // Find most recently modified file
+FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern);  // Find first modified file
+LargestFile := TFileKit.FindLargestFile(Path, Pattern);          // Find largest file
+SmallestFile := TFileKit.FindSmallestFile(Path, Pattern);        // Find smallest file
 
 // To enable recursive search for any operation, add True as the last parameter:
-LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);  // Recursive
-FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern, True);  // Recursive
-LargestFile := TFileKit.FindLargestFile(Path, Pattern, True);// Recursive
-SmallestFile := TFileKit.FindSmallestFile(Path, Pattern, True); // Recursive
+LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);   // Recursive
+FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern, True); // Recursive
+LargestFile := TFileKit.FindLargestFile(Path, Pattern, True);         // Recursive
+SmallestFile := TFileKit.FindSmallestFile(Path, Pattern, True);       // Recursive
 
 // File information
-if TFileKit.Exists(Path) then            // Check if exists
-if TFileKit.IsDirectory(Path) then       // Check if directory
-Size := TFileKit.GetSize(Path);          // Get file size
-Time := TFileKit.GetCreationTime(Path);  // Get creation time
-Time := TFileKit.GetLastWriteTime(Path); // Get last write time
-Attrs := TFileKit.GetAttributes(Path);   // Get file attributes
+if TFileKit.Exists(Path) then             // Check if exists
+if TFileKit.DirectoryExists(Path) then    // Check if directory
+Size := TFileKit.GetSize(Path);           // Get file size
+Time := TFileKit.GetCreationTime(Path);   // Get creation time
+Time := TFileKit.GetLastAccessTime(Path); // Get last access time
+Time := TFileKit.GetLastWriteTime(Path);  // Get last write time
+Attrs := TFileKit.GetAttributes(Path);    // Get file attributes
+IsText := TFileKit.IsTextFile(Path);      // Check if text file
+Encoding := TFileKit.GetFileEncoding(Path); // Get file encoding
+
+// Directory information
+UserDir := TFileKit.GetUserDir;          // Get user directory
+CurDir := TFileKit.GetCurrentDir;        // Get current directory
+TempDir := TFileKit.GetTempDir;          // Get temp directory
+
+// File system operations
+TempFile := TFileKit.CreateTempFile(Prefix);      // Create temp file
+TempDir := TFileKit.CreateTempDirectory(Prefix);  // Create temp directory
+```
+
+### String operations
+
+```pascal
+// Basic string operations
+Str := TStringKit.Trim(Text);                     // Trim whitespace
+Str := TStringKit.TrimLeft(Text);                 // Trim left whitespace
+Str := TStringKit.TrimRight(Text);                // Trim right whitespace
+Str := TStringKit.ToLower(Text);                  // Convert to lowercase
+Str := TStringKit.ToUpper(Text);                  // Convert to uppercase
+
+// Advanced string operations
+Str := TStringKit.PadCenter(Text, Width, Char);   // Center pad with character
+Str := TStringKit.PadLeft(Text, Width, Char);     // Left pad with character
+Str := TStringKit.PadRight(Text, Width, Char);    // Right pad with character
+
+// Whitespace handling
+Str := TStringKit.CollapseWhitespace(Text);       // Collapse multiple spaces
+Str := TStringKit.RemoveWhitespace(Text);         // Remove all whitespace
+
+// Text manipulation
+Str := TStringKit.DuplicateText(Text, Count);     // Duplicate text
+Str := TStringKit.ReverseText(Text);              // Reverse text
+Str := TStringKit.CapitalizeText(Text);           // Capitalize words
+Str := TStringKit.ReplaceText(Text, Old, New);    // Replace text
+
+// Pattern matching and extraction
+Matches := TStringKit.ExtractMatches(Text, Pattern);      // Extract regex matches with positions
+Words := TStringKit.ExtractAllMatches(Text, Pattern);     // Extract regex matches as strings
+if TStringKit.MatchesPattern(Text, Pattern) then          // Check regex pattern
+Str := TStringKit.ReplaceRegEx(Text, Pattern, Replace);   // Replace using regex
+
+// Word operations
+Words := TStringKit.GetWords(Text);               // Split into words
+Count := TStringKit.CountSubString(Text, SubStr); // Count occurrences
+
+// String tests
+if TStringKit.Contains(Text, SubStr) then         // Check substring
+if TStringKit.StartsWith(Text, Prefix) then       // Check prefix
+if TStringKit.EndsWith(Text, Suffix) then         // Check suffix
+if TStringKit.IsEmpty(Text) then                  // Check if empty
+Length := TStringKit.GetLength(Text);             // Get string length
+
+// Substring operations
+Str := TStringKit.SubString(Text, Start, Length); // Get substring
+Str := TStringKit.LeftStr(Text, Length);          // Get left part
+Str := TStringKit.RightStr(Text, Length);         // Get right part
+```
+
+### DateTime operations
+
+```pascal
+// Basic operations
+Now := TDateTimeKit.GetNow;                       // Current date/time
+Today := TDateTimeKit.GetToday;                   // Current date
+DateTime := TDateTimeKit.GetDateTime(Value);       // Convert to datetime
+Str := TDateTimeKit.GetAsString(Value, Format);   // Format to string
+DateTime := TDateTimeKit.FromString(Str, Format); // Parse from string
+
+// Date parts - getters
+Year := TDateTimeKit.GetYear(Value);              // Get year
+Month := TDateTimeKit.GetMonth(Value);            // Get month
+Day := TDateTimeKit.GetDay(Value);                // Get day
+DayOfWeek := TDateTimeKit.GetDayOfWeek(Value);   // Get day of week
+DayOfYear := TDateTimeKit.GetDayOfYear(Value);    // Get day of year
+Hour := TDateTimeKit.GetHour(Value);              // Get hour
+Minute := TDateTimeKit.GetMinute(Value);          // Get minute
+Second := TDateTimeKit.GetSecond(Value);          // Get second
+MS := TDateTimeKit.GetMillisecond(Value);         // Get millisecond
+
+// Date parts - setters
+Date := TDateTimeKit.SetYear(Value, Year);        // Set year
+Date := TDateTimeKit.SetMonth(Value, Month);      // Set month
+Date := TDateTimeKit.SetDay(Value, Day);          // Set day
+Time := TDateTimeKit.SetHour(Value, Hour);        // Set hour
+Time := TDateTimeKit.SetMinute(Value, Minute);    // Set minute
+Time := TDateTimeKit.SetSecond(Value, Second);    // Set second
+Time := TDateTimeKit.SetMillisecond(Value, MS);   // Set millisecond
+
+// Date manipulation
+Date := TDateTimeKit.AddYears(Value, Years);      // Add years
+Date := TDateTimeKit.AddMonths(Value, Months);    // Add months
+Date := TDateTimeKit.AddDays(Value, Days);        // Add days
+Time := TDateTimeKit.AddHours(Value, Hours);      // Add hours
+Time := TDateTimeKit.AddMinutes(Value, Minutes);  // Add minutes
+Time := TDateTimeKit.AddSeconds(Value, Seconds);  // Add seconds
+
+// Period start/end
+Date := TDateTimeKit.StartOfYear(Value);          // Start of year
+Date := TDateTimeKit.StartOfMonth(Value);         // Start of month
+Date := TDateTimeKit.StartOfWeek(Value);          // Start of week
+Date := TDateTimeKit.StartOfDay(Value);           // Start of day
+Date := TDateTimeKit.StartOfHour(Value);          // Start of hour
+Date := TDateTimeKit.EndOfYear(Value);            // End of year
+Date := TDateTimeKit.EndOfMonth(Value);           // End of month
+Date := TDateTimeKit.EndOfWeek(Value);            // End of week
 ```
