@@ -64,24 +64,55 @@ Contributions for testing and validation on other platforms are welcome!
 
 ## Installation
 
-1. Clone this repository
-2. Add the `src` directory to your project's unit search path
-3. Add `TidyKit` to your uses clause
+1. Clone this repository:
+   ```bash
+   git clone https://github.com/iwan/TidyKit.git
+   ```
 
-### Using with FPC/Lazarus
+2. Add the `src` directory to your project's unit search path:
+   - In Lazarus: Project -> Project Options -> Compiler Options -> Paths -> Other unit files
+   - In FPC: Use `-Fu` command line option or add to `fpc.cfg`
 
-```pascal
-program MyProject;
+3. Add `TidyKit` to your uses clause:
+   ```pascal
+   program MyProject;
+   
+   {$mode objfpc}{$H+}
+   
+   uses
+     {$IFDEF UNIX}
+     cthreads,
+     {$ENDIF}
+     Classes, SysUtils,
+     TidyKit;  // Add this line to use TidyKit
+   
+   begin
+     // Your code here
+   end.
+   ```
 
-{$mode objfpc}{$H+}
+4. Verify installation by checking if you can use any of the kits:
+   ```pascal
+   var
+     CurrentTime: TDateTime;
+   begin
+     CurrentTime := TDateTimeKit.GetNow;
+     WriteLn('Current time: ', TDateTimeKit.GetAsString(CurrentTime));
+   end.
+   ```
 
-uses
-  {$IFDEF UNIX}
-  cthreads,
-  {$ENDIF}
-  Classes, SysUtils,
-  TidyKit;  // Add this line to use TidyKit
-```
+### Dependencies
+
+TidyKit requires:
+- Free Pascal Compiler (FPC) 3.2.2 or later
+- No external dependencies required
+
+### Compatibility Notes
+
+- Windows: Fully tested and supported
+- Linux/macOS/FreeBSD: Designed to work but needs testing
+- Unicode: Full UTF-8 support
+- Thread Safety: All operations are thread-safe
 
 ## Quick Start
 
@@ -93,6 +124,7 @@ uses
 var
   Str: string;
   Words: TStringArray;
+  Matches: TStringMatches;
 begin
   // Basic transformations
   Str := TStringKit.Trim('  Hello, World!  ');
@@ -118,7 +150,12 @@ begin
   Str := 'The year is 2024';
   if TStringKit.MatchesPattern(Str, '\d+') then
   begin
-    // Extract all numbers from text
+    // Extract matches with position information
+    Matches := TStringKit.ExtractMatches(Str, '\d+');
+    WriteLn('Found number at position ', Matches[0].Position);
+    WriteLn('Number is: ', Matches[0].Text);
+    
+    // Extract just the matched strings
     Words := TStringKit.ExtractAllMatches(Str, '\d+');
     WriteLn(Words[0]);  // Prints: 2024
   end;
@@ -129,15 +166,20 @@ begin
   for Word in Words do
     WriteLn(Word);  // Prints each word on new line
   
-  // Case-insensitive operations
-  if TStringKit.Contains('Hello World', 'HELLO', False) then  // Case-insensitive search
+  // String tests
+  if TStringKit.Contains('Hello World', 'World') then
     WriteLn('Found!');
+  if TStringKit.StartsWith('Hello', 'He') then
+    WriteLn('Starts with He');
+  if TStringKit.EndsWith('World', 'ld') then
+    WriteLn('Ends with ld');
 end;
 
 // DateTime operations example
 var
   CurrentDate: TDateTime;
   NextMonth: TDateTime;
+  FormattedDate: string;
 begin
   // Get current date/time
   CurrentDate := TDateTimeKit.GetNow;
@@ -159,15 +201,24 @@ begin
   // Next business day
   CurrentDate := TDateTimeKit.NextBusinessDay(CurrentDate);
   
-  // Easy date comparisons
-  if TDateTimeKit.IsAfter(CurrentDate, Now) then
+  // Date comparisons
+  if TDateTimeKit.IsAfter(CurrentDate, TDateTimeKit.GetNow) then
     WriteLn('Future date');
+    
+  // Date formatting
+  FormattedDate := TDateTimeKit.GetAsString(CurrentDate, 'yyyy-mm-dd hh:nn:ss');
+  WriteLn(FormattedDate);
+  
+  // Period start/end
+  CurrentDate := TDateTimeKit.StartOfMonth(CurrentDate);  // Beginning of month
+  CurrentDate := TDateTimeKit.EndOfMonth(CurrentDate);    // End of month
 end;
 
 // FileSystem operations example
 var
   Content: string;
   Files: TSearchResults;
+  Attrs: TFileAttributes;
 begin
   // File operations
   Content := TFileKit.ReadFile('input.txt');
@@ -181,15 +232,39 @@ begin
   Files := TFileKit.SearchFiles('.', '*.txt', True);  // True for recursive
   try
     for FileItem in Files do
-      WriteLn(FileItem.FullPath);
+    begin
+      WriteLn('File: ', FileItem.FileName);
+      WriteLn('Full path: ', FileItem.FullPath);
+      WriteLn('Size: ', FileItem.Size);
+      WriteLn('Last modified: ', DateTimeToStr(FileItem.LastModified));
+      WriteLn('Is directory: ', FileItem.IsDirectory);
+    end;
   finally
     SetLength(Files, 0);  // Clean up search results
   end;
   
   // File information
-  WriteLn('Size: ', TFileKit.GetSize('file.txt'));
-  WriteLn('Last Modified: ', TFileKit.GetLastWriteTime('file.txt'));
-  WriteLn('Permissions: ', TFileKit.GetAttributes('file.txt').Permissions);
+  if TFileKit.Exists('file.txt') then
+  begin
+    WriteLn('Size: ', TFileKit.GetSize('file.txt'));
+    WriteLn('Created: ', DateTimeToStr(TFileKit.GetCreationTime('file.txt')));
+    WriteLn('Last accessed: ', DateTimeToStr(TFileKit.GetLastAccessTime('file.txt')));
+    WriteLn('Last modified: ', DateTimeToStr(TFileKit.GetLastWriteTime('file.txt')));
+    
+    Attrs := TFileKit.GetAttributes('file.txt');
+    WriteLn('Read only: ', Attrs.ReadOnly);
+    WriteLn('Hidden: ', Attrs.Hidden);
+    WriteLn('System: ', Attrs.System);
+    WriteLn('Directory: ', Attrs.Directory);
+    WriteLn('Archive: ', Attrs.Archive);
+    WriteLn('Symlink: ', Attrs.SymLink);
+    WriteLn('Owner: ', Attrs.Owner);
+    WriteLn('Group: ', Attrs.Group);
+    WriteLn('Permissions: ', Attrs.Permissions);
+    
+    if TFileKit.IsTextFile('file.txt') then
+      WriteLn('Encoding: ', TFileKit.GetFileEncoding('file.txt'));
+  end;
 end;
 ```
 
@@ -357,4 +432,19 @@ Date := TDateTimeKit.StartOfHour(Value);          // Start of hour
 Date := TDateTimeKit.EndOfYear(Value);            // End of year
 Date := TDateTimeKit.EndOfMonth(Value);           // End of month
 Date := TDateTimeKit.EndOfWeek(Value);            // End of week
+Date := TDateTimeKit.EndOfDay(Value);             // End of day
+Date := TDateTimeKit.EndOfHour(Value);            // End of hour
+
+// Comparisons
+if TDateTimeKit.IsBefore(Value, DateTime) then    // Check if before
+if TDateTimeKit.IsAfter(Value, DateTime) then     // Check if after
+if TDateTimeKit.IsSameDay(Value, DateTime) then   // Check if same day
+if TDateTimeKit.IsSameMonth(Value, DateTime) then // Check if same month
+if TDateTimeKit.IsSameYear(Value, DateTime) then  // Check if same year
+
+// Business day calculations
+if TDateTimeKit.IsBusinessDay(Value) then         // Check if business day
+Date := TDateTimeKit.NextBusinessDay(Value);      // Get next business day
+Date := TDateTimeKit.PreviousBusinessDay(Value);  // Get previous business day
+Date := TDateTimeKit.AddBusinessDays(Value, Days);// Add business days
 ```
