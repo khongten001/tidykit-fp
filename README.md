@@ -203,13 +203,21 @@ Name := TFileKit.GetFileName(Path);             // Get file name
 Dir := TFileKit.GetDirectory(Path);             // Get directory path
 Ext := TFileKit.GetExtension(Path);             // Get file extension
 
-// Search operations
-Files := TFileKit.SearchFiles(Path, Pattern);    // Search files
-Files := TFileKit.SearchFilesIn(Dir, Pattern);   // Search in directory
-NewestFile := TFileKit.FindNewestFile(Path);     // Find newest file
-OldestFile := TFileKit.FindOldestFile(Path);     // Find oldest file
-LargestFile := TFileKit.FindLargestFile(Path);   // Find largest file
-SmallestFile := TFileKit.FindSmallestFile(Path); // Find smallest file
+// Search operations (recursive search is off by default)
+Files := TFileKit.SearchFiles(Path, Pattern);              // Search files non-recursively
+Files := TFileKit.SearchFiles(Path, Pattern, True);        // Search files recursively
+Files := TFileKit.SearchFilesIn(Dir, Pattern);            // Search in directory non-recursively
+Files := TFileKit.SearchFilesIn(Dir, Pattern, True);      // Search in directory recursively
+NewestFile := TFileKit.FindNewestFile(Path);              // Find newest file non-recursively
+OldestFile := TFileKit.FindOldestFile(Path);              // Find oldest file non-recursively
+LargestFile := TFileKit.FindLargestFile(Path);            // Find largest file non-recursively
+SmallestFile := TFileKit.FindSmallestFile(Path);          // Find smallest file non-recursively
+
+// To enable recursive search for any operation, add True as the last parameter:
+NewestFile := TFileKit.FindNewestFile(Path, Pattern, True);  // Recursive
+OldestFile := TFileKit.FindOldestFile(Path, Pattern, True);  // Recursive
+LargestFile := TFileKit.FindLargestFile(Path, Pattern, True);// Recursive
+SmallestFile := TFileKit.FindSmallestFile(Path, Pattern, True); // Recursive
 
 // File information
 if TFileKit.Exists(Path) then            // Check if exists

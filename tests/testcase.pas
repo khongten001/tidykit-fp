@@ -100,6 +100,9 @@ type
     // Search operations
     procedure Test24_SearchFiles;
     procedure Test25_FindNewestFile;
+    procedure Test26_FindOldestFile;
+    procedure Test27_FindLargestFile;
+    procedure Test28_FindSmallestFile;
   end;
 
   { TStringTests }
@@ -813,6 +816,7 @@ procedure TFSTests.Test24_SearchFiles;
 var
   Results: TSearchResults;
   SR: TSearchRec;
+  SubDir: string;
 begin
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
@@ -824,16 +828,32 @@ begin
     FindClose(SR);
   end;
 
-  // Create test files
+  // Create test files in root directory
   TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   TFileKit.WriteFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
 
-  Results := TFileKit.SearchFiles(FTestDir, '*.txt', False);
+  // Create subdirectory with more test files
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteFile(SubDir + PathDelim + 'test4.txt', 'Content 4');
+
+  // Test non-recursive search (default)
+  Results := TFileKit.SearchFiles(FTestDir, '*.txt');
   try
-    AssertEquals('SearchFiles should find correct number of files',
+    AssertEquals('Non-recursive SearchFiles should only find files in root directory',
       2, Length(Results));
   finally
-    SetLength(Results, 0); // Explicitly free the array
+    SetLength(Results, 0);
+  end;
+
+  // Test recursive search
+  Results := TFileKit.SearchFiles(FTestDir, '*.txt', True);
+  try
+    AssertEquals('Recursive SearchFiles should find all files',
+      4, Length(Results));
+  finally
+    SetLength(Results, 0);
   end;
 end;
 
@@ -841,6 +861,7 @@ procedure TFSTests.Test25_FindNewestFile;
 var
   NewestFile: string;
   SR: TSearchRec;
+  SubDir: string;
 begin
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
@@ -854,13 +875,144 @@ begin
 
   // Create test files with delay to ensure different timestamps
   TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
-  Sleep(2000); // Wait 2 seconds to ensure timestamp difference
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
-  Sleep(1000); // Wait another second to ensure filesystem updates
+  Sleep(1000);
   
-  NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt', False);
-  AssertEquals('FindNewestFile should find the newest file',
-    'test2.txt', NewestFile);
+  // Create subdirectory with newer file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  Sleep(1000);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  Sleep(1000);
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  Sleep(1000);
+  
+  // Test non-recursive search (default)
+  NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindNewestFile should find newest file in root directory',
+    'test3.txt', NewestFile);
+    
+  // Test recursive search
+  NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindNewestFile should find newest file in any directory',
+    'test3.txt', NewestFile);
+end;
+
+procedure TFSTests.Test26_FindOldestFile;
+var
+  OldestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with delay to ensure different timestamps
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  FileSetDate(FTestDir + PathDelim + 'test1.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 32, 0)));
+  
+  Sleep(2000);
+  
+  // Create subdirectory with newer files
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  FileSetDate(SubDir + PathDelim + 'test2.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 36, 0)));
+  
+  Sleep(2000);
+  
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  FileSetDate(FTestDir + PathDelim + 'test3.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 38, 0)));
+  
+  Sleep(2000);
+  
+  // Test non-recursive search (default)
+  OldestFile := TFileKit.FindOldestFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindOldestFile should find oldest file in root directory',
+    'test1.txt', OldestFile);
+    
+  // Test recursive search
+  OldestFile := TFileKit.FindOldestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindOldestFile should find oldest file in any directory',
+    'test1.txt', OldestFile);
+end;
+
+procedure TFSTests.Test27_FindLargestFile;
+var
+  LargestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'small.txt', 'Small');
+  
+  // Create subdirectory with larger file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'medium.txt', StringOfChar('M', 100));
+  TFileKit.WriteFile(FTestDir + PathDelim + 'large.txt', StringOfChar('L', 1000));
+  
+  // Test non-recursive search (default)
+  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindLargestFile should find largest file in root directory',
+    'large.txt', LargestFile);
+    
+  // Test recursive search
+  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindLargestFile should find largest file in any directory',
+    'large.txt', LargestFile);
+end;
+
+procedure TFSTests.Test28_FindSmallestFile;
+var
+  SmallestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'medium1.txt', StringOfChar('M', 100));
+  
+  // Create subdirectory with smaller file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'tiny.txt', 'Tiny');
+  TFileKit.WriteFile(FTestDir + PathDelim + 'medium2.txt', StringOfChar('M', 200));
+  
+  // Test non-recursive search (default)
+  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindSmallestFile should find smallest file in root directory',
+    'medium1.txt', SmallestFile);
+    
+  // Test recursive search
+  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindSmallestFile should find smallest file in any directory',
+    'tiny.txt', SmallestFile);
 end;
 
 { TStringTests }
