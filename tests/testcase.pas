@@ -102,7 +102,9 @@ type
     // Search operations
     procedure Test26_SearchFiles;
     procedure Test27_FindLastModifiedFile;
+    procedure Test27b_FindLastModifiedFileRecursive;
     procedure Test28_FindFirstModifiedFile;
+    procedure Test28b_FindFirstModifiedFileRecursive;
     // Directory information
     procedure Test29_GetUserDir;
     procedure Test30_GetCurrentDir;
@@ -941,7 +943,7 @@ var
   SR: TSearchRec;
   SubDir: string;
 begin
-   WriteLn('Test27_FindLastModifiedFile: Start');
+  WriteLn('Test27_FindLastModifiedFile: Start');
 
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
@@ -966,17 +968,51 @@ begin
   TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
   Sleep(1000);
   
-  // Test non-recursive search (default)
-  NewestFile := TFileKit.FindLastModifiedFile(FTestDir, '*.txt');
+  // Test non-recursive search
+  NewestFile := TFileKit.FindLastModifiedFile(FTestDir, '*.txt', False);
   AssertEquals('Non-recursive FindLastModifiedFile should find newest file in root directory',
     'test3.txt', NewestFile);
-    
+
+  WriteLn('Test27_FindLastModifiedFile: End');
+end;
+
+procedure TFSTests.Test27b_FindLastModifiedFileRecursive;
+var
+  NewestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test27b_FindLastModifiedFileRecursive: Start');
+
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with delay to ensure different timestamps
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  Sleep(1000);
+  
+  // Create subdirectory with newer file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  Sleep(1000);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  Sleep(1000);
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  Sleep(1000);
+  
   // Test recursive search
   NewestFile := TFileKit.FindLastModifiedFile(FTestDir, '*.txt', True);
   AssertEquals('Recursive FindLastModifiedFile should find newest file in any directory',
     'test3.txt', NewestFile);
 
-  WriteLn('Test27_FindLastModifiedFile: End');
+  WriteLn('Test27b_FindLastModifiedFileRecursive: End');
 end;
 
 procedure TFSTests.Test28_FindFirstModifiedFile;
@@ -985,7 +1021,7 @@ var
   SR: TSearchRec;
   SubDir: string;
 begin
-   WriteLn('Test28_FindFirstModifiedFile: Start');
+  WriteLn('Test28_FindFirstModifiedFile: Start');
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
@@ -1015,19 +1051,58 @@ begin
   
   Sleep(2000);
   
-  // Test non-recursive search (default)
+  // Test non-recursive search
   WriteLn('Test28_FindFirstModifiedFile: Non-recursive search');
-  OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt');
+  OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt', False);
   AssertEquals('Non-recursive FindFirstModifiedFile should find oldest file in root directory',
     'test1.txt', OldestFile);
-    
+
+  WriteLn('Test28_FindFirstModifiedFile: End');
+end;
+
+procedure TFSTests.Test28b_FindFirstModifiedFileRecursive;
+var
+  OldestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test28b_FindFirstModifiedFileRecursive: Start');
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with delay to ensure different timestamps
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  FileSetDate(FTestDir + PathDelim + 'test1.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 32, 0)));
+  
+  Sleep(2000);
+  
+  // Create subdirectory with newer files
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  FileSetDate(SubDir + PathDelim + 'test2.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 36, 0)));
+  
+  Sleep(2000);
+  
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  FileSetDate(FTestDir + PathDelim + 'test3.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 38, 0)));
+  
+  Sleep(2000);
+  
   // Test recursive search
-  WriteLn('Test28_FindFirstModifiedFile: Recursive search');
+  WriteLn('Test28b_FindFirstModifiedFileRecursive: Recursive search');
   OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt', True);
   AssertEquals('Recursive FindFirstModifiedFile should find oldest file in any directory',
     'test1.txt', OldestFile);
-    
-  WriteLn('Test28_FindFirstModifiedFile: End');
+
+  WriteLn('Test28b_FindFirstModifiedFileRecursive: End');
 end;
 
 procedure TFSTests.Test29_GetUserDir;

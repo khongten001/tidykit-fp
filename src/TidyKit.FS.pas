@@ -711,37 +711,41 @@ begin
   Result := '';
   NewestTime := 0;
   
-  // First try direct search without using SearchFiles for better performance
-  if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-  try
-    repeat
-      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-         ((SearchRec.Attr and faDirectory) = 0) then
-      begin
-        if (Result = '') or (FileDateToDateTime(SearchRec.Time) > NewestTime) then
-        begin
-          Result := SearchRec.Name;
-          NewestTime := FileDateToDateTime(SearchRec.Time);
-        end;
-      end;
-    until FindNext(SearchRec) <> 0;
-  finally
-    FindClose(SearchRec);
-  end;
-  
-  // If recursive is needed, use SearchFiles
-  if Recursive and (ExtractFilePath(APath) <> '') then
+  if not Recursive then
   begin
+    // Non-recursive search
+    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+           ((SearchRec.Attr and faDirectory) = 0) then
+        begin
+          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+          if (Result = '') or (FileDateToDateTime(SearchRec.Time) > NewestTime) then
+          begin
+            Result := SearchRec.Name;
+            NewestTime := FileDateToDateTime(SearchRec.Time);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+  end
+  else
+  begin
+    // Recursive search using SearchFiles
     Files := SearchFiles(APath, APattern, True);
     try
       for I := 0 to High(Files) do
       begin
         if not Files[I].IsDirectory then
         begin
-          if (Result = '') or (FileDateToDateTime(FileAge(Files[I].FullPath)) > NewestTime) then
+          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
+          if (Result = '') or (Files[I].LastModified > NewestTime) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
-            NewestTime := FileDateToDateTime(FileAge(Files[I].FullPath));
+            NewestTime := Files[I].LastModified;
           end;
         end;
       end;
@@ -761,28 +765,30 @@ begin
   Result := '';
   OldestTime := MaxDateTime;
   
-  // Non-recursive search
-  if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-  try
-    repeat
-      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-         ((SearchRec.Attr and faDirectory) = 0) then
-      begin
-        WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
-        if (Result = '') or (FileDateToDateTime(SearchRec.Time) < OldestTime) then
-        begin
-          Result := SearchRec.Name;
-          OldestTime := FileDateToDateTime(SearchRec.Time);
-        end;
-      end;
-    until FindNext(SearchRec) <> 0;
-  finally
-    FindClose(SearchRec);
-  end;
-  
-  // Recursive search
-  if Recursive and (ExtractFilePath(APath) <> '') then
+  if not Recursive then
   begin
+    // Non-recursive search
+    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+           ((SearchRec.Attr and faDirectory) = 0) then
+        begin
+          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+          if (Result = '') or (FileDateToDateTime(SearchRec.Time) < OldestTime) then
+          begin
+            Result := SearchRec.Name;
+            OldestTime := FileDateToDateTime(SearchRec.Time);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+  end
+  else
+  begin
+    // Recursive search using SearchFiles
     Files := SearchFiles(APath, APattern, True);
     try
       for I := 0 to High(Files) do
@@ -814,34 +820,38 @@ begin
   Result := '';
   LargestSize := -1;
   
-  // First try direct search without using SearchFiles for better performance
-  if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-  try
-    repeat
-      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-         ((SearchRec.Attr and faDirectory) = 0) then
-      begin
-        FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-        if (Result = '') or (GetSize(FullPath) > LargestSize) then
-        begin
-          Result := SearchRec.Name;
-          LargestSize := GetSize(FullPath);
-        end;
-      end;
-    until FindNext(SearchRec) <> 0;
-  finally
-    FindClose(SearchRec);
-  end;
-  
-  // If recursive is needed, use SearchFiles
-  if Recursive and (ExtractFilePath(APath) <> '') then
+  if not Recursive then
   begin
+    // Non-recursive search
+    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+           ((SearchRec.Attr and faDirectory) = 0) then
+        begin
+          FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
+          WriteLn('Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+          if (Result = '') or (GetSize(FullPath) > LargestSize) then
+          begin
+            Result := SearchRec.Name;
+            LargestSize := GetSize(FullPath);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+  end
+  else
+  begin
+    // Recursive search using SearchFiles
     Files := SearchFiles(APath, APattern, True);
     try
       for I := 0 to High(Files) do
       begin
         if not Files[I].IsDirectory then
         begin
+          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Size: ', Files[I].Size);
           if (Result = '') or (Files[I].Size > LargestSize) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
@@ -866,34 +876,38 @@ begin
   Result := '';
   SmallestSize := High(Int64);
   
-  // First try direct search without using SearchFiles for better performance
-  if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-  try
-    repeat
-      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-         ((SearchRec.Attr and faDirectory) = 0) then
-      begin
-        FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-        if (Result = '') or (GetSize(FullPath) < SmallestSize) then
-        begin
-          Result := SearchRec.Name;
-          SmallestSize := GetSize(FullPath);
-        end;
-      end;
-    until FindNext(SearchRec) <> 0;
-  finally
-    FindClose(SearchRec);
-  end;
-  
-  // If recursive is needed, use SearchFiles
-  if Recursive and (ExtractFilePath(APath) <> '') then
+  if not Recursive then
   begin
+    // Non-recursive search
+    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+           ((SearchRec.Attr and faDirectory) = 0) then
+        begin
+          FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
+          WriteLn('Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+          if (Result = '') or (GetSize(FullPath) < SmallestSize) then
+          begin
+            Result := SearchRec.Name;
+            SmallestSize := GetSize(FullPath);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+  end
+  else
+  begin
+    // Recursive search using SearchFiles
     Files := SearchFiles(APath, APattern, True);
     try
       for I := 0 to High(Files) do
       begin
         if not Files[I].IsDirectory then
         begin
+          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Size: ', Files[I].Size);
           if (Result = '') or (Files[I].Size < SmallestSize) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
