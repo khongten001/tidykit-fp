@@ -99,8 +99,8 @@ type
     procedure Test23_GetAttributes;
     // Search operations
     procedure Test24_SearchFiles;
-    procedure Test25_FindNewestFile;
-    procedure Test26_FindOldestFile;
+    procedure Test25_FindLastModifiedFile;
+    procedure Test26_FindFirstModifiedFile;
     procedure Test27_FindLargestFile;
     procedure Test28_FindSmallestFile;
   end;
@@ -857,14 +857,13 @@ begin
   end;
 end;
 
-procedure TFSTests.Test25_FindNewestFile;
+procedure TFSTests.Test25_FindLastModifiedFile;
 var
   NewestFile: string;
   SR: TSearchRec;
   SubDir: string;
 begin
-   
-   WriteLn('Test25_FindNewestFile: Start');
+   WriteLn('Test25_FindLastModifiedFile: Start');
 
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
@@ -890,25 +889,25 @@ begin
   Sleep(1000);
   
   // Test non-recursive search (default)
-  NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt');
-  AssertEquals('Non-recursive FindNewestFile should find newest file in root directory',
+  NewestFile := TFileKit.FindLastModifiedFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindLastModifiedFile should find newest file in root directory',
     'test3.txt', NewestFile);
     
   // Test recursive search
-  NewestFile := TFileKit.FindNewestFile(FTestDir, '*.txt', True);
-  AssertEquals('Recursive FindNewestFile should find newest file in any directory',
+  NewestFile := TFileKit.FindLastModifiedFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindLastModifiedFile should find newest file in any directory',
     'test3.txt', NewestFile);
 
-  WriteLn('Test25_FindNewestFile: End');
+  WriteLn('Test25_FindLastModifiedFile: End');
 end;
 
-procedure TFSTests.Test26_FindOldestFile;
+procedure TFSTests.Test26_FindFirstModifiedFile;
 var
   OldestFile: string;
   SR: TSearchRec;
   SubDir: string;
 begin
-   WriteLn('Test26_FindOldestFile: Start');
+   WriteLn('Test26_FindFirstModifiedFile: Start');
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
@@ -939,18 +938,18 @@ begin
   Sleep(2000);
   
   // Test non-recursive search (default)
-  WriteLn('Test26_FindOldestFile: Non-recursive search');
-  OldestFile := TFileKit.FindOldestFile(FTestDir, '*.txt');
-  AssertEquals('Non-recursive FindOldestFile should find oldest file in root directory',
+  WriteLn('Test26_FindFirstModifiedFile: Non-recursive search');
+  OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt');
+  AssertEquals('Non-recursive FindFirstModifiedFile should find oldest file in root directory',
     'test1.txt', OldestFile);
     
   // Test recursive search
-  WriteLn('Test26_FindOldestFile: Recursive search');
-  OldestFile := TFileKit.FindOldestFile(FTestDir, '*.txt', True);
-  AssertEquals('Recursive FindOldestFile should find oldest file in any directory',
+  WriteLn('Test26_FindFirstModifiedFile: Recursive search');
+  OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindFirstModifiedFile should find oldest file in any directory',
     'test1.txt', OldestFile);
     
-  WriteLn('Test26_FindOldestFile: End');
+  WriteLn('Test26_FindFirstModifiedFile: End');
 end;
 
 procedure TFSTests.Test27_FindLargestFile;

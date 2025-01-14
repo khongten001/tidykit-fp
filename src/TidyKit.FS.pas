@@ -82,8 +82,8 @@ type
     { Search operations }
     class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
     class function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
-    class function FindNewestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
-    class function FindOldestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
+    class function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
+    class function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function IsDirectory(const APath: string): Boolean; static;
@@ -685,7 +685,7 @@ begin
   end;
 end;
 
-class function TFileKit.FindNewestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -735,7 +735,7 @@ begin
   end;
 end;
 
-class function TFileKit.FindOldestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;

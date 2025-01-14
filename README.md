@@ -208,14 +208,14 @@ Files := TFileKit.SearchFiles(Path, Pattern);              // Search files non-r
 Files := TFileKit.SearchFiles(Path, Pattern, True);        // Search files recursively
 Files := TFileKit.SearchFilesIn(Dir, Pattern);            // Search in directory non-recursively
 Files := TFileKit.SearchFilesIn(Dir, Pattern, True);      // Search in directory recursively
-NewestFile := TFileKit.FindNewestFile(Path);              // Find newest file non-recursively
-OldestFile := TFileKit.FindOldestFile(Path);              // Find oldest file non-recursively
-LargestFile := TFileKit.FindLargestFile(Path);            // Find largest file non-recursively
-SmallestFile := TFileKit.FindSmallestFile(Path);          // Find smallest file non-recursively
+LastModified := TFileKit.FindLastModifiedFile(Path);      // Find most recently modified file
+FirstModified := TFileKit.FindFirstModifiedFile(Path);    // Find first modified file
+LargestFile := TFileKit.FindLargestFile(Path);           // Find largest file
+SmallestFile := TFileKit.FindSmallestFile(Path);         // Find smallest file
 
 // To enable recursive search for any operation, add True as the last parameter:
-NewestFile := TFileKit.FindNewestFile(Path, Pattern, True);  // Recursive
-OldestFile := TFileKit.FindOldestFile(Path, Pattern, True);  // Recursive
+LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);  // Recursive
+FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern, True);  // Recursive
 LargestFile := TFileKit.FindLargestFile(Path, Pattern, True);// Recursive
 SmallestFile := TFileKit.FindSmallestFile(Path, Pattern, True); // Recursive
 
@@ -227,87 +227,3 @@ Time := TFileKit.GetCreationTime(Path);  // Get creation time
 Time := TFileKit.GetLastWriteTime(Path); // Get last write time
 Attrs := TFileKit.GetAttributes(Path);   // Get file attributes
 ```
-
-## String Operations
-
-TidyKit provides a rich set of string manipulation functions:
-
-```pascal
-// Basic transformations
-OutStr := TStringKit.Trim(Text);      // Remove whitespace
-OutStr := TStringKit.TrimLeft(Text);  // Remove left whitespace
-OutStr := TStringKit.TrimRight(Text); // Remove right whitespace
-OutStr := TStringKit.ToUpper(Text);   // Convert to uppercase
-OutStr := TStringKit.ToLower(Text);   // Convert to lowercase
-
-// Advanced transformations
-OutStr := TStringKit.ReverseText(Text);        // Reverse string
-OutStr := TStringKit.DuplicateText(Text, 2);   // Repeat string
-OutStr := TStringKit.PadLeft(Text, 10, '*');   // Left padding
-OutStr := TStringKit.PadRight(Text, 10, '*');  // Right padding
-OutStr := TStringKit.PadCenter(Text, 10, '*'); // Center text
-
-// Pattern matching
-if TStringKit.MatchesPattern(Text, Pattern) then   // Check pattern
-if TStringKit.Contains(Text, SubStr) then          // Check contains
-if TStringKit.StartsWith(Text, Prefix) then        // Check starts with
-if TStringKit.EndsWith(Text, Suffix) then          // Check ends with
-
-// Extraction and splitting
-Words := TStringKit.GetWords(Text);               // Get words
-OutStr := TStringKit.SubString(Text, Start, Len); // Get substring
-OutStr := TStringKit.LeftStr(Text, Len);          // Get left part
-OutStr := TStringKit.RightStr(Text, Len);         // Get right part
-```
-
-## DateTime Operations
-
-TidyKit provides comprehensive date and time manipulation functions:
-
-```pascal
-// Current date/time
-Now := TDateTimeKit.GetNow;       // Current date and time
-Today := TDateTimeKit.GetToday;   // Current date at midnight
-
-// Date parts
-Year := TDateTimeKit.GetYear(Date);     // Get year
-Month := TDateTimeKit.GetMonth(Date);   // Get month
-Day := TDateTimeKit.GetDay(Date);       // Get day
-Hour := TDateTimeKit.GetHour(Date);     // Get hour
-Minute := TDateTimeKit.GetMinute(Date); // Get minute
-
-// Date manipulations
-NewDate := TDateTimeKit.AddYears(Date, 1);  // Add years
-NewDate := TDateTimeKit.AddMonths(Date, 1); // Add months
-NewDate := TDateTimeKit.AddDays(Date, 1);   // Add days
-NewDate := TDateTimeKit.AddHours(Date, 1);  // Add hours
-
-// Date truncation
-NewDate := TDateTimeKit.StartOfYear(Date);  // Start of year
-NewDate := TDateTimeKit.StartOfMonth(Date); // Start of month
-NewDate := TDateTimeKit.StartOfDay(Date);   // Start of day
-NewDate := TDateTimeKit.EndOfYear(Date);    // End of year
-
-// Business days
-if TDateTimeKit.IsBusinessDay(Date) then           // Check business day
-NewDate := TDateTimeKit.NextBusinessDay(Date);     // Next business day
-NewDate := TDateTimeKit.PreviousBusinessDay(Date); // Previous business day
-NewDate := TDateTimeKit.AddBusinessDays(Date, 5);  // Add business days
-
-// Comparisons
-if TDateTimeKit.IsBefore(Date1, Date2) then  // Compare dates
-if TDateTimeKit.IsAfter(Date1, Date2) then   // Compare dates
-if TDateTimeKit.IsSameDay(Date1, Date2) then // Check same day
-```
-
-## Documentation
-
-[Detailed documentation coming soon]
-
-## Contributing
-
-Contributions are welcome! Please feel free to submit a Pull Request.
-
-## License
-
-MIT License 
