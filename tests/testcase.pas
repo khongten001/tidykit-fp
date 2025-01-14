@@ -105,18 +105,22 @@ type
     procedure Test27b_FindLastModifiedFileRecursive;
     procedure Test28_FindFirstModifiedFile;
     procedure Test28b_FindFirstModifiedFileRecursive;
+    procedure Test29_FindLargestFile;
+    procedure Test29b_FindLargestFileRecursive;
+    procedure Test30_FindSmallestFile;
+    procedure Test30b_FindSmallestFileRecursive;
     // Directory information
-    procedure Test29_GetUserDir;
-    procedure Test30_GetCurrentDir;
-    procedure Test31_GetTempDir;
-    procedure Test32_GetParentDir;
+    procedure Test31_GetUserDir;
+    procedure Test32_GetCurrentDir;
+    procedure Test33_GetTempDir;
+    procedure Test34_GetParentDir;
     // Path manipulation
-    procedure Test33_CombinePaths;
-    procedure Test34_IsAbsolutePath;
-    procedure Test35_NormalizePath;
+    procedure Test35_CombinePaths;
+    procedure Test36_IsAbsolutePath;
+    procedure Test37_NormalizePath;
     // File system operations
-    procedure Test36_CreateTempFile;
-    procedure Test37_CreateTempDirectory;
+    procedure Test38_CreateTempFile;
+    procedure Test39_CreateTempDirectory;
   end;
 
   { TStringTests }
@@ -1105,7 +1109,139 @@ begin
   WriteLn('Test28b_FindFirstModifiedFileRecursive: End');
 end;
 
-procedure TFSTests.Test29_GetUserDir;
+procedure TFSTests.Test29_FindLargestFile;
+var
+  LargestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test29_FindLargestFile: Start');
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
+  
+  // Test non-recursive search
+  WriteLn('Test29_FindLargestFile: Non-recursive search');
+  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt', False);
+  AssertEquals('Non-recursive FindLargestFile should find largest file in root directory',
+    'test3.txt', LargestFile);
+
+  WriteLn('Test29_FindLargestFile: End');
+end;
+
+procedure TFSTests.Test29b_FindLargestFileRecursive;
+var
+  LargestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test29b_FindLargestFileRecursive: Start');
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  
+  // Create subdirectory with larger file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 500));
+  
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
+  
+  // Test recursive search
+  WriteLn('Test29b_FindLargestFileRecursive: Recursive search');
+  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindLargestFile should find largest file in any directory',
+    'test2.txt', LargestFile);
+
+  WriteLn('Test29b_FindLargestFileRecursive: End');
+end;
+
+procedure TFSTests.Test30_FindSmallestFile;
+var
+  SmallestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test30_FindSmallestFile: Start');
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
+  
+  // Test non-recursive search
+  WriteLn('Test30_FindSmallestFile: Non-recursive search');
+  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt', False);
+  AssertEquals('Non-recursive FindSmallestFile should find smallest file in root directory',
+    'test3.txt', SmallestFile);
+
+  WriteLn('Test30_FindSmallestFile: End');
+end;
+
+procedure TFSTests.Test30b_FindSmallestFileRecursive;
+var
+  SmallestFile: string;
+  SR: TSearchRec;
+  SubDir: string;
+begin
+  WriteLn('Test30b_FindSmallestFileRecursive: Start');
+  // Clean up any existing txt files
+  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
+  try
+    repeat
+      DeleteFile(FTestDir + PathDelim + SR.Name);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test files with different sizes
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  
+  // Create subdirectory with smaller file
+  SubDir := FTestDir + PathDelim + 'subdir';
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 25));
+  
+  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
+  
+  // Test recursive search
+  WriteLn('Test30b_FindSmallestFileRecursive: Recursive search');
+  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt', True);
+  AssertEquals('Recursive FindSmallestFile should find smallest file in any directory',
+    'test3.txt', SmallestFile);
+
+  WriteLn('Test30b_FindSmallestFileRecursive: End');
+end;
+
+procedure TFSTests.Test31_GetUserDir;
 var
   UserDir: string;
 begin
@@ -1114,7 +1250,7 @@ begin
   AssertTrue('GetUserDir should return existing directory', DirectoryExists(UserDir));
 end;
 
-procedure TFSTests.Test30_GetCurrentDir;
+procedure TFSTests.Test32_GetCurrentDir;
 var
   CurDir: string;
 begin
@@ -1126,7 +1262,7 @@ begin
     ExcludeTrailingPathDelimiter(CurDir));
 end;
 
-procedure TFSTests.Test31_GetTempDir;
+procedure TFSTests.Test33_GetTempDir;
 var
   TempDir: string;
 begin
@@ -1135,14 +1271,14 @@ begin
   AssertTrue('GetTempDir should return existing directory', DirectoryExists(TempDir));
 end;
 
-procedure TFSTests.Test32_GetParentDir;
+procedure TFSTests.Test34_GetParentDir;
 begin
   AssertEquals('GetParentDir should return correct parent directory',
     TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(FTestDir)),
     TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(TFileKit.GetParentDir(FTestFile))));
 end;
 
-procedure TFSTests.Test33_CombinePaths;
+procedure TFSTests.Test35_CombinePaths;
 begin
   AssertEquals('CombinePaths should combine paths correctly',
     TFileKit.NormalizePath(IncludeTrailingPathDelimiter(FTestDir) + 'test.txt'),
@@ -1157,7 +1293,7 @@ begin
     TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(TFileKit.CombinePaths(FTestDir, ''))));
 end;
 
-procedure TFSTests.Test34_IsAbsolutePath;
+procedure TFSTests.Test36_IsAbsolutePath;
 begin
   {$IFDEF WINDOWS}
   AssertTrue('Windows drive path should be absolute',
@@ -1174,7 +1310,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TFSTests.Test35_NormalizePath;
+procedure TFSTests.Test37_NormalizePath;
 var
   TestPath: string;
 begin
@@ -1193,7 +1329,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TFSTests.Test36_CreateTempFile;
+procedure TFSTests.Test38_CreateTempFile;
 var
   TempFile: string;
 begin
@@ -1208,7 +1344,7 @@ begin
   end;
 end;
 
-procedure TFSTests.Test37_CreateTempDirectory;
+procedure TFSTests.Test39_CreateTempDirectory;
 var
   TempDir: string;
 begin
