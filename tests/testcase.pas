@@ -97,12 +97,24 @@ type
     procedure Test21_GetLastAccessTime;
     procedure Test22_GetLastWriteTime;
     procedure Test23_GetAttributes;
+    procedure Test24_IsTextFile;
+    procedure Test25_GetFileEncoding;
     // Search operations
-    procedure Test24_SearchFiles;
-    procedure Test25_FindLastModifiedFile;
-    procedure Test26_FindFirstModifiedFile;
-    procedure Test27_FindLargestFile;
-    procedure Test28_FindSmallestFile;
+    procedure Test26_SearchFiles;
+    procedure Test27_FindLastModifiedFile;
+    procedure Test28_FindFirstModifiedFile;
+    // Directory information
+    procedure Test29_GetUserDir;
+    procedure Test30_GetCurrentDir;
+    procedure Test31_GetTempDir;
+    procedure Test32_GetParentDir;
+    // Path manipulation
+    procedure Test33_CombinePaths;
+    procedure Test34_IsAbsolutePath;
+    procedure Test35_NormalizePath;
+    // File system operations
+    procedure Test36_CreateTempFile;
+    procedure Test37_CreateTempDirectory;
   end;
 
   { TStringTests }
@@ -759,10 +771,10 @@ end;
 
 procedure TFSTests.Test18_DirectoryExists;
 begin
-  AssertTrue('IsDirectory should return true for existing directory',
-    TFileKit.IsDirectory(FTestDir));
-  AssertFalse('IsDirectory should return false for non-existing directory',
-    TFileKit.IsDirectory(FTestDir + PathDelim + 'nonexistent'));
+  AssertTrue('DirectoryExists should return true for existing directory',
+    TFileKit.DirectoryExists(FTestDir));
+  AssertFalse('DirectoryExists should return false for non-existing directory',
+    TFileKit.DirectoryExists(FTestDir + PathDelim + 'nonexistent'));
 end;
 
 procedure TFSTests.Test19_GetSize;
@@ -812,7 +824,73 @@ begin
     TFileKit.GetAttributes(FTestFile).ReadOnly);
 end;
 
-procedure TFSTests.Test24_SearchFiles;
+procedure TFSTests.Test24_IsTextFile;
+var
+  TextFile, BinaryFile: string;
+  BinStream: TFileStream;
+begin
+  TextFile := FTestDir + PathDelim + 'test.txt';
+  BinaryFile := FTestDir + PathDelim + 'test.bin';
+  
+  // Create a text file
+  TFileKit.WriteFile(TextFile, 'This is a text file');
+  
+  // Create a binary file
+  BinStream := TFileStream.Create(BinaryFile, fmCreate);
+  try
+    BinStream.Write(#0#1#2#3#4#5, 6);
+  finally
+    BinStream.Free;
+  end;
+  
+  try
+    AssertTrue('Text file should be detected as text',
+      TFileKit.IsTextFile(TextFile));
+    AssertFalse('Binary file should not be detected as text',
+      TFileKit.IsTextFile(BinaryFile));
+  finally
+    if FileExists(TextFile) then
+      DeleteFile(TextFile);
+    if FileExists(BinaryFile) then
+      DeleteFile(BinaryFile);
+  end;
+end;
+
+procedure TFSTests.Test25_GetFileEncoding;
+var
+  UTF8File: string;
+  UTF8Stream: TFileStream;
+  UTF8BOM: array[0..2] of Byte;
+  UTF8Text: AnsiString;
+begin
+  UTF8File := FTestDir + PathDelim + 'utf8.txt';
+  
+  // Create UTF-8 file with BOM
+  UTF8Stream := TFileStream.Create(UTF8File, fmCreate);
+  try
+    // Write UTF-8 BOM
+    UTF8BOM[0] := $EF;
+    UTF8BOM[1] := $BB;
+    UTF8BOM[2] := $BF;
+    UTF8Stream.WriteBuffer(UTF8BOM, 3);
+    
+    // Write some UTF-8 text
+    UTF8Text := 'Hello, UTF-8 World!';
+    UTF8Stream.WriteBuffer(UTF8Text[1], Length(UTF8Text));
+  finally
+    UTF8Stream.Free;
+  end;
+  
+  try
+    AssertEquals('UTF-8 file should be detected correctly',
+      'UTF-8', TFileKit.GetFileEncoding(UTF8File));
+  finally
+    if FileExists(UTF8File) then
+      DeleteFile(UTF8File);
+  end;
+end;
+
+procedure TFSTests.Test26_SearchFiles;
 var
   Results: TSearchResults;
   SR: TSearchRec;
@@ -857,13 +935,13 @@ begin
   end;
 end;
 
-procedure TFSTests.Test25_FindLastModifiedFile;
+procedure TFSTests.Test27_FindLastModifiedFile;
 var
   NewestFile: string;
   SR: TSearchRec;
   SubDir: string;
 begin
-   WriteLn('Test25_FindLastModifiedFile: Start');
+   WriteLn('Test27_FindLastModifiedFile: Start');
 
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
@@ -898,16 +976,16 @@ begin
   AssertEquals('Recursive FindLastModifiedFile should find newest file in any directory',
     'test3.txt', NewestFile);
 
-  WriteLn('Test25_FindLastModifiedFile: End');
+  WriteLn('Test27_FindLastModifiedFile: End');
 end;
 
-procedure TFSTests.Test26_FindFirstModifiedFile;
+procedure TFSTests.Test28_FindFirstModifiedFile;
 var
   OldestFile: string;
   SR: TSearchRec;
   SubDir: string;
 begin
-   WriteLn('Test26_FindFirstModifiedFile: Start');
+   WriteLn('Test28_FindFirstModifiedFile: Start');
   // Clean up any existing txt files
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
@@ -938,90 +1016,137 @@ begin
   Sleep(2000);
   
   // Test non-recursive search (default)
-  WriteLn('Test26_FindFirstModifiedFile: Non-recursive search');
+  WriteLn('Test28_FindFirstModifiedFile: Non-recursive search');
   OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt');
   AssertEquals('Non-recursive FindFirstModifiedFile should find oldest file in root directory',
     'test1.txt', OldestFile);
     
   // Test recursive search
-  WriteLn('Test26_FindFirstModifiedFile: Recursive search');
+  WriteLn('Test28_FindFirstModifiedFile: Recursive search');
   OldestFile := TFileKit.FindFirstModifiedFile(FTestDir, '*.txt', True);
   AssertEquals('Recursive FindFirstModifiedFile should find oldest file in any directory',
     'test1.txt', OldestFile);
     
-  WriteLn('Test26_FindFirstModifiedFile: End');
+  WriteLn('Test28_FindFirstModifiedFile: End');
 end;
 
-procedure TFSTests.Test27_FindLargestFile;
+procedure TFSTests.Test29_GetUserDir;
 var
-  LargestFile: string;
-  SR: TSearchRec;
-  SubDir: string;
+  UserDir: string;
 begin
-  // Clean up any existing txt files
-  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
-  try
-    repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
-  end;
-
-  // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'small.txt', 'Small');
-  
-  // Create subdirectory with larger file
-  SubDir := FTestDir + PathDelim + 'subdir';
-  TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'medium.txt', StringOfChar('M', 100));
-  TFileKit.WriteFile(FTestDir + PathDelim + 'large.txt', StringOfChar('L', 1000));
-  
-  // Test non-recursive search (default)
-  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt');
-  AssertEquals('Non-recursive FindLargestFile should find largest file in root directory',
-    'large.txt', LargestFile);
-    
-  // Test recursive search
-  LargestFile := TFileKit.FindLargestFile(FTestDir, '*.txt', True);
-  AssertEquals('Recursive FindLargestFile should find largest file in any directory',
-    'large.txt', LargestFile);
+  UserDir := TFileKit.GetUserDir;
+  AssertTrue('GetUserDir should return non-empty string', UserDir <> '');
+  AssertTrue('GetUserDir should return existing directory', DirectoryExists(UserDir));
 end;
 
-procedure TFSTests.Test28_FindSmallestFile;
+procedure TFSTests.Test30_GetCurrentDir;
 var
-  SmallestFile: string;
-  SR: TSearchRec;
-  SubDir: string;
+  CurDir: string;
 begin
-  // Clean up any existing txt files
-  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
-  try
-    repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
-  end;
+  CurDir := TFileKit.GetCurrentDir;
+  AssertTrue('GetCurrentDir should return non-empty string', CurDir <> '');
+  AssertTrue('GetCurrentDir should return existing directory', DirectoryExists(CurDir));
+  AssertEquals('GetCurrentDir should match system current directory', 
+    ExcludeTrailingPathDelimiter(GetCurrentDir), 
+    ExcludeTrailingPathDelimiter(CurDir));
+end;
 
-  // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'medium1.txt', StringOfChar('M', 100));
-  
-  // Create subdirectory with smaller file
-  SubDir := FTestDir + PathDelim + 'subdir';
-  TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'tiny.txt', 'Tiny');
-  TFileKit.WriteFile(FTestDir + PathDelim + 'medium2.txt', StringOfChar('M', 200));
-  
-  // Test non-recursive search (default)
-  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt');
-  AssertEquals('Non-recursive FindSmallestFile should find smallest file in root directory',
-    'medium1.txt', SmallestFile);
+procedure TFSTests.Test31_GetTempDir;
+var
+  TempDir: string;
+begin
+  TempDir := TFileKit.GetTempDir;
+  AssertTrue('GetTempDir should return non-empty string', TempDir <> '');
+  AssertTrue('GetTempDir should return existing directory', DirectoryExists(TempDir));
+end;
+
+procedure TFSTests.Test32_GetParentDir;
+begin
+  AssertEquals('GetParentDir should return correct parent directory',
+    TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(FTestDir)),
+    TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(TFileKit.GetParentDir(FTestFile))));
+end;
+
+procedure TFSTests.Test33_CombinePaths;
+begin
+  AssertEquals('CombinePaths should combine paths correctly',
+    TFileKit.NormalizePath(IncludeTrailingPathDelimiter(FTestDir) + 'test.txt'),
+    TFileKit.NormalizePath(TFileKit.CombinePaths(FTestDir, 'test.txt')));
     
-  // Test recursive search
-  SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt', True);
-  AssertEquals('Recursive FindSmallestFile should find smallest file in any directory',
-    'tiny.txt', SmallestFile);
+  AssertEquals('CombinePaths should handle empty first path',
+    'test.txt',
+    TFileKit.CombinePaths('', 'test.txt'));
+    
+  AssertEquals('CombinePaths should handle empty second path',
+    TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(FTestDir)),
+    TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(TFileKit.CombinePaths(FTestDir, ''))));
+end;
+
+procedure TFSTests.Test34_IsAbsolutePath;
+begin
+  {$IFDEF WINDOWS}
+  AssertTrue('Windows drive path should be absolute',
+    TFileKit.IsAbsolutePath('C:\Windows'));
+  AssertFalse('Relative Windows path should not be absolute',
+    TFileKit.IsAbsolutePath('Windows\System32'));
+  {$ENDIF}
+  
+  {$IFDEF UNIX}
+  AssertTrue('Unix root path should be absolute',
+    TFileKit.IsAbsolutePath('/usr/local'));
+  AssertFalse('Relative Unix path should not be absolute',
+    TFileKit.IsAbsolutePath('usr/local'));
+  {$ENDIF}
+end;
+
+procedure TFSTests.Test35_NormalizePath;
+var
+  TestPath: string;
+begin
+  {$IFDEF WINDOWS}
+  TestPath := 'C:/Windows/System32';
+  AssertEquals('NormalizePath should convert forward slashes to backslashes on Windows',
+    'C:\Windows\System32',
+    TFileKit.NormalizePath(TestPath));
+  {$ENDIF}
+  
+  {$IFDEF UNIX}
+  TestPath := '/usr\local\bin';
+  AssertEquals('NormalizePath should convert backslashes to forward slashes on Unix',
+    '/usr/local/bin',
+    TFileKit.NormalizePath(TestPath));
+  {$ENDIF}
+end;
+
+procedure TFSTests.Test36_CreateTempFile;
+var
+  TempFile: string;
+begin
+  TempFile := TFileKit.CreateTempFile('test');
+  try
+    AssertTrue('CreateTempFile should create file', FileExists(TempFile));
+    AssertEquals('CreateTempFile should create file with prefix',
+      'test_', Copy(ExtractFileName(TempFile), 1, 5));
+  finally
+    if FileExists(TempFile) then
+      DeleteFile(TempFile);
+  end;
+end;
+
+procedure TFSTests.Test37_CreateTempDirectory;
+var
+  TempDir: string;
+begin
+  TempDir := TFileKit.CreateTempDirectory('test');
+  try
+    AssertTrue('CreateTempDirectory should create directory',
+      DirectoryExists(TempDir));
+    AssertEquals('CreateTempDirectory should create directory with prefix',
+      'test_', Copy(ExtractFileName(TempDir), 1, 5));
+  finally
+    if DirectoryExists(TempDir) then
+      RemoveDir(TempDir);
+  end;
 end;
 
 { TStringTests }

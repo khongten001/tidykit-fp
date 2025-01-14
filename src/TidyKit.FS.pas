@@ -12,7 +12,7 @@ uses
   {$IFDEF WINDOWS}
   Windows,
   {$ENDIF}
-  Classes, SysUtils, DateUtils;
+  Classes, SysUtils, DateUtils, TidyKit.Core;
 
 type
   { Platform-independent file attributes }
@@ -78,6 +78,8 @@ type
     class function GetLastAccessTime(const APath: string): TDateTime; static;
     class function GetLastWriteTime(const APath: string): TDateTime; static;
     class function GetAttributes(const APath: string): TFileAttributes; static;
+    class function IsTextFile(const APath: string): Boolean; static;
+    class function GetFileEncoding(const APath: string): string; static;
     
     { Search operations }
     class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
@@ -86,7 +88,21 @@ type
     class function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
-    class function IsDirectory(const APath: string): Boolean; static;
+    
+    { Directory information }
+    class function GetUserDir: string; static;
+    class function GetCurrentDir: string; static;
+    class function GetTempDir: string; static;
+    class function GetParentDir(const APath: string): string; static;
+    
+    { Path manipulation }
+    class function CombinePaths(const APath1, APath2: string): string; static;
+    class function IsAbsolutePath(const APath: string): Boolean; static;
+    class function NormalizePath(const APath: string): string; static;
+    
+    { File system operations }
+    class function CreateTempFile(const APrefix: string = ''): string; static;
+    class function CreateTempDirectory(const APrefix: string = ''): string; static;
   end;
 
 implementation
@@ -261,7 +277,7 @@ begin
   NormalPath := NormalizePath(APath);
   Result.FullPath := NormalPath;
   Result.FileName := ExtractFileName(NormalPath);
-  Result.IsDirectory := IsDirectory(NormalPath);
+  Result.IsDirectory := DirectoryExists(NormalPath);
   Result.Attributes := GetFileAttributes(NormalPath);
   NormalPath := '';
   
@@ -412,7 +428,7 @@ var
   SearchRec: TSearchRec;
   FullPath: string;
 begin
-  if IsDirectory(APath) then
+  if DirectoryExists(APath) then
   begin
     if Recursive then
     begin
@@ -460,7 +476,7 @@ end;
 
 class function TFileKit.GetDirectory(const APath: string): string;
 begin
-  if IsDirectory(APath) then
+  if DirectoryExists(APath) then
     Result := ExtractFileName(ExcludeTrailingPathDelimiter(APath))
   else if APath <> '' then
     Result := ExtractFileName(ExcludeTrailingPathDelimiter(ExtractFilePath(ExpandFileName(APath))))
@@ -572,7 +588,7 @@ var
 begin
   SetLength(Result, 0);
   
-  if IsDirectory(APath) then
+  if DirectoryExists(APath) then
     SearchDir := APath
   else if APath <> '' then
     SearchDir := ExtractFilePath(ExpandFileName(APath))
@@ -600,7 +616,7 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
       Exit;
     Visited.Add(NDir);
 
-    if not SysUtils.DirectoryExists(NDir) then
+    if not DirectoryExists(NDir) then
       Exit;
     
     SubDirs := TStringList.Create;
@@ -891,9 +907,176 @@ begin
   end;
 end;
 
-class function TFileKit.IsDirectory(const APath: string): Boolean;
+class function TFileKit.GetUserDir: string;
 begin
-  Result := SysUtils.DirectoryExists(APath);
+  {$IFDEF WINDOWS}
+  Result := GetEnvironmentVariable('USERPROFILE');
+  {$ELSE}
+  Result := GetEnvironmentVariable('HOME');
+  {$ENDIF}
+  if Result = '' then
+    Result := GetCurrentDir;
+end;
+
+class function TFileKit.GetCurrentDir: string;
+begin
+  Result := SysUtils.GetCurrentDir;
+end;
+
+class function TFileKit.GetTempDir: string;
+begin
+  Result := SysUtils.GetTempDir;
+end;
+
+class function TFileKit.GetParentDir(const APath: string): string;
+begin
+  Result := ExtractFileDir(ExcludeTrailingPathDelimiter(ExpandFileName(APath)));
+end;
+
+class function TFileKit.CombinePaths(const APath1, APath2: string): string;
+begin
+  if APath1 = '' then
+    Result := APath2
+  else if APath2 = '' then
+    Result := APath1
+  else
+    Result := IncludeTrailingPathDelimiter(APath1) + ExcludeTrailingPathDelimiter(APath2);
+    
+  // Only normalize if both paths are non-empty
+  if (APath1 <> '') and (APath2 <> '') then
+    Result := NormalizePath(Result);
+end;
+
+class function TFileKit.IsAbsolutePath(const APath: string): Boolean;
+begin
+  {$IFDEF WINDOWS}
+  Result := (Length(APath) >= 2) and
+            (APath[1] in ['A'..'Z', 'a'..'z']) and
+            (APath[2] = ':');
+  {$ELSE}
+  Result := (Length(APath) > 0) and (APath[1] = '/');
+  {$ENDIF}
+end;
+
+class function TFileKit.NormalizePath(const APath: string): string;
+var
+  TempPath: string;
+begin
+  TempPath := APath;
+  {$IFDEF WINDOWS}
+  TempPath := StringReplace(TempPath, '/', '\', [rfReplaceAll]);
+  {$ELSE}
+  TempPath := StringReplace(TempPath, '\', '/', [rfReplaceAll]);
+  {$ENDIF}
+  Result := ExpandFileName(TempPath);
+end;
+
+class function TFileKit.CreateTempFile(const APrefix: string = ''): string;
+var
+  TempPath: string;
+  GUID: TGUID;
+  GuidStr: string;
+begin
+  TempPath := GetTempDir;
+  if CreateGUID(GUID) = 0 then
+  begin
+    GuidStr := GUIDToString(GUID);
+    if APrefix <> '' then
+      Result := CombinePaths(TempPath, APrefix + '_' + GuidStr + '.tmp')
+    else
+      Result := CombinePaths(TempPath, 'tmp_' + GuidStr + '.tmp');
+    WriteFile(Result, ''); // Create empty file
+  end
+  else
+    raise ETidyKitException.Create('Failed to create GUID for temporary file');
+end;
+
+class function TFileKit.CreateTempDirectory(const APrefix: string = ''): string;
+var
+  TempPath: string;
+  GUID: TGUID;
+  GuidStr: string;
+begin
+  TempPath := GetTempDir;
+  if CreateGUID(GUID) = 0 then
+  begin
+    GuidStr := GUIDToString(GUID);
+    if APrefix <> '' then
+      Result := CombinePaths(TempPath, APrefix + '_' + GuidStr)
+    else
+      Result := CombinePaths(TempPath, 'tmp_' + GuidStr);
+    CreateDirectory(Result);
+  end
+  else
+    raise ETidyKitException.Create('Failed to create GUID for temporary directory');
+end;
+
+class function TFileKit.IsTextFile(const APath: string): Boolean;
+const
+  MaxBytesToCheck = 512;
+var
+  F: file;
+  Buffer: array[0..MaxBytesToCheck-1] of Byte;
+  BytesRead: Integer;
+  I: Integer;
+begin
+  Result := False;
+  if not FileExists(APath) then
+    Exit;
+    
+  AssignFile(F, APath);
+  try
+    Reset(F, 1);  // Open in binary mode
+    BlockRead(F, Buffer, MaxBytesToCheck, BytesRead);
+    
+    // Check for binary characters
+    for I := 0 to BytesRead - 1 do
+      if (Buffer[I] < 7) or ((Buffer[I] > 14) and (Buffer[I] < 32) and (Buffer[I] <> 27)) then
+        Exit;
+        
+    Result := True;
+  finally
+    CloseFile(F);
+  end;
+end;
+
+class function TFileKit.GetFileEncoding(const APath: string): string;
+const
+  MaxBytesToCheck = 4;
+var
+  F: file;
+  Buffer: array[0..MaxBytesToCheck-1] of Byte;
+  BytesRead: Integer;
+begin
+  Result := 'ASCII';  // Default
+  
+  if not FileExists(APath) then
+    Exit;
+    
+  AssignFile(F, APath);
+  try
+    Reset(F, 1);  // Open in binary mode
+    BlockRead(F, Buffer, MaxBytesToCheck, BytesRead);
+    
+    if BytesRead >= 2 then
+    begin
+      // Check BOM
+      if (BytesRead >= 3) and (Buffer[0] = $EF) and (Buffer[1] = $BB) and (Buffer[2] = $BF) then
+        Result := 'UTF-8'
+      else if (Buffer[0] = $FE) and (Buffer[1] = $FF) then
+        Result := 'UTF-16BE'
+      else if (Buffer[0] = $FF) and (Buffer[1] = $FE) then
+        Result := 'UTF-16LE'
+      else if (BytesRead >= 4) and (Buffer[0] = 0) and (Buffer[1] = 0) and 
+              (Buffer[2] = $FE) and (Buffer[3] = $FF) then
+        Result := 'UTF-32BE'
+      else if (BytesRead >= 4) and (Buffer[0] = $FF) and (Buffer[1] = $FE) and 
+              (Buffer[2] = 0) and (Buffer[3] = 0) then
+        Result := 'UTF-32LE';
+    end;
+  finally
+    CloseFile(F);
+  end;
 end;
 
 end. 
