@@ -312,86 +312,77 @@ end;
 
 ## Cheat Sheet
 
-### FileSystem Operations
-
-TidyKit provides a comprehensive set of filesystem operations:
+### File System Operations
 
 ```pascal
 // Basic file operations
-Content := TFileKit.ReadFile(Path);  // Read file content
-TFileKit.WriteFile(Path, Content);   // Write to file
-TFileKit.AppendFile(Path, Content);  // Append to file
-TFileKit.DeleteFile(Path);           // Delete file
-TFileKit.CopyFile(Source, Dest);     // Copy file
-TFileKit.MoveFile(Source, Dest);     // Move/rename file
-
-// Content operations
-TFileKit.AppendText(Path, Text);       // Append text
-TFileKit.PrependText(Path, Text);      // Prepend text
-TFileKit.ReplaceText(Path, Old, New);  // Replace in content
+Content := TFileKit.ReadFile('input.txt');                    // Read entire file
+TFileKit.WriteFile('output.txt', 'content');                  // Write to file
+TFileKit.AppendFile('log.txt', 'new line');                  // Append to file
+TFileKit.DeleteFile('temp.txt');                             // Delete file
+TFileKit.CopyFile('source.txt', 'dest.txt');                 // Copy file
+TFileKit.MoveFile('old.txt', 'new.txt');                     // Move/rename file
 
 // Directory operations
-TFileKit.CreateDirectory(Path);              // Create directory
-TFileKit.DeleteDirectory(Path, Recursive);   // Delete directory
-TFileKit.EnsureDirectory(Path);              // Ensure parent exists
+TFileKit.CreateDirectory('new_dir');                         // Create directory
+TFileKit.DeleteDirectory('old_dir', True);                   // Delete directory (True = recursive)
+TFileKit.EnsureDirectory('path/to/file.txt');               // Create all parent directories
+
+// File listing (new features)
+Files := TFileKit.ListFiles('.', '*', False);                // List files in current dir
+Files := TFileKit.ListFiles('.', '*', True);                 // List files recursively
+Files := TFileKit.ListFiles('.', '*.txt');                   // List only .txt files
+Files := TFileKit.ListFiles('.', '*', False, fsName);        // Sort by name (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsNameDesc);    // Sort by name (descending)
+Files := TFileKit.ListFiles('.', '*', False, fsDate);        // Sort by date (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsDateDesc);    // Sort by date (descending)
+Files := TFileKit.ListFiles('.', '*', False, fsSize);        // Sort by size (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsSizeDesc);    // Sort by size (descending)
+
+// Directory listing
+Dirs := TFileKit.ListDirectories('.', '*', False);           // List directories in current dir
+Dirs := TFileKit.ListDirectories('.', '*', True);            // List directories recursively
+Dirs := TFileKit.ListDirectories('.', 'test_*');            // List dirs matching pattern
+Dirs := TFileKit.ListDirectories('.', '*', False, fsName);   // Sort by name (ascending)
+Dirs := TFileKit.ListDirectories('.', '*', False, fsNameDesc); // Sort by name (descending)
+Dirs := TFileKit.ListDirectories('.', '*', False, fsDate);   // Sort by date (ascending)
+Dirs := TFileKit.ListDirectories('.', '*', False, fsDateDesc); // Sort by date (descending)
 
 // Path operations
-Name := TFileKit.GetFileName(Path);              // Get file name
-Name := TFileKit.GetFileNameWithoutExt(Path);    // Get file name without extension
-Dir := TFileKit.GetDirectory(Path);              // Get directory path
-Ext := TFileKit.GetExtension(Path);              // Get file extension
-Parent := TFileKit.GetParentDir(Path);           // Get parent directory
-Combined := TFileKit.CombinePaths(Path1, Path2); // Combine paths
-Normalized := TFileKit.NormalizePath(Path);      // Normalize path separators
-
-// Search operations
-Files := TFileKit.SearchFiles(Path, Pattern);              // Search files
-Files := TFileKit.SearchFiles(Path, Pattern, True);        // Search files recursively
-LastModified := TFileKit.FindLastModifiedFile(Path, Pattern);    // Find most recently modified file
-FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern);  // Find first modified file
-LargestFile := TFileKit.FindLargestFile(Path, Pattern);          // Find largest file
-SmallestFile := TFileKit.FindSmallestFile(Path, Pattern);        // Find smallest file
-
-// Directory and file listing
-Files := TFileKit.ListFiles(Path);                                    // List all files
-Files := TFileKit.ListFiles(Path, '*.txt');                          // List text files only
-Files := TFileKit.ListFiles(Path, '*', True);                        // List all files recursively
-Files := TFileKit.ListFiles(Path, '*.txt', True);                    // List text files recursively
-Files := TFileKit.ListFiles(Path, '*', False, fsName);               // List files sorted by name
-Files := TFileKit.ListFiles(Path, '*', False, fsDateDesc);           // List files newest first
-Files := TFileKit.ListFiles(Path, '*.txt', True, fsSize);            // List text files by size recursively
-
-Dirs := TFileKit.ListDirectories(Path);                              // List all directories
-Dirs := TFileKit.ListDirectories(Path, 'test*');                     // List directories starting with 'test'
-Dirs := TFileKit.ListDirectories(Path, '*', True);                   // List all directories recursively
-Dirs := TFileKit.ListDirectories(Path, '*', False, fsName);          // List directories sorted by name
-Dirs := TFileKit.ListDirectories(Path, '*', True, fsDateDesc);       // List directories newest first
-
-// To enable recursive search for any operation, add True as the last parameter:
-LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);   // Recursive
-FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern, True); // Recursive
-LargestFile := TFileKit.FindLargestFile(Path, Pattern, True);         // Recursive
-SmallestFile := TFileKit.FindSmallestFile(Path, Pattern, True);       // Recursive
+Path := TFileKit.GetFileName('path/to/file.txt');           // Returns 'file.txt'
+Path := TFileKit.GetFileNameWithoutExt('file.txt');         // Returns 'file'
+Path := TFileKit.GetDirectory('path/to/file.txt');          // Returns 'path/to'
+Path := TFileKit.GetExtension('file.txt');                  // Returns '.txt'
+Path := TFileKit.GetParentDir('path/to/file.txt');         // Returns 'path'
+Path := TFileKit.CombinePaths('path', 'file.txt');         // Combine paths
+Path := TFileKit.NormalizePath('path/./to/../file.txt');   // Normalize path
 
 // File information
-if TFileKit.Exists(Path) then             // Check if exists
-if TFileKit.DirectoryExists(Path) then    // Check if directory
-Size := TFileKit.GetSize(Path);           // Get file size
-Time := TFileKit.GetCreationTime(Path);   // Get creation time
-Time := TFileKit.GetLastAccessTime(Path); // Get last access time
-Time := TFileKit.GetLastWriteTime(Path);  // Get last write time
-Attrs := TFileKit.GetAttributes(Path);    // Get file attributes
-IsText := TFileKit.IsTextFile(Path);      // Check if text file
-Encoding := TFileKit.GetFileEncoding(Path); // Get file encoding
+if TFileKit.Exists('file.txt') then ...                     // Check file exists
+if TFileKit.DirectoryExists('dir') then ...                 // Check directory exists
+Size := TFileKit.GetSize('file.txt');                       // Get file size
+Time := TFileKit.GetCreationTime('file.txt');              // Get creation time
+Time := TFileKit.GetLastAccessTime('file.txt');            // Get last access time
+Time := TFileKit.GetLastWriteTime('file.txt');             // Get last write time
+Attrs := TFileKit.GetAttributes('file.txt');               // Get file attributes
+if TFileKit.IsTextFile('file.txt') then ...                // Check if text file
+Encoding := TFileKit.GetFileEncoding('file.txt');          // Get file encoding
 
-// Directory information
-UserDir := TFileKit.GetUserDir;          // Get user directory
-CurDir := TFileKit.GetCurrentDir;        // Get current directory
-TempDir := TFileKit.GetTempDir;          // Get temp directory
+// Search operations
+Results := TFileKit.SearchFiles('.', '*.txt', True);       // Search files recursively
+File := TFileKit.FindLastModifiedFile('.', '*.txt');       // Find newest file
+File := TFileKit.FindFirstModifiedFile('.', '*.txt');      // Find oldest file
+File := TFileKit.FindLargestFile('.', '*.txt');           // Find largest file
+File := TFileKit.FindSmallestFile('.', '*.txt');          // Find smallest file
 
-// File system operations
-TempFile := TFileKit.CreateTempFile(Prefix);      // Create temp file
-TempDir := TFileKit.CreateTempDirectory(Prefix);  // Create temp directory
+// System directories
+Dir := TFileKit.GetUserDir;                                // Get user directory
+Dir := TFileKit.GetCurrentDir;                             // Get current directory
+Dir := TFileKit.GetTempDir;                                // Get temp directory
+
+// Temporary files
+TempFile := TFileKit.CreateTempFile('prefix_');           // Create temp file
+TempDir := TFileKit.CreateTempDirectory('prefix_');       // Create temp directory
 ```
 
 ### String operations
