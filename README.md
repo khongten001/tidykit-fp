@@ -28,6 +28,11 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
 ## Features
 
 - 🗂️ FileSystem Operations: Modern FS operations inspired by Node.js fs module
+  - File reading/writing
+  - Directory creation/deletion
+  - File/directory listing (recursive and non-recursive)
+  - File searching and attributes
+  - Path manipulation and normalization
 - 📝 String Operations: Modern string handling with comprehensive methods
 - 📅 DateTime Operations: Modern date and time manipulation
 - 🎯 FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
@@ -248,23 +253,45 @@ begin
   begin
     WriteLn('Size: ', TFileKit.GetSize('file.txt'));
     WriteLn('Created: ', DateTimeToStr(TFileKit.GetCreationTime('file.txt')));
-    WriteLn('Last accessed: ', DateTimeToStr(TFileKit.GetLastAccessTime('file.txt')));
-    WriteLn('Last modified: ', DateTimeToStr(TFileKit.GetLastWriteTime('file.txt')));
-    
-    Attrs := TFileKit.GetAttributes('file.txt');
-    WriteLn('Read only: ', Attrs.ReadOnly);
-    WriteLn('Hidden: ', Attrs.Hidden);
-    WriteLn('System: ', Attrs.System);
-    WriteLn('Directory: ', Attrs.Directory);
-    WriteLn('Archive: ', Attrs.Archive);
-    WriteLn('Symlink: ', Attrs.SymLink);
-    WriteLn('Owner: ', Attrs.Owner);
-    WriteLn('Group: ', Attrs.Group);
-    WriteLn('Permissions: ', Attrs.Permissions);
-    
-    if TFileKit.IsTextFile('file.txt') then
-      WriteLn('Encoding: ', TFileKit.GetFileEncoding('file.txt'));
   end;
+  
+  // Directory listing
+  var
+    Files: TStringArray;
+    Dirs: TStringArray;
+  begin
+    // List files in current directory (non-recursive)
+    Files := TFileKit.ListFiles('.', False);
+    WriteLn('Files in current directory:');
+    for File in Files do
+      WriteLn('  ', File);
+      
+    // List files recursively
+    Files := TFileKit.ListFiles('.', True);
+    WriteLn('Files in current directory and subdirectories:');
+    for File in Files do
+      WriteLn('  ', File);
+      
+    // List directories (non-recursive)
+    Dirs := TFileKit.ListDirectories('.', False);
+    WriteLn('Subdirectories:');
+    for Dir in Dirs do
+      WriteLn('  ', Dir);
+      
+    // List directories recursively
+    Dirs := TFileKit.ListDirectories('.', True);
+    WriteLn('All directories recursively:');
+    for Dir in Dirs do
+      WriteLn('  ', Dir);
+  end;
+  
+  // File attributes
+  Attrs := TFileKit.GetAttributes('file.txt');
+  WriteLn('Read-only: ', Attrs.ReadOnly);
+  WriteLn('Hidden: ', Attrs.Hidden);
+  WriteLn('System: ', Attrs.System);
+  WriteLn('Directory: ', Attrs.Directory);
+  WriteLn('Archive: ', Attrs.Archive);
 end;
 ```
 
@@ -309,6 +336,12 @@ LastModified := TFileKit.FindLastModifiedFile(Path, Pattern);    // Find most re
 FirstModified := TFileKit.FindFirstModifiedFile(Path, Pattern);  // Find first modified file
 LargestFile := TFileKit.FindLargestFile(Path, Pattern);          // Find largest file
 SmallestFile := TFileKit.FindSmallestFile(Path, Pattern);        // Find smallest file
+
+// Directory and file listing
+Files := TFileKit.ListFiles(Path, False);                  // List files in directory
+Files := TFileKit.ListFiles(Path, True);                   // List files recursively
+Dirs := TFileKit.ListDirectories(Path, False);             // List directories
+Dirs := TFileKit.ListDirectories(Path, True);              // List directories recursively
 
 // To enable recursive search for any operation, add True as the last parameter:
 LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);   // Recursive
