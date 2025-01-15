@@ -328,7 +328,7 @@ TFileKit.CreateDirectory('new_dir');                         // Create directory
 TFileKit.DeleteDirectory('old_dir', True);                   // Delete directory (True = recursive)
 TFileKit.EnsureDirectory('path/to/file.txt');               // Create all parent directories
 
-// File listing (new features)
+// File listing
 Files := TFileKit.ListFiles('.', '*', False);                // List files in current dir
 Files := TFileKit.ListFiles('.', '*', True);                 // List files recursively
 Files := TFileKit.ListFiles('.', '*.txt');                   // List only .txt files
