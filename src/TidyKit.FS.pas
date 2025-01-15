@@ -1,6 +1,6 @@
 unit TidyKit.FS;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
@@ -15,7 +15,19 @@ uses
   Classes, SysUtils, DateUtils, TidyKit.Core;
 
 type
-  { Platform-independent file attributes }
+  { TFileAttributes - Platform-independent file attributes record
+    Provides a unified way to access file attributes across different operating systems.
+    
+    Fields:
+    - ReadOnly: Whether the file is read-only
+    - Hidden: Whether the file is hidden from normal directory listings
+    - System: Whether the file is a system file
+    - Directory: Whether the path points to a directory
+    - Archive: Whether the file has been modified since last backup
+    - SymLink: Whether the path points to a symbolic link
+    - Owner: Owner of the file (more relevant on Unix systems)
+    - Group: Group owner of the file (more relevant on Unix systems)
+    - Permissions: Unix-style permissions string (e.g., 'rwxr-xr-x') }
   TFileAttributes = record
     ReadOnly: Boolean;
     Hidden: Boolean;
@@ -28,7 +40,16 @@ type
     Permissions: string;  // Unix-style permissions string
   end;
 
-  { Search result record }
+  { TSearchResult - Record containing detailed information about a found file
+    Used by search operations to return comprehensive file information.
+    
+    Fields:
+    - FileName: Name of the file without path
+    - FullPath: Complete path to the file
+    - Size: File size in bytes
+    - LastModified: Last modification date/time
+    - IsDirectory: Whether this is a directory
+    - Attributes: Detailed file attributes }
   TSearchResult = record
     FileName: string;
     FullPath: string;
@@ -38,70 +59,198 @@ type
     Attributes: TFileAttributes;
   end;
   
+  { Array of search results used by search operations }
   TSearchResults = array of TSearchResult;
 
-  { File operations }
+  { TFileKit - Main class providing file system operations
+    All methods are class methods (static) for functional programming style.
+    Methods are grouped by functionality for easier navigation.
+    All paths are handled in a platform-independent way. }
   TFileKit = class
   private
+    { Creates a TSearchResult record for a given path with comprehensive file information }
     class function CreateSearchResult(const APath: string): TSearchResult; static;
   public
-    { Basic operations }
+    { Basic file operations }
+    
+    { Reads entire file content as string.
+      Returns file content as string.
+      If file doesn't exist, raises EFileNotFoundException. }
     class function ReadFile(const APath: string): string; static;
+    
+    { Writes string content to file, creating path if needed.
+      If write fails, raises EInOutError. }
     class procedure WriteFile(const APath: string; const AContent: string); static;
+    
+    { Appends string content to existing file or creates new if file doesn't exist. }
     class procedure AppendFile(const APath: string; const AContent: string); static;
+    
+    { Deletes file if it exists. }
     class procedure DeleteFile(const APath: string); static;
+    
+    { Copies file from source to destination.
+      Creates destination directory if needed.
+      If source doesn't exist, raises EFileNotFoundException. }
     class procedure CopyFile(const ASourcePath, ADestPath: string); static;
+    
+    { Moves file from source to destination.
+      Tries rename first, falls back to copy+delete if needed.
+      If source doesn't exist, raises EFileNotFoundException. }
     class procedure MoveFile(const ASourcePath, ADestPath: string); static;
     
-    { Content operations }
+    { Content manipulation operations }
+    
+    { Appends text to end of file. }
     class procedure AppendText(const APath, AText: string); static;
+    
+    { Prepends text to beginning of file. }
     class procedure PrependText(const APath, AText: string); static;
+    
+    { Replaces all occurrences of text in file. }
     class procedure ReplaceText(const APath, OldText, NewText: string); static;
     
     { Directory operations }
+    
+    { Creates directory and all parent directories. }
     class procedure CreateDirectory(const APath: string); static;
+    
+    { Deletes directory and optionally its contents.
+      If Recursive is False, fails if directory is not empty. }
     class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True); static;
+    
+    { Ensures directory exists, creating it if needed. }
     class procedure EnsureDirectory(const APath: string); static;
     
     { Path operations }
+    
+    { Changes file extension.
+      Returns path with new extension. }
     class function ChangeExtension(const APath, NewExt: string): string; static;
+    
+    { Gets file name from path.
+      Returns file name with extension. }
     class function GetFileName(const APath: string): string; static;
+    
+    { Gets file name without extension.
+      Returns file name without extension. }
     class function GetFileNameWithoutExt(const APath: string): string; static;
+    
+    { Gets directory name from path.
+      Returns name of the directory. }
     class function GetDirectory(const APath: string): string; static;
+    
+    { Gets file extension including dot.
+      Returns file extension with dot. }
     class function GetExtension(const APath: string): string; static;
     
     { File information }
+    
+    { Checks if file exists.
+      Returns True if file exists. }
     class function Exists(const APath: string): Boolean; static;
+    
+    { Checks if directory exists.
+      Returns True if directory exists. }
     class function DirectoryExists(const APath: string): Boolean; static;
+    
+    { Gets file size in bytes.
+      Returns file size in bytes.
+      If file doesn't exist, raises EFileNotFoundException. }
     class function GetSize(const APath: string): Int64; static;
+    
+    { Gets file creation time.
+      Returns creation time or 0 if error.
+      On Unix, returns last status change time. }
     class function GetCreationTime(const APath: string): TDateTime; static;
+    
+    { Gets file last access time.
+      Returns last access time or 0 if error. }
     class function GetLastAccessTime(const APath: string): TDateTime; static;
+    
+    { Gets file last write time.
+      Returns last write time or 0 if error. }
     class function GetLastWriteTime(const APath: string): TDateTime; static;
+    
+    { Gets detailed file attributes.
+      Returns TFileAttributes record. }
     class function GetAttributes(const APath: string): TFileAttributes; static;
+    
+    { Checks if file appears to be text.
+      Returns True if file appears to be text. }
     class function IsTextFile(const APath: string): Boolean; static;
+    
+    { Detects file encoding from BOM.
+      Returns encoding name ('UTF-8', 'UTF-16LE', etc.) or 'ASCII' if no BOM. }
     class function GetFileEncoding(const APath: string): string; static;
     
     { Search operations }
+    
+    { Searches for files matching pattern.
+      Returns array of matching files. }
     class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
+    
+    { Internal search implementation.
+      Returns array of matching files. }
     class function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
+    
+    { Finds most recently modified file.
+      Returns name of newest file or empty if none found. }
     class function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
+    
+    { Finds oldest file.
+      Returns name of oldest file or empty if none found. }
     class function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
+    
+    { Finds largest file.
+      Returns name of largest file or empty if none found. }
     class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
+    
+    { Finds smallest file.
+      Returns name of smallest file or empty if none found. }
     class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     
     { Directory information }
+    
+    { Gets user's home directory.
+      Returns user's home directory path. }
     class function GetUserDir: string; static;
+    
+    { Gets current working directory.
+      Returns current directory path. }
     class function GetCurrentDir: string; static;
+    
+    { Gets system temporary directory.
+      Returns temporary directory path. }
     class function GetTempDir: string; static;
+    
+    { Gets parent directory of path.
+      Returns parent directory path. }
     class function GetParentDir(const APath: string): string; static;
     
     { Path manipulation }
+    
+    { Combines two paths safely.
+      Returns combined path. }
     class function CombinePaths(const APath1, APath2: string): string; static;
+    
+    { Checks if path is absolute.
+      Returns True if path is absolute. }
     class function IsAbsolutePath(const APath: string): Boolean; static;
+    
+    { Normalizes path separators for current platform.
+      Returns normalized path. }
     class function NormalizePath(const APath: string): string; static;
     
     { File system operations }
+    
+    { Creates temporary file.
+      Returns path to new temporary file.
+      If creation fails, raises ETidyKitException. }
     class function CreateTempFile(const APrefix: string = ''): string; static;
+    
+    { Creates temporary directory.
+      Returns path to new temporary directory.
+      If creation fails, raises ETidyKitException. }
     class function CreateTempDirectory(const APrefix: string = ''): string; static;
   end;
 
@@ -109,6 +258,13 @@ implementation
 
 { Platform-specific helper functions }
 
+{ GetFileAttributes - Internal helper to get file attributes in a platform-independent way.
+  Handles both Windows and Unix attribute systems, converting them to our unified format.
+  
+  Windows: Uses GetFileAttributes API to read standard Windows attributes
+  Unix: Uses FpStat to read file mode and convert to equivalent attributes
+  
+  Returns TFileAttributes record with platform-independent attributes }
 function GetFileAttributes(const APath: string): TFileAttributes;
 {$IFDEF UNIX}
 var
@@ -165,6 +321,12 @@ begin
   {$ENDIF}
 end;
 
+{ NormalizePath - Internal helper to normalize path separators
+  Converts all separators to platform-specific format (\ for Windows, / for Unix)
+  Also expands relative paths to absolute paths
+  
+  @param APath Path to normalize
+  @returns Normalized absolute path }
 function NormalizePath(const APath: string): string;
 var
   TempPath: string;
@@ -179,6 +341,11 @@ begin
   TempPath := '';
 end;
 
+{ FileTimeToDateTime - Internal helper to convert Windows FILETIME to TDateTime
+  Handles the conversion through LocalFileTime and SystemTime structures
+  
+  @param FileTime Windows FILETIME structure
+  @returns TDateTime value or 0 if conversion fails }
 function FileTimeToDateTime(const FileTime: TFileTime): TDateTime;
 var
   LocalFileTime: TFileTime;
@@ -205,6 +372,12 @@ end;
 
 { Helper functions }
 
+{ LoadFromFile - Internal helper to read entire file into string
+  Uses TFileStream and TStringStream for efficient reading
+  Handles sharing for read access
+  
+  @param APath Path to the file to read
+  @returns File contents as string or empty if file doesn't exist }
 function LoadFromFile(const APath: string): string;
 var
   FileStream: TFileStream;
@@ -228,6 +401,12 @@ begin
   end;
 end;
 
+{ SaveToFile - Internal helper to write string to file
+  Creates all necessary directories in the path
+  Uses TFileStream and TStringStream for efficient writing
+  
+  @param APath Path where to write
+  @param AContent Content to write }
 procedure SaveToFile(const APath: string; const AContent: string);
 var
   FileStream: TFileStream;
@@ -247,8 +426,16 @@ begin
   end;
 end;
 
-{ TFileKit }
+{ TFileKit implementation }
 
+{ CreateSearchResult - Creates detailed search result for a file
+  Gathers all available information about the file including:
+  - Basic properties (name, path)
+  - Size and modification time
+  - Detailed attributes
+  
+  @param APath Path to analyze
+  @returns TSearchResult with comprehensive file information }
 class function TFileKit.CreateSearchResult(const APath: string): TSearchResult;
 var
   SearchRec: TSearchRec;
@@ -303,11 +490,21 @@ begin
   NormalPath := '';
 end;
 
+{ ReadFile - Reads entire file content
+  Simple wrapper around LoadFromFile
+  
+  @param APath Path to the file
+  @returns File content as string }
 class function TFileKit.ReadFile(const APath: string): string;
 begin
   Result := LoadFromFile(APath);
 end;
 
+{ WriteFile - Writes content to file
+  Creates all necessary directories
+  
+  @param APath Target file path
+  @param AContent Content to write }
 class procedure TFileKit.WriteFile(const APath: string; const AContent: string);
 begin
   if APath <> '' then
@@ -317,6 +514,12 @@ begin
   end;
 end;
 
+{ AppendFile - Appends content to existing file
+  If file doesn't exist, creates it
+  If file exists, reads current content and appends new content
+  
+  @param APath Target file path
+  @param AContent Content to append }
 class procedure TFileKit.AppendFile(const APath: string; const AContent: string);
 var
   ExistingContent: string;
@@ -333,12 +536,22 @@ begin
   end;
 end;
 
+{ DeleteFile - Safely deletes file if it exists
+  Uses SysUtils.DeleteFile for the actual deletion
+  
+  @param APath Path to the file to delete }
 class procedure TFileKit.DeleteFile(const APath: string);
 begin
   if FileExists(APath) then
     SysUtils.DeleteFile(APath);
 end;
 
+{ CopyFile - Copies file using streams
+  Creates destination directory if needed
+  Uses TFileStream for efficient copying
+  
+  @param ASourcePath Source file path
+  @param ADestPath Destination file path }
 class procedure TFileKit.CopyFile(const ASourcePath, ADestPath: string);
 var
   SourceStream, DestStream: TFileStream;
@@ -360,6 +573,12 @@ begin
   end;
 end;
 
+{ MoveFile - Moves file, trying rename first
+  If rename fails (e.g., across devices), falls back to copy+delete
+  Creates destination directory if needed
+  
+  @param ASourcePath Source file path
+  @param ADestPath Destination file path }
 class procedure TFileKit.MoveFile(const ASourcePath, ADestPath: string);
 var
   DestDir: string;
@@ -379,238 +598,14 @@ begin
   end;
 end;
 
-class procedure TFileKit.AppendText(const APath, AText: string);
-var
-  Content: string;
-begin
-  if APath <> '' then
-  begin
-    if FileExists(APath) then
-    begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, Content + AText);
-    end
-    else
-      SaveToFile(APath, AText);
-  end;
-end;
-
-class procedure TFileKit.PrependText(const APath, AText: string);
-var
-  Content: string;
-begin
-  if APath <> '' then
-  begin
-    if FileExists(APath) then
-    begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, AText + Content);
-    end
-    else
-      SaveToFile(APath, AText);
-  end;
-end;
-
-class procedure TFileKit.ReplaceText(const APath, OldText, NewText: string);
-var
-  Content: string;
-begin
-  if APath <> '' then
-  begin
-    if FileExists(APath) then
-    begin
-      Content := LoadFromFile(APath);
-      Content := StringReplace(Content, OldText, NewText, [rfReplaceAll]);
-      SaveToFile(APath, Content);
-    end;
-  end;
-end;
-
-class procedure TFileKit.CreateDirectory(const APath: string);
-begin
-  if not SysUtils.DirectoryExists(APath) then
-    ForceDirectories(APath);
-end;
-
-class procedure TFileKit.DeleteDirectory(const APath: string; const Recursive: Boolean = True);
-var
-  SearchRec: TSearchRec;
-  FullPath: string;
-begin
-  if DirectoryExists(APath) then
-  begin
-    if Recursive then
-    begin
-      if FindFirst(IncludeTrailingPathDelimiter(APath) + '*', faAnyFile, SearchRec) = 0 then
-      begin
-        try
-          repeat
-            if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
-            begin
-              FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-              if (SearchRec.Attr and faDirectory) <> 0 then
-                DeleteDirectory(FullPath, True)
-              else
-                SysUtils.DeleteFile(FullPath);
-            end;
-          until FindNext(SearchRec) <> 0;
-        finally
-          FindClose(SearchRec);
-        end;
-      end;
-    end;
-    RemoveDir(APath);
-  end;
-end;
-
-class procedure TFileKit.EnsureDirectory(const APath: string);
-begin
-  ForceDirectories(ExtractFilePath(APath));
-end;
-
-class function TFileKit.ChangeExtension(const APath, NewExt: string): string;
-begin
-  Result := ChangeFileExt(APath, NewExt);
-end;
-
-class function TFileKit.GetFileName(const APath: string): string;
-begin
-  Result := ExtractFileName(APath);
-end;
-
-class function TFileKit.GetFileNameWithoutExt(const APath: string): string;
-begin
-  Result := ChangeFileExt(ExtractFileName(APath), '');
-end;
-
-class function TFileKit.GetDirectory(const APath: string): string;
-begin
-  if DirectoryExists(APath) then
-    Result := ExtractFileName(ExcludeTrailingPathDelimiter(APath))
-  else if APath <> '' then
-    Result := ExtractFileName(ExcludeTrailingPathDelimiter(ExtractFilePath(ExpandFileName(APath))))
-  else
-    Result := ExtractFileName(ExcludeTrailingPathDelimiter(GetCurrentDir));
-end;
-
-class function TFileKit.GetExtension(const APath: string): string;
-begin
-  Result := ExtractFileExt(APath);
-end;
-
-class function TFileKit.Exists(const APath: string): Boolean;
-begin
-  Result := FileExists(APath);
-end;
-
-class function TFileKit.DirectoryExists(const APath: string): Boolean;
-begin
-  Result := SysUtils.DirectoryExists(APath);
-end;
-
-class function TFileKit.GetSize(const APath: string): Int64;
-var
-  SearchRec: TSearchRec;
-  Found: Boolean;
-  NormalPath: string;
-begin
-  Result := 0;
-  if APath = '' then
-    Exit;
-    
-  NormalPath := NormalizePath(APath);
-  WriteLn('GetSize: Getting size for file: ', NormalPath);
+{ SearchFiles - Main search function
+  Determines actual search directory from input path
+  Delegates to SearchFilesIn for implementation
   
-  Found := FindFirst(NormalPath, faAnyFile, SearchRec) = 0;
-  try
-    if Found then
-    begin
-      Result := SearchRec.Size;
-      WriteLn('GetSize: Found file with size: ', Result);
-    end
-    else
-    begin
-      WriteLn('GetSize: Could not find file: ', NormalPath);
-    end;
-  finally
-    if Found then
-      FindClose(SearchRec);
-  end;
-  
-  NormalPath := '';
-end;
-
-class function TFileKit.GetCreationTime(const APath: string): TDateTime;
-{$IFDEF WINDOWS}
-var
-  Handle: THandle;
-  FindData: TWin32FindData;
-{$ENDIF}
-begin
-  Result := 0;
-  {$IFDEF WINDOWS}
-  FillChar(FindData, SizeOf(FindData), 0);
-  Handle := FindFirstFile(PChar(APath), FindData);
-  if Handle <> INVALID_HANDLE_VALUE then
-  begin
-    Windows.FindClose(Handle);
-    Result := FileTimeToDateTime(FindData.ftCreationTime);
-  end;
-  {$ENDIF}
-  {$IFDEF UNIX}
-  Result := FileDateToDateTime(FileAge(APath));
-  {$ENDIF}
-end;
-
-class function TFileKit.GetLastAccessTime(const APath: string): TDateTime;
-{$IFDEF WINDOWS}
-var
-  Handle: THandle;
-  FindData: TWin32FindData;
-{$ENDIF}
-begin
-  Result := 0;
-  {$IFDEF WINDOWS}
-  FillChar(FindData, SizeOf(FindData), 0);
-  Handle := FindFirstFile(PChar(APath), FindData);
-  if Handle <> INVALID_HANDLE_VALUE then
-  begin
-    Windows.FindClose(Handle);
-    Result := FileTimeToDateTime(FindData.ftLastAccessTime);
-  end;
-  {$ENDIF}
-  {$IFDEF UNIX}
-  Result := FileDateToDateTime(FileAge(APath));
-  {$ENDIF}
-end;
-
-class function TFileKit.GetLastWriteTime(const APath: string): TDateTime;
-{$IFDEF WINDOWS}
-var
-  Handle: THandle;
-  FindData: TWin32FindData;
-{$ENDIF}
-begin
-  Result := 0;
-  {$IFDEF WINDOWS}
-  FillChar(FindData, SizeOf(FindData), 0);
-  Handle := FindFirstFile(PChar(APath), FindData);
-  if Handle <> INVALID_HANDLE_VALUE then
-  begin
-    Windows.FindClose(Handle);
-    Result := FileTimeToDateTime(FindData.ftLastWriteTime);
-  end;
-  {$ENDIF}
-  {$IFDEF UNIX}
-  Result := FileDateToDateTime(FileAge(APath));
-  {$ENDIF}
-end;
-
-class function TFileKit.GetAttributes(const APath: string): TFileAttributes;
-begin
-  Result := GetFileAttributes(APath);
-end;
-
+  @param APath Base path (can be file or directory)
+  @param APattern Search pattern
+  @param Recursive Whether to search subdirectories
+  @returns Array of found files }
 class function TFileKit.SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
 var
   SearchDir: string;
@@ -651,6 +646,14 @@ begin
   end;
 end;
 
+{ SearchFilesIn - Internal search implementation
+  Uses recursive helper function to handle directory traversal
+  Maintains visited directory list to prevent cycles
+  
+  @param ADirectory Directory to search
+  @param APattern Search pattern
+  @param Recursive Whether to search subdirectories
+  @returns Array of found files }
 class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
   function DoSearch(const RawDir, Pat: string; Rec: Boolean; Visited: TStrings): TSearchResults;
   var
@@ -783,170 +786,14 @@ begin
   end;
 end;
 
-class function TFileKit.FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-var
-  Files: TSearchResults;
-  I: Integer;
-  NewestTime: TDateTime;
-  SearchRec: TSearchRec;
-begin
-  Result := '';
-  NewestTime := 0;
+{ FindSmallestFile - Finds file with smallest size
+  Handles both recursive and non-recursive search
+  For equal sizes, uses alphabetical order as tiebreaker
   
-  if not Recursive then
-  begin
-    // Non-recursive search
-    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-    try
-      repeat
-        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-           ((SearchRec.Attr and faDirectory) = 0) then
-        begin
-          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
-          if (Result = '') or (FileDateToDateTime(SearchRec.Time) > NewestTime) then
-          begin
-            Result := SearchRec.Name;
-            NewestTime := FileDateToDateTime(SearchRec.Time);
-          end;
-        end;
-      until FindNext(SearchRec) <> 0;
-    finally
-      FindClose(SearchRec);
-    end;
-  end
-  else
-  begin
-    // Recursive search using SearchFiles
-    Files := SearchFiles(APath, APattern, True);
-    try
-      for I := 0 to High(Files) do
-      begin
-        if not Files[I].IsDirectory then
-        begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
-          if (Result = '') or (Files[I].LastModified > NewestTime) then
-          begin
-            Result := ExtractFileName(Files[I].FullPath);
-            NewestTime := Files[I].LastModified;
-          end;
-        end;
-      end;
-    finally
-      SetLength(Files, 0);
-    end;
-  end;
-end;
-
-class function TFileKit.FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-var
-  Files: TSearchResults;
-  I: Integer;
-  OldestTime: TDateTime;
-  SearchRec: TSearchRec;
-begin
-  Result := '';
-  OldestTime := MaxDateTime;
-  
-  if not Recursive then
-  begin
-    // Non-recursive search
-    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-    try
-      repeat
-        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-           ((SearchRec.Attr and faDirectory) = 0) then
-        begin
-          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
-          if (Result = '') or (FileDateToDateTime(SearchRec.Time) < OldestTime) then
-          begin
-            Result := SearchRec.Name;
-            OldestTime := FileDateToDateTime(SearchRec.Time);
-          end;
-        end;
-      until FindNext(SearchRec) <> 0;
-    finally
-      FindClose(SearchRec);
-    end;
-  end
-  else
-  begin
-    // Recursive search using SearchFiles
-    Files := SearchFiles(APath, APattern, True);
-    try
-      for I := 0 to High(Files) do
-      begin
-        if not Files[I].IsDirectory then
-        begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
-          if (Result = '') or (Files[I].LastModified < OldestTime) then
-          begin
-            Result := ExtractFileName(Files[I].FullPath);
-            OldestTime := Files[I].LastModified;
-          end;
-        end;
-      end;
-    finally
-      SetLength(Files, 0);
-    end;
-  end;
-end;
-
-class function TFileKit.FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-var
-  Files: TSearchResults;
-  I: Integer;
-  LargestSize: Int64;
-  SearchRec: TSearchRec;
-  FullPath: string;
-begin
-  Result := '';
-  LargestSize := -1;
-  
-  if not Recursive then
-  begin
-    // Non-recursive search
-    if FindFirst(IncludeTrailingPathDelimiter(APath) + APattern, faAnyFile, SearchRec) = 0 then
-    try
-      repeat
-        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
-           ((SearchRec.Attr and faDirectory) = 0) then
-        begin
-          FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-          WriteLn('Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
-          if (Result = '') or (GetSize(FullPath) > LargestSize) then
-          begin
-            Result := SearchRec.Name;
-            LargestSize := GetSize(FullPath);
-          end;
-        end;
-      until FindNext(SearchRec) <> 0;
-    finally
-      FindClose(SearchRec);
-    end;
-  end
-  else
-  begin
-    // Recursive search using SearchFiles
-    Files := SearchFiles(APath, APattern, True);
-    try
-      for I := 0 to High(Files) do
-      begin
-        if not Files[I].IsDirectory then
-        begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Size: ', Files[I].Size);
-          if (Result = '') or (Files[I].Size > LargestSize) then
-          begin
-            Result := ExtractFileName(Files[I].FullPath);
-            LargestSize := Files[I].Size;
-          end;
-        end;
-      end;
-    finally
-      SetLength(Files, 0);
-    end;
-  end;
-end;
-
+  @param APath Base path to search
+  @param APattern Search pattern
+  @param Recursive Whether to search subdirectories
+  @returns Name of smallest file or empty if none found }
 class function TFileKit.FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
@@ -1019,110 +866,15 @@ begin
   WriteLn('FindSmallestFile: Final result = ', Result, ' with size = ', SmallestSize);
 end;
 
-class function TFileKit.GetUserDir: string;
-begin
-  {$IFDEF WINDOWS}
-  Result := GetEnvironmentVariable('USERPROFILE');
-  {$ELSE}
-  Result := GetEnvironmentVariable('HOME');
-  {$ENDIF}
-  if Result = '' then
-    Result := GetCurrentDir;
-end;
-
-class function TFileKit.GetCurrentDir: string;
-begin
-  Result := SysUtils.GetCurrentDir;
-end;
-
-class function TFileKit.GetTempDir: string;
-begin
-  Result := SysUtils.GetTempDir;
-end;
-
-class function TFileKit.GetParentDir(const APath: string): string;
-begin
-  Result := ExtractFileDir(ExcludeTrailingPathDelimiter(ExpandFileName(APath)));
-end;
-
-class function TFileKit.CombinePaths(const APath1, APath2: string): string;
-begin
-  if APath1 = '' then
-    Result := APath2
-  else if APath2 = '' then
-    Result := APath1
-  else
-    Result := IncludeTrailingPathDelimiter(APath1) + ExcludeTrailingPathDelimiter(APath2);
-    
-  // Only normalize if both paths are non-empty
-  if (APath1 <> '') and (APath2 <> '') then
-    Result := NormalizePath(Result);
-end;
-
-class function TFileKit.IsAbsolutePath(const APath: string): Boolean;
-begin
-  {$IFDEF WINDOWS}
-  Result := (Length(APath) >= 2) and
-            (APath[1] in ['A'..'Z', 'a'..'z']) and
-            (APath[2] = ':');
-  {$ELSE}
-  Result := (Length(APath) > 0) and (APath[1] = '/');
-  {$ENDIF}
-end;
-
-class function TFileKit.NormalizePath(const APath: string): string;
-var
-  TempPath: string;
-begin
-  TempPath := APath;
-  {$IFDEF WINDOWS}
-  TempPath := StringReplace(TempPath, '/', '\', [rfReplaceAll]);
-  {$ELSE}
-  TempPath := StringReplace(TempPath, '\', '/', [rfReplaceAll]);
-  {$ENDIF}
-  Result := ExpandFileName(TempPath);
-end;
-
-class function TFileKit.CreateTempFile(const APrefix: string = ''): string;
-var
-  TempPath: string;
-  GUID: TGUID;
-  GuidStr: string;
-begin
-  TempPath := GetTempDir;
-  if CreateGUID(GUID) = 0 then
-  begin
-    GuidStr := GUIDToString(GUID);
-    if APrefix <> '' then
-      Result := CombinePaths(TempPath, APrefix + '_' + GuidStr + '.tmp')
-    else
-      Result := CombinePaths(TempPath, 'tmp_' + GuidStr + '.tmp');
-    WriteFile(Result, ''); // Create empty file
-  end
-  else
-    raise ETidyKitException.Create('Failed to create GUID for temporary file');
-end;
-
-class function TFileKit.CreateTempDirectory(const APrefix: string = ''): string;
-var
-  TempPath: string;
-  GUID: TGUID;
-  GuidStr: string;
-begin
-  TempPath := GetTempDir;
-  if CreateGUID(GUID) = 0 then
-  begin
-    GuidStr := GUIDToString(GUID);
-    if APrefix <> '' then
-      Result := CombinePaths(TempPath, APrefix + '_' + GuidStr)
-    else
-      Result := CombinePaths(TempPath, 'tmp_' + GuidStr);
-    CreateDirectory(Result);
-  end
-  else
-    raise ETidyKitException.Create('Failed to create GUID for temporary directory');
-end;
-
+{ IsTextFile - Checks if file appears to be text
+  Reads first 512 bytes and checks for binary characters
+  A file is considered text if it contains only:
+  - ASCII control chars (0-31) that are valid in text (CR, LF, tab, etc.)
+  - Printable ASCII chars (32-127)
+  - Extended ASCII chars (128-255)
+  
+  @param APath Path to the file
+  @returns True if file appears to be text }
 class function TFileKit.IsTextFile(const APath: string): Boolean;
 const
   MaxBytesToCheck = 512;
@@ -1152,6 +904,16 @@ begin
   end;
 end;
 
+{ GetFileEncoding - Detects file encoding from BOM
+  Reads first 4 bytes to check for Unicode BOMs:
+  - EF BB BF: UTF-8
+  - FE FF: UTF-16BE
+  - FF FE: UTF-16LE
+  - 00 00 FE FF: UTF-32BE
+  - FF FE 00 00: UTF-32LE
+  
+  @param APath Path to the file
+  @returns Encoding name or 'ASCII' if no BOM found }
 class function TFileKit.GetFileEncoding(const APath: string): string;
 const
   MaxBytesToCheck = 4;

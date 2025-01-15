@@ -1,6 +1,6 @@
 unit TidyKit.DateTime;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
@@ -189,45 +189,61 @@ implementation
 
 class function TDateTimeKit.GetNow: TDateTime;
 begin
-  // Returns the current system date and time using SysUtils.Now
+  { Returns the current system date and time using SysUtils.Now
+    This is the most direct way to get the current date and time.
+    The returned value includes both date and time components.
+    Example: 2024-03-15 14:30:45.123 }
   Result := SysUtils.Now;
 end;
 
 class function TDateTimeKit.GetToday: TDateTime;
 begin
-  // Returns just the date part of the current system time
-  // Time portion is set to 00:00:00 by truncating
+  { Returns just the date part of the current system time.
+    Uses Trunc to remove the time portion, effectively setting it to midnight (00:00:00).
+    Example: If current time is 2024-03-15 14:30:45.123,
+    this returns 2024-03-15 00:00:00.000 }
   Result := Trunc(SysUtils.Now);
 end;
 
 class function TDateTimeKit.GetDateTime(const AValue: TDateTime): TDateTime;
 begin
-  // Simple pass-through function for type safety and consistency
+  { Simple pass-through function for type safety and consistency.
+    Useful in generic code where you want to ensure you're working with TDateTime.
+    Also serves as a validation point for TDateTime values. }
   Result := AValue;
 end;
 
 class function TDateTimeKit.GetAsString(const AValue: TDateTime; const AFormat: string): string;
 begin
-  // Convert DateTime to string using either default or custom format
+  { Convert DateTime to string using either default or custom format.
+    If AFormat is empty, uses system default format (based on regional settings).
+    For custom format, use format specifiers like:
+    yyyy-mm-dd hh:nn:ss -> 2024-03-15 14:30:45
+    dd/mm/yy hh:nn -> 15/03/24 14:30 }
   if AFormat = '' then
-    Result := DateTimeToStr(AValue)  // Use system default format
+    Result := DateTimeToStr(AValue)  // Uses system default format
   else
-    Result := FormatDateTime(AFormat, AValue);  // Use specified format
+    Result := FormatDateTime(AFormat, AValue);  // Uses specified custom format
 end;
 
 class function TDateTimeKit.FromString(const AValue: string; const AFormat: string): TDateTime;
 var
   FormatSettings: TFormatSettings;
 begin
-  // Get system default format settings
+  { Parse string to DateTime using system or custom format.
+    FormatSettings ensures consistent parsing regardless of system locale.
+    
+    Examples:
+    - Default format: '2024-03-15 14:30:45'
+    - Custom format: '15/03/24' with AFormat = 'dd/mm/yy'
+    
+    Note: Will raise EConvertError if string doesn't match format }
   FormatSettings := DefaultFormatSettings;
   
-  // Parse string to DateTime using either default or custom format
   if AFormat = '' then
     Result := StrToDateTime(AValue, FormatSettings)
   else
   begin
-    // Use provided format for parsing
     FormatSettings.ShortDateFormat := AFormat;
     Result := StrToDateTime(AValue, FormatSettings);
   end;
@@ -237,7 +253,9 @@ class function TDateTimeKit.GetYear(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  // Extract date components and return just the year
+  { Extract date components and return just the year.
+    DecodeDate splits a TDateTime into year, month, and day.
+    Example: For 2024-03-15, returns 2024 }
   DecodeDate(AValue, Y, M, D);
   Result := Y;
 end;
@@ -246,7 +264,8 @@ class function TDateTimeKit.GetMonth(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  // Extract date components and return just the month
+  { Extract date components and return just the month (1-12).
+    Example: For 2024-03-15, returns 3 (March) }
   DecodeDate(AValue, Y, M, D);
   Result := M;
 end;
@@ -255,20 +274,32 @@ class function TDateTimeKit.GetDay(const AValue: TDateTime): Integer;
 var
   Y, M, D: Word;
 begin
-  // Extract date components and return just the day
+  { Extract date components and return just the day (1-31).
+    Example: For 2024-03-15, returns 15 }
   DecodeDate(AValue, Y, M, D);
   Result := D;
 end;
 
 class function TDateTimeKit.GetDayOfWeek(const AValue: TDateTime): Integer;
 begin
-  // Returns day of week where 1=Sunday, 2=Monday, ..., 7=Saturday
+  { Returns day of week where:
+    1 = Sunday
+    2 = Monday
+    3 = Tuesday
+    4 = Wednesday
+    5 = Thursday
+    6 = Friday
+    7 = Saturday
+    
+    Example: For Friday March 15, 2024, returns 6 }
   Result := SysUtils.DayOfWeek(AValue);
 end;
 
 class function TDateTimeKit.GetDayOfYear(const AValue: TDateTime): Integer;
 begin
-  // Returns day of year (1-366)
+  { Returns day of year (1-366).
+    Range is 1-365 for normal years, 1-366 for leap years.
+    Example: March 15 is the 74th day of 2024 (a leap year) }
   Result := DateUtils.DayOfTheYear(AValue);
 end;
 
@@ -276,7 +307,9 @@ class function TDateTimeKit.GetHour(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  // Extract time components and return just the hour
+  { Extract time components and return just the hour (0-23).
+    DecodeTime splits a TDateTime into hour, minute, second, and millisecond.
+    Example: For 14:30:45.123, returns 14 }
   DecodeTime(AValue, H, M, S, MS);
   Result := H;
 end;
@@ -285,7 +318,8 @@ class function TDateTimeKit.GetMinute(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  // Extract time components and return just the minute
+  { Extract time components and return just the minute (0-59).
+    Example: For 14:30:45.123, returns 30 }
   DecodeTime(AValue, H, M, S, MS);
   Result := M;
 end;
@@ -294,7 +328,8 @@ class function TDateTimeKit.GetSecond(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  // Extract time components and return just the second
+  { Extract time components and return just the second (0-59).
+    Example: For 14:30:45.123, returns 45 }
   DecodeTime(AValue, H, M, S, MS);
   Result := S;
 end;
@@ -303,7 +338,8 @@ class function TDateTimeKit.GetMillisecond(const AValue: TDateTime): Integer;
 var
   H, M, S, MS: Word;
 begin
-  // Extract time components and return just the millisecond
+  { Extract time components and return just the millisecond (0-999).
+    Example: For 14:30:45.123, returns 123 }
   DecodeTime(AValue, H, M, S, MS);
   Result := MS;
 end;
@@ -312,9 +348,16 @@ class function TDateTimeKit.SetYear(const AValue: TDateTime; const AYear: Intege
 var
   Y, M, D: Word;
 begin
-  // Extract current date components
+  { Creates new date with updated year while preserving all other components.
+    Uses Frac(AValue) to keep the time portion unchanged.
+    
+    Example:
+    Input: 2023-03-15 14:30:45, AYear = 2024
+    Output: 2024-03-15 14:30:45
+    
+    Note: Will raise EConvertError if resulting date is invalid
+    (e.g., Feb 29 in non-leap year) }
   DecodeDate(AValue, Y, M, D);
-  // Create new date with updated year, preserving time portion
   Result := EncodeDate(AYear, M, D) + Frac(AValue);
 end;
 
@@ -322,9 +365,16 @@ class function TDateTimeKit.SetMonth(const AValue: TDateTime; const AMonth: Inte
 var
   Y, M, D: Word;
 begin
-  // Extract current date components
+  { Creates new date with updated month while preserving all other components.
+    AMonth must be between 1 and 12.
+    
+    Example:
+    Input: 2024-03-15 14:30:45, AMonth = 4
+    Output: 2024-04-15 14:30:45
+    
+    Note: Will raise EConvertError if resulting date is invalid
+    (e.g., April 31 or invalid month number) }
   DecodeDate(AValue, Y, M, D);
-  // Create new date with updated month, preserving time portion
   Result := EncodeDate(Y, AMonth, D) + Frac(AValue);
 end;
 
@@ -332,9 +382,15 @@ class function TDateTimeKit.SetDay(const AValue: TDateTime; const ADay: Integer)
 var
   Y, M, D: Word;
 begin
-  // Extract current date components
+  { Creates new date with updated day while preserving all other components.
+    ADay must be valid for the given month (1-31, depending on month).
+    
+    Example:
+    Input: 2024-03-15 14:30:45, ADay = 20
+    Output: 2024-03-20 14:30:45
+    
+    Note: Will raise EConvertError if day is invalid for the month }
   DecodeDate(AValue, Y, M, D);
-  // Create new date with updated day, preserving time portion
   Result := EncodeDate(Y, M, ADay) + Frac(AValue);
 end;
 
@@ -342,9 +398,15 @@ class function TDateTimeKit.SetHour(const AValue: TDateTime; const AHour: Intege
 var
   H, M, S, MS: Word;
 begin
-  // Extract current time components
+  { Creates new time with updated hour while preserving date and other time parts.
+    AHour must be between 0 and 23.
+    
+    Example:
+    Input: 2024-03-15 14:30:45, AHour = 16
+    Output: 2024-03-15 16:30:45
+    
+    Note: Will raise EConvertError if hour is outside valid range }
   DecodeTime(AValue, H, M, S, MS);
-  // Create new time with updated hour, preserving date portion
   Result := Trunc(AValue) + EncodeTime(AHour, M, S, MS);
 end;
 
@@ -352,9 +414,15 @@ class function TDateTimeKit.SetMinute(const AValue: TDateTime; const AMinute: In
 var
   H, M, S, MS: Word;
 begin
-  // Extract current time components
+  { Creates new time with updated minute while preserving all other components.
+    AMinute must be between 0 and 59.
+    
+    Example:
+    Input: 2024-03-15 14:30:45, AMinute = 45
+    Output: 2024-03-15 14:45:45
+    
+    Note: Will raise EConvertError if minute is outside valid range }
   DecodeTime(AValue, H, M, S, MS);
-  // Create new time with updated minute, preserving date portion
   Result := Trunc(AValue) + EncodeTime(H, AMinute, S, MS);
 end;
 
@@ -362,9 +430,15 @@ class function TDateTimeKit.SetSecond(const AValue: TDateTime; const ASecond: In
 var
   H, M, S, MS: Word;
 begin
-  // Extract current time components
+  { Creates new time with updated second while preserving all other components.
+    ASecond must be between 0 and 59.
+    
+    Example:
+    Input: 2024-03-15 14:30:45, ASecond = 30
+    Output: 2024-03-15 14:30:30
+    
+    Note: Will raise EConvertError if second is outside valid range }
   DecodeTime(AValue, H, M, S, MS);
-  // Create new time with updated second, preserving date portion
   Result := Trunc(AValue) + EncodeTime(H, M, ASecond, MS);
 end;
 
@@ -372,69 +446,143 @@ class function TDateTimeKit.SetMilliSecond(const AValue: TDateTime; const AMilli
 var
   H, M, S, MS: Word;
 begin
-  // Extract current time components
+  { Creates new time with updated millisecond while preserving all other components.
+    AMilliSecond must be between 0 and 999.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123, AMilliSecond = 500
+    Output: 2024-03-15 14:30:45.500
+    
+    Note: Will raise EConvertError if millisecond is outside valid range }
   DecodeTime(AValue, H, M, S, MS);
-  // Create new time with updated millisecond, preserving date portion
   Result := Trunc(AValue) + EncodeTime(H, M, S, AMilliSecond);
 end;
 
 class function TDateTimeKit.AddYears(const AValue: TDateTime; const AYears: Integer): TDateTime;
 begin
-  // Add/subtract years using DateUtils function
+  { Adds or subtracts years from the date.
+    Uses DateUtils.IncYear for safe year arithmetic.
+    Handles negative values to subtract years.
+    
+    Examples:
+    - AddYears(2024-03-15, 1) -> 2025-03-15
+    - AddYears(2024-03-15, -2) -> 2022-03-15
+    
+    Note: Handles leap year edge cases automatically }
   Result := IncYear(AValue, AYears);
 end;
 
 class function TDateTimeKit.AddMonths(const AValue: TDateTime; const AMonths: Integer): TDateTime;
 begin
-  // Add/subtract months using DateUtils function
+  { Adds or subtracts months from the date.
+    Uses DateUtils.IncMonth for safe month arithmetic.
+    Handles negative values to subtract months.
+    
+    Examples:
+    - AddMonths(2024-03-15, 2) -> 2024-05-15
+    - AddMonths(2024-03-15, -1) -> 2024-02-15
+    
+    Note: Adjusts for different month lengths automatically }
   Result := IncMonth(AValue, AMonths);
 end;
 
 class function TDateTimeKit.AddDays(const AValue: TDateTime; const ADays: Integer): TDateTime;
 begin
-  // Add/subtract days using DateUtils function
+  { Adds or subtracts days from the date.
+    Uses DateUtils.IncDay for consistent day arithmetic.
+    Handles negative values to subtract days.
+    
+    Examples:
+    - AddDays(2024-03-15, 5) -> 2024-03-20
+    - AddDays(2024-03-15, -3) -> 2024-03-12
+    
+    Note: Automatically handles month and year boundaries }
   Result := IncDay(AValue, ADays);
 end;
 
 class function TDateTimeKit.AddHours(const AValue: TDateTime; const AHours: Integer): TDateTime;
 begin
-  // Add/subtract hours using DateUtils function
+  { Adds or subtracts hours from the time.
+    Uses DateUtils.IncHour for consistent time arithmetic.
+    Handles negative values to subtract hours.
+    
+    Examples:
+    - AddHours(2024-03-15 14:30, 3) -> 2024-03-15 17:30
+    - AddHours(2024-03-15 14:30, -2) -> 2024-03-15 12:30
+    
+    Note: Automatically handles day boundaries }
   Result := IncHour(AValue, AHours);
 end;
 
 class function TDateTimeKit.AddMinutes(const AValue: TDateTime; const AMinutes: Integer): TDateTime;
 begin
-  // Add/subtract minutes using DateUtils function
+  { Adds or subtracts minutes from the time.
+    Uses DateUtils.IncMinute for consistent time arithmetic.
+    Handles negative values to subtract minutes.
+    
+    Examples:
+    - AddMinutes(2024-03-15 14:30, 45) -> 2024-03-15 15:15
+    - AddMinutes(2024-03-15 14:30, -20) -> 2024-03-15 14:10
+    
+    Note: Automatically handles hour and day boundaries }
   Result := IncMinute(AValue, AMinutes);
 end;
 
 class function TDateTimeKit.AddSeconds(const AValue: TDateTime; const ASeconds: Integer): TDateTime;
 begin
-  // Add/subtract seconds using DateUtils function
+  { Adds or subtracts seconds from the time.
+    Uses DateUtils.IncSecond for consistent time arithmetic.
+    Handles negative values to subtract seconds.
+    
+    Examples:
+    - AddSeconds(2024-03-15 14:30:45, 30) -> 2024-03-15 14:31:15
+    - AddSeconds(2024-03-15 14:30:45, -15) -> 2024-03-15 14:30:30
+    
+    Note: Automatically handles minute, hour, and day boundaries }
   Result := IncSecond(AValue, ASeconds);
 end;
 
 class function TDateTimeKit.StartOfYear(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to January 1st of the current year at 00:00:00.000
+  { Sets date to January 1st of the current year at 00:00:00.000
+    Uses DateUtils.StartOfTheYear for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-01-01 00:00:00.000 }
   Result := StartOfTheYear(AValue);
 end;
 
 class function TDateTimeKit.StartOfMonth(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to the 1st of the current month at 00:00:00.000
+  { Sets date to the 1st of the current month at 00:00:00.000
+    Uses DateUtils.StartOfTheMonth for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-01 00:00:00.000 }
   Result := StartOfTheMonth(AValue);
 end;
 
 class function TDateTimeKit.StartOfWeek(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to Sunday of the current week at 00:00:00.000
+  { Sets date to Sunday of the current week at 00:00:00.000
+    Uses DateUtils.StartOfTheWeek for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 (Friday) 14:30:45.123
+    Output: 2024-03-10 (Sunday) 00:00:00.000 }
   Result := StartOfTheWeek(AValue);
 end;
 
 class function TDateTimeKit.StartOfDay(const AValue: TDateTime): TDateTime;
 begin
-  // Set time to 00:00:00.000, preserving the date
+  { Sets time to 00:00:00.000, preserving the date
+    Uses DateUtils.DateOf to extract just the date portion.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-15 00:00:00.000 }
   Result := DateOf(AValue);
 end;
 
@@ -442,32 +590,57 @@ class function TDateTimeKit.StartOfHour(const AValue: TDateTime): TDateTime;
 var
   H, M, S, MS: Word;
 begin
-  // Extract hour and set minutes, seconds, milliseconds to zero
+  { Sets minutes, seconds, and milliseconds to zero, preserving the hour
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-15 14:00:00.000 }
   DecodeTime(AValue, H, M, S, MS);
   Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
 end;
 
 class function TDateTimeKit.EndOfYear(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to December 31st of the current year at 23:59:59.999
+  { Sets date to December 31st of the current year at 23:59:59.999
+    Uses DateUtils.EndOfTheYear for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-12-31 23:59:59.999 }
   Result := EndOfTheYear(AValue);
 end;
 
 class function TDateTimeKit.EndOfMonth(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to the last day of the current month at 23:59:59.999
+  { Sets date to the last day of the current month at 23:59:59.999
+    Uses DateUtils.EndOfTheMonth for consistent behavior.
+    Automatically handles different month lengths.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-31 23:59:59.999 }
   Result := EndOfTheMonth(AValue);
 end;
 
 class function TDateTimeKit.EndOfWeek(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to Saturday of the current week at 23:59:59.999
+  { Sets date to Saturday of the current week at 23:59:59.999
+    Uses DateUtils.EndOfTheWeek for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 (Friday) 14:30:45.123
+    Output: 2024-03-16 (Saturday) 23:59:59.999 }
   Result := EndOfTheWeek(AValue);
 end;
 
 class function TDateTimeKit.EndOfDay(const AValue: TDateTime): TDateTime;
 begin
-  // Set time to 23:59:59.999, preserving the date
+  { Sets time to 23:59:59.999, preserving the date
+    Uses DateUtils.EndOfTheDay for consistent behavior.
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-15 23:59:59.999 }
   Result := EndOfTheDay(AValue);
 end;
 
@@ -475,26 +648,46 @@ class function TDateTimeKit.EndOfHour(const AValue: TDateTime): TDateTime;
 var
   H, M, S, MS: Word;
 begin
-  // Extract hour and set minutes, seconds, milliseconds to their maximum values
+  { Sets minutes, seconds, and milliseconds to their maximum values,
+    preserving the hour
+    
+    Example:
+    Input: 2024-03-15 14:30:45.123
+    Output: 2024-03-15 14:59:59.999 }
   DecodeTime(AValue, H, M, S, MS);
   Result := Trunc(AValue) + EncodeTime(H, 59, 59, 999);
 end;
 
 class function TDateTimeKit.IsBefore(const AValue, ADateTime: TDateTime): Boolean;
 begin
-  // Compare dates using SysUtils function, returns true if AValue < ADateTime
+  { Compares two dates using SysUtils.CompareDateTime
+    Returns True if AValue is chronologically before ADateTime
+    
+    Example:
+    IsBefore(2024-03-15, 2024-03-16) -> True
+    IsBefore(2024-03-15 14:30, 2024-03-15 14:31) -> True }
   Result := CompareDateTime(AValue, ADateTime) < 0;
 end;
 
 class function TDateTimeKit.IsAfter(const AValue, ADateTime: TDateTime): Boolean;
 begin
-  // Compare dates using SysUtils function, returns true if AValue > ADateTime
+  { Compares two dates using SysUtils.CompareDateTime
+    Returns True if AValue is chronologically after ADateTime
+    
+    Example:
+    IsAfter(2024-03-16, 2024-03-15) -> True
+    IsAfter(2024-03-15 14:31, 2024-03-15 14:30) -> True }
   Result := CompareDateTime(AValue, ADateTime) > 0;
 end;
 
 class function TDateTimeKit.IsSameDay(const AValue, ADateTime: TDateTime): Boolean;
 begin
-  // Compare dates ignoring time portion
+  { Compares two dates ignoring time portion
+    Uses SysUtils.SameDate for accurate comparison
+    
+    Example:
+    IsSameDay(2024-03-15 14:30, 2024-03-15 09:00) -> True
+    IsSameDay(2024-03-15, 2024-03-16) -> False }
   Result := SameDate(AValue, ADateTime);
 end;
 
@@ -502,10 +695,14 @@ class function TDateTimeKit.IsSameMonth(const AValue, ADateTime: TDateTime): Boo
 var
   Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  // Extract date components from both dates
+  { Compares year and month components of two dates
+    Extracts components using DecodeDate for accurate comparison
+    
+    Example:
+    IsSameMonth(2024-03-15, 2024-03-01) -> True
+    IsSameMonth(2024-03-15, 2024-04-15) -> False }
   DecodeDate(AValue, Y1, M1, D1);
   DecodeDate(ADateTime, Y2, M2, D2);
-  // Compare year and month
   Result := (Y1 = Y2) and (M1 = M2);
 end;
 
@@ -513,10 +710,14 @@ class function TDateTimeKit.IsSameYear(const AValue, ADateTime: TDateTime): Bool
 var
   Y1, M1, D1, Y2, M2, D2: Word;
 begin
-  // Extract date components from both dates
+  { Compares year components of two dates
+    Extracts components using DecodeDate for accurate comparison
+    
+    Example:
+    IsSameYear(2024-03-15, 2024-12-31) -> True
+    IsSameYear(2024-03-15, 2025-03-15) -> False }
   DecodeDate(AValue, Y1, M1, D1);
   DecodeDate(ADateTime, Y2, M2, D2);
-  // Compare year only
   Result := Y1 = Y2;
 end;
 
@@ -524,16 +725,27 @@ class function TDateTimeKit.IsBusinessDay(const AValue: TDateTime): Boolean;
 var
   DayOfWeek: Integer;
 begin
-  // Get day of week (1=Sunday, 2=Monday, ..., 7=Saturday)
+  { Checks if date falls on Monday through Friday
+    Uses GetDayOfWeek where:
+    1=Sunday, 2=Monday, ..., 7=Saturday
+    Returns True for days 2-6 (Monday-Friday)
+    
+    Example:
+    IsBusinessDay(2024-03-15) -> True (Friday)
+    IsBusinessDay(2024-03-16) -> False (Saturday) }
   DayOfWeek := GetDayOfWeek(AValue);
-  // Check if it's Monday through Friday (2-6)
   Result := (DayOfWeek > 1) and (DayOfWeek < 7);
 end;
 
 class function TDateTimeKit.NextBusinessDay(const AValue: TDateTime): TDateTime;
 begin
+  { Finds the next business day (Monday-Friday)
+    Keeps adding days until a business day is found
+    
+    Example:
+    NextBusinessDay(2024-03-15 Friday) -> 2024-03-18 Monday
+    NextBusinessDay(2024-03-16 Saturday) -> 2024-03-18 Monday }
   Result := AValue;
-  // Keep adding days until we find a business day
   repeat
     Result := AddDays(Result, 1);
   until IsBusinessDay(Result);
@@ -541,8 +753,13 @@ end;
 
 class function TDateTimeKit.PreviousBusinessDay(const AValue: TDateTime): TDateTime;
 begin
+  { Finds the previous business day (Monday-Friday)
+    Keeps subtracting days until a business day is found
+    
+    Example:
+    PreviousBusinessDay(2024-03-18 Monday) -> 2024-03-15 Friday
+    PreviousBusinessDay(2024-03-17 Sunday) -> 2024-03-15 Friday }
   Result := AValue;
-  // Keep subtracting days until we find a business day
   repeat
     Result := AddDays(Result, -1);
   until IsBusinessDay(Result);
@@ -552,6 +769,17 @@ class function TDateTimeKit.AddBusinessDays(const AValue: TDateTime; const ADays
 var
   Step, RemainingDays: Integer;
 begin
+  { Adds or subtracts business days, skipping weekends
+    
+    Parameters:
+    - AValue: Starting date
+    - ADays: Number of business days to add (negative to subtract)
+    
+    Examples:
+    - AddBusinessDays(2024-03-15 Friday, 2) -> 2024-03-19 Tuesday
+    - AddBusinessDays(2024-03-15 Friday, -3) -> 2024-03-12 Tuesday
+    
+    Note: A business day is Monday through Friday }
   Result := AValue;
   if ADays = 0 then
     Exit;

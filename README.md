@@ -77,7 +77,7 @@ Contributions for testing and validation on other platforms are welcome!
    ```pascal
    program MyProject;
    
-   {$mode objfpc}{$H+}
+   {$mode objfpc}{$H+}{$J-}
    
    uses
      {$IFDEF UNIX}
