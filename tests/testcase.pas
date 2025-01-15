@@ -114,6 +114,10 @@ type
     procedure Test32_GetCurrentDir;
     procedure Test33_GetTempDir;
     procedure Test34_GetParentDir;
+    procedure Test34b_ListDirectories;
+    procedure Test34c_ListDirectoriesRecursive;
+    procedure Test34d_ListFiles;
+    procedure Test34e_ListFilesRecursive;
     // Path manipulation
     procedure Test35_CombinePaths;
     procedure Test36_IsAbsolutePath;
@@ -1276,6 +1280,229 @@ begin
   AssertEquals('GetParentDir should return correct parent directory',
     TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(FTestDir)),
     TFileKit.NormalizePath(ExcludeTrailingPathDelimiter(TFileKit.GetParentDir(FTestFile))));
+end;
+
+procedure TFSTests.Test34b_ListDirectories;
+var
+  SubDir1, SubDir2: string;
+  Dirs: TStringArray;
+  I: Integer;
+  Found: Boolean;
+  SR: TSearchRec;
+begin
+  // Clean up any existing directories first
+  if FindFirst(FTestDir + PathDelim + '*', faAnyFile, SR) = 0 then
+  try
+    repeat
+      if (SR.Name <> '.') and (SR.Name <> '..') then
+        TFileKit.DeleteDirectory(FTestDir + PathDelim + SR.Name, True);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test directories
+  SubDir1 := TFileKit.CombinePaths(FTestDir, 'dir1');
+  SubDir2 := TFileKit.CombinePaths(FTestDir, 'dir2');
+  TFileKit.CreateDirectory(SubDir1);
+  TFileKit.CreateDirectory(SubDir2);
+  
+  // Test non-recursive directory listing
+  Dirs := TFileKit.ListDirectories(FTestDir, False);
+  AssertEquals('ListDirectories should find 2 directories', 2, Length(Dirs));
+  
+  // Verify both directories are found
+  Found := False;
+  for I := 0 to High(Dirs) do
+    if TFileKit.NormalizePath(Dirs[I]) = TFileKit.NormalizePath(SubDir1) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('dir1 should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Dirs) do
+    if TFileKit.NormalizePath(Dirs[I]) = TFileKit.NormalizePath(SubDir2) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('dir2 should be found', Found);
+end;
+
+procedure TFSTests.Test34c_ListDirectoriesRecursive;
+var
+  SubDir1, SubDir2, SubSubDir: string;
+  Dirs: TStringArray;
+  I: Integer;
+  Found: Boolean;
+  SR: TSearchRec;
+begin
+  // Clean up any existing directories first
+  if FindFirst(FTestDir + PathDelim + '*', faAnyFile, SR) = 0 then
+  try
+    repeat
+      if (SR.Name <> '.') and (SR.Name <> '..') then
+        TFileKit.DeleteDirectory(FTestDir + PathDelim + SR.Name, True);
+    until FindNext(SR) <> 0;
+  finally
+    FindClose(SR);
+  end;
+
+  // Create test directory structure
+  SubDir1 := TFileKit.CombinePaths(FTestDir, 'dir1');
+  SubDir2 := TFileKit.CombinePaths(FTestDir, 'dir2');
+  SubSubDir := TFileKit.CombinePaths(SubDir1, 'subdir1');
+  TFileKit.CreateDirectory(SubDir1);
+  TFileKit.CreateDirectory(SubDir2);
+  TFileKit.CreateDirectory(SubSubDir);
+  
+  // Test recursive directory listing
+  Dirs := TFileKit.ListDirectories(FTestDir, True);
+  AssertEquals('ListDirectories should find 3 directories recursively', 3, Length(Dirs));
+  
+  // Verify all directories are found
+  Found := False;
+  for I := 0 to High(Dirs) do
+    if TFileKit.NormalizePath(Dirs[I]) = TFileKit.NormalizePath(SubDir1) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('dir1 should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Dirs) do
+    if TFileKit.NormalizePath(Dirs[I]) = TFileKit.NormalizePath(SubDir2) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('dir2 should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Dirs) do
+    if TFileKit.NormalizePath(Dirs[I]) = TFileKit.NormalizePath(SubSubDir) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('subdir1 should be found', Found);
+end;
+
+procedure TFSTests.Test34d_ListFiles;
+var
+  File1, File2: string;
+  Files: TStringArray;
+  I: Integer;
+  Found: Boolean;
+  SR: TSearchRec;
+begin
+  // Clean up any existing files and directories first
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
+  end;
+  TFileKit.CreateDirectory(FTestDir);
+
+  // Create test files
+  File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
+  File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
+  TFileKit.WriteFile(File1, 'test1');
+  TFileKit.WriteFile(File2, 'test2');
+  
+  // Test non-recursive file listing
+  Files := TFileKit.ListFiles(FTestDir, False);
+  WriteLn('Test34d_ListFiles: Found ', Length(Files), ' files:');
+  for I := 0 to High(Files) do
+    WriteLn('Test34d_ListFiles: File[', I, '] = ', Files[I]);
+  
+  AssertEquals('ListFiles should find 2 files', 2, Length(Files));
+  
+  // Verify both files are found
+  Found := False;
+  for I := 0 to High(Files) do
+    if TFileKit.NormalizePath(Files[I]) = TFileKit.NormalizePath(File1) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('file1.txt should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Files) do
+    if TFileKit.NormalizePath(Files[I]) = TFileKit.NormalizePath(File2) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('file2.txt should be found', Found);
+end;
+
+procedure TFSTests.Test34e_ListFilesRecursive;
+var
+  File1, File2, SubDir, File3: string;
+  Files: TStringArray;
+  I: Integer;
+  Found: Boolean;
+  SR: TSearchRec;
+begin
+  // Clean up any existing files and directories first
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
+  end;
+  TFileKit.CreateDirectory(FTestDir);
+
+  // Create test directory structure with files
+  File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
+  File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
+  SubDir := TFileKit.CombinePaths(FTestDir, 'subdir');
+  File3 := TFileKit.CombinePaths(SubDir, 'file3.txt');
+  
+  TFileKit.WriteFile(File1, 'test1');
+  TFileKit.WriteFile(File2, 'test2');
+  TFileKit.CreateDirectory(SubDir);
+  TFileKit.WriteFile(File3, 'test3');
+  
+  // Test recursive file listing
+  Files := TFileKit.ListFiles(FTestDir, True);
+  WriteLn('Test34e_ListFilesRecursive: Found ', Length(Files), ' files:');
+  for I := 0 to High(Files) do
+    WriteLn('Test34e_ListFilesRecursive: File[', I, '] = ', Files[I]);
+  
+  AssertEquals('ListFiles should find 3 files recursively', 3, Length(Files));
+  
+  // Verify all files are found
+  Found := False;
+  for I := 0 to High(Files) do
+    if TFileKit.NormalizePath(Files[I]) = TFileKit.NormalizePath(File1) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('file1.txt should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Files) do
+    if TFileKit.NormalizePath(Files[I]) = TFileKit.NormalizePath(File2) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('file2.txt should be found', Found);
+  
+  Found := False;
+  for I := 0 to High(Files) do
+    if TFileKit.NormalizePath(Files[I]) = TFileKit.NormalizePath(File3) then
+    begin
+      Found := True;
+      Break;
+    end;
+  AssertTrue('file3.txt should be found', Found);
 end;
 
 procedure TFSTests.Test35_CombinePaths;

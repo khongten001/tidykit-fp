@@ -28,6 +28,8 @@ type
     Permissions: string;  // Unix-style permissions string
   end;
 
+  TStringArray = array of string;
+
   { Search result record }
   TSearchResult = record
     FileName: string;
@@ -62,6 +64,8 @@ type
     class procedure CreateDirectory(const APath: string); static;
     class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True); static;
     class procedure EnsureDirectory(const APath: string); static;
+    class function ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray; static;
+    class function ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray; static;
     
     { Path operations }
     class function ChangeExtension(const APath, NewExt: string): string; static;
@@ -1188,6 +1192,106 @@ begin
     end;
   finally
     CloseFile(F);
+  end;
+end;
+
+class function TFileKit.ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray;
+var
+  SearchRec: TSearchRec;
+  DirList: TStringList;
+  SubDirs: TStringArray;
+  NormalizedPath: string;
+  FullPath: string;
+  I: Integer;
+begin
+  DirList := TStringList.Create;
+  try
+    NormalizedPath := IncludeTrailingPathDelimiter(NormalizePath(APath));
+    
+    if FindFirst(NormalizedPath + '*', faDirectory, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
+           ((SearchRec.Attr and faDirectory) <> 0) and
+           ((SearchRec.Attr and faSymLink) = 0) then
+        begin
+          FullPath := NormalizedPath + SearchRec.Name;
+          DirList.Add(FullPath);
+          
+          if Recursive then
+          begin
+            SubDirs := ListDirectories(FullPath, True);
+            for I := 0 to High(SubDirs) do
+              DirList.Add(SubDirs[I]);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+    
+    SetLength(Result, DirList.Count);
+    for I := 0 to DirList.Count - 1 do
+      Result[I] := DirList[I];
+  finally
+    DirList.Free;
+  end;
+end;
+
+class function TFileKit.ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray;
+var
+  SearchRec: TSearchRec;
+  FileList: TStringList;
+  SubDirs: TStringArray;
+  SubFiles: TStringArray;
+  NormalizedPath: string;
+  FullPath: string;
+  I: Integer;
+begin
+  FileList := TStringList.Create;
+  try
+    NormalizedPath := IncludeTrailingPathDelimiter(NormalizePath(APath));
+    
+    // First find all files in current directory
+    if FindFirst(NormalizedPath + '*', faArchive, SearchRec) = 0 then
+    try
+      repeat
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+        begin
+          FullPath := NormalizedPath + SearchRec.Name;
+          FileList.Add(FullPath);
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+    
+    // Then find subdirectories if recursive
+    if Recursive then
+    begin
+      if FindFirst(NormalizedPath + '*', faDirectory, SearchRec) = 0 then
+      try
+        repeat
+          if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and
+             ((SearchRec.Attr and faDirectory) <> 0) and
+             ((SearchRec.Attr and faSymLink) = 0) then
+          begin
+            FullPath := NormalizedPath + SearchRec.Name;
+            SubFiles := ListFiles(FullPath, True);
+            for I := 0 to High(SubFiles) do
+              FileList.Add(SubFiles[I]);
+          end;
+        until FindNext(SearchRec) <> 0;
+      finally
+        FindClose(SearchRec);
+      end;
+    end;
+    
+    SetLength(Result, FileList.Count);
+    for I := 0 to FileList.Count - 1 do
+      Result[I] := FileList[I];
+  finally
+    FileList.Free;
   end;
 end;
 
