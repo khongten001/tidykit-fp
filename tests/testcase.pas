@@ -1602,7 +1602,7 @@ begin
   AssertEquals('Last file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test size sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSize);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSizeDesc);  // Changed from fsSize to fsSizeDesc
   AssertEquals('First file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be a_file.txt (smallest)', 'a_file.txt', ExtractFileName(Files[2]));
 end;
