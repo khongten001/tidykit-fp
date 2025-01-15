@@ -252,6 +252,18 @@ type
       Returns path to new temporary directory.
       If creation fails, raises ETidyKitException. }
     class function CreateTempDirectory(const APrefix: string = ''): string; static;
+    
+    { Lists all directories in the specified path.
+      Returns array of directory paths.
+      If Recursive is True, includes subdirectories recursively.
+      Example: ListDirectories('C:\Users') -> ['C:\Users\Documents', 'C:\Users\Downloads', ...] }
+    class function ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray; static;
+    
+    { Lists all files in the specified path.
+      Returns array of file paths.
+      If Recursive is True, includes files in subdirectories recursively.
+      Example: ListFiles('C:\Users', True) -> ['C:\Users\file1.txt', 'C:\Users\Documents\file2.txt', ...] }
+    class function ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray; static;
   end;
 
 implementation
@@ -950,6 +962,121 @@ begin
     end;
   finally
     CloseFile(F);
+  end;
+end;
+
+{ Lists all directories in the specified path.
+  Returns array of directory paths.
+  If Recursive is True, includes subdirectories recursively.
+  Example: ListDirectories('C:\Users') -> ['C:\Users\Documents', 'C:\Users\Downloads', ...] }
+class function TFileKit.ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray;
+var
+  SearchRec: TSearchRec;
+  DirList: TStringList;
+  SubDirs: TStringArray;
+  FullPath, NormalPath: string;
+  I: Integer;
+begin
+  Result := nil;
+  SetLength(Result, 0);
+  
+  if not DirectoryExists(APath) then
+    Exit;
+    
+  DirList := TStringList.Create;
+  try
+    DirList.Sorted := True;
+    DirList.Duplicates := dupIgnore;
+    
+    NormalPath := NormalizePath(APath);
+    
+    // Find all directories in current path
+    if FindFirst(IncludeTrailingPathDelimiter(NormalPath) + '*', faDirectory, SearchRec) = 0 then
+    try
+      repeat
+        if ((SearchRec.Attr and faDirectory) <> 0) and 
+           (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+        begin
+          FullPath := IncludeTrailingPathDelimiter(NormalPath) + SearchRec.Name;
+          DirList.Add(FullPath);
+          
+          // Recursively process subdirectories if requested
+          if Recursive then
+          begin
+            SubDirs := ListDirectories(FullPath, True);
+            for I := 0 to High(SubDirs) do
+              DirList.Add(SubDirs[I]);
+          end;
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+    
+    // Convert list to array
+    SetLength(Result, DirList.Count);
+    for I := 0 to DirList.Count - 1 do
+      Result[I] := DirList[I];
+      
+  finally
+    DirList.Free;
+  end;
+end;
+
+{ Lists all files in the specified path.
+  Returns array of file paths.
+  If Recursive is True, includes files in subdirectories recursively.
+  Example: ListFiles('C:\Users', True) -> ['C:\Users\file1.txt', 'C:\Users\Documents\file2.txt', ...] }
+class function TFileKit.ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray;
+var
+  SearchRec: TSearchRec;
+  FileList: TStringList;
+  SubFiles: TStringArray;
+  FullPath, NormalPath: string;
+  I: Integer;
+begin
+  Result := nil;
+  SetLength(Result, 0);
+  
+  if not DirectoryExists(APath) then
+    Exit;
+    
+  FileList := TStringList.Create;
+  try
+    FileList.Sorted := True;
+    FileList.Duplicates := dupIgnore;
+    
+    NormalPath := NormalizePath(APath);
+    
+    // Find all files in current path
+    if FindFirst(IncludeTrailingPathDelimiter(NormalPath) + '*', faAnyFile, SearchRec) = 0 then
+    try
+      repeat
+        if ((SearchRec.Attr and faDirectory) = 0) then
+        begin
+          FullPath := IncludeTrailingPathDelimiter(NormalPath) + SearchRec.Name;
+          FileList.Add(FullPath);
+        end
+        else if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and Recursive then
+        begin
+          // Recursively process subdirectories if requested
+          FullPath := IncludeTrailingPathDelimiter(NormalPath) + SearchRec.Name;
+          SubFiles := ListFiles(FullPath, True);
+          for I := 0 to High(SubFiles) do
+            FileList.Add(SubFiles[I]);
+        end;
+      until FindNext(SearchRec) <> 0;
+    finally
+      FindClose(SearchRec);
+    end;
+    
+    // Convert list to array
+    SetLength(Result, FileList.Count);
+    for I := 0 to FileList.Count - 1 do
+      Result[I] := FileList[I];
+      
+  finally
+    FileList.Free;
   end;
 end;
 
