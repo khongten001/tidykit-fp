@@ -30,6 +30,17 @@ type
 
   TStringArray = array of string;
 
+  { File sorting options }
+  TFileSortOrder = (
+    fsNone,           // No sorting (default)
+    fsName,           // Sort by name
+    fsNameDesc,       // Sort by name descending
+    fsDate,           // Sort by modification date
+    fsDateDesc,       // Sort by modification date descending
+    fsSize,           // Sort by size
+    fsSizeDesc       // Sort by size descending
+  );
+
   { Search result record }
   TSearchResult = record
     FileName: string;
@@ -64,8 +75,14 @@ type
     class procedure CreateDirectory(const APath: string); static;
     class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True); static;
     class procedure EnsureDirectory(const APath: string); static;
-    class function ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray; static;
-    class function ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray; static;
+    class function ListDirectories(const APath: string; 
+      const Pattern: string = '*'; 
+      const Recursive: Boolean = False;
+      const SortOrder: TFileSortOrder = fsNone): TStringArray; static;
+    class function ListFiles(const APath: string; 
+      const Pattern: string = '*'; 
+      const Recursive: Boolean = False;
+      const SortOrder: TFileSortOrder = fsNone): TStringArray; static;
     
     { Path operations }
     class function ChangeExtension(const APath, NewExt: string): string; static;
@@ -111,7 +128,35 @@ type
 
 implementation
 
+{ Forward declarations }
+function CompareByDate(List: TStringList; Index1, Index2: Integer): Integer; forward;
+function CompareBySize(List: TStringList; Index1, Index2: Integer): Integer; forward;
+
 { Platform-specific helper functions }
+
+// Add comparison functions for sorting
+function CompareByDate(List: TStringList; Index1, Index2: Integer): Integer;
+var
+  Time1, Time2: TDateTime;
+begin
+  Time1 := TFileKit.GetLastWriteTime(List[Index1]);
+  Time2 := TFileKit.GetLastWriteTime(List[Index2]);
+  Result := CompareDateTime(Time1, Time2);
+end;
+
+function CompareBySize(List: TStringList; Index1, Index2: Integer): Integer;
+var
+  Size1, Size2: Int64;
+begin
+  Size1 := TFileKit.GetSize(List[Index1]);
+  Size2 := TFileKit.GetSize(List[Index2]);
+  if Size1 < Size2 then
+    Result := -1
+  else if Size1 > Size2 then
+    Result := 1
+  else
+    Result := 0;
+end;
 
 function GetFileAttributes(const APath: string): TFileAttributes;
 {$IFDEF UNIX}
@@ -1195,7 +1240,10 @@ begin
   end;
 end;
 
-class function TFileKit.ListDirectories(const APath: string; const Recursive: Boolean = False): TStringArray;
+class function TFileKit.ListDirectories(const APath: string; 
+  const Pattern: string = '*'; 
+  const Recursive: Boolean = False;
+  const SortOrder: TFileSortOrder = fsNone): TStringArray;
 var
   SearchRec: TSearchRec;
   DirList: TStringList;
@@ -1208,7 +1256,8 @@ begin
   try
     NormalizedPath := IncludeTrailingPathDelimiter(NormalizePath(APath));
     
-    if FindFirst(NormalizedPath + '*', faDirectory, SearchRec) = 0 then
+    // First find directories matching the pattern
+    if FindFirst(NormalizedPath + Pattern, faDirectory, SearchRec) = 0 then
     try
       repeat
         if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
@@ -1220,14 +1269,32 @@ begin
           
           if Recursive then
           begin
-            SubDirs := ListDirectories(FullPath, True);
+            SubDirs := ListDirectories(FullPath, Pattern, True, SortOrder);
             for I := 0 to High(SubDirs) do
               DirList.Add(SubDirs[I]);
+            SetLength(SubDirs, 0); // Free the array
           end;
         end;
       until FindNext(SearchRec) <> 0;
     finally
       FindClose(SearchRec);
+    end;
+    
+    // Apply sorting if requested
+    case SortOrder of
+      fsName: DirList.Sort;
+      fsNameDesc: begin
+        DirList.Sort;
+        for I := 0 to (DirList.Count div 2) - 1 do
+          DirList.Exchange(I, DirList.Count - 1 - I);
+      end;
+      fsDate: DirList.CustomSort(@CompareByDate);
+      fsDateDesc: begin
+        DirList.CustomSort(@CompareByDate);
+        for I := 0 to (DirList.Count div 2) - 1 do
+          DirList.Exchange(I, DirList.Count - 1 - I);
+      end;
+      // Size sorting not applicable for directories
     end;
     
     SetLength(Result, DirList.Count);
@@ -1238,7 +1305,10 @@ begin
   end;
 end;
 
-class function TFileKit.ListFiles(const APath: string; const Recursive: Boolean = False): TStringArray;
+class function TFileKit.ListFiles(const APath: string; 
+  const Pattern: string = '*'; 
+  const Recursive: Boolean = False;
+  const SortOrder: TFileSortOrder = fsNone): TStringArray;
 var
   SearchRec: TSearchRec;
   FileList: TStringList;
@@ -1252,11 +1322,12 @@ begin
   try
     NormalizedPath := IncludeTrailingPathDelimiter(NormalizePath(APath));
     
-    // First find all files in current directory
-    if FindFirst(NormalizedPath + '*', faArchive, SearchRec) = 0 then
+    // First find all files in current directory matching the pattern
+    if FindFirst(NormalizedPath + Pattern, faAnyFile - faDirectory, SearchRec) = 0 then
     try
       repeat
-        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and
+           ((SearchRec.Attr and faDirectory) = 0) then
         begin
           FullPath := NormalizedPath + SearchRec.Name;
           FileList.Add(FullPath);
@@ -1277,13 +1348,36 @@ begin
              ((SearchRec.Attr and faSymLink) = 0) then
           begin
             FullPath := NormalizedPath + SearchRec.Name;
-            SubFiles := ListFiles(FullPath, True);
+            SubFiles := ListFiles(FullPath, Pattern, True, SortOrder);
             for I := 0 to High(SubFiles) do
               FileList.Add(SubFiles[I]);
+            SetLength(SubFiles, 0); // Free the array
           end;
         until FindNext(SearchRec) <> 0;
       finally
         FindClose(SearchRec);
+      end;
+    end;
+    
+    // Apply sorting if requested
+    case SortOrder of
+      fsName: FileList.Sort;
+      fsNameDesc: begin
+        FileList.Sort;
+        for I := 0 to (FileList.Count div 2) - 1 do
+          FileList.Exchange(I, FileList.Count - 1 - I);
+      end;
+      fsDate: FileList.CustomSort(@CompareByDate);
+      fsDateDesc: begin
+        FileList.CustomSort(@CompareByDate);
+        for I := 0 to (FileList.Count div 2) - 1 do
+          FileList.Exchange(I, FileList.Count - 1 - I);
+      end;
+      fsSize: FileList.CustomSort(@CompareBySize);
+      fsSizeDesc: begin
+        FileList.CustomSort(@CompareBySize);
+        for I := 0 to (FileList.Count div 2) - 1 do
+          FileList.Exchange(I, FileList.Count - 1 - I);
       end;
     end;
     

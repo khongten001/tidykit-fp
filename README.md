@@ -285,6 +285,21 @@ begin
       WriteLn('  ', Dir);
   end;
   
+  // Directory and file listing
+  Files := TFileKit.ListFiles(Path);                                    // List all files
+  Files := TFileKit.ListFiles(Path, '*.txt');                          // List text files only
+  Files := TFileKit.ListFiles(Path, '*', True);                        // List all files recursively
+  Files := TFileKit.ListFiles(Path, '*.txt', True);                    // List text files recursively
+  Files := TFileKit.ListFiles(Path, '*', False, fsName);               // List files sorted by name
+  Files := TFileKit.ListFiles(Path, '*', False, fsDateDesc);           // List files newest first
+  Files := TFileKit.ListFiles(Path, '*.txt', True, fsSize);            // List text files by size recursively
+
+  Dirs := TFileKit.ListDirectories(Path);                              // List all directories
+  Dirs := TFileKit.ListDirectories(Path, 'test*');                     // List directories starting with 'test'
+  Dirs := TFileKit.ListDirectories(Path, '*', True);                   // List all directories recursively
+  Dirs := TFileKit.ListDirectories(Path, '*', False, fsName);          // List directories sorted by name
+  Dirs := TFileKit.ListDirectories(Path, '*', True, fsDateDesc);       // List directories newest first
+  
   // File attributes
   Attrs := TFileKit.GetAttributes('file.txt');
   WriteLn('Read-only: ', Attrs.ReadOnly);
@@ -338,10 +353,19 @@ LargestFile := TFileKit.FindLargestFile(Path, Pattern);          // Find largest
 SmallestFile := TFileKit.FindSmallestFile(Path, Pattern);        // Find smallest file
 
 // Directory and file listing
-Files := TFileKit.ListFiles(Path, False);                  // List files in directory
-Files := TFileKit.ListFiles(Path, True);                   // List files recursively
-Dirs := TFileKit.ListDirectories(Path, False);             // List directories
-Dirs := TFileKit.ListDirectories(Path, True);              // List directories recursively
+Files := TFileKit.ListFiles(Path);                                    // List all files
+Files := TFileKit.ListFiles(Path, '*.txt');                          // List text files only
+Files := TFileKit.ListFiles(Path, '*', True);                        // List all files recursively
+Files := TFileKit.ListFiles(Path, '*.txt', True);                    // List text files recursively
+Files := TFileKit.ListFiles(Path, '*', False, fsName);               // List files sorted by name
+Files := TFileKit.ListFiles(Path, '*', False, fsDateDesc);           // List files newest first
+Files := TFileKit.ListFiles(Path, '*.txt', True, fsSize);            // List text files by size recursively
+
+Dirs := TFileKit.ListDirectories(Path);                              // List all directories
+Dirs := TFileKit.ListDirectories(Path, 'test*');                     // List directories starting with 'test'
+Dirs := TFileKit.ListDirectories(Path, '*', True);                   // List all directories recursively
+Dirs := TFileKit.ListDirectories(Path, '*', False, fsName);          // List directories sorted by name
+Dirs := TFileKit.ListDirectories(Path, '*', True, fsDateDesc);       // List directories newest first
 
 // To enable recursive search for any operation, add True as the last parameter:
 LastModified := TFileKit.FindLastModifiedFile(Path, Pattern, True);   // Recursive
