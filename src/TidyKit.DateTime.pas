@@ -11,175 +11,536 @@ type
   { TDateTimeKit provides a comprehensive set of date and time manipulation functions.
     All operations are static (class functions) for ease of use and memory safety.
     The kit follows a functional programming style where operations return new values
-    rather than modifying existing ones. }
+    rather than modifying existing ones.
+    
+    This class is designed to be beginner-friendly and self-documenting. Each method
+    has detailed documentation explaining its purpose, parameters, and return values.
+    
+    Key concepts:
+    - TDateTime: Pascal's built-in type for storing date and time values
+    - Static methods: Can be called without creating a class instance
+    - Immutable operations: Methods don't modify input values, they return new ones }
   TDateTimeKit = class
   public
     { Basic operations for getting and formatting date/time values }
     
-    { Returns the current date and time }
+    { GetNow
+      Returns the current system date and time as a TDateTime value.
+      This includes both the date and time portions.
+      
+      Returns:
+        TDateTime - Current date and time from the system clock }
     class function GetNow: TDateTime; static;
     
-    { Returns the current date (time part is set to 00:00:00) }
+    { GetToday
+      Returns just the current date, with the time set to midnight (00:00:00).
+      Useful when you only need the date portion.
+      
+      Returns:
+        TDateTime - Current date with time set to 00:00:00 }
     class function GetToday: TDateTime; static;
     
-    { Converts a TDateTime value to another TDateTime value.
-      Useful for type conversion and ensuring TDateTime type }
+    { GetDateTime
+      Converts or validates a TDateTime value. This is useful for ensuring
+      type safety or making explicit conversions.
+      
+      Parameters:
+        AValue - The TDateTime value to convert/validate
+        
+      Returns:
+        TDateTime - The same value, but guaranteed to be TDateTime type }
     class function GetDateTime(const AValue: TDateTime): TDateTime; static;
     
-    { Formats a TDateTime value as a string.
-      If AFormat is empty, uses default format.
-      For format strings, use:
-      - yyyy: 4-digit year    - yy: 2-digit year
-      - mm: month            - dd: day
-      - hh: hour (24h)       - nn: minute
-      - ss: second           - zzz: millisecond }
+    { GetAsString
+      Converts a TDateTime value to a formatted string representation.
+      
+      Parameters:
+        AValue - The TDateTime value to format
+        AFormat - Optional format string. If empty, uses system default format
+                 Common format specifiers:
+                 yyyy = 4-digit year (2024)
+                 yy = 2-digit year (24)
+                 mm = month (01-12)
+                 dd = day (01-31)
+                 hh = hour in 24h format (00-23)
+                 nn = minutes (00-59)
+                 ss = seconds (00-59)
+                 zzz = milliseconds (000-999)
+      
+      Returns:
+        string - The formatted date/time string }
     class function GetAsString(const AValue: TDateTime; const AFormat: string = ''): string; static;
     
-    { Parses a string into a TDateTime value.
-      If AFormat is empty, uses default format.
-      Raises EConvertError if the string is not a valid date/time }
+    { FromString
+      Converts a string representation of a date/time into a TDateTime value.
+      
+      Parameters:
+        AValue - The string to parse (e.g., '2024-01-15' or '15/01/2024')
+        AFormat - Optional format string matching the input format
+                 If empty, tries to parse using system default format
+      
+      Returns:
+        TDateTime - The parsed date/time value
+        
+      Raises:
+        EConvertError - If the string cannot be parsed using the given format }
     class function FromString(const AValue: string; const AFormat: string = ''): TDateTime; static;
     
-    { Date parts - getters
-      These functions extract individual components from a TDateTime value }
+    { Date Component Getters
+      These functions extract specific parts of a date/time value.
+      All of them accept a TDateTime parameter and return an integer. }
     
-    { Returns the year component (e.g., 2024) }
+    { GetYear
+      Extracts the year from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The year (e.g., 2024) }
     class function GetYear(const AValue: TDateTime): Integer; static;
     
-    { Returns the month component (1-12) }
+    { GetMonth
+      Extracts the month from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The month (1-12, where 1=January) }
     class function GetMonth(const AValue: TDateTime): Integer; static;
     
-    { Returns the day component (1-31) }
+    { GetDay
+      Extracts the day of the month from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The day (1-31) }
     class function GetDay(const AValue: TDateTime): Integer; static;
     
-    { Returns the day of week (1=Sunday, 2=Monday, ..., 7=Saturday) }
+    { GetDayOfWeek
+      Returns which day of the week a date falls on.
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Integer - Day of week (1=Sunday through 7=Saturday) }
     class function GetDayOfWeek(const AValue: TDateTime): Integer; static;
     
-    { Returns the day of year (1-366) }
+    { GetDayOfYear
+      Calculates which day of the year a date falls on.
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Integer - Day of year (1-366, accounting for leap years) }
     class function GetDayOfYear(const AValue: TDateTime): Integer; static;
     
-    { Returns the hour component (0-23) }
+    { GetHour
+      Extracts the hour from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The hour in 24-hour format (0-23) }
     class function GetHour(const AValue: TDateTime): Integer; static;
     
-    { Returns the minute component (0-59) }
+    { GetMinute
+      Extracts the minute from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The minute (0-59) }
     class function GetMinute(const AValue: TDateTime): Integer; static;
     
-    { Returns the second component (0-59) }
+    { GetSecond
+      Extracts the second from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The second (0-59) }
     class function GetSecond(const AValue: TDateTime): Integer; static;
     
-    { Returns the millisecond component (0-999) }
+    { GetMillisecond
+      Extracts the millisecond from a date/time value.
+      
+      Parameters:
+        AValue - The date/time to extract from
+        
+      Returns:
+        Integer - The millisecond (0-999) }
     class function GetMillisecond(const AValue: TDateTime): Integer; static;
     
-    { Date parts - setters
-      These functions return a new TDateTime with the specified component changed }
+    { Date Component Setters
+      These functions create a new TDateTime with one component changed.
+      The original value is not modified. }
     
-    { Sets the year while preserving month, day and time }
+    { SetYear
+      Creates a new date/time with the year changed.
+      
+      Parameters:
+        AValue - Original date/time
+        AYear - New year value (e.g., 2024)
+        
+      Returns:
+        TDateTime - New date/time with updated year }
     class function SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime; static;
     
-    { Sets the month (1-12) while preserving year, day and time }
+    { SetMonth
+      Creates a new date/time with the month changed.
+      
+      Parameters:
+        AValue - Original date/time
+        AMonth - New month value (1-12)
+        
+      Returns:
+        TDateTime - New date/time with updated month }
     class function SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime; static;
     
-    { Sets the day (1-31) while preserving year, month and time }
+    { SetDay
+      Creates a new date/time with the day changed.
+      
+      Parameters:
+        AValue - Original date/time
+        ADay - New day value (1-31)
+        
+      Returns:
+        TDateTime - New date/time with updated day }
     class function SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime; static;
     
-    { Sets the hour (0-23) while preserving date and other time parts }
+    { SetHour
+      Creates a new date/time with the hour changed.
+      
+      Parameters:
+        AValue - Original date/time
+        AHour - New hour value (0-23)
+        
+      Returns:
+        TDateTime - New date/time with updated hour }
     class function SetHour(const AValue: TDateTime; const AHour: Integer): TDateTime; static;
     
-    { Sets the minute (0-59) while preserving date and other time parts }
+    { SetMinute
+      Creates a new date/time with the minute changed.
+      
+      Parameters:
+        AValue - Original date/time
+        AMinute - New minute value (0-59)
+        
+      Returns:
+        TDateTime - New date/time with updated minute }
     class function SetMinute(const AValue: TDateTime; const AMinute: Integer): TDateTime; static;
     
-    { Sets the second (0-59) while preserving date and other time parts }
+    { SetSecond
+      Creates a new date/time with the second changed.
+      
+      Parameters:
+        AValue - Original date/time
+        ASecond - New second value (0-59)
+        
+      Returns:
+        TDateTime - New date/time with updated second }
     class function SetSecond(const AValue: TDateTime; const ASecond: Integer): TDateTime; static;
     
-    { Sets the millisecond (0-999) while preserving date and other time parts }
+    { SetMilliSecond
+      Creates a new date/time with the millisecond changed.
+      
+      Parameters:
+        AValue - Original date/time
+        AMilliSecond - New millisecond value (0-999)
+        
+      Returns:
+        TDateTime - New date/time with updated millisecond }
     class function SetMilliSecond(const AValue: TDateTime; const AMilliSecond: Integer): TDateTime; static;
     
-    { Modifications
-      These functions add or subtract time periods, returning a new TDateTime }
+    { Date/Time Arithmetic
+      These functions add or subtract time periods, returning a new TDateTime.
+      Negative values can be used to subtract time. }
     
-    { Adds the specified number of years (can be negative) }
+    { AddYears
+      Adds (or subtracts) a number of years.
+      
+      Parameters:
+        AValue - Original date/time
+        AYears - Number of years to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with years added/subtracted }
     class function AddYears(const AValue: TDateTime; const AYears: Integer): TDateTime; static;
     
-    { Adds the specified number of months (can be negative) }
+    { AddMonths
+      Adds (or subtracts) a number of months.
+      
+      Parameters:
+        AValue - Original date/time
+        AMonths - Number of months to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with months added/subtracted }
     class function AddMonths(const AValue: TDateTime; const AMonths: Integer): TDateTime; static;
     
-    { Adds the specified number of days (can be negative) }
+    { AddDays
+      Adds (or subtracts) a number of days.
+      
+      Parameters:
+        AValue - Original date/time
+        ADays - Number of days to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with days added/subtracted }
     class function AddDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
     
-    { Adds the specified number of hours (can be negative) }
+    { AddHours
+      Adds (or subtracts) a number of hours.
+      
+      Parameters:
+        AValue - Original date/time
+        AHours - Number of hours to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with hours added/subtracted }
     class function AddHours(const AValue: TDateTime; const AHours: Integer): TDateTime; static;
     
-    { Adds the specified number of minutes (can be negative) }
+    { AddMinutes
+      Adds (or subtracts) a number of minutes.
+      
+      Parameters:
+        AValue - Original date/time
+        AMinutes - Number of minutes to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with minutes added/subtracted }
     class function AddMinutes(const AValue: TDateTime; const AMinutes: Integer): TDateTime; static;
     
-    { Adds the specified number of seconds (can be negative) }
+    { AddSeconds
+      Adds (or subtracts) a number of seconds.
+      
+      Parameters:
+        AValue - Original date/time
+        ASeconds - Number of seconds to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date/time with seconds added/subtracted }
     class function AddSeconds(const AValue: TDateTime; const ASeconds: Integer): TDateTime; static;
     
-    { Truncations
-      These functions return a new TDateTime set to the start/end of a period }
+    { Period Start/End Functions
+      These functions return a new TDateTime set to the start or end
+      of a specific time period (year, month, week, etc.) }
     
-    { Returns a DateTime set to the first moment of the year (Jan 1, 00:00:00.000) }
+    { StartOfYear
+      Sets the date to January 1st and time to 00:00:00.000
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - First moment of the year }
     class function StartOfYear(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the first moment of the month (1st day, 00:00:00.000) }
+    { StartOfMonth
+      Sets the date to the 1st of the month and time to 00:00:00.000
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - First moment of the month }
     class function StartOfMonth(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the first moment of the week (Sunday, 00:00:00.000) }
+    { StartOfWeek
+      Sets the date to Sunday and time to 00:00:00.000
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - First moment of the week }
     class function StartOfWeek(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the first moment of the day (00:00:00.000) }
+    { StartOfDay
+      Sets the time to 00:00:00.000, keeping the date unchanged
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - First moment of the day }
     class function StartOfDay(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the first moment of the hour (XX:00:00.000) }
+    { StartOfHour
+      Sets minutes, seconds and milliseconds to 0, keeping date and hour
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - First moment of the hour }
     class function StartOfHour(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the last moment of the year (Dec 31, 23:59:59.999) }
+    { EndOfYear
+      Sets the date to December 31st and time to 23:59:59.999
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - Last moment of the year }
     class function EndOfYear(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the last moment of the month (last day, 23:59:59.999) }
+    { EndOfMonth
+      Sets the date to the last day of the month and time to 23:59:59.999
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - Last moment of the month }
     class function EndOfMonth(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the last moment of the week (Saturday, 23:59:59.999) }
+    { EndOfWeek
+      Sets the date to Saturday and time to 23:59:59.999
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - Last moment of the week }
     class function EndOfWeek(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the last moment of the day (23:59:59.999) }
+    { EndOfDay
+      Sets the time to 23:59:59.999, keeping the date unchanged
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - Last moment of the day }
     class function EndOfDay(const AValue: TDateTime): TDateTime; static;
     
-    { Returns a DateTime set to the last moment of the hour (XX:59:59.999) }
+    { EndOfHour
+      Sets minutes to 59, seconds to 59, milliseconds to 999
+      
+      Parameters:
+        AValue - Original date/time
+        
+      Returns:
+        TDateTime - Last moment of the hour }
     class function EndOfHour(const AValue: TDateTime): TDateTime; static;
     
-    { Comparisons
-      These functions compare two DateTime values }
+    { Date Comparison Functions
+      These functions compare two dates in various ways }
     
-    { Returns True if AValue is before ADateTime }
+    { IsBefore
+      Checks if one date/time is before another.
+      
+      Parameters:
+        AValue - First date/time to compare
+        ADateTime - Second date/time to compare against
+        
+      Returns:
+        Boolean - True if AValue is before ADateTime }
     class function IsBefore(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Returns True if AValue is after ADateTime }
+    { IsAfter
+      Checks if one date/time is after another.
+      
+      Parameters:
+        AValue - First date/time to compare
+        ADateTime - Second date/time to compare against
+        
+      Returns:
+        Boolean - True if AValue is after ADateTime }
     class function IsAfter(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Returns True if both dates fall on the same day (ignoring time) }
+    { IsSameDay
+      Checks if two dates fall on the same calendar day.
+      Time portions are ignored in the comparison.
+      
+      Parameters:
+        AValue - First date/time to compare
+        ADateTime - Second date/time to compare against
+        
+      Returns:
+        Boolean - True if both dates are the same day }
     class function IsSameDay(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Returns True if both dates fall in the same month and year }
+    { IsSameMonth
+      Checks if two dates fall in the same month and year.
+      
+      Parameters:
+        AValue - First date/time to compare
+        ADateTime - Second date/time to compare against
+        
+      Returns:
+        Boolean - True if both dates are in the same month }
     class function IsSameMonth(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Returns True if both dates fall in the same year }
+    { IsSameYear
+      Checks if two dates fall in the same year.
+      
+      Parameters:
+        AValue - First date/time to compare
+        ADateTime - Second date/time to compare against
+        
+      Returns:
+        Boolean - True if both dates are in the same year }
     class function IsSameYear(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { Business day calculations
-      These functions handle workday-related operations (Monday-Friday) }
+    { Business Day Functions
+      These functions help with business day calculations,
+      treating Monday-Friday as business days }
     
-    { Returns True if the date falls on a business day (Monday-Friday) }
+    { IsBusinessDay
+      Checks if a date falls on a business day (Monday-Friday).
+      Weekends (Saturday-Sunday) return False.
+      
+      Parameters:
+        AValue - Date/time to check
+        
+      Returns:
+        Boolean - True if date is a business day }
     class function IsBusinessDay(const AValue: TDateTime): Boolean; static;
     
-    { Returns the next business day after the given date }
+    { NextBusinessDay
+      Finds the next business day after the given date.
+      If given a Friday, returns the following Monday.
+      
+      Parameters:
+        AValue - Starting date/time
+        
+      Returns:
+        TDateTime - Next business day }
     class function NextBusinessDay(const AValue: TDateTime): TDateTime; static;
     
-    { Returns the previous business day before the given date }
+    { PreviousBusinessDay
+      Finds the previous business day before the given date.
+      If given a Monday, returns the previous Friday.
+      
+      Parameters:
+        AValue - Starting date/time
+        
+      Returns:
+        TDateTime - Previous business day }
     class function PreviousBusinessDay(const AValue: TDateTime): TDateTime; static;
     
-    { Adds the specified number of business days (skipping weekends)
-      ADays can be negative to subtract business days }
+    { AddBusinessDays
+      Adds (or subtracts) a number of business days.
+      Skips weekends when counting days.
+      
+      Parameters:
+        AValue - Starting date/time
+        ADays - Number of business days to add (negative to subtract)
+        
+      Returns:
+        TDateTime - New date after adding/subtracting business days }
     class function AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
   end;
 
