@@ -1,6 +1,6 @@
 unit testcase;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
@@ -309,9 +309,22 @@ procedure TDateTimeTests.Test11_AddYears;
 var
   StartDate, Expected: TDateTime;
 begin
+  // Regular year transition
   StartDate := EncodeDate(2024, 1, 15);
   Expected := EncodeDate(2028, 1, 15);
   AssertEquals('AddYears should add specified years',
+    Expected, TDateTimeKit.AddYears(StartDate, 4));
+    
+  // Feb 29 leap year to non-leap year
+  StartDate := EncodeDate(2024, 2, 29);  // 2024 is leap year
+  Expected := EncodeDate(2025, 2, 28);   // 2025 is not
+  AssertEquals('AddYears should handle Feb 29 to non-leap year',
+    Expected, TDateTimeKit.AddYears(StartDate, 1));
+    
+  // Feb 29 leap year to leap year
+  StartDate := EncodeDate(2024, 2, 29);  // 2024 is leap year
+  Expected := EncodeDate(2028, 2, 29);   // 2028 is also leap year
+  AssertEquals('AddYears should preserve Feb 29 in leap year',
     Expected, TDateTimeKit.AddYears(StartDate, 4));
 end;
 
@@ -339,9 +352,28 @@ procedure TDateTimeTests.Test14_AddHours;
 var
   StartDate, Expected: TDateTime;
 begin
+  // Regular hour addition
   StartDate := EncodeDate(2024, 1, 15) + EncodeTime(12, 0, 0, 0);
   Expected := EncodeDate(2024, 1, 15) + EncodeTime(14, 0, 0, 0);
   AssertEquals('AddHours should add specified hours',
+    Expected, TDateTimeKit.AddHours(StartDate, 2));
+    
+  // Cross day boundary
+  StartDate := EncodeDate(2024, 1, 15) + EncodeTime(23, 0, 0, 0);
+  Expected := EncodeDate(2024, 1, 16) + EncodeTime(1, 0, 0, 0);
+  AssertEquals('AddHours should handle day boundary',
+    Expected, TDateTimeKit.AddHours(StartDate, 2));
+    
+  // Cross month boundary
+  StartDate := EncodeDate(2024, 1, 31) + EncodeTime(23, 0, 0, 0);
+  Expected := EncodeDate(2024, 2, 1) + EncodeTime(1, 0, 0, 0);
+  AssertEquals('AddHours should handle month boundary',
+    Expected, TDateTimeKit.AddHours(StartDate, 2));
+    
+  // Cross year and handle leap year
+  StartDate := EncodeDate(2024, 2, 28) + EncodeTime(23, 0, 0, 0);
+  Expected := EncodeDate(2024, 2, 29) + EncodeTime(1, 0, 0, 0);
+  AssertEquals('AddHours should handle leap year boundary',
     Expected, TDateTimeKit.AddHours(StartDate, 2));
 end;
 

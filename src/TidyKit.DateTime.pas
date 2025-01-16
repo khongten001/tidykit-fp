@@ -1,6 +1,6 @@
 unit TidyKit.DateTime;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
@@ -542,6 +542,58 @@ type
       Returns:
         TDateTime - New date after adding/subtracting business days }
     class function AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
+    
+    { GetQuarter
+      Returns the quarter (1-4) for the given date.
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Integer - Quarter number (1-4) }
+    class function GetQuarter(const AValue: TDateTime): Integer; static;
+    
+    { IsAM
+      Checks if the time is in the AM (before noon).
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Boolean - True if time is before noon }
+    class function IsAM(const AValue: TDateTime): Boolean; static;
+    
+    { IsPM
+      Checks if the time is in the PM (after noon).
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Boolean - True if time is after noon }
+    class function IsPM(const AValue: TDateTime): Boolean; static;
+    
+    { FloorDate
+      Rounds down to the nearest unit.
+      
+      Parameters:
+        AValue - The date/time to round
+        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+        
+      Returns:
+        TDateTime - Rounded down date/time }
+    class function FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
+    
+    { CeilingDate
+      Rounds up to the nearest unit.
+      
+      Parameters:
+        AValue - The date/time to round
+        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+        
+      Returns:
+        TDateTime - Rounded up date/time }
+    class function CeilingDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
   end;
 
 implementation
@@ -672,21 +724,45 @@ end;
 class function TDateTimeKit.SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime;
 var
   Y, M, D: Word;
+  NewD: Word;
 begin
   // Extract current date components
   DecodeDate(AValue, Y, M, D);
+  
+  // Handle Feb 29 corner case
+  if (M = 2) and (D = 29) and (not IsLeapYear(AYear)) then
+    NewD := 28
+  else
+    NewD := D;
+    
   // Create new date with updated year, preserving time portion
-  Result := EncodeDate(AYear, M, D) + Frac(AValue);
+  Result := EncodeDate(AYear, M, NewD) + Frac(AValue);
 end;
 
 class function TDateTimeKit.SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime;
 var
   Y, M, D: Word;
+  LastDay: Word;
+  NewD: Word;
+  TempDate: TDateTime;
 begin
   // Extract current date components
   DecodeDate(AValue, Y, M, D);
+  
+  // Create a temporary date with the target month
+  TempDate := EncodeDate(Y, AMonth, 1);
+  
+  // Get last day of target month
+  LastDay := DaysInMonth(TempDate);
+  
+  // Adjust day if it exceeds the last day of target month
+  if D > LastDay then
+    NewD := LastDay
+  else
+    NewD := D;
+    
   // Create new date with updated month, preserving time portion
-  Result := EncodeDate(Y, AMonth, D) + Frac(AValue);
+  Result := EncodeDate(Y, AMonth, NewD) + Frac(AValue);
 end;
 
 class function TDateTimeKit.SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime;
@@ -928,6 +1004,94 @@ begin
     Result := AddDays(Result, Step);
     if IsBusinessDay(Result) then
       Dec(RemainingDays);
+  end;
+end;
+
+class function TDateTimeKit.GetQuarter(const AValue: TDateTime): Integer;
+begin
+  Result := ((GetMonth(AValue) - 1) div 3) + 1;
+end;
+
+class function TDateTimeKit.IsAM(const AValue: TDateTime): Boolean;
+begin
+  Result := GetHour(AValue) < 12;
+end;
+
+class function TDateTimeKit.IsPM(const AValue: TDateTime): Boolean;
+begin
+  Result := GetHour(AValue) >= 12;
+end;
+
+class function TDateTimeKit.FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime;
+var
+  Y, M, D: Word;
+  H, N, S, MS: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  DecodeTime(AValue, H, N, S, MS);
+  
+  case LowerCase(AUnit) of
+    'year': Result := EncodeDate(Y, 1, 1);
+    'month': Result := EncodeDate(Y, M, 1);
+    'day': Result := Trunc(AValue);
+    'hour': Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
+    'minute': Result := Trunc(AValue) + EncodeTime(H, N, 0, 0);
+    'second': Result := Trunc(AValue) + EncodeTime(H, N, S, 0);
+    else
+      Result := AValue;  // Unknown unit, return as is
+  end;
+end;
+
+class function TDateTimeKit.CeilingDate(const AValue: TDateTime; const AUnit: string): TDateTime;
+var
+  Y, M, D: Word;
+  H, N, S, MS: Word;
+  LastDay: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  DecodeTime(AValue, H, N, S, MS);
+  
+  case LowerCase(AUnit) of
+    'year': 
+      if (M = 1) and (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := EncodeDate(Y + 1, 1, 1);
+        
+    'month':
+      if (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        if M = 12 then
+          Result := EncodeDate(Y + 1, 1, 1)
+        else
+          Result := EncodeDate(Y, M + 1, 1);
+          
+    'day':
+      if (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + 1;
+        
+    'hour':
+      if (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H + 1, 0, 0, 0);
+        
+    'minute':
+      if (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H, N + 1, 0, 0);
+        
+    'second':
+      if MS = 0 then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H, N, S + 1, 0);
+    else
+      Result := AValue;  // Unknown unit, return as is
   end;
 end;
 
