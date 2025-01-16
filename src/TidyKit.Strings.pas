@@ -8,62 +8,312 @@ uses
   Classes, SysUtils, RegExpr, StrUtils;
 
 type
-  { String match result }
+  { TStringMatch
+    ------------
+    Represents a single match result from pattern matching operations.
+    Contains the matched text, its position in the original string,
+    and the length of the match. }
   TStringMatch = record
-    Text: string;
-    Position: Integer;
-    Length: Integer;
+    Text: string;      // The matched text
+    Position: Integer; // Starting position in original string (1-based)
+    Length: Integer;   // Length of the matched text
   end;
+  
+  { Array types for storing multiple results }
   TStringMatches = array of TStringMatch;
   TStringArray = array of string;
 
-  { String operations }
+  { TStringKit
+    ----------
+    A comprehensive toolkit for string manipulation operations.
+    Provides methods for common string operations like trimming,
+    case conversion, padding, pattern matching, and more.
+    
+    All methods are static (class functions) for ease of use - 
+    no need to create instances. }
   TStringKit = class
   private
+    { Checks if a character is considered whitespace (space, tab, CR, LF).
+      
+      Parameters:
+        C - The character to check.
+        
+      Returns:
+        True if the character is whitespace, False otherwise. }
     class function IsWhiteSpace(const C: Char): Boolean; static;
   public
-    // Basic string operations
+    { Removes leading and trailing whitespace from a string.
+      
+      Parameters:
+        Text - The string to trim.
+        
+      Returns:
+        The trimmed string. }
     class function Trim(const Text: string): string; static;
+    
+    { Removes leading whitespace from a string.
+      
+      Parameters:
+        Text - The string to trim.
+        
+      Returns:
+        The string with leading whitespace removed. }
     class function TrimLeft(const Text: string): string; static;
+    
+    { Removes trailing whitespace from a string.
+      
+      Parameters:
+        Text - The string to trim.
+        
+      Returns:
+        The string with trailing whitespace removed. }
     class function TrimRight(const Text: string): string; static;
+    
+    { Converts a string to uppercase.
+      
+      Parameters:
+        Text - The string to convert.
+        
+      Returns:
+        The uppercase version of the string. }
     class function ToUpper(const Text: string): string; static;
+    
+    { Converts a string to lowercase.
+      
+      Parameters:
+        Text - The string to convert.
+        
+      Returns:
+        The lowercase version of the string. }
     class function ToLower(const Text: string): string; static;
     
-    // Advanced string operations
+    { Centers text by adding padding characters on both sides.
+      
+      Parameters:
+        Text - The string to pad.
+        Width - The desired total width.
+        PadChar - The character to use for padding (default space).
+        
+      Returns:
+        The padded string centered within Width characters. }
     class function PadCenter(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
+    
+    { Adds padding characters to the left of a string.
+      
+      Parameters:
+        Text - The string to pad.
+        Width - The desired total width.
+        PadChar - The character to use for padding (default space).
+        
+      Returns:
+        The left-padded string. }
     class function PadLeft(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
+    
+    { Adds padding characters to the right of a string.
+      
+      Parameters:
+        Text - The string to pad.
+        Width - The desired total width.
+        PadChar - The character to use for padding (default space).
+        
+      Returns:
+        The right-padded string. }
     class function PadRight(const Text: string; Width: Integer; PadChar: Char = ' '): string; static;
     
-    // Whitespace handling
+    { Replaces multiple consecutive whitespace characters with a single space.
+      
+      Parameters:
+        Text - The string to process.
+        
+      Returns:
+        The string with collapsed whitespace. }
     class function CollapseWhitespace(const Text: string): string; static;
+    
+    { Removes all whitespace characters from a string.
+      
+      Parameters:
+        Text - The string to process.
+        
+      Returns:
+        The string with all whitespace removed. }
     class function RemoveWhitespace(const Text: string): string; static;
     
-    // Text manipulation
+    { Repeats a string a specified number of times.
+      
+      Parameters:
+        Text - The string to duplicate.
+        Count - Number of times to repeat the string.
+        
+      Returns:
+        The concatenated result. }
     class function DuplicateText(const Text: string; Count: Integer): string; static;
+    
+    { Reverses the characters in a string.
+      
+      Parameters:
+        Text - The string to reverse.
+        
+      Returns:
+        The reversed string. }
     class function ReverseText(const Text: string): string; static;
+    
+    { Capitalizes the first character of a string.
+      
+      Parameters:
+        Text - The string to capitalize.
+        
+      Returns:
+        The string with first character capitalized. }
     class function CapitalizeText(const Text: string): string; static;
     
-    // Pattern matching and extraction
+    { Finds all matches of a regular expression pattern in text.
+      
+      Parameters:
+        Text - The string to search in.
+        Pattern - The regular expression pattern.
+        
+      Returns:
+        Array of TStringMatch records with match details. }
     class function ExtractMatches(const Text, Pattern: string): TStringMatches; static;
+    
+    { Extracts all matching substrings using a pattern.
+      
+      Parameters:
+        Text - The string to search in.
+        Pattern - The regular expression pattern.
+        
+      Returns:
+        Array of matched substrings. }
     class function ExtractAllMatches(const Text, Pattern: string): TStringArray; static;
+    
+    { Tests if a string matches a regular expression pattern.
+      
+      Parameters:
+        Text - The string to test.
+        Pattern - The regular expression pattern.
+        
+      Returns:
+        True if the string matches the pattern. }
     class function MatchesPattern(const Text, Pattern: string): Boolean; static;
+    
+    { Replaces text matching a regular expression pattern.
+      
+      Parameters:
+        Text - The string to process.
+        Pattern - The regular expression pattern to match.
+        Replacement - The replacement text.
+        
+      Returns:
+        The string with replacements made. }
     class function ReplaceRegEx(const Text, Pattern, Replacement: string): string; static;
+    
+    { Replaces all occurrences of a substring.
+      
+      Parameters:
+        Text - The string to process.
+        OldText - The text to find and replace.
+        NewText - The replacement text.
+        
+      Returns:
+        The string with replacements made. }
     class function ReplaceText(const Text, OldText, NewText: string): string; static;
     
-    // Word operations
+    { Splits text into an array of words.
+      
+      Parameters:
+        AText - The text to split.
+        
+      Returns:
+        Array of words from the text. }
     class function GetWords(const AText: string): TStringArray; static;
+    
+    { Counts occurrences of a substring in text.
+      
+      Parameters:
+        Text - The string to search in.
+        SubStr - The substring to count.
+        
+      Returns:
+        Number of times the substring appears. }
     class function CountSubString(const Text, SubStr: string): Integer; static;
     
-    // String tests
+    { Tests if a string contains a substring.
+      
+      Parameters:
+        Text - The string to search in.
+        SubStr - The substring to find.
+        
+      Returns:
+        True if substring is found. }
     class function Contains(const Text, SubStr: string): Boolean; static;
+    
+    { Tests if a string starts with a prefix.
+      
+      Parameters:
+        Text - The string to test.
+        Prefix - The prefix to check for.
+        
+      Returns:
+        True if the string starts with prefix. }
     class function StartsWith(const Text, Prefix: string): Boolean; static;
+    
+    { Tests if a string ends with a suffix.
+      
+      Parameters:
+        Text - The string to test.
+        Suffix - The suffix to check for.
+        
+      Returns:
+        True if the string ends with suffix. }
     class function EndsWith(const Text, Suffix: string): Boolean; static;
+    
+    { Tests if a string is empty.
+      
+      Parameters:
+        Text - The string to test.
+        
+      Returns:
+        True if the string is empty. }
     class function IsEmpty(const Text: string): Boolean; static;
+    
+    { Gets the length of a string.
+      
+      Parameters:
+        Text - The string to measure.
+        
+      Returns:
+        Number of characters in the string. }
     class function GetLength(const Text: string): Integer; static;
     
-    // Substring operations
+    { Extracts a substring.
+      
+      Parameters:
+        Text - The source string.
+        StartPos - Starting position (1-based).
+        Length - Number of characters to extract.
+        
+      Returns:
+        The extracted substring. }
     class function SubString(const Text: string; StartPos, Length: Integer): string; static;
+    
+    { Gets characters from start of string.
+      
+      Parameters:
+        Text - The source string.
+        Length - Number of characters to get.
+        
+      Returns:
+        The leftmost characters. }
     class function LeftStr(const Text: string; Length: Integer): string; static;
+    
+    { Gets characters from end of string.
+      
+      Parameters:
+        Text - The source string.
+        Length - Number of characters to get.
+        
+      Returns:
+        The rightmost characters. }
     class function RightStr(const Text: string; Length: Integer): string; static;
   end;
 
