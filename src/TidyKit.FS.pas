@@ -1,36 +1,39 @@
 unit TidyKit.FS;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
 uses
   {$IFDEF UNIX}
-  BaseUnix,
-  Unix,
+  BaseUnix,  // Unix-specific system calls
+  Unix,      // Unix-specific types and constants
   {$ENDIF}
   {$IFDEF WINDOWS}
-  Windows,
+  Windows,   // Windows-specific API
   {$ENDIF}
   Classes, SysUtils, DateUtils, TidyKit.Core;
 
 type
-  { Platform-independent file attributes }
+  { TFileAttributes provides a platform-independent way to access file attributes.
+    This record normalizes the differences between Windows and Unix file systems. }
   TFileAttributes = record
-    ReadOnly: Boolean;
-    Hidden: Boolean;
-    System: Boolean;
-    Directory: Boolean;
-    Archive: Boolean;
-    SymLink: Boolean;
-    Owner: string;
-    Group: string;
-    Permissions: string;  // Unix-style permissions string
+    ReadOnly: Boolean;    // True if file cannot be modified
+    Hidden: Boolean;      // True if file is hidden from normal listings
+    System: Boolean;      // True if file is a system file
+    Directory: Boolean;   // True if path points to a directory
+    Archive: Boolean;     // True if file has been modified since last backup
+    SymLink: Boolean;     // True if path is a symbolic link
+    Owner: string;        // Name/ID of file owner (more relevant on Unix)
+    Group: string;        // Name/ID of file group (more relevant on Unix)
+    Permissions: string;  // Unix-style permissions string (e.g. 'rwxr-xr--')
   end;
 
+  { Dynamic array of strings, used for file listings }
   TStringArray = array of string;
 
-  { File sorting options }
+  { TFileSortOrder defines how files/directories should be sorted in listings.
+    This provides flexible sorting options for directory contents. }
   TFileSortOrder = (
     fsNone,           // No sorting (default)
     fsName,           // Sort by name
@@ -41,24 +44,29 @@ type
     fsSizeDesc       // Sort by size descending
   );
 
-  { Search result record }
+  { TSearchResult contains detailed information about a file or directory.
+    Used by search operations to return comprehensive file information. }
   TSearchResult = record
-    FileName: string;
-    FullPath: string;
-    Size: Int64;
-    LastModified: TDateTime;
-    IsDirectory: Boolean;
-    Attributes: TFileAttributes;
+    FileName: string;      // Name of the file without path
+    FullPath: string;      // Complete path to the file
+    Size: Int64;          // File size in bytes
+    LastModified: TDateTime; // Last modification timestamp
+    IsDirectory: Boolean;  // True if item is a directory
+    Attributes: TFileAttributes; // Detailed file attributes
   end;
   
+  { Array of search results for operations that return multiple files }
   TSearchResults = array of TSearchResult;
 
-  { File operations }
+  { TFileKit provides a comprehensive set of file system operations.
+    All operations are static (class functions) for ease of use and memory safety.
+    The kit handles platform-specific differences internally. }
   TFileKit = class
   private
+    { Creates a TSearchResult record for a given path }
     class function CreateSearchResult(const APath: string): TSearchResult; static;
   public
-    { Basic operations }
+    { Basic file operations }
     class function ReadFile(const APath: string): string; static;
     class procedure WriteFile(const APath: string; const AContent: string); static;
     class procedure AppendFile(const APath: string; const AContent: string); static;
@@ -66,12 +74,12 @@ type
     class procedure CopyFile(const ASourcePath, ADestPath: string); static;
     class procedure MoveFile(const ASourcePath, ADestPath: string); static;
     
-    { Content operations }
+    { Text content manipulation }
     class procedure AppendText(const APath, AText: string); static;
     class procedure PrependText(const APath, AText: string); static;
     class procedure ReplaceText(const APath, OldText, NewText: string); static;
     
-    { Directory operations }
+    { Directory management }
     class procedure CreateDirectory(const APath: string); static;
     class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True); static;
     class procedure EnsureDirectory(const APath: string); static;
@@ -84,14 +92,14 @@ type
       const Recursive: Boolean = False;
       const SortOrder: TFileSortOrder = fsNone): TStringArray; static;
     
-    { Path operations }
+    { Path manipulation and information }
     class function ChangeExtension(const APath, NewExt: string): string; static;
     class function GetFileName(const APath: string): string; static;
     class function GetFileNameWithoutExt(const APath: string): string; static;
     class function GetDirectory(const APath: string): string; static;
     class function GetExtension(const APath: string): string; static;
     
-    { File information }
+    { File information and attributes }
     class function Exists(const APath: string): Boolean; static;
     class function DirectoryExists(const APath: string): Boolean; static;
     class function GetSize(const APath: string): Int64; static;
@@ -102,7 +110,7 @@ type
     class function IsTextFile(const APath: string): Boolean; static;
     class function GetFileEncoding(const APath: string): string; static;
     
-    { Search operations }
+    { File search and filtering }
     class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
     class function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults; static;
     class function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
@@ -110,18 +118,18 @@ type
     class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string; static;
     
-    { Directory information }
+    { Standard directory paths }
     class function GetUserDir: string; static;
     class function GetCurrentDir: string; static;
     class function GetTempDir: string; static;
     class function GetParentDir(const APath: string): string; static;
     
-    { Path manipulation }
+    { Path utilities }
     class function CombinePaths(const APath1, APath2: string): string; static;
     class function IsAbsolutePath(const APath: string): Boolean; static;
     class function NormalizePath(const APath: string): string; static;
     
-    { File system operations }
+    { Temporary file operations }
     class function CreateTempFile(const APrefix: string = ''): string; static;
     class function CreateTempDirectory(const APrefix: string = ''): string; static;
   end;
