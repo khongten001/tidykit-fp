@@ -14,6 +14,28 @@ type
     dskDuration  // Physical time (fixed length in seconds)
   );
   
+  { TDateUnit represents different units of time for rounding operations }
+  TDateUnit = (
+    duSecond,
+    duMinute,
+    duHour,
+    duDay,
+    duWeek,
+    duMonth,
+    duBiMonth,
+    duQuarter,
+    duSeason,
+    duHalfYear,
+    duYear
+  );
+  
+  { TTimeZoneInfo represents timezone information }
+  TTimeZoneInfo = record
+    Name: string;           // Timezone name (e.g., 'UTC', 'America/New_York')
+    Offset: Integer;        // Offset from UTC in minutes
+    IsDST: Boolean;        // Whether daylight savings is in effect
+  end;
+  
   { TDateSpan represents a span of time that can be added to or subtracted from dates }
   TDateSpan = record
     Kind: TDateSpanKind;    // How to interpret this span
@@ -595,7 +617,7 @@ type
         
       Returns:
         TDateTime - Rounded down date/time }
-    class function FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
+    class function FloorDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
     
     { CeilingDate
       Rounds up to the nearest unit.
@@ -606,7 +628,7 @@ type
         
       Returns:
         TDateTime - Rounded up date/time }
-    class function CeilingDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
+    class function CeilingDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
     
     { Time Span Creation Functions }
     
@@ -717,6 +739,47 @@ type
         TDateSpan - Length of the interval }
     class function IntervalLength(const AInterval: TInterval; 
       const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
+    
+    { Parse Date-Times with specific formats }
+    class function YMD(const AValue: string): TDateTime; static;
+    class function MDY(const AValue: string): TDateTime; static;
+    class function DMY(const AValue: string): TDateTime; static;
+    class function YQ(const AValue: string): TDateTime; static;  // Parse year and quarter
+    class function DateDecimal(const AValue: Double): TDateTime; static;
+    
+    { Additional component getters }
+    class function GetISOYear(const AValue: TDateTime): Integer; static;
+    class function GetISOWeek(const AValue: TDateTime): Integer; static;
+    class function GetEpiYear(const AValue: TDateTime): Integer; static;
+    class function GetEpiWeek(const AValue: TDateTime): Integer; static;
+    class function GetSemester(const AValue: TDateTime): Integer; static;
+    
+    { Date rounding functions }
+    class function RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
+    
+    { Timezone functions }
+    class function GetTimeZone(const AValue: TDateTime): TTimeZoneInfo; static;
+    class function WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
+    class function ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
+    class function GetSystemTimeZone: string; static;
+    class function GetTimeZoneNames: TStringArray; static;
+    
+    { Additional utility functions }
+    class function RollbackMonth(const AValue: TDateTime): TDateTime; static;  // Roll back to last day of previous month
+    class function RollForwardMonth(const AValue: TDateTime): TDateTime; static;  // Roll forward to first day of next month
+    class function GetDecimalDate(const AValue: TDateTime): Double; static;  // Convert to decimal year
+    
+    { Additional period/duration functions }
+    class function PeriodToSeconds(const APeriod: TDateSpan): Int64; static;
+    class function SecondsToPeriod(const ASeconds: Int64): TDateSpan; static;
+    class function StandardizePeriod(const APeriod: TDateSpan): TDateSpan; static;
+    
+    { Additional interval functions }
+    class function IntervalAlign(const AInterval1, AInterval2: TInterval): Boolean; static;
+    class function IntervalGap(const AInterval1, AInterval2: TInterval): TDateSpan; static;
+    class function IntervalSetdiff(const AInterval1, AInterval2: TInterval): TInterval; static;
+    class function IntervalUnion(const AInterval1, AInterval2: TInterval): TInterval; static;
+    class function IntervalIntersection(const AInterval1, AInterval2: TInterval): TInterval; static;
   end;
 
 implementation
@@ -976,68 +1039,52 @@ end;
 
 class function TDateTimeKit.StartOfYear(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to January 1st of the current year at 00:00:00.000
-  Result := StartOfTheYear(AValue);
+  Result := FloorDate(AValue, duYear);
 end;
 
 class function TDateTimeKit.StartOfMonth(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to the 1st of the current month at 00:00:00.000
-  Result := StartOfTheMonth(AValue);
+  Result := FloorDate(AValue, duMonth);
 end;
 
 class function TDateTimeKit.StartOfWeek(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to Sunday of the current week at 00:00:00.000
-  Result := StartOfTheWeek(AValue);
+  Result := FloorDate(AValue, duWeek);
 end;
 
 class function TDateTimeKit.StartOfDay(const AValue: TDateTime): TDateTime;
 begin
-  // Set time to 00:00:00.000, preserving the date
-  Result := DateOf(AValue);
+  Result := FloorDate(AValue, duDay);
 end;
 
 class function TDateTimeKit.StartOfHour(const AValue: TDateTime): TDateTime;
-var
-  H, M, S, MS: Word;
 begin
-  // Extract hour and set minutes, seconds, milliseconds to zero
-  DecodeTime(AValue, H, M, S, MS);
-  Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
+  Result := FloorDate(AValue, duHour);
 end;
 
 class function TDateTimeKit.EndOfYear(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to December 31st of the current year at 23:59:59.999
-  Result := EndOfTheYear(AValue);
+  Result := CeilingDate(AValue, duYear) - OneMillisecond;
 end;
 
 class function TDateTimeKit.EndOfMonth(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to the last day of the current month at 23:59:59.999
-  Result := EndOfTheMonth(AValue);
+  Result := CeilingDate(AValue, duMonth) - OneMillisecond;
 end;
 
 class function TDateTimeKit.EndOfWeek(const AValue: TDateTime): TDateTime;
 begin
-  // Set date to Saturday of the current week at 23:59:59.999
-  Result := EndOfTheWeek(AValue);
+  Result := CeilingDate(AValue, duWeek) - OneMillisecond;
 end;
 
 class function TDateTimeKit.EndOfDay(const AValue: TDateTime): TDateTime;
 begin
-  // Set time to 23:59:59.999, preserving the date
-  Result := EndOfTheDay(AValue);
+  Result := CeilingDate(AValue, duDay) - OneMillisecond;
 end;
 
 class function TDateTimeKit.EndOfHour(const AValue: TDateTime): TDateTime;
-var
-  H, M, S, MS: Word;
 begin
-  // Extract hour and set minutes, seconds, milliseconds to their maximum values
-  DecodeTime(AValue, H, M, S, MS);
-  Result := Trunc(AValue) + EncodeTime(H, 59, 59, 999);
+  Result := CeilingDate(AValue, duHour) - OneMillisecond;
 end;
 
 class function TDateTimeKit.IsBefore(const AValue, ADateTime: TDateTime): Boolean;
@@ -1145,7 +1192,7 @@ begin
   Result := GetHour(AValue) >= 12;
 end;
 
-class function TDateTimeKit.FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime;
+class function TDateTimeKit.FloorDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
 var
   Y, M, D: Word;
   H, N, S, MS: Word;
@@ -1153,74 +1200,115 @@ begin
   DecodeDate(AValue, Y, M, D);
   DecodeTime(AValue, H, N, S, MS);
   
-  case LowerCase(AUnit) of
-    'year': Result := EncodeDate(Y, 1, 1);
-    'month': Result := EncodeDate(Y, M, 1);
-    'day': Result := Trunc(AValue);
-    'hour': Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
-    'minute': Result := Trunc(AValue) + EncodeTime(H, N, 0, 0);
-    'second': Result := Trunc(AValue) + EncodeTime(H, N, S, 0);
+  case AUnit of
+    duYear: Result := EncodeDate(Y, 1, 1);
+    duHalfYear: 
+      begin
+        if M > 6 then
+          Result := EncodeDate(Y, 7, 1)
+        else
+          Result := EncodeDate(Y, 1, 1);
+      end;
+    duQuarter:
+      begin
+        M := ((M - 1) div 3) * 3 + 1;
+        Result := EncodeDate(Y, M, 1);
+      end;
+    duBiMonth:
+      begin
+        M := ((M - 1) div 2) * 2 + 1;
+        Result := EncodeDate(Y, M, 1);
+      end;
+    duMonth: Result := EncodeDate(Y, M, 1);
+    duWeek: Result := StartOfTheWeek(AValue);
+    duDay: Result := Trunc(AValue);
+    duHour: Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
+    duMinute: Result := Trunc(AValue) + EncodeTime(H, N, 0, 0);
+    duSecond: Result := Trunc(AValue) + EncodeTime(H, N, S, 0);
     else
       Result := AValue;  // Unknown unit, return as is
   end;
 end;
 
-class function TDateTimeKit.CeilingDate(const AValue: TDateTime; 
-                                        const AUnit: string): TDateTime;
+class function TDateTimeKit.CeilingDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
 var
   Y, M, D: Word;
   H, N, S, MS: Word;
-  LastDay: Word;
 begin
   DecodeDate(AValue, Y, M, D);
   DecodeTime(AValue, H, N, S, MS);
   
-  case LowerCase(AUnit) of
-    'year': 
+  case AUnit of
+    duYear: 
       if (M = 1) and (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
         Result := AValue
       else
         Result := EncodeDate(Y + 1, 1, 1);
         
-    'month':
-      if (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
-        Result := AValue
+    duHalfYear:
+      if M <= 6 then
+        Result := EncodeDate(Y, 7, 1)
       else
-        if M = 12 then
-          Result := EncodeDate(Y + 1, 1, 1)
-        else
-          Result := EncodeDate(Y, M + 1, 1);
-          
-    'day':
-      if (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
-        Result := AValue
-      else
-        Result := Trunc(AValue) + 1;
+        Result := EncodeDate(Y + 1, 1, 1);
         
-    'hour':
-      if (N = 0) and (S = 0) and (MS = 0) then
-        Result := AValue
+    duQuarter:
+      begin
+        M := ((M - 1) div 3) * 3 + 4;
+        if M > 12 then
+        begin
+          Inc(Y);
+          M := 1;
+        end;
+        Result := EncodeDate(Y, M, 1);
+      end;
+      
+    duBiMonth:
+      begin
+        M := ((M - 1) div 2) * 2 + 3;
+        if M > 12 then
+        begin
+          Inc(Y);
+          M := 1;
+        end;
+        Result := EncodeDate(Y, M, 1);
+      end;
+      
+    duMonth:
+      if M = 12 then
+        Result := EncodeDate(Y + 1, 1, 1)
       else
-        Result := Trunc(AValue) + EncodeTime(H + 1, 0, 0, 0);
+        Result := EncodeDate(Y, M + 1, 1);
         
-    'minute':
-      if (S = 0) and (MS = 0) then
-        Result := AValue
-      else
-        Result := Trunc(AValue) + EncodeTime(H, N + 1, 0, 0);
-        
-    'second':
-      if MS = 0 then
-        Result := AValue
-      else
-        Result := Trunc(AValue) + EncodeTime(H, N, S + 1, 0);
+    duWeek: Result := EndOfTheWeek(AValue) + OneSecond;
+    duDay: Result := Trunc(AValue) + 1;
+    duHour: Result := Trunc(AValue) + EncodeTime(H + 1, 0, 0, 0);
+    duMinute: Result := Trunc(AValue) + EncodeTime(H, N + 1, 0, 0);
+    duSecond: Result := Trunc(AValue) + EncodeTime(H, N, S + 1, 0);
     else
       Result := AValue;  // Unknown unit, return as is
   end;
 end;
 
-class function TDateTimeKit.CreatePeriod(const AYears, AMonths, ADays, 
-                                               AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+class function TDateTimeKit.RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
+var
+  Floor, Ceiling: TDateTime;
+  FloorDiff, CeilingDiff: TDateTime;
+begin
+  Floor := FloorDate(AValue, AUnit);
+  Ceiling := CeilingDate(AValue, AUnit);
+  
+  FloorDiff := Abs(AValue - Floor);
+  CeilingDiff := Abs(Ceiling - AValue);
+  
+  if FloorDiff <= CeilingDiff then
+    Result := Floor
+  else
+    Result := Ceiling;
+end;
+
+class function TDateTimeKit.CreatePeriod(const AYears: Integer = 0; const AMonths: Integer = 0;
+  const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+  const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan;
 begin
   Result.Kind := dskPeriod;
   Result.Years := AYears;
@@ -1232,8 +1320,9 @@ begin
   Result.Milliseconds := AMilliseconds;
 end;
 
-class function TDateTimeKit.CreateDuration(const AYears, AMonths, ADays, 
-                                                 AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+class function TDateTimeKit.CreateDuration(const AYears: Integer = 0; const AMonths: Integer = 0;
+  const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+  const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan;
 begin
   Result.Kind := dskDuration;
   // Convert everything to a consistent unit (milliseconds)
@@ -1257,8 +1346,7 @@ begin
   Result.EndDate := AEnd;
 end;
 
-class function TDateTimeKit.AddSpan(const AValue: TDateTime; 
-                                    const ASpan: TDateSpan): TDateTime;
+class function TDateTimeKit.AddSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime;
 begin
   case ASpan.Kind of
     dskPeriod:
@@ -1290,8 +1378,7 @@ begin
   end;
 end;
 
-class function TDateTimeKit.SubtractSpan(const AValue: TDateTime; 
-                                         const ASpan: TDateSpan): TDateTime;
+class function TDateTimeKit.SubtractSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime;
 var
   NegativeSpan: TDateSpan;
 begin
@@ -1412,6 +1499,513 @@ class function TDateTimeKit.IntervalLength(const AInterval: TInterval;
                                            const AKind: TDateSpanKind): TDateSpan;
 begin
   Result := SpanBetween(AInterval.StartDate, AInterval.EndDate, AKind);
+end;
+
+class function TDateTimeKit.YMD(const AValue: string): TDateTime;
+var
+  Year, Month, Day: Integer;
+  Parts: TStringArray;
+begin
+  // Split the string by common delimiters (- or /)
+  Parts := AValue.Split(['-', '/']);
+  if Length(Parts) <> 3 then
+    raise EConvertError.Create('Invalid YMD format. Expected YYYY-MM-DD or YYYY/MM/DD');
+    
+  if not TryStrToInt(Parts[0], Year) or
+     not TryStrToInt(Parts[1], Month) or
+     not TryStrToInt(Parts[2], Day) then
+    raise EConvertError.Create('Invalid YMD format. All parts must be numbers');
+    
+  if not IsValidDate(Year, Month, Day) then
+    raise EConvertError.Create('Invalid date values');
+    
+  Result := EncodeDate(Year, Month, Day);
+end;
+
+class function TDateTimeKit.MDY(const AValue: string): TDateTime;
+var
+  Year, Month, Day: Integer;
+  Parts: TStringArray;
+begin
+  // Split the string by common delimiters (- or /)
+  Parts := AValue.Split(['-', '/']);
+  if Length(Parts) <> 3 then
+    raise EConvertError.Create('Invalid MDY format. Expected MM-DD-YYYY or MM/DD/YYYY');
+    
+  if not TryStrToInt(Parts[0], Month) or
+     not TryStrToInt(Parts[1], Day) or
+     not TryStrToInt(Parts[2], Year) then
+    raise EConvertError.Create('Invalid MDY format. All parts must be numbers');
+    
+  // Handle 2-digit years
+  if Year < 100 then
+    Year := Year + 2000;
+    
+  if not IsValidDate(Year, Month, Day) then
+    raise EConvertError.Create('Invalid date values');
+    
+  Result := EncodeDate(Year, Month, Day);
+end;
+
+class function TDateTimeKit.DMY(const AValue: string): TDateTime;
+var
+  Year, Month, Day: Integer;
+  Parts: TStringArray;
+begin
+  // Split the string by common delimiters (- or /)
+  Parts := AValue.Split(['-', '/']);
+  if Length(Parts) <> 3 then
+    raise EConvertError.Create('Invalid DMY format. Expected DD-MM-YYYY or DD/MM/YYYY');
+    
+  if not TryStrToInt(Parts[0], Day) or
+     not TryStrToInt(Parts[1], Month) or
+     not TryStrToInt(Parts[2], Year) then
+    raise EConvertError.Create('Invalid DMY format. All parts must be numbers');
+    
+  // Handle 2-digit years
+  if Year < 100 then
+    Year := Year + 2000;
+    
+  if not IsValidDate(Year, Month, Day) then
+    raise EConvertError.Create('Invalid date values');
+    
+  Result := EncodeDate(Year, Month, Day);
+end;
+
+class function TDateTimeKit.YQ(const AValue: string): TDateTime;
+var
+  Year, Quarter: Integer;
+  Parts: TStringArray;
+begin
+  // Split the string by common delimiters (- or /)
+  Parts := AValue.Split(['-', '/']);
+  if Length(Parts) <> 2 then
+    raise EConvertError.Create('Invalid YQ format. Expected YYYY-Q or YYYY/Q');
+    
+  if not TryStrToInt(Parts[0], Year) or
+     not TryStrToInt(Parts[1], Quarter) then
+    raise EConvertError.Create('Invalid YQ format. All parts must be numbers');
+    
+  if (Quarter < 1) or (Quarter > 4) then
+    raise EConvertError.Create('Invalid quarter value. Must be between 1 and 4');
+    
+  // Convert quarter to month (Q1=1, Q2=4, Q3=7, Q4=10)
+  Result := EncodeDate(Year, 1 + (Quarter - 1) * 3, 1);
+end;
+
+class function TDateTimeKit.DateDecimal(const AValue: Double): TDateTime;
+var
+  Year, Fraction: Double;
+  DaysInYear: Integer;
+begin
+  // Split into year and fraction
+  Year := Int(AValue);
+  Fraction := Frac(AValue);
+  
+  // Handle leap years for accurate day calculation
+  if IsLeapYear(Trunc(Year)) then
+    DaysInYear := 366
+  else
+    DaysInYear := 365;
+    
+  // Convert fraction to days and create date
+  Result := EncodeDate(Trunc(Year), 1, 1) + Round(Fraction * DaysInYear);
+end;
+
+class function TDateTimeKit.GetISOYear(const AValue: TDateTime): Integer;
+var
+  Y, W: Word;
+begin
+  // Get ISO-8601 year and week
+  // ISO year can differ from calendar year for dates near year boundaries
+  DecodeDateWeek(AValue, Y, W, 1); // 1 = Monday as first day of week (ISO standard)
+  Result := Y;
+end;
+
+class function TDateTimeKit.GetISOWeek(const AValue: TDateTime): Integer;
+var
+  Y, W: Word;
+begin
+  // Get ISO-8601 week number
+  // Weeks start on Monday and week 1 is the week containing Jan 4th
+  DecodeDateWeek(AValue, Y, W, 1);
+  Result := W;
+end;
+
+class function TDateTimeKit.GetEpiYear(const AValue: TDateTime): Integer;
+var
+  Y, W: Word;
+  EpiWeek: Integer;
+begin
+  // Epidemiological year can differ from calendar year
+  // If week 1 of next year starts in December, that's part of next epi year
+  DecodeDateWeek(AValue, Y, W, 1);
+  EpiWeek := GetEpiWeek(AValue);
+  
+  if (GetMonth(AValue) = 12) and (EpiWeek = 1) then
+    Result := Y + 1
+  else if (GetMonth(AValue) = 1) and (EpiWeek >= 52) then
+    Result := Y - 1
+  else
+    Result := Y;
+end;
+
+class function TDateTimeKit.GetEpiWeek(const AValue: TDateTime): Integer;
+var
+  Y, W: Word;
+  Jan4: TDateTime;
+begin
+  // Epidemiological weeks follow CDC/WHO definition:
+  // Week 1 is the first week that has at least 4 days in the new year
+  DecodeDateWeek(AValue, Y, W, 1);
+  
+  // Find January 4th of the year (always in week 1)
+  Jan4 := EncodeDate(Y, 1, 4);
+  
+  // If date is before the first epi week, it belongs to the last week of previous year
+  if AValue < StartOfWeek(Jan4) then
+  begin
+    DecodeDateWeek(EndOfYear(AddYears(AValue, -1)), Y, W, 1);
+    Result := W;
+  end
+  else
+    Result := W;
+end;
+
+class function TDateTimeKit.GetSemester(const AValue: TDateTime): Integer;
+begin
+  // Return 1 for months 1-6, 2 for months 7-12
+  Result := ((GetMonth(AValue) - 1) div 6) + 1;
+end;
+
+class function TDateTimeKit.RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
+begin
+  // Implementation of RoundDate function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result := 0;
+end;
+
+class function TDateTimeKit.GetTimeZone(const AValue: TDateTime): TTimeZoneInfo;
+begin
+  // Implementation of GetTimeZone function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result.Name := '';
+  Result.Offset := 0;
+  Result.IsDST := False;
+end;
+
+class function TDateTimeKit.WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime;
+begin
+  // Implementation of WithTimeZone function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result := 0;
+end;
+
+class function TDateTimeKit.ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime;
+begin
+  // Implementation of ForceTimeZone function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result := 0;
+end;
+
+class function TDateTimeKit.GetSystemTimeZone: string;
+begin
+  // Implementation of GetSystemTimeZone function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result := '';
+end;
+
+class function TDateTimeKit.GetTimeZoneNames: TStringArray;
+begin
+  // Implementation of GetTimeZoneNames function
+  // This function is not provided in the original code block
+  // You may want to implement this function based on your specific requirements
+  Result := [];
+end;
+
+class function TDateTimeKit.RollbackMonth(const AValue: TDateTime): TDateTime;
+var
+  Y, M, D: Word;
+  LastDayOfPrevMonth: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  
+  // Move to previous month
+  if M = 1 then
+  begin
+    Dec(Y);
+    M := 12;
+  end
+  else
+    Dec(M);
+    
+  // Get last day of previous month
+  LastDayOfPrevMonth := DaysInMonth(EncodeDate(Y, M, 1));
+  
+  // If current day is greater than last day of previous month,
+  // use last day of previous month
+  if D > LastDayOfPrevMonth then
+    D := LastDayOfPrevMonth;
+    
+  Result := EncodeDate(Y, M, D) + Frac(AValue);
+end;
+
+class function TDateTimeKit.RollForwardMonth(const AValue: TDateTime): TDateTime;
+var
+  Y, M, D: Word;
+  LastDayOfNextMonth: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  
+  // Move to next month
+  if M = 12 then
+  begin
+    Inc(Y);
+    M := 1;
+  end
+  else
+    Inc(M);
+    
+  // Get last day of next month
+  LastDayOfNextMonth := DaysInMonth(EncodeDate(Y, M, 1));
+  
+  // If current day is greater than last day of next month,
+  // use last day of next month
+  if D > LastDayOfNextMonth then
+    D := LastDayOfNextMonth;
+    
+  Result := EncodeDate(Y, M, D) + Frac(AValue);
+end;
+
+class function TDateTimeKit.GetDecimalDate(const AValue: TDateTime): Double;
+var
+  Y, M, D: Word;
+  DayOfYear: Integer;
+  DaysInYear: Integer;
+begin
+  DecodeDate(AValue, Y, M, D);
+  DayOfYear := GetDayOfYear(AValue);
+  
+  if IsLeapYear(Y) then
+    DaysInYear := 366
+  else
+    DaysInYear := 365;
+    
+  Result := Y + (DayOfYear - 1) / DaysInYear;
+end;
+
+class function TDateTimeKit.PeriodToSeconds(const APeriod: TDateSpan): Int64;
+const
+  SecondsPerMinute = 60;
+  SecondsPerHour = 3600;
+  SecondsPerDay = 86400;
+  SecondsPerMonth = 2592000;  // Approximate - 30 days
+  SecondsPerYear = 31536000;  // Approximate - 365 days
+begin
+  // Convert all components to seconds using approximate values
+  Result := APeriod.Milliseconds div 1000 +
+            APeriod.Seconds +
+            APeriod.Minutes * SecondsPerMinute +
+            APeriod.Hours * SecondsPerHour +
+            APeriod.Days * SecondsPerDay +
+            APeriod.Months * SecondsPerMonth +
+            APeriod.Years * SecondsPerYear;
+end;
+
+class function TDateTimeKit.SecondsToPeriod(const ASeconds: Int64): TDateSpan;
+const
+  SecondsPerMinute = 60;
+  SecondsPerHour = 3600;
+  SecondsPerDay = 86400;
+  SecondsPerMonth = 2592000;  // Approximate - 30 days
+  SecondsPerYear = 31536000;  // Approximate - 365 days
+var
+  Remaining: Int64;
+begin
+  Result.Kind := dskDuration;
+  Result.Years := ASeconds div SecondsPerYear;
+  Remaining := ASeconds mod SecondsPerYear;
+  
+  Result.Months := Remaining div SecondsPerMonth;
+  Remaining := Remaining mod SecondsPerMonth;
+  
+  Result.Days := Remaining div SecondsPerDay;
+  Remaining := Remaining mod SecondsPerDay;
+  
+  Result.Hours := Remaining div SecondsPerHour;
+  Remaining := Remaining mod SecondsPerHour;
+  
+  Result.Minutes := Remaining div SecondsPerMinute;
+  Remaining := Remaining mod SecondsPerMinute;
+  
+  Result.Seconds := Remaining;
+  Result.Milliseconds := 0;
+end;
+
+class function TDateTimeKit.StandardizePeriod(const APeriod: TDateSpan): TDateSpan;
+const
+  MonthsPerYear = 12;
+  HoursPerDay = 24;
+  MinutesPerHour = 60;
+  SecondsPerMinute = 60;
+  MillisecondsPerSecond = 1000;
+var
+  ExtraMonths, ExtraDays, ExtraHours, ExtraMinutes, ExtraSeconds: Integer;
+begin
+  Result := APeriod;
+  
+  // Normalize milliseconds to seconds
+  ExtraSeconds := Result.Milliseconds div MillisecondsPerSecond;
+  Result.Milliseconds := Result.Milliseconds mod MillisecondsPerSecond;
+  Result.Seconds := Result.Seconds + ExtraSeconds;
+  
+  // Normalize seconds to minutes
+  ExtraMinutes := Result.Seconds div SecondsPerMinute;
+  Result.Seconds := Result.Seconds mod SecondsPerMinute;
+  Result.Minutes := Result.Minutes + ExtraMinutes;
+  
+  // Normalize minutes to hours
+  ExtraHours := Result.Minutes div MinutesPerHour;
+  Result.Minutes := Result.Minutes mod MinutesPerHour;
+  Result.Hours := Result.Hours + ExtraHours;
+  
+  // Normalize hours to days
+  ExtraDays := Result.Hours div HoursPerDay;
+  Result.Hours := Result.Hours mod HoursPerDay;
+  Result.Days := Result.Days + ExtraDays;
+  
+  // Normalize months to years
+  ExtraMonths := Result.Months div MonthsPerYear;
+  Result.Months := Result.Months mod MonthsPerYear;
+  Result.Years := Result.Years + ExtraMonths;
+end;
+
+class function TDateTimeKit.IntervalAlign(const AInterval1, AInterval2: TInterval): Boolean;
+begin
+  // Check if intervals are adjacent (end of one equals start of other)
+  Result := (CompareDateTime(AInterval1.EndDate, AInterval2.StartDate) = 0) or
+            (CompareDateTime(AInterval2.EndDate, AInterval1.StartDate) = 0);
+end;
+
+class function TDateTimeKit.IntervalGap(const AInterval1, AInterval2: TInterval): TDateSpan;
+var
+  GapStart, GapEnd: TDateTime;
+begin
+  if CompareDateTime(AInterval1.EndDate, AInterval2.StartDate) < 0 then
+  begin
+    // AInterval1 ends before AInterval2 starts
+    GapStart := AInterval1.EndDate;
+    GapEnd := AInterval2.StartDate;
+  end
+  else if CompareDateTime(AInterval2.EndDate, AInterval1.StartDate) < 0 then
+  begin
+    // AInterval2 ends before AInterval1 starts
+    GapStart := AInterval2.EndDate;
+    GapEnd := AInterval1.StartDate;
+  end
+  else
+  begin
+    // Intervals overlap or are adjacent
+    Result.Kind := dskDuration;
+    Result.Years := 0;
+    Result.Months := 0;
+    Result.Days := 0;
+    Result.Hours := 0;
+    Result.Minutes := 0;
+    Result.Seconds := 0;
+    Result.Milliseconds := 0;
+    Exit;
+  end;
+  
+  // Calculate the gap as a duration
+  Result := SpanBetween(GapStart, GapEnd, dskDuration);
+end;
+
+class function TDateTimeKit.IntervalSetdiff(const AInterval1, AInterval2: TInterval): TInterval;
+begin
+  if not IntervalsOverlap(AInterval1, AInterval2) then
+  begin
+    // If intervals don't overlap, return AInterval1 unchanged
+    Result := AInterval1;
+  end
+  else if (CompareDateTime(AInterval2.StartDate, AInterval1.StartDate) <= 0) and
+          (CompareDateTime(AInterval2.EndDate, AInterval1.EndDate) >= 0) then
+  begin
+    // AInterval2 completely contains AInterval1
+    Result.StartDate := 0;
+    Result.EndDate := 0;
+  end
+  else if CompareDateTime(AInterval2.StartDate, AInterval1.StartDate) <= 0 then
+  begin
+    // AInterval2 overlaps start of AInterval1
+    Result.StartDate := AInterval2.EndDate;
+    Result.EndDate := AInterval1.EndDate;
+  end
+  else if CompareDateTime(AInterval2.EndDate, AInterval1.EndDate) >= 0 then
+  begin
+    // AInterval2 overlaps end of AInterval1
+    Result.StartDate := AInterval1.StartDate;
+    Result.EndDate := AInterval2.StartDate;
+  end
+  else
+  begin
+    // AInterval2 splits AInterval1
+    // Note: In this case we return only the first part
+    Result.StartDate := AInterval1.StartDate;
+    Result.EndDate := AInterval2.StartDate;
+  end;
+end;
+
+class function TDateTimeKit.IntervalUnion(const AInterval1, AInterval2: TInterval): TInterval;
+begin
+  if not IntervalsOverlap(AInterval1, AInterval2) and 
+     not IntervalAlign(AInterval1, AInterval2) then
+  begin
+    // If intervals don't overlap or align, return empty interval
+    Result.StartDate := 0;
+    Result.EndDate := 0;
+  end
+  else
+  begin
+    // Take earliest start and latest end
+    if CompareDateTime(AInterval1.StartDate, AInterval2.StartDate) <= 0 then
+      Result.StartDate := AInterval1.StartDate
+    else
+      Result.StartDate := AInterval2.StartDate;
+      
+    if CompareDateTime(AInterval1.EndDate, AInterval2.EndDate) >= 0 then
+      Result.EndDate := AInterval1.EndDate
+    else
+      Result.EndDate := AInterval2.EndDate;
+  end;
+end;
+
+class function TDateTimeKit.IntervalIntersection(const AInterval1, AInterval2: TInterval): TInterval;
+begin
+  if not IntervalsOverlap(AInterval1, AInterval2) then
+  begin
+    // If intervals don't overlap, return empty interval
+    Result.StartDate := 0;
+    Result.EndDate := 0;
+  end
+  else
+  begin
+    // Take latest start and earliest end
+    if CompareDateTime(AInterval1.StartDate, AInterval2.StartDate) >= 0 then
+      Result.StartDate := AInterval1.StartDate
+    else
+      Result.StartDate := AInterval2.StartDate;
+      
+    if CompareDateTime(AInterval1.EndDate, AInterval2.EndDate) <= 0 then
+      Result.EndDate := AInterval1.EndDate
+    else
+      Result.EndDate := AInterval2.EndDate;
+  end;
 end;
 
 end. 

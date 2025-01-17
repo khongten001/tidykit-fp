@@ -72,6 +72,74 @@ type
     procedure Test43_PeriodNormalization;
     procedure Test44_DurationCalculation;
     procedure Test45_SpanCornerCases;
+    // Date Unit Tests
+    procedure Test46_FloorDateSecond;
+    procedure Test47_FloorDateMinute;
+    procedure Test48_FloorDateHour;
+    procedure Test49_FloorDateDay;
+    procedure Test50_FloorDateWeek;
+    procedure Test51_FloorDateMonth;
+    procedure Test52_FloorDateBiMonth;
+    procedure Test53_FloorDateQuarter;
+    procedure Test54_FloorDateHalfYear;
+    procedure Test55_FloorDateYear;
+    procedure Test56_CeilingDateSecond;
+    procedure Test57_CeilingDateMinute;
+    procedure Test58_CeilingDateHour;
+    procedure Test59_CeilingDateDay;
+    procedure Test60_CeilingDateWeek;
+    procedure Test61_CeilingDateMonth;
+    procedure Test62_CeilingDateBiMonth;
+    procedure Test63_CeilingDateQuarter;
+    procedure Test64_CeilingDateHalfYear;
+    procedure Test65_CeilingDateYear;
+    procedure Test66_RoundDateSecond;
+    procedure Test67_RoundDateMinute;
+    procedure Test68_RoundDateHour;
+    procedure Test69_RoundDateDay;
+    procedure Test70_RoundDateWeek;
+    procedure Test71_RoundDateMonth;
+    procedure Test72_RoundDateBiMonth;
+    procedure Test73_RoundDateQuarter;
+    procedure Test74_RoundDateHalfYear;
+    procedure Test75_RoundDateYear;
+    
+    // Date parsing tests
+    procedure Test76_YMD_Valid;
+    procedure Test77_YMD_Invalid;
+    procedure Test78_MDY_Valid;
+    procedure Test79_MDY_Invalid;
+    procedure Test80_DMY_Valid;
+    procedure Test81_DMY_Invalid;
+    procedure Test82_YQ_Valid;
+    procedure Test83_YQ_Invalid;
+    
+    // ISO calendar tests
+    procedure Test84_ISOYear;
+    procedure Test85_ISOWeek;
+    // Epidemiological calendar tests
+    procedure Test86_EpiYear;
+    procedure Test87_EpiWeek;
+    // Academic calendar tests
+    procedure Test88_Semester;
+    
+    // Decimal date tests
+    procedure Test89_DateDecimal;
+    procedure Test90_GetDecimalDate;
+    // Month rolling tests
+    procedure Test91_RollbackMonth;
+    procedure Test92_RollForwardMonth;
+    
+    // Period/Duration conversion tests
+    procedure Test93_PeriodToSeconds;
+    procedure Test94_SecondsToPeriod;
+    procedure Test95_StandardizePeriod;
+    // Interval operation tests
+    procedure Test96_IntervalAlign;
+    procedure Test97_IntervalGap;
+    procedure Test98_IntervalSetdiff;
+    procedure Test99_IntervalUnion;
+    procedure Test100_IntervalIntersection;
   end;
 
   { TFSTests }
@@ -584,12 +652,12 @@ end;
 
 procedure TDateTimeTests.Test34_CreatePeriod;
 var
-  Period: TidyKit.TDateSpan;
+  Period: TDateSpan;
 begin
   // Test creating a period with various components
   Period := TDateTimeKit.CreatePeriod(1, 2, 3, 4, 5, 6, 7);
   
-  AssertEquals('Period kind should be dskPeriod', Ord(TidyKit.TDateSpanKind.dskPeriod), Ord(Period.Kind));
+  AssertEquals('Period kind should be dskPeriod', Ord(TDateSpanKind.dskPeriod), Ord(Period.Kind));
   AssertEquals('Years should match', 1, Period.Years);
   AssertEquals('Months should match', 2, Period.Months);
   AssertEquals('Days should match', 3, Period.Days);
@@ -601,12 +669,12 @@ end;
 
 procedure TDateTimeTests.Test35_CreateDuration;
 var
-  Duration: TidyKit.TDateSpan;
+  Duration: TDateSpan;
 begin
   // Test creating a duration (converts to total seconds)
   Duration := TDateTimeKit.CreateDuration(0, 0, 1, 2, 30, 0, 0);  // 1 day, 2 hours, 30 minutes
   
-  AssertEquals('Duration kind should be dskDuration', Ord(TidyKit.TDateSpanKind.dskDuration), Ord(Duration.Kind));
+  AssertEquals('Duration kind should be dskDuration', Ord(TDateSpanKind.dskDuration), Ord(Duration.Kind));
   AssertEquals('Total seconds should be calculated correctly',
     ((24 + 2) * 60 + 30) * 60,  // (26 hours + 30 minutes) in seconds
     Duration.Seconds);
@@ -615,7 +683,7 @@ end;
 procedure TDateTimeTests.Test36_CreateInterval;
 var
   StartDate, EndDate: TDateTime;
-  Interval: TidyKit.TInterval;
+  Interval: TInterval;
 begin
   StartDate := EncodeDate(2024, 1, 1);
   EndDate := EncodeDate(2024, 12, 31);
@@ -629,7 +697,7 @@ end;
 procedure TDateTimeTests.Test37_AddSpan;
 var
   StartDate, ResultDate: TDateTime;
-  Period: TidyKit.TDateSpan;
+  Period: TDateSpan;
 begin
   StartDate := EncodeDate(2024, 1, 1);
   
@@ -645,7 +713,7 @@ end;
 procedure TDateTimeTests.Test38_SubtractSpan;
 var
   StartDate, ResultDate: TDateTime;
-  Period: TidyKit.TDateSpan;
+  Period: TDateSpan;
 begin
   StartDate := EncodeDate(2024, 3, 15);
   
@@ -660,7 +728,7 @@ end;
 procedure TDateTimeTests.Test39_SpanBetween;
 var
   StartDate, EndDate: TDateTime;
-  Span: TidyKit.TDateSpan;
+  Span: TDateSpan;
 begin
   StartDate := EncodeDate(2024, 1, 1);
   EndDate := EncodeDate(2025, 2, 15);
@@ -668,7 +736,7 @@ begin
   // Test calculating period between dates
   Span := TDateTimeKit.SpanBetween(StartDate, EndDate);
   
-  AssertEquals('Span kind should be period', Ord(TidyKit.TDateSpanKind.dskPeriod), Ord(Span.Kind));
+  AssertEquals('Span kind should be period', Ord(TDateSpanKind.dskPeriod), Ord(Span.Kind));
   AssertEquals('Years should be 1', 1, Span.Years);
   AssertEquals('Months should be 1', 1, Span.Months);
   AssertEquals('Days should be 14', 14, Span.Days);
@@ -677,7 +745,7 @@ end;
 procedure TDateTimeTests.Test40_IsWithinInterval;
 var
   StartDate, EndDate, TestDate: TDateTime;
-  Interval: TidyKit.TInterval;
+  Interval: TInterval;
 begin
   StartDate := EncodeDate(2024, 1, 1);
   EndDate := EncodeDate(2024, 12, 31);
@@ -695,7 +763,7 @@ end;
 
 procedure TDateTimeTests.Test41_IntervalsOverlap;
 var
-  Interval1, Interval2: TidyKit.TInterval;
+  Interval1, Interval2: TInterval;
 begin
   // Create two overlapping intervals
   Interval1 := TDateTimeKit.CreateInterval(
@@ -716,8 +784,8 @@ end;
 
 procedure TDateTimeTests.Test42_IntervalLength;
 var
-  Interval: TidyKit.TInterval;
-  Span: TidyKit.TDateSpan;
+  Interval: TInterval;
+  Span: TDateSpan;
 begin
   // Create an interval for exactly one year
   Interval.StartDate := EncodeDate(2024, 1, 1);  // 2024-01-01 00:00:00.000
@@ -738,7 +806,7 @@ end;
 
 procedure TDateTimeTests.Test43_PeriodNormalization;
 var
-  Period: TidyKit.TDateSpan;
+  Period: TDateSpan;
   StartDate, ResultDate: TDateTime;
 begin
   // Test period normalization (13 months should become 1 year 1 month)
@@ -752,7 +820,7 @@ end;
 
 procedure TDateTimeTests.Test44_DurationCalculation;
 var
-  Duration: TidyKit.TDateSpan;
+  Duration: TDateSpan;
   StartDate, ResultDate: TDateTime;
 begin
   // Test precise duration calculations
@@ -766,7 +834,7 @@ end;
 
 procedure TDateTimeTests.Test45_SpanCornerCases;
 var
-  Period: TidyKit.TDateSpan;
+  Period: TDateSpan;
   StartDate, ResultDate: TDateTime;
 begin
   // Test adding one month to January 31st (should go to last day of February)
@@ -812,6 +880,807 @@ begin
   AssertEquals('Month should be April', 4, TDateTimeKit.GetMonth(ResultDate));
   AssertEquals('Day should be adjusted to 30',
     30, TDateTimeKit.GetDay(ResultDate));
+end;
+
+// Implementation of new test cases
+
+procedure TDateTimeTests.Test46_FloorDateSecond;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to second should clear milliseconds',
+    EncodeDateTime(2024, 3, 15, 14, 30, 45, 0),
+    TDateTimeKit.FloorDate(TestDate, duSecond));
+end;
+
+procedure TDateTimeTests.Test47_FloorDateMinute;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to minute should clear seconds and milliseconds',
+    EncodeDateTime(2024, 3, 15, 14, 30, 0, 0),
+    TDateTimeKit.FloorDate(TestDate, duMinute));
+end;
+
+procedure TDateTimeTests.Test48_FloorDateHour;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to hour should clear minutes, seconds and milliseconds',
+    EncodeDateTime(2024, 3, 15, 14, 0, 0, 0),
+    TDateTimeKit.FloorDate(TestDate, duHour));
+end;
+
+procedure TDateTimeTests.Test49_FloorDateDay;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to day should clear time portion',
+    EncodeDate(2024, 3, 15),
+    TDateTimeKit.FloorDate(TestDate, duDay));
+end;
+
+procedure TDateTimeTests.Test50_FloorDateWeek;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500); // March 15, 2024 is a Friday
+  AssertEquals('Floor to week should go to Sunday',
+    EncodeDate(2024, 3, 10), // Should go to Sunday, March 10
+    TDateTimeKit.FloorDate(TestDate, duWeek));
+end;
+
+procedure TDateTimeTests.Test51_FloorDateMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to month should go to first day of month',
+    EncodeDate(2024, 3, 1),
+    TDateTimeKit.FloorDate(TestDate, duMonth));
+end;
+
+procedure TDateTimeTests.Test52_FloorDateBiMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to bi-month should go to first day of even month',
+    EncodeDate(2024, 3, 1),
+    TDateTimeKit.FloorDate(TestDate, duBiMonth));
+end;
+
+procedure TDateTimeTests.Test53_FloorDateQuarter;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to quarter should go to first day of quarter',
+    EncodeDate(2024, 1, 1),
+    TDateTimeKit.FloorDate(TestDate, duQuarter));
+end;
+
+procedure TDateTimeTests.Test54_FloorDateHalfYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 8, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to half year should go to July 1 or January 1',
+    EncodeDate(2024, 7, 1),
+    TDateTimeKit.FloorDate(TestDate, duHalfYear));
+end;
+
+procedure TDateTimeTests.Test55_FloorDateYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Floor to year should go to January 1',
+    EncodeDate(2024, 1, 1),
+    TDateTimeKit.FloorDate(TestDate, duYear));
+end;
+
+procedure TDateTimeTests.Test56_CeilingDateSecond;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to second should round up to next second',
+    EncodeDateTime(2024, 3, 15, 14, 30, 46, 0),
+    TDateTimeKit.CeilingDate(TestDate, duSecond));
+end;
+
+procedure TDateTimeTests.Test57_CeilingDateMinute;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to minute should round up to next minute',
+    EncodeDateTime(2024, 3, 15, 14, 31, 0, 0),
+    TDateTimeKit.CeilingDate(TestDate, duMinute));
+end;
+
+procedure TDateTimeTests.Test58_CeilingDateHour;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to hour should round up to next hour',
+    EncodeDateTime(2024, 3, 15, 15, 0, 0, 0),
+    TDateTimeKit.CeilingDate(TestDate, duHour));
+end;
+
+procedure TDateTimeTests.Test59_CeilingDateDay;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to day should round up to next day',
+    EncodeDate(2024, 3, 16),
+    TDateTimeKit.CeilingDate(TestDate, duDay));
+end;
+
+procedure TDateTimeTests.Test60_CeilingDateWeek;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500); // March 15, 2024 is a Friday
+  AssertEquals('Ceiling to week should go to next Sunday',
+    EncodeDate(2024, 3, 17), // Should go to next Sunday, March 17
+    TDateTimeKit.CeilingDate(TestDate, duWeek));
+end;
+
+procedure TDateTimeTests.Test61_CeilingDateMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to month should go to first day of next month',
+    EncodeDate(2024, 4, 1),
+    TDateTimeKit.CeilingDate(TestDate, duMonth));
+end;
+
+procedure TDateTimeTests.Test62_CeilingDateBiMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to bi-month should go to first day of next even month',
+    EncodeDate(2024, 5, 1),
+    TDateTimeKit.CeilingDate(TestDate, duBiMonth));
+end;
+
+procedure TDateTimeTests.Test63_CeilingDateQuarter;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to quarter should go to first day of next quarter',
+    EncodeDate(2024, 4, 1),
+    TDateTimeKit.CeilingDate(TestDate, duQuarter));
+end;
+
+procedure TDateTimeTests.Test64_CeilingDateHalfYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to half year should go to July 1',
+    EncodeDate(2024, 7, 1),
+    TDateTimeKit.CeilingDate(TestDate, duHalfYear));
+end;
+
+procedure TDateTimeTests.Test65_CeilingDateYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Ceiling to year should go to January 1 of next year',
+    EncodeDate(2025, 1, 1),
+    TDateTimeKit.CeilingDate(TestDate, duYear));
+end;
+
+procedure TDateTimeTests.Test66_RoundDateSecond;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to second should round to nearest second',
+    EncodeDateTime(2024, 3, 15, 14, 30, 46, 0),
+    TDateTimeKit.RoundDate(TestDate, duSecond));
+end;
+
+procedure TDateTimeTests.Test67_RoundDateMinute;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to minute should round to nearest minute',
+    EncodeDateTime(2024, 3, 15, 14, 31, 0, 0),
+    TDateTimeKit.RoundDate(TestDate, duMinute));
+end;
+
+procedure TDateTimeTests.Test68_RoundDateHour;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to hour should round to nearest hour',
+    EncodeDateTime(2024, 3, 15, 15, 0, 0, 0),
+    TDateTimeKit.RoundDate(TestDate, duHour));
+end;
+
+procedure TDateTimeTests.Test69_RoundDateDay;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to day should round to nearest day',
+    EncodeDate(2024, 3, 16),
+    TDateTimeKit.RoundDate(TestDate, duDay));
+end;
+
+procedure TDateTimeTests.Test70_RoundDateWeek;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500); // March 15, 2024 is a Friday
+  AssertEquals('Round to week should round to nearest Sunday',
+    EncodeDate(2024, 3, 17), // Should round to next Sunday, March 17
+    TDateTimeKit.RoundDate(TestDate, duWeek));
+end;
+
+procedure TDateTimeTests.Test71_RoundDateMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to month should round to nearest month start',
+    EncodeDate(2024, 4, 1),
+    TDateTimeKit.RoundDate(TestDate, duMonth));
+end;
+
+procedure TDateTimeTests.Test72_RoundDateBiMonth;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to bi-month should round to nearest even month start',
+    EncodeDate(2024, 3, 1),
+    TDateTimeKit.RoundDate(TestDate, duBiMonth));
+end;
+
+procedure TDateTimeTests.Test73_RoundDateQuarter;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to quarter should round to nearest quarter start',
+    EncodeDate(2024, 4, 1),
+    TDateTimeKit.RoundDate(TestDate, duQuarter));
+end;
+
+procedure TDateTimeTests.Test74_RoundDateHalfYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to half year should round to nearest half year start',
+    EncodeDate(2024, 7, 1),
+    TDateTimeKit.RoundDate(TestDate, duHalfYear));
+end;
+
+procedure TDateTimeTests.Test75_RoundDateYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDateTime(2024, 3, 15, 14, 30, 45, 500);
+  AssertEquals('Round to year should round to nearest year start',
+    EncodeDate(2024, 1, 1),
+    TDateTimeKit.RoundDate(TestDate, duYear));
+end;
+
+procedure TDateTimeTests.Test76_YMD_Valid;
+var
+  TestDate: TDateTime;
+begin
+  // Test YYYY-MM-DD format
+  TestDate := TDateTimeKit.YMD('2024-03-15');
+  AssertEquals('YMD should parse year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('YMD should parse month correctly', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('YMD should parse day correctly', 15, TDateTimeKit.GetDay(TestDate));
+  
+  // Test YYYY/MM/DD format
+  TestDate := TDateTimeKit.YMD('2024/03/15');
+  AssertEquals('YMD should parse year correctly with slash', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('YMD should parse month correctly with slash', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('YMD should parse day correctly with slash', 15, TDateTimeKit.GetDay(TestDate));
+end;
+
+procedure TDateTimeTests.Test77_YMD_Invalid;
+begin
+  try
+    TDateTimeKit.YMD('invalid');
+    Fail('YMD should raise exception for invalid format');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+  
+  try
+    TDateTimeKit.YMD('2024-13-15');
+    Fail('YMD should raise exception for invalid month');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+end;
+
+procedure TDateTimeTests.Test78_MDY_Valid;
+var
+  TestDate: TDateTime;
+begin
+  // Test MM-DD-YYYY format
+  TestDate := TDateTimeKit.MDY('03-15-2024');
+  AssertEquals('MDY should parse year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('MDY should parse month correctly', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('MDY should parse day correctly', 15, TDateTimeKit.GetDay(TestDate));
+  
+  // Test MM/DD/YY format with 2-digit year
+  TestDate := TDateTimeKit.MDY('03/15/24');
+  AssertEquals('MDY should parse 2-digit year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('MDY should parse month correctly with slash', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('MDY should parse day correctly with slash', 15, TDateTimeKit.GetDay(TestDate));
+end;
+
+procedure TDateTimeTests.Test79_MDY_Invalid;
+begin
+  try
+    TDateTimeKit.MDY('invalid');
+    Fail('MDY should raise exception for invalid format');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+  
+  try
+    TDateTimeKit.MDY('13-15-2024');
+    Fail('MDY should raise exception for invalid month');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+end;
+
+procedure TDateTimeTests.Test80_DMY_Valid;
+var
+  TestDate: TDateTime;
+begin
+  // Test DD-MM-YYYY format
+  TestDate := TDateTimeKit.DMY('15-03-2024');
+  AssertEquals('DMY should parse year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('DMY should parse month correctly', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('DMY should parse day correctly', 15, TDateTimeKit.GetDay(TestDate));
+  
+  // Test DD/MM/YY format with 2-digit year
+  TestDate := TDateTimeKit.DMY('15/03/24');
+  AssertEquals('DMY should parse 2-digit year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('DMY should parse month correctly with slash', 3, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('DMY should parse day correctly with slash', 15, TDateTimeKit.GetDay(TestDate));
+end;
+
+procedure TDateTimeTests.Test81_DMY_Invalid;
+begin
+  try
+    TDateTimeKit.DMY('invalid');
+    Fail('DMY should raise exception for invalid format');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+  
+  try
+    TDateTimeKit.DMY('15-13-2024');
+    Fail('DMY should raise exception for invalid month');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+end;
+
+procedure TDateTimeTests.Test82_YQ_Valid;
+var
+  TestDate: TDateTime;
+begin
+  // Test YYYY-Q format
+  TestDate := TDateTimeKit.YQ('2024-1');
+  AssertEquals('YQ should parse year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('YQ should set month to start of Q1', 1, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('YQ should set day to first of month', 1, TDateTimeKit.GetDay(TestDate));
+  
+  // Test YYYY/Q format for Q2
+  TestDate := TDateTimeKit.YQ('2024/2');
+  AssertEquals('YQ should parse year correctly', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('YQ should set month to start of Q2', 4, TDateTimeKit.GetMonth(TestDate));
+  AssertEquals('YQ should set day to first of month', 1, TDateTimeKit.GetDay(TestDate));
+  
+  // Test Q3
+  TestDate := TDateTimeKit.YQ('2024-3');
+  AssertEquals('YQ should set month to start of Q3', 7, TDateTimeKit.GetMonth(TestDate));
+  
+  // Test Q4
+  TestDate := TDateTimeKit.YQ('2024-4');
+  AssertEquals('YQ should set month to start of Q4', 10, TDateTimeKit.GetMonth(TestDate));
+end;
+
+procedure TDateTimeTests.Test83_YQ_Invalid;
+begin
+  try
+    TDateTimeKit.YQ('invalid');
+    Fail('YQ should raise exception for invalid format');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+  
+  try
+    TDateTimeKit.YQ('2024-5');
+    Fail('YQ should raise exception for invalid quarter');
+  except
+    on E: EConvertError do
+      ; // Expected exception
+  end;
+end;
+
+procedure TDateTimeTests.Test84_ISOYear;
+var
+  TestDate: TDateTime;
+begin
+  // Test regular date
+  TestDate := EncodeDate(2024, 6, 15);
+  AssertEquals('Regular date should have same ISO year', 
+    2024, TDateTimeKit.GetISOYear(TestDate));
+    
+  // Test year boundary (Dec 31, 2024 is in week 1 of 2025)
+  TestDate := EncodeDate(2024, 12, 31);
+  AssertEquals('Dec 31 can belong to next ISO year', 
+    2025, TDateTimeKit.GetISOYear(TestDate));
+    
+  // Test year boundary (Jan 1, 2024 is in week 52 of 2023)
+  TestDate := EncodeDate(2024, 1, 1);
+  AssertEquals('Jan 1 can belong to previous ISO year', 
+    2023, TDateTimeKit.GetISOYear(TestDate));
+end;
+
+procedure TDateTimeTests.Test85_ISOWeek;
+var
+  TestDate: TDateTime;
+begin
+  // Test regular week
+  TestDate := EncodeDate(2024, 6, 15);
+  AssertEquals('Mid-year date should have correct ISO week', 
+    24, TDateTimeKit.GetISOWeek(TestDate));
+    
+  // Test first week of year
+  TestDate := EncodeDate(2024, 1, 4);
+  AssertEquals('January 4th is always in week 1', 
+    1, TDateTimeKit.GetISOWeek(TestDate));
+    
+  // Test last week of year
+  TestDate := EncodeDate(2024, 12, 28);
+  AssertEquals('December 28th should be in week 52', 
+    52, TDateTimeKit.GetISOWeek(TestDate));
+end;
+
+procedure TDateTimeTests.Test86_EpiYear;
+var
+  TestDate: TDateTime;
+begin
+  // Test regular date
+  TestDate := EncodeDate(2024, 6, 15);
+  AssertEquals('Regular date should have same epi year', 
+    2024, TDateTimeKit.GetEpiYear(TestDate));
+    
+  // Test year boundary (Dec 29, 2024 might be week 1 of 2025)
+  TestDate := EncodeDate(2024, 12, 29);
+  AssertEquals('Late December can belong to next epi year', 
+    2025, TDateTimeKit.GetEpiYear(TestDate));
+    
+  // Test year boundary (Jan 1 might be week 52 of previous year)
+  TestDate := EncodeDate(2024, 1, 1);
+  AssertEquals('Early January can belong to previous epi year', 
+    2023, TDateTimeKit.GetEpiYear(TestDate));
+end;
+
+procedure TDateTimeTests.Test87_EpiWeek;
+var
+  TestDate: TDateTime;
+begin
+  // Test regular week
+  TestDate := EncodeDate(2024, 6, 15);
+  AssertEquals('Mid-year date should have correct epi week', 
+    24, TDateTimeKit.GetEpiWeek(TestDate));
+    
+  // Test first week of year
+  TestDate := EncodeDate(2024, 1, 4);
+  AssertEquals('First full week should be week 1', 
+    1, TDateTimeKit.GetEpiWeek(TestDate));
+    
+  // Test week spanning year boundary
+  TestDate := EncodeDate(2024, 12, 31);
+  AssertEquals('Year-end week number should be correct', 
+    53, TDateTimeKit.GetEpiWeek(TestDate));
+end;
+
+procedure TDateTimeTests.Test88_Semester;
+var
+  TestDate: TDateTime;
+begin
+  // Test first semester
+  TestDate := EncodeDate(2024, 1, 1);
+  AssertEquals('January should be semester 1', 
+    1, TDateTimeKit.GetSemester(TestDate));
+    
+  TestDate := EncodeDate(2024, 6, 30);
+  AssertEquals('June should be semester 1', 
+    1, TDateTimeKit.GetSemester(TestDate));
+    
+  // Test second semester
+  TestDate := EncodeDate(2024, 7, 1);
+  AssertEquals('July should be semester 2', 
+    2, TDateTimeKit.GetSemester(TestDate));
+    
+  TestDate := EncodeDate(2024, 12, 31);
+  AssertEquals('December should be semester 2', 
+    2, TDateTimeKit.GetSemester(TestDate));
+end;
+
+procedure TDateTimeTests.Test89_DateDecimal;
+var
+  TestDate: TDateTime;
+begin
+  // Test regular date
+  TestDate := TDateTimeKit.DateDecimal(2024.5); // Mid-year
+  AssertEquals('Year should be 2024', 2024, TDateTimeKit.GetYear(TestDate));
+  AssertEquals('Should be around July 2nd (leap year)',
+    183, TDateTimeKit.GetDayOfYear(TestDate));
+    
+  // Test leap year handling
+  TestDate := TDateTimeKit.DateDecimal(2024.25); // Quarter year
+  AssertEquals('Should be around April 1st in leap year',
+    92, TDateTimeKit.GetDayOfYear(TestDate));
+    
+  // Test non-leap year
+  TestDate := TDateTimeKit.DateDecimal(2025.25); // Quarter year
+  AssertEquals('Should be around April 1st in non-leap year',
+    91, TDateTimeKit.GetDayOfYear(TestDate));
+end;
+
+procedure TDateTimeTests.Test90_GetDecimalDate;
+var
+  TestDate: TDateTime;
+  DecimalDate: Double;
+begin
+  // Test mid-year in leap year
+  TestDate := EncodeDate(2024, 7, 2);  // Day 183 of 366
+  DecimalDate := TDateTimeKit.GetDecimalDate(TestDate);
+  AssertEquals('Mid-year 2024 should be approximately 2024.5',
+    2024.5, DecimalDate, 0.01);
+    
+  // Test quarter-year in non-leap year
+  TestDate := EncodeDate(2025, 4, 1);  // Day 91 of 365
+  DecimalDate := TDateTimeKit.GetDecimalDate(TestDate);
+  AssertEquals('Quarter-year 2025 should be approximately 2025.25',
+    2025.25, DecimalDate, 0.01);
+end;
+
+procedure TDateTimeTests.Test91_RollbackMonth;
+var
+  TestDate, RolledDate: TDateTime;
+begin
+  // Test regular case
+  TestDate := EncodeDate(2024, 3, 15);
+  RolledDate := TDateTimeKit.RollbackMonth(TestDate);
+  AssertEquals('Month should be February', 2, TDateTimeKit.GetMonth(RolledDate));
+  AssertEquals('Day should remain 15', 15, TDateTimeKit.GetDay(RolledDate));
+  
+  // Test year boundary
+  TestDate := EncodeDate(2024, 1, 15);
+  RolledDate := TDateTimeKit.RollbackMonth(TestDate);
+  AssertEquals('Year should be previous', 2023, TDateTimeKit.GetYear(RolledDate));
+  AssertEquals('Month should be December', 12, TDateTimeKit.GetMonth(RolledDate));
+  
+  // Test day adjustment (31 -> 29 in leap year)
+  TestDate := EncodeDate(2024, 3, 31);
+  RolledDate := TDateTimeKit.RollbackMonth(TestDate);
+  AssertEquals('Day should adjust to February 29 in leap year',
+    29, TDateTimeKit.GetDay(RolledDate));
+end;
+
+procedure TDateTimeTests.Test92_RollForwardMonth;
+var
+  TestDate, RolledDate: TDateTime;
+begin
+  // Test regular case
+  TestDate := EncodeDate(2024, 3, 15);
+  RolledDate := TDateTimeKit.RollForwardMonth(TestDate);
+  AssertEquals('Month should be April', 4, TDateTimeKit.GetMonth(RolledDate));
+  AssertEquals('Day should remain 15', 15, TDateTimeKit.GetDay(RolledDate));
+  
+  // Test year boundary
+  TestDate := EncodeDate(2024, 12, 15);
+  RolledDate := TDateTimeKit.RollForwardMonth(TestDate);
+  AssertEquals('Year should be next', 2025, TDateTimeKit.GetYear(RolledDate));
+  AssertEquals('Month should be January', 1, TDateTimeKit.GetMonth(RolledDate));
+  
+  // Test day adjustment (31 -> 30)
+  TestDate := EncodeDate(2024, 3, 31);
+  RolledDate := TDateTimeKit.RollForwardMonth(TestDate);
+  AssertEquals('Day should adjust to April 30',
+    30, TDateTimeKit.GetDay(RolledDate));
+end;
+
+procedure TDateTimeTests.Test93_PeriodToSeconds;
+var
+  Period: TDateSpan;
+  Seconds: Int64;
+begin
+  // Test simple period
+  Period := TDateTimeKit.CreatePeriod(0, 0, 1, 2, 3, 4, 500);  // 1d 2h 3m 4.5s
+  Seconds := TDateTimeKit.PeriodToSeconds(Period);
+  AssertEquals('Period should convert to correct seconds',
+    93784, Seconds);  // 1*86400 + 2*3600 + 3*60 + 4
+    
+  // Test larger period
+  Period := TDateTimeKit.CreatePeriod(1, 1, 0, 0, 0, 0, 0);  // 1y 1m
+  Seconds := TDateTimeKit.PeriodToSeconds(Period);
+  AssertEquals('Larger period should convert approximately',
+    34128000, Seconds);  // ~1y 1m in seconds
+end;
+
+procedure TDateTimeTests.Test94_SecondsToPeriod;
+var
+  Period: TDateSpan;
+begin
+  // Test simple conversion
+  Period := TDateTimeKit.SecondsToPeriod(93784);  // 1d 2h 3m 4s
+  AssertEquals('Should get correct days', 1, Period.Days);
+  AssertEquals('Should get correct hours', 2, Period.Hours);
+  AssertEquals('Should get correct minutes', 3, Period.Minutes);
+  AssertEquals('Should get correct seconds', 4, Period.Seconds);
+  
+  // Test large number of seconds
+  Period := TDateTimeKit.SecondsToPeriod(34128000);  // ~1y 1m
+  AssertEquals('Should get approximate years', 1, Period.Years);
+  AssertEquals('Should get approximate months', 1, Period.Months);
+end;
+
+procedure TDateTimeTests.Test95_StandardizePeriod;
+var
+  Period, Standardized: TDateSpan;
+begin
+  // Test overflow values
+  Period := TDateTimeKit.CreatePeriod(1, 13, 32, 25, 61, 61, 1001);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  
+  AssertEquals('Years should include extra months', 2, Standardized.Years);
+  AssertEquals('Months should be normalized', 1, Standardized.Months);
+  AssertEquals('Days should include extra hours', 33, Standardized.Days);
+  AssertEquals('Hours should be normalized', 1, Standardized.Hours);
+  AssertEquals('Minutes should be normalized', 2, Standardized.Minutes);
+  AssertEquals('Seconds should be normalized', 2, Standardized.Seconds);
+  AssertEquals('Milliseconds should be normalized', 1, Standardized.Milliseconds);
+end;
+
+procedure TDateTimeTests.Test96_IntervalAlign;
+var
+  Interval1, Interval2: TInterval;
+begin
+  // Test adjacent intervals
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 15),
+    EncodeDate(2024, 1, 31));
+  AssertTrue('Adjacent intervals should align',
+    TDateTimeKit.IntervalAlign(Interval1, Interval2));
+    
+  // Test non-adjacent intervals
+  Interval2.StartDate := EncodeDate(2024, 1, 16);
+  AssertFalse('Non-adjacent intervals should not align',
+    TDateTimeKit.IntervalAlign(Interval1, Interval2));
+end;
+
+procedure TDateTimeTests.Test97_IntervalGap;
+var
+  Interval1, Interval2: TInterval;
+  Gap: TDateSpan;
+begin
+  // Test intervals with gap
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 20),
+    EncodeDate(2024, 1, 31));
+  Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+  
+  AssertEquals('Gap should be 5 days',
+    5, Gap.Days);
+    
+  // Test overlapping intervals
+  Interval2.StartDate := EncodeDate(2024, 1, 10);
+  Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+  AssertEquals('Overlapping intervals should have no gap',
+    0, Gap.Days);
+end;
+
+procedure TDateTimeTests.Test98_IntervalSetdiff;
+var
+  Interval1, Interval2, Result: TInterval;
+begin
+  // Test partial overlap
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 31));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 15),
+    EncodeDate(2024, 2, 15));
+  Result := TDateTimeKit.IntervalSetdiff(Interval1, Interval2);
+  
+  AssertEquals('Difference should start at original start',
+    EncodeDate(2024, 1, 1), Result.StartDate);
+  AssertEquals('Difference should end at overlap start',
+    EncodeDate(2024, 1, 15), Result.EndDate);
+end;
+
+procedure TDateTimeTests.Test99_IntervalUnion;
+var
+  Interval1, Interval2, Result: TInterval;
+begin
+  // Test overlapping intervals
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 10),
+    EncodeDate(2024, 1, 31));
+  Result := TDateTimeKit.IntervalUnion(Interval1, Interval2);
+  
+  AssertEquals('Union should start at earliest date',
+    EncodeDate(2024, 1, 1), Result.StartDate);
+  AssertEquals('Union should end at latest date',
+    EncodeDate(2024, 1, 31), Result.EndDate);
+end;
+
+procedure TDateTimeTests.Test100_IntervalIntersection;
+var
+  Interval1, Interval2, Result: TInterval;
+begin
+  // Test overlapping intervals
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 10),
+    EncodeDate(2024, 1, 31));
+  Result := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+  
+  AssertEquals('Intersection should start at later start date',
+    EncodeDate(2024, 1, 10), Result.StartDate);
+  AssertEquals('Intersection should end at earlier end date',
+    EncodeDate(2024, 1, 15), Result.EndDate);
+    
+  // Test non-overlapping intervals
+  Interval2.StartDate := EncodeDate(2024, 1, 16);
+  Result := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+  AssertEquals('Non-overlapping intervals should have empty intersection',
+    0, Result.StartDate);
 end;
 
 { TFSTests }
