@@ -9,10 +9,11 @@ uses
 
 type
   { TDateSpanKind represents different ways to measure time spans }
-  TDateSpanKind = (dskPeriod,  // Calendar time (months, years - variable length)
-                   dskDuration, // Physical time (fixed length in seconds)
-                   dskInterval);// Specific start-end span
-                   
+  TDateSpanKind = (
+    dskPeriod,   // Calendar time (months, years - variable length)
+    dskDuration  // Physical time (fixed length in seconds)
+  );
+  
   { TDateSpan represents a span of time that can be added to or subtracted from dates }
   TDateSpan = record
     Kind: TDateSpanKind;    // How to interpret this span
@@ -1396,13 +1397,12 @@ begin
 end;
 
 class function TDateTimeKit.IsWithinInterval(const AValue: TDateTime;
-  const AInterval: TInterval): Boolean;
+                                             const AInterval: TInterval): Boolean;
 begin
   Result := (AValue >= AInterval.StartDate) and (AValue <= AInterval.EndDate);
 end;
 
-class function TDateTimeKit.IntervalsOverlap(const AInterval1,
-  AInterval2: TInterval): Boolean;
+class function TDateTimeKit.IntervalsOverlap(const AInterval1, AInterval2: TInterval): Boolean;
 begin
   Result := (AInterval1.StartDate <= AInterval2.EndDate) and
             (AInterval1.EndDate >= AInterval2.StartDate);
