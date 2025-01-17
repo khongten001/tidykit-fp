@@ -6,12 +6,17 @@ interface
 
 uses
   Classes, SysUtils, DateUtils, fpcunit, testutils, testregistry,
-  TidyKit, TidyKit.FS, TidyKit.Strings;
+  TidyKit, TidyKit.FS, TidyKit.Strings, TidyKit.DateTime;
 
 type
   TStringArray = array of string;
+  
+  { Re-use types from TidyKit units }
+  TSearchResults = TidyKit.FS.TSearchResults;
+  TStringMatches = TidyKit.Strings.TStringMatches;
+  TFileSortOrder = TidyKit.FS.TFileSortOrder;
 
-  { TDateTimeTests }
+type
   TDateTimeTests = class(TTestCase)
   private
     FDateTime: TDateTimeKit;
@@ -59,6 +64,19 @@ type
     procedure Test31_NextBusinessDay;
     procedure Test32_PreviousBusinessDay;
     procedure Test33_AddBusinessDays;
+    // Time Span Tests
+    procedure Test34_CreatePeriod;
+    procedure Test35_CreateDuration;
+    procedure Test36_CreateInterval;
+    procedure Test37_AddSpan;
+    procedure Test38_SubtractSpan;
+    procedure Test39_SpanBetween;
+    procedure Test40_IsWithinInterval;
+    procedure Test41_IntervalsOverlap;
+    procedure Test42_IntervalLength;
+    procedure Test43_PeriodNormalization;
+    procedure Test44_DurationCalculation;
+    procedure Test45_SpanCornerCases;
   end;
 
   { TFSTests }
@@ -567,6 +585,238 @@ begin
   Expected := EncodeDate(2024, 1, 19);  // Friday (4 business days later)
   AssertEquals('AddBusinessDays should skip weekends',
     Expected, TDateTimeKit.AddBusinessDays(StartDate, 4));
+end;
+
+procedure TDateTimeTests.Test34_CreatePeriod;
+var
+  Period: TidyKit.TDateSpan;
+begin
+  // Test creating a period with various components
+  Period := TDateTimeKit.CreatePeriod(1, 2, 3, 4, 5, 6, 7);
+  
+  AssertEquals('Period kind should be dskPeriod', Ord(TidyKit.TDateSpanKind.dskPeriod), Ord(Period.Kind));
+  AssertEquals('Years should match', 1, Period.Years);
+  AssertEquals('Months should match', 2, Period.Months);
+  AssertEquals('Days should match', 3, Period.Days);
+  AssertEquals('Hours should match', 4, Period.Hours);
+  AssertEquals('Minutes should match', 5, Period.Minutes);
+  AssertEquals('Seconds should match', 6, Period.Seconds);
+  AssertEquals('Milliseconds should match', 7, Period.Milliseconds);
+end;
+
+procedure TDateTimeTests.Test35_CreateDuration;
+var
+  Duration: TidyKit.TDateSpan;
+begin
+  // Test creating a duration (converts to total seconds)
+  Duration := TDateTimeKit.CreateDuration(0, 0, 1, 2, 30, 0, 0);  // 1 day, 2 hours, 30 minutes
+  
+  AssertEquals('Duration kind should be dskDuration', Ord(TidyKit.TDateSpanKind.dskDuration), Ord(Duration.Kind));
+  AssertEquals('Total seconds should be calculated correctly',
+    ((24 + 2) * 60 + 30) * 60,  // (26 hours + 30 minutes) in seconds
+    Duration.Seconds);
+end;
+
+procedure TDateTimeTests.Test36_CreateInterval;
+var
+  StartDate, EndDate: TDateTime;
+  Interval: TidyKit.TInterval;
+begin
+  StartDate := EncodeDate(2024, 1, 1);
+  EndDate := EncodeDate(2024, 12, 31);
+  
+  Interval := TDateTimeKit.CreateInterval(StartDate, EndDate);
+  
+  AssertEquals('Interval start date should match', StartDate, Interval.StartDate);
+  AssertEquals('Interval end date should match', EndDate, Interval.EndDate);
+end;
+
+procedure TDateTimeTests.Test37_AddSpan;
+var
+  StartDate, ResultDate: TDateTime;
+  Period: TidyKit.TDateSpan;
+begin
+  StartDate := EncodeDate(2024, 1, 1);
+  
+  // Test adding a period
+  Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Year should be incremented', 2025, TDateTimeKit.GetYear(ResultDate));
+  AssertEquals('Month should be March', 3, TDateTimeKit.GetMonth(ResultDate));
+  AssertEquals('Day should be 4th', 4, TDateTimeKit.GetDay(ResultDate));
+end;
+
+procedure TDateTimeTests.Test38_SubtractSpan;
+var
+  StartDate, ResultDate: TDateTime;
+  Period: TidyKit.TDateSpan;
+begin
+  StartDate := EncodeDate(2024, 3, 15);
+  
+  // Test subtracting a period
+  Period := TDateTimeKit.CreatePeriod(0, 1, 10);  // 1 month, 10 days
+  ResultDate := TDateTimeKit.SubtractSpan(StartDate, Period);
+  
+  AssertEquals('Month should be February', 2, TDateTimeKit.GetMonth(ResultDate));
+  AssertEquals('Day should be 5th', 5, TDateTimeKit.GetDay(ResultDate));
+end;
+
+procedure TDateTimeTests.Test39_SpanBetween;
+var
+  StartDate, EndDate: TDateTime;
+  Span: TidyKit.TDateSpan;
+begin
+  StartDate := EncodeDate(2024, 1, 1);
+  EndDate := EncodeDate(2025, 2, 15);
+  
+  // Test calculating period between dates
+  Span := TDateTimeKit.SpanBetween(StartDate, EndDate);
+  
+  AssertEquals('Span kind should be period', Ord(TidyKit.TDateSpanKind.dskPeriod), Ord(Span.Kind));
+  AssertEquals('Years should be 1', 1, Span.Years);
+  AssertEquals('Months should be 1', 1, Span.Months);
+  AssertEquals('Days should be 14', 14, Span.Days);
+end;
+
+procedure TDateTimeTests.Test40_IsWithinInterval;
+var
+  StartDate, EndDate, TestDate: TDateTime;
+  Interval: TidyKit.TInterval;
+begin
+  StartDate := EncodeDate(2024, 1, 1);
+  EndDate := EncodeDate(2024, 12, 31);
+  TestDate := EncodeDate(2024, 6, 15);
+  
+  Interval := TDateTimeKit.CreateInterval(StartDate, EndDate);
+  
+  AssertTrue('Date should be within interval', 
+    TDateTimeKit.IsWithinInterval(TestDate, Interval));
+  AssertFalse('Date before interval should not be within interval',
+    TDateTimeKit.IsWithinInterval(EncodeDate(2023, 12, 31), Interval));
+  AssertFalse('Date after interval should not be within interval',
+    TDateTimeKit.IsWithinInterval(EncodeDate(2025, 1, 1), Interval));
+end;
+
+procedure TDateTimeTests.Test41_IntervalsOverlap;
+var
+  Interval1, Interval2: TidyKit.TInterval;
+begin
+  // Create two overlapping intervals
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 6, 30));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 6, 1),
+    EncodeDate(2024, 12, 31));
+    
+  AssertTrue('Overlapping intervals should be detected',
+    TDateTimeKit.IntervalsOverlap(Interval1, Interval2));
+    
+  // Create non-overlapping intervals
+  Interval2.StartDate := EncodeDate(2024, 7, 1);
+  AssertFalse('Non-overlapping intervals should be detected',
+    TDateTimeKit.IntervalsOverlap(Interval1, Interval2));
+end;
+
+procedure TDateTimeTests.Test42_IntervalLength;
+var
+  Interval: TidyKit.TInterval;
+  Span: TidyKit.TDateSpan;
+begin
+  // Create an interval for the entire year 2024
+  Interval.StartDate := EncodeDate(2024, 1, 1);
+  Interval.EndDate := EncodeDate(2024, 12, 31) + EncodeTime(23, 59, 59, 999);
+    
+  // Test period length
+  Span := TDateTimeKit.IntervalLength(Interval, TidyKit.DateTime.dskPeriod);
+  AssertEquals('Interval length should be 1 year', 1, Span.Years);
+  AssertEquals('No remaining months', 0, Span.Months);
+  AssertEquals('No remaining days', 0, Span.Days);
+  
+  // Test duration length (366 days for leap year 2024)
+  Span := TDateTimeKit.IntervalLength(Interval, TidyKit.DateTime.dskDuration);
+  AssertEquals('Duration should be calculated in seconds',
+    366 * 24 * 60 * 60,  // Full leap year 2024
+    Span.Seconds);
+end;
+
+procedure TDateTimeTests.Test43_PeriodNormalization;
+var
+  Period: TidyKit.TDateSpan;
+  StartDate, ResultDate: TDateTime;
+begin
+  // Test period normalization (13 months should become 1 year 1 month)
+  Period := TDateTimeKit.CreatePeriod(0, 13, 0);
+  StartDate := EncodeDate(2024, 1, 1);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Year should be incremented', 2025, TDateTimeKit.GetYear(ResultDate));
+  AssertEquals('Month should be February', 2, TDateTimeKit.GetMonth(ResultDate));
+end;
+
+procedure TDateTimeTests.Test44_DurationCalculation;
+var
+  Duration: TidyKit.TDateSpan;
+  StartDate, ResultDate: TDateTime;
+begin
+  // Test precise duration calculations
+  Duration := TDateTimeKit.CreateDuration(0, 0, 0, 25, 0, 0, 0);  // 25 hours
+  StartDate := EncodeDate(2024, 1, 1) + EncodeTime(12, 0, 0, 0);  // Noon
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Duration);
+  
+  AssertEquals('Day should be incremented', 2, TDateTimeKit.GetDay(ResultDate));
+  AssertEquals('Hour should be 13', 13, TDateTimeKit.GetHour(ResultDate));
+end;
+
+procedure TDateTimeTests.Test45_SpanCornerCases;
+var
+  Period: TidyKit.TDateSpan;
+  StartDate, ResultDate: TDateTime;
+begin
+  // Test adding one month to January 31st (should go to last day of February)
+  Period := TDateTimeKit.CreatePeriod(0, 1, 0);
+  StartDate := EncodeDate(2024, 1, 31);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Month should be February', 2, TDateTimeKit.GetMonth(ResultDate));
+  AssertEquals('Day should be adjusted to 29 (leap year)',
+    29, TDateTimeKit.GetDay(ResultDate));
+    
+  // Test adding one month to January 31st in non-leap year (should go to February 28)
+  StartDate := EncodeDate(2025, 1, 31);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Month should be February', 2, TDateTimeKit.GetMonth(ResultDate));
+  AssertEquals('Day should be adjusted to 28 (non-leap year)',
+    28, TDateTimeKit.GetDay(ResultDate));
+    
+  // Test adding one year to February 29th in leap year (should go to February 28)
+  Period := TDateTimeKit.CreatePeriod(1, 0, 0);
+  StartDate := EncodeDate(2024, 2, 29);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Year should be incremented', 2025, TDateTimeKit.GetYear(ResultDate));
+  AssertEquals('Day should be adjusted to 28 (non-leap year)',
+    28, TDateTimeKit.GetDay(ResultDate));
+    
+  // Test adding two years to February 29th (should go back to February 29)
+  Period := TDateTimeKit.CreatePeriod(2, 0, 0);
+  StartDate := EncodeDate(2024, 2, 29);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Year should be incremented by 2', 2026, TDateTimeKit.GetYear(ResultDate));
+  AssertEquals('Day should be adjusted to 28 (non-leap year)',
+    28, TDateTimeKit.GetDay(ResultDate));
+    
+  // Test adding one month to March 31st (should go to April 30)
+  Period := TDateTimeKit.CreatePeriod(0, 1, 0);
+  StartDate := EncodeDate(2024, 3, 31);
+  ResultDate := TDateTimeKit.AddSpan(StartDate, Period);
+  
+  AssertEquals('Month should be April', 4, TDateTimeKit.GetMonth(ResultDate));
+  AssertEquals('Day should be adjusted to 30',
+    30, TDateTimeKit.GetDay(ResultDate));
 end;
 
 { TFSTests }
@@ -1609,32 +1859,32 @@ begin
   FileSetDate(File3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));
   
   // Test name sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsName);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsName);
   AssertEquals('First file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test name sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsNameDesc);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsNameDesc);
   AssertEquals('First file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[2]));
   
   // Test date sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsDate);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsDate);
   AssertEquals('First file should be a_file.txt (oldest)', 'a_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be c_file.txt (newest)', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test date sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsDateDesc);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsDateDesc);
   AssertEquals('First file should be c_file.txt (newest)', 'c_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be a_file.txt (oldest)', 'a_file.txt', ExtractFileName(Files[2]));
   
   // Test size sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSize);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsSize);
   AssertEquals('First file should be a_file.txt (smallest)', 'a_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test size sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSizeDesc);  // Changed from fsSize to fsSizeDesc
+  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsSizeDesc);  // Changed from fsSize to fsSizeDesc
   AssertEquals('First file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be a_file.txt (smallest)', 'a_file.txt', ExtractFileName(Files[2]));
 end;
@@ -1706,22 +1956,22 @@ begin
   FileSetDate(Dir3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));
   
   // Test name sorting (ascending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsName);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsName);
   AssertEquals('First directory should be a_dir', 'a_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be c_dir', 'c_dir', ExtractFileName(Dirs[2]));
   
   // Test name sorting (descending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsNameDesc);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsNameDesc);
   AssertEquals('First directory should be c_dir', 'c_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be a_dir', 'a_dir', ExtractFileName(Dirs[2]));
   
   // Test date sorting (ascending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsDate);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsDate);
   AssertEquals('First directory should be a_dir (oldest)', 'a_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be c_dir (newest)', 'c_dir', ExtractFileName(Dirs[2]));
   
   // Test date sorting (descending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsDateDesc);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsDateDesc);
   AssertEquals('First directory should be c_dir (newest)', 'c_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be a_dir (oldest)', 'a_dir', ExtractFileName(Dirs[2]));
 end;

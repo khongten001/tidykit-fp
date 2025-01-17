@@ -24,6 +24,9 @@ type
 
   { Re-export the datetime types }
   TDateTimeKit = TidyKit.DateTime.TDateTimeKit;
+  TDateSpanKind = TidyKit.DateTime.TDateSpanKind;
+  TDateSpan = TidyKit.DateTime.TDateSpan;
+  TInterval = TidyKit.DateTime.TInterval;
 
 implementation
 
