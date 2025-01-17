@@ -724,10 +724,10 @@ var
   Interval: TidyKit.TInterval;
   Span: TidyKit.TDateSpan;
 begin
-  // Create an interval for the entire year 2024
-  Interval.StartDate := EncodeDate(2024, 1, 1);
-  Interval.EndDate := EncodeDate(2024, 12, 31) + EncodeTime(23, 59, 59, 999);
-    
+  // Create an interval for exactly one year
+  Interval.StartDate := EncodeDate(2024, 1, 1);  // 2024-01-01 00:00:00.000
+  Interval.EndDate := EncodeDate(2025, 1, 1);    // 2025-01-01 00:00:00.000
+  
   // Test period length
   Span := TDateTimeKit.IntervalLength(Interval, TidyKit.DateTime.dskPeriod);
   AssertEquals('Interval length should be 1 year', 1, Span.Years);

@@ -1309,17 +1309,34 @@ class function TDateTimeKit.SpanBetween(const AStart, AEnd: TDateTime;
 var
   Y1, M1, D1, Y2, M2, D2: Word;
   H1, N1, S1, MS1, H2, N2, S2, MS2: Word;
-  TotalDays: Integer;
+  TempDate: TDateTime;
 begin
   case AKind of
     dskPeriod:
       begin
+        // Extract components from both dates
         DecodeDate(AStart, Y1, M1, D1);
         DecodeTime(AStart, H1, N1, S1, MS1);
         DecodeDate(AEnd, Y2, M2, D2);
         DecodeTime(AEnd, H2, N2, S2, MS2);
         
-        // Initialize result
+        // Try exact year first
+        TempDate := IncYear(AStart, Y2 - Y1);
+        if CompareDateTime(TempDate, AEnd) = 0 then
+        begin
+          Result := CreatePeriod(Y2 - Y1);
+          Exit;
+        end;
+        
+        // Try exact month
+        TempDate := IncMonth(AStart, (Y2 - Y1) * 12 + (M2 - M1));
+        if CompareDateTime(TempDate, AEnd) = 0 then
+        begin
+          Result := CreatePeriod(Y2 - Y1, M2 - M1);
+          Exit;
+        end;
+        
+        // Calculate full period
         Result.Kind := dskPeriod;
         Result.Years := Y2 - Y1;
         Result.Months := M2 - M1;
@@ -1329,7 +1346,7 @@ begin
         Result.Seconds := S2 - S1;
         Result.Milliseconds := MS2 - MS1;
         
-        // Normalize negative values
+        // Normalize using RTL functions
         if Result.Milliseconds < 0 then begin
           Dec(Result.Seconds);
           Inc(Result.Milliseconds, 1000);
@@ -1348,46 +1365,21 @@ begin
         end;
         if Result.Days < 0 then begin
           Dec(Result.Months);
-          // Create a TDateTime for the month we're checking
-          Inc(Result.Days, DaysInMonth(EncodeDate(Y1, M1, 1)));
+          TempDate := EncodeDate(Y1, M1, 1);
+          Inc(Result.Days, DaysInMonth(TempDate));
         end;
         if Result.Months < 0 then begin
           Dec(Result.Years);
           Inc(Result.Months, 12);
         end;
-        
-        // Handle exact year case
-        if (Result.Years > 0) and 
-           (Result.Months = 0) and 
-           (Result.Days = 0) and
-           (Result.Hours = 0) and
-           (Result.Minutes = 0) and
-           (Result.Seconds = 0) and
-           (Result.Milliseconds = 0) then
-        begin
-          // Keep it as is - we have exact years
-        end
-        else if (M1 = M2) and (D1 = D2) and
-                (H1 = H2) and (N1 = N2) and
-                (S1 = S2) and (MS1 = MS2) then
-        begin
-          // Dates align exactly on year boundaries
-          Result.Years := Y2 - Y1;
-          Result.Months := 0;
-          Result.Days := 0;
-          Result.Hours := 0;
-          Result.Minutes := 0;
-          Result.Seconds := 0;
-          Result.Milliseconds := 0;
-        end;
       end;
       
     dskDuration:
       begin
+        // For durations, use direct subtraction and convert to seconds
         Result.Kind := dskDuration;
         Result.Years := 0;
         Result.Months := 0;
-        TotalDays := Trunc(AEnd - AStart);
         Result.Days := 0;
         Result.Hours := 0;
         Result.Minutes := 0;
