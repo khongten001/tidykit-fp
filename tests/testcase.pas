@@ -10,11 +10,6 @@ uses
 
 type
   TStringArray = array of string;
-  
-  { Re-use types from TidyKit units }
-  TSearchResults = TidyKit.FS.TSearchResults;
-  TStringMatches = TidyKit.Strings.TStringMatches;
-  TFileSortOrder = TidyKit.FS.TFileSortOrder;
 
 type
   TDateTimeTests = class(TTestCase)

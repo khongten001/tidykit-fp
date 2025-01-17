@@ -18,9 +18,12 @@ type
 
   { Re-export the filesystem types }
   TFileKit = TidyKit.FS.TFileKit;
+  TSearchResults = TidyKit.FS.TSearchResults;
+  TFileSortOrder = TidyKit.FS.TFileSortOrder;
 
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
+  TStringMatches = TidyKit.Strings.TStringMatches;
 
   { Re-export the datetime types }
   TDateTimeKit = TidyKit.DateTime.TDateTimeKit;
