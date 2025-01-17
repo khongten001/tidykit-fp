@@ -1164,7 +1164,8 @@ begin
   end;
 end;
 
-class function TDateTimeKit.CeilingDate(const AValue: TDateTime; const AUnit: string): TDateTime;
+class function TDateTimeKit.CeilingDate(const AValue: TDateTime; 
+                                        const AUnit: string): TDateTime;
 var
   Y, M, D: Word;
   H, N, S, MS: Word;
@@ -1217,8 +1218,8 @@ begin
   end;
 end;
 
-class function TDateTimeKit.CreatePeriod(const AYears, AMonths, ADays, AHours,
-  AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+class function TDateTimeKit.CreatePeriod(const AYears, AMonths, ADays, 
+                                               AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
 begin
   Result.Kind := dskPeriod;
   Result.Years := AYears;
@@ -1230,8 +1231,8 @@ begin
   Result.Milliseconds := AMilliseconds;
 end;
 
-class function TDateTimeKit.CreateDuration(const AYears, AMonths, ADays, AHours,
-  AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+class function TDateTimeKit.CreateDuration(const AYears, AMonths, ADays, 
+                                                 AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
 begin
   Result.Kind := dskDuration;
   // Convert everything to a consistent unit (milliseconds)
@@ -1255,7 +1256,8 @@ begin
   Result.EndDate := AEnd;
 end;
 
-class function TDateTimeKit.AddSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime;
+class function TDateTimeKit.AddSpan(const AValue: TDateTime; 
+                                    const ASpan: TDateSpan): TDateTime;
 begin
   case ASpan.Kind of
     dskPeriod:
@@ -1287,7 +1289,8 @@ begin
   end;
 end;
 
-class function TDateTimeKit.SubtractSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime;
+class function TDateTimeKit.SubtractSpan(const AValue: TDateTime; 
+                                         const ASpan: TDateSpan): TDateTime;
 var
   NegativeSpan: TDateSpan;
 begin
@@ -1305,7 +1308,7 @@ begin
 end;
 
 class function TDateTimeKit.SpanBetween(const AStart, AEnd: TDateTime;
-  const AKind: TDateSpanKind): TDateSpan;
+                                        const AKind: TDateSpanKind): TDateSpan;
 var
   Y1, M1, D1, Y2, M2, D2: Word;
   H1, N1, S1, MS1, H2, N2, S2, MS2: Word;
@@ -1406,7 +1409,7 @@ begin
 end;
 
 class function TDateTimeKit.IntervalLength(const AInterval: TInterval;
-  const AKind: TDateSpanKind): TDateSpan;
+                                           const AKind: TDateSpanKind): TDateSpan;
 begin
   Result := SpanBetween(AInterval.StartDate, AInterval.EndDate, AKind);
 end;

@@ -498,9 +498,9 @@ Span := TDateTimeKit.SpanBetween(Start, End, dskPeriod);   // As calendar time
 Span := TDateTimeKit.SpanBetween(Start, End, dskDuration); // As fixed duration
 
 // Interval operations
-if TDateTimeKit.IsWithinInterval(Value, Interval) then     // Check if date in interval
+if TDateTimeKit.IsWithinInterval(Value, Interval) then      // Check if date in interval
 if TDateTimeKit.IntervalsOverlap(Interval1, Interval2) then // Check overlap
-Span := TDateTimeKit.IntervalLength(Interval);             // Get interval length
+Span := TDateTimeKit.IntervalLength(Interval);              // Get interval length
 
 // Comparisons
 if TDateTimeKit.IsBefore(Value, DateTime) then    // Check if before
@@ -510,10 +510,10 @@ if TDateTimeKit.IsSameMonth(Value, DateTime) then // Check if same month
 if TDateTimeKit.IsSameYear(Value, DateTime) then  // Check if same year
 
 // Business day calculations
-if TDateTimeKit.IsBusinessDay(Value) then         // Check if business day
-Date := TDateTimeKit.NextBusinessDay(Value);      // Get next business day
-Date := TDateTimeKit.PreviousBusinessDay(Value);  // Get previous business day
-Date := TDateTimeKit.AddBusinessDays(Value, Days);// Add business days
+if TDateTimeKit.IsBusinessDay(Value) then          // Check if business day
+Date := TDateTimeKit.NextBusinessDay(Value);       // Get next business day
+Date := TDateTimeKit.PreviousBusinessDay(Value);   // Get previous business day
+Date := TDateTimeKit.AddBusinessDays(Value, Days); // Add business days
 
 // Additional utilities
 Quarter := TDateTimeKit.GetQuarter(Value);        // Get quarter (1-4)
