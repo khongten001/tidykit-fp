@@ -286,7 +286,7 @@ begin
   end;
   
   // Directory and file listing
-  Files := TFileKit.ListFiles(Path);                                    // List all files
+  Files := TFileKit.ListFiles(Path);                                   // List all files
   Files := TFileKit.ListFiles(Path, '*.txt');                          // List text files only
   Files := TFileKit.ListFiles(Path, '*', True);                        // List all files recursively
   Files := TFileKit.ListFiles(Path, '*.txt', True);                    // List text files recursively
@@ -443,8 +443,14 @@ Str := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss');  // Format date/tim
 
 // Time spans (two types)
 // 1. Periods - Calendar time (respects month/year lengths)
-Period := TDateTimeKit.CreatePeriod(1);           // 1 year as calendar time
-NextMonth := TDateTimeKit.AddSpan(Now, TDateTimeKit.CreatePeriod(0, 1));  // Add 1 month
+// Example 1: Creating and adding a 1-year period
+YearPeriod := TDateTimeKit.CreatePeriod(1);           // Create a period of 1 year
+NextYear := TDateTimeKit.AddSpan(Now, YearPeriod);    // Add that year to current date
+
+// Example 2: Creating and adding a 1-month period
+MonthPeriod := TDateTimeKit.CreatePeriod(0, 1);       // Create a period of 1 month
+NextMonth := TDateTimeKit.AddSpan(Now, MonthPeriod);  // Add that month to current date
+
 // Examples of period behavior:
 Jan31 := EncodeDate(2024, 1, 31);
 Feb28 := TDateTimeKit.AddSpan(Jan31, TDateTimeKit.CreatePeriod(0, 1));  // 2024-02-29 (leap year)
@@ -452,8 +458,8 @@ Feb29_2024 := EncodeDate(2024, 2, 29);
 Feb28_2025 := TDateTimeKit.AddSpan(Feb29_2024, TDateTimeKit.CreatePeriod(1));  // 2025-02-28
 
 // 2. Durations - Fixed time (exact number of seconds)
-Duration := TDateTimeKit.CreateDuration(0, 0, 1);  // Exactly 24 hours
-Tomorrow := TDateTimeKit.AddSpan(Now, Duration);   // Add exactly 24 hours
+Duration := TDateTimeKit.CreateDuration(0, 0, 0, 24); // Exactly 24 hours
+Tomorrow := TDateTimeKit.AddSpan(Now, Duration);      // Add exactly 24 hours
 
 // Intervals (specific time ranges)
 Q1_2024 := TDateTimeKit.CreateInterval(
@@ -464,13 +470,13 @@ if TDateTimeKit.IsWithinInterval(Now, Q1_2024) then
   WriteLn('Date is in Q1 2024');
 
 // Calculate spans between dates
-Span := TDateTimeKit.SpanBetween(Start, End_, dskPeriod);   // As calendar time
-Span := TDateTimeKit.SpanBetween(Start, End_, dskDuration); // As fixed duration
+Span := TDateTimeKit.SpanBetween(StartDateTime, EndDateTime, dskPeriod);   // As calendar time
+Span := TDateTimeKit.SpanBetween(StartDateTime, EndDateTime, dskDuration); // As fixed duration
 
 // Date components - getters
-Year := TDateTimeKit.GetYear(Now);                // Get year (e.g., 2024)
-Month := TDateTimeKit.GetMonth(Now);              // Get month (1-12)
-Day := TDateTimeKit.GetDay(Now);                  // Get day (1-31)
+Year := TDateTimeKit.GetYear(Now);               // Get year (e.g., 2024)
+Month := TDateTimeKit.GetMonth(Now);             // Get month (1-12)
+Day := TDateTimeKit.GetDay(Now);                 // Get day (1-31)
 DayOfWeek := TDateTimeKit.GetDayOfWeek(Now);     // Get day of week (1=Sunday)
 DayOfYear := TDateTimeKit.GetDayOfYear(Now);     // Get day of year (1-366)
 Hour := TDateTimeKit.GetHour(Now);               // Get hour (0-23)
