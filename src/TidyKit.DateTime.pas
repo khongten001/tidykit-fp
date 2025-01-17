@@ -1291,19 +1291,19 @@ end;
 
 class function TDateTimeKit.RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
 var
-  Floor, Ceiling: TDateTime;
-  FloorDiff, CeilingDiff: TDateTime;
+  FloorValue, CeilingValue: TDateTime;
+  FloorDiff, CeilingDiff: Double;
 begin
-  Floor := FloorDate(AValue, AUnit);
-  Ceiling := CeilingDate(AValue, AUnit);
+  FloorValue := FloorDate(AValue, AUnit);
+  CeilingValue := CeilingDate(AValue, AUnit);
   
-  FloorDiff := Abs(AValue - Floor);
-  CeilingDiff := Abs(Ceiling - AValue);
+  FloorDiff := Abs(AValue - FloorValue);
+  CeilingDiff := Abs(CeilingValue - AValue);
   
   if FloorDiff <= CeilingDiff then
-    Result := Floor
+    Result := FloorValue
   else
-    Result := Ceiling;
+    Result := CeilingValue;
 end;
 
 class function TDateTimeKit.CreatePeriod(const AYears: Integer = 0; const AMonths: Integer = 0;
@@ -1614,76 +1614,76 @@ end;
 
 class function TDateTimeKit.GetISOYear(const AValue: TDateTime): Integer;
 var
-  Y, W: Word;
+  Year: Word;
+  WeekOfYear: Word;
+  DayOfWeek: Word;
 begin
   // Get ISO-8601 year and week
   // ISO year can differ from calendar year for dates near year boundaries
-  DecodeDateWeek(AValue, Y, W, 1); // 1 = Monday as first day of week (ISO standard)
-  Result := Y;
+  DecodeDateWeek(AValue, Year, WeekOfYear, DayOfWeek);
+  Result := Year;
 end;
 
 class function TDateTimeKit.GetISOWeek(const AValue: TDateTime): Integer;
 var
-  Y, W: Word;
+  Year: Word;
+  WeekOfYear: Word;
+  DayOfWeek: Word;
 begin
   // Get ISO-8601 week number
   // Weeks start on Monday and week 1 is the week containing Jan 4th
-  DecodeDateWeek(AValue, Y, W, 1);
-  Result := W;
+  DecodeDateWeek(AValue, Year, WeekOfYear, DayOfWeek);
+  Result := WeekOfYear;
 end;
 
 class function TDateTimeKit.GetEpiYear(const AValue: TDateTime): Integer;
 var
-  Y, W: Word;
+  Year: Word;
+  WeekOfYear: Word;
+  DayOfWeek: Word;
   EpiWeek: Integer;
 begin
   // Epidemiological year can differ from calendar year
   // If week 1 of next year starts in December, that's part of next epi year
-  DecodeDateWeek(AValue, Y, W, 1);
+  DecodeDateWeek(AValue, Year, WeekOfYear, DayOfWeek);
   EpiWeek := GetEpiWeek(AValue);
   
   if (GetMonth(AValue) = 12) and (EpiWeek = 1) then
-    Result := Y + 1
+    Result := Year + 1
   else if (GetMonth(AValue) = 1) and (EpiWeek >= 52) then
-    Result := Y - 1
+    Result := Year - 1
   else
-    Result := Y;
+    Result := Year;
 end;
 
 class function TDateTimeKit.GetEpiWeek(const AValue: TDateTime): Integer;
 var
-  Y, W: Word;
+  Year: Word;
+  WeekOfYear: Word;
+  DayOfWeek: Word;
   Jan4: TDateTime;
 begin
   // Epidemiological weeks follow CDC/WHO definition:
   // Week 1 is the first week that has at least 4 days in the new year
-  DecodeDateWeek(AValue, Y, W, 1);
+  DecodeDateWeek(AValue, Year, WeekOfYear, DayOfWeek);
   
   // Find January 4th of the year (always in week 1)
-  Jan4 := EncodeDate(Y, 1, 4);
+  Jan4 := EncodeDate(Year, 1, 4);
   
   // If date is before the first epi week, it belongs to the last week of previous year
   if AValue < StartOfWeek(Jan4) then
   begin
-    DecodeDateWeek(EndOfYear(AddYears(AValue, -1)), Y, W, 1);
-    Result := W;
+    DecodeDateWeek(EndOfYear(AddYears(AValue, -1)), Year, WeekOfYear, DayOfWeek);
+    Result := WeekOfYear;
   end
   else
-    Result := W;
+    Result := WeekOfYear;
 end;
 
 class function TDateTimeKit.GetSemester(const AValue: TDateTime): Integer;
 begin
   // Return 1 for months 1-6, 2 for months 7-12
   Result := ((GetMonth(AValue) - 1) div 6) + 1;
-end;
-
-class function TDateTimeKit.RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime;
-begin
-  // Implementation of RoundDate function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result := 0;
 end;
 
 class function TDateTimeKit.GetTimeZone(const AValue: TDateTime): TTimeZoneInfo;
