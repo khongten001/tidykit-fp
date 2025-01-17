@@ -82,7 +82,7 @@ Contributions for testing and validation on other platforms are welcome!
    ```pascal
    program MyProject;
    
-   {$mode objfpc}{$H+}
+   {$mode objfpc}{$H+}{$J-}
    
    uses
      {$IFDEF UNIX}
@@ -286,7 +286,7 @@ begin
   end;
   
   // Directory and file listing
-  Files := TFileKit.ListFiles(Path);                                    // List all files
+  Files := TFileKit.ListFiles(Path);                                   // List all files
   Files := TFileKit.ListFiles(Path, '*.txt');                          // List text files only
   Files := TFileKit.ListFiles(Path, '*', True);                        // List all files recursively
   Files := TFileKit.ListFiles(Path, '*.txt', True);                    // List text files recursively
@@ -316,8 +316,8 @@ end;
 
 ```pascal
 // Basic file operations
-Content := TFileKit.ReadFile('input.txt');                    // Read entire file
-TFileKit.WriteFile('output.txt', 'content');                  // Write to file
+Content := TFileKit.ReadFile('input.txt');                   // Read entire file
+TFileKit.WriteFile('output.txt', 'content');                 // Write to file
 TFileKit.AppendFile('log.txt', 'new line');                  // Append to file
 TFileKit.DeleteFile('temp.txt');                             // Delete file
 TFileKit.CopyFile('source.txt', 'dest.txt');                 // Copy file
@@ -326,7 +326,7 @@ TFileKit.MoveFile('old.txt', 'new.txt');                     // Move/rename file
 // Directory operations
 TFileKit.CreateDirectory('new_dir');                         // Create directory
 TFileKit.DeleteDirectory('old_dir', True);                   // Delete directory (True = recursive)
-TFileKit.EnsureDirectory('path/to/file.txt');               // Create all parent directories
+TFileKit.EnsureDirectory('path/to/file.txt');                // Create all parent directories
 
 // File listing
 Files := TFileKit.ListFiles('.', '*', False);                // List files in current dir
@@ -340,38 +340,38 @@ Files := TFileKit.ListFiles('.', '*', False, fsSize);        // Sort by size (as
 Files := TFileKit.ListFiles('.', '*', False, fsSizeDesc);    // Sort by size (descending)
 
 // Directory listing
-Dirs := TFileKit.ListDirectories('.', '*', False);           // List directories in current dir
-Dirs := TFileKit.ListDirectories('.', '*', True);            // List directories recursively
-Dirs := TFileKit.ListDirectories('.', 'test_*');            // List dirs matching pattern
-Dirs := TFileKit.ListDirectories('.', '*', False, fsName);   // Sort by name (ascending)
+Dirs := TFileKit.ListDirectories('.', '*', False);             // List directories in current dir
+Dirs := TFileKit.ListDirectories('.', '*', True);              // List directories recursively
+Dirs := TFileKit.ListDirectories('.', 'test_*');               // List dirs matching pattern
+Dirs := TFileKit.ListDirectories('.', '*', False, fsName);     // Sort by name (ascending)
 Dirs := TFileKit.ListDirectories('.', '*', False, fsNameDesc); // Sort by name (descending)
-Dirs := TFileKit.ListDirectories('.', '*', False, fsDate);   // Sort by date (ascending)
+Dirs := TFileKit.ListDirectories('.', '*', False, fsDate);     // Sort by date (ascending)
 Dirs := TFileKit.ListDirectories('.', '*', False, fsDateDesc); // Sort by date (descending)
 
 // Path operations
-Path := TFileKit.GetFileName('path/to/file.txt');           // Returns 'file.txt'
-Path := TFileKit.GetFileNameWithoutExt('file.txt');         // Returns 'file'
-Path := TFileKit.GetDirectory('path/to/file.txt');          // Returns 'path/to'
-Path := TFileKit.GetExtension('file.txt');                  // Returns '.txt'
-Path := TFileKit.GetParentDir('path/to/file.txt');         // Returns 'path'
-Path := TFileKit.CombinePaths('path', 'file.txt');         // Combine paths
-Path := TFileKit.NormalizePath('path/./to/../file.txt');   // Normalize path
+Path := TFileKit.GetFileName('path/to/file.txt');         // Returns 'file.txt'
+Path := TFileKit.GetFileNameWithoutExt('file.txt');       // Returns 'file'
+Path := TFileKit.GetDirectory('path/to/file.txt');        // Returns 'path/to'
+Path := TFileKit.GetExtension('file.txt');                // Returns '.txt'
+Path := TFileKit.GetParentDir('path/to/file.txt');        // Returns 'path'
+Path := TFileKit.CombinePaths('path', 'file.txt');        // Combine paths
+Path := TFileKit.NormalizePath('path/./to/../file.txt');  // Normalize path
 
 // File information
-if TFileKit.Exists('file.txt') then ...                     // Check file exists
-if TFileKit.DirectoryExists('dir') then ...                 // Check directory exists
-Size := TFileKit.GetSize('file.txt');                       // Get file size
-Time := TFileKit.GetCreationTime('file.txt');              // Get creation time
-Time := TFileKit.GetLastAccessTime('file.txt');            // Get last access time
-Time := TFileKit.GetLastWriteTime('file.txt');             // Get last write time
-Attrs := TFileKit.GetAttributes('file.txt');               // Get file attributes
-if TFileKit.IsTextFile('file.txt') then ...                // Check if text file
-Encoding := TFileKit.GetFileEncoding('file.txt');          // Get file encoding
+if TFileKit.Exists('file.txt') then ...                   // Check file exists
+if TFileKit.DirectoryExists('dir') then ...               // Check directory exists
+Size := TFileKit.GetSize('file.txt');                     // Get file size
+Time := TFileKit.GetCreationTime('file.txt');             // Get creation time
+Time := TFileKit.GetLastAccessTime('file.txt');           // Get last access time
+Time := TFileKit.GetLastWriteTime('file.txt');            // Get last write time
+Attrs := TFileKit.GetAttributes('file.txt');              // Get file attributes
+if TFileKit.IsTextFile('file.txt') then ...               // Check if text file
+Encoding := TFileKit.GetFileEncoding('file.txt');         // Get file encoding
 
 // Search operations
-Results := TFileKit.SearchFiles('.', '*.txt', True);       // Search files recursively
-File := TFileKit.FindLastModifiedFile('.', '*.txt');       // Find newest file
-File := TFileKit.FindFirstModifiedFile('.', '*.txt');      // Find oldest file
+Results := TFileKit.SearchFiles('.', '*.txt', True);      // Search files recursively
+File := TFileKit.FindLastModifiedFile('.', '*.txt');      // Find newest file
+File := TFileKit.FindFirstModifiedFile('.', '*.txt');     // Find oldest file
 File := TFileKit.FindLargestFile('.', '*.txt');           // Find largest file
 File := TFileKit.FindSmallestFile('.', '*.txt');          // Find smallest file
 
@@ -433,66 +433,130 @@ Str := TStringKit.LeftStr(Text, Length);          // Get left part
 Str := TStringKit.RightStr(Text, Length);         // Get right part
 ```
 
-### DateTime operations
+### DateTime Operations
 
 ```pascal
 // Basic operations
 Now := TDateTimeKit.GetNow;                       // Current date/time
-Today := TDateTimeKit.GetToday;                   // Current date
-DateTime := TDateTimeKit.GetDateTime(Value);       // Convert to datetime
-Str := TDateTimeKit.GetAsString(Value, Format);   // Format to string
-DateTime := TDateTimeKit.FromString(Str, Format); // Parse from string
+Today := TDateTimeKit.GetToday;                   // Current date (time = 00:00:00)
+Str := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss');  // Format date/time
 
-// Date parts - getters
-Year := TDateTimeKit.GetYear(Value);              // Get year
-Month := TDateTimeKit.GetMonth(Value);            // Get month
-Day := TDateTimeKit.GetDay(Value);                // Get day
-DayOfWeek := TDateTimeKit.GetDayOfWeek(Value);   // Get day of week
-DayOfYear := TDateTimeKit.GetDayOfYear(Value);    // Get day of year
-Hour := TDateTimeKit.GetHour(Value);              // Get hour
-Minute := TDateTimeKit.GetMinute(Value);          // Get minute
-Second := TDateTimeKit.GetSecond(Value);          // Get second
-MS := TDateTimeKit.GetMillisecond(Value);         // Get millisecond
+// Time spans (two types)
+// 1. Periods - Calendar time (respects month/year lengths)
+// Example 1: Creating and adding a 1-year period
+YearPeriod := TDateTimeKit.CreatePeriod(1);           // Create a period of 1 year
+NextYear := TDateTimeKit.AddSpan(Now, YearPeriod);    // Add that year to current date
 
-// Date parts - setters
-Date := TDateTimeKit.SetYear(Value, Year);        // Set year
-Date := TDateTimeKit.SetMonth(Value, Month);      // Set month
-Date := TDateTimeKit.SetDay(Value, Day);          // Set day
-Time := TDateTimeKit.SetHour(Value, Hour);        // Set hour
-Time := TDateTimeKit.SetMinute(Value, Minute);    // Set minute
-Time := TDateTimeKit.SetSecond(Value, Second);    // Set second
-Time := TDateTimeKit.SetMillisecond(Value, MS);   // Set millisecond
+// Example 2: Creating and adding a 1-month period
+MonthPeriod := TDateTimeKit.CreatePeriod(0, 1);       // Create a period of 1 month
+NextMonth := TDateTimeKit.AddSpan(Now, MonthPeriod);  // Add that month to current date
 
-// Date manipulation
-Date := TDateTimeKit.AddYears(Value, Years);      // Add years
-Date := TDateTimeKit.AddMonths(Value, Months);    // Add months
-Date := TDateTimeKit.AddDays(Value, Days);        // Add days
-Time := TDateTimeKit.AddHours(Value, Hours);      // Add hours
-Time := TDateTimeKit.AddMinutes(Value, Minutes);  // Add minutes
-Time := TDateTimeKit.AddSeconds(Value, Seconds);  // Add seconds
+// Examples of period behavior:
+Jan31 := EncodeDate(2024, 1, 31);
+Feb28 := TDateTimeKit.AddSpan(Jan31, TDateTimeKit.CreatePeriod(0, 1));  // 2024-02-29 (leap year)
+Feb29_2024 := EncodeDate(2024, 2, 29);
+Feb28_2025 := TDateTimeKit.AddSpan(Feb29_2024, TDateTimeKit.CreatePeriod(1));  // 2025-02-28
+
+// 2. Durations - Fixed time (exact number of seconds)
+Duration := TDateTimeKit.CreateDuration(0, 0, 0, 24); // Exactly 24 hours
+Tomorrow := TDateTimeKit.AddSpan(Now, Duration);      // Add exactly 24 hours
+
+// Intervals (specific time ranges)
+Q1_2024 := TDateTimeKit.CreateInterval(
+  EncodeDate(2024, 1, 1),    // Start (inclusive)
+  EncodeDate(2024, 4, 1)     // End (exclusive)
+);
+if TDateTimeKit.IsWithinInterval(Now, Q1_2024) then
+  WriteLn('Date is in Q1 2024');
+
+// Calculate spans between dates
+Span := TDateTimeKit.SpanBetween(StartDateTime, EndDateTime, dskPeriod);   // As calendar time
+Span := TDateTimeKit.SpanBetween(StartDateTime, EndDateTime, dskDuration); // As fixed duration
+
+// Date components - getters
+Year := TDateTimeKit.GetYear(Now);               // Get year (e.g., 2024)
+Month := TDateTimeKit.GetMonth(Now);             // Get month (1-12)
+Day := TDateTimeKit.GetDay(Now);                 // Get day (1-31)
+DayOfWeek := TDateTimeKit.GetDayOfWeek(Now);     // Get day of week (1=Sunday)
+DayOfYear := TDateTimeKit.GetDayOfYear(Now);     // Get day of year (1-366)
+Hour := TDateTimeKit.GetHour(Now);               // Get hour (0-23)
+Minute := TDateTimeKit.GetMinute(Now);           // Get minute (0-59)
+Second := TDateTimeKit.GetSecond(Now);           // Get second (0-59)
+MS := TDateTimeKit.GetMillisecond(Now);          // Get millisecond (0-999)
+
+// Date components - setters (create new date, don't modify input)
+Date := TDateTimeKit.SetYear(Now, 2024);         // Set year
+Date := TDateTimeKit.SetMonth(Now, 1);           // Set month (1-12)
+Date := TDateTimeKit.SetDay(Now, 1);             // Set day (1-31)
+Time := TDateTimeKit.SetHour(Now, 9);            // Set hour (0-23)
+Time := TDateTimeKit.SetMinute(Now, 30);         // Set minute (0-59)
+Time := TDateTimeKit.SetSecond(Now, 0);          // Set second (0-59)
+Time := TDateTimeKit.SetMillisecond(Now, 0);     // Set millisecond (0-999)
 
 // Period start/end
-Date := TDateTimeKit.StartOfYear(Value);          // Start of year
-Date := TDateTimeKit.StartOfMonth(Value);         // Start of month
-Date := TDateTimeKit.StartOfWeek(Value);          // Start of week
-Date := TDateTimeKit.StartOfDay(Value);           // Start of day
-Date := TDateTimeKit.StartOfHour(Value);          // Start of hour
-Date := TDateTimeKit.EndOfYear(Value);            // End of year
-Date := TDateTimeKit.EndOfMonth(Value);           // End of month
-Date := TDateTimeKit.EndOfWeek(Value);            // End of week
-Date := TDateTimeKit.EndOfDay(Value);             // End of day
-Date := TDateTimeKit.EndOfHour(Value);            // End of hour
+Date := TDateTimeKit.StartOfYear(Now);           // First moment of year
+Date := TDateTimeKit.StartOfMonth(Now);          // First moment of month
+Date := TDateTimeKit.StartOfWeek(Now);           // First moment of week
+Date := TDateTimeKit.StartOfDay(Now);            // Start of day (00:00:00)
+Date := TDateTimeKit.EndOfYear(Now);             // Last moment of year
+Date := TDateTimeKit.EndOfMonth(Now);            // Last moment of month
+Date := TDateTimeKit.EndOfWeek(Now);             // Last moment of week
+Date := TDateTimeKit.EndOfDay(Now);              // End of day (23:59:59.999)
 
 // Comparisons
-if TDateTimeKit.IsBefore(Value, DateTime) then    // Check if before
-if TDateTimeKit.IsAfter(Value, DateTime) then     // Check if after
-if TDateTimeKit.IsSameDay(Value, DateTime) then   // Check if same day
-if TDateTimeKit.IsSameMonth(Value, DateTime) then // Check if same month
-if TDateTimeKit.IsSameYear(Value, DateTime) then  // Check if same year
+if TDateTimeKit.IsBefore(Date1, Date2) then      // Check if before
+if TDateTimeKit.IsAfter(Date1, Date2) then       // Check if after
+if TDateTimeKit.IsSameDay(Date1, Date2) then     // Check if same day
+if TDateTimeKit.IsSameMonth(Date1, Date2) then   // Check if same month
+if TDateTimeKit.IsSameYear(Date1, Date2) then    // Check if same year
 
-// Business day calculations
-if TDateTimeKit.IsBusinessDay(Value) then         // Check if business day
-Date := TDateTimeKit.NextBusinessDay(Value);      // Get next business day
-Date := TDateTimeKit.PreviousBusinessDay(Value);  // Get previous business day
-Date := TDateTimeKit.AddBusinessDays(Value, Days);// Add business days
+// Business days
+if TDateTimeKit.IsBusinessDay(Now) then          // Check if business day
+Date := TDateTimeKit.NextBusinessDay(Now);       // Get next business day
+Date := TDateTimeKit.AddBusinessDays(Now, 5);    // Add 5 business days
 ```
+
+#### Important Notes About DateTime Operations
+
+1. **Time Spans**: TidyKit supports two types of time spans:
+   - **Periods** (`dskPeriod`): Calendar time that respects month/year lengths
+     ```pascal
+     // Example: Adding 1 month to January 31st
+     Jan31 := EncodeDate(2024, 1, 31);
+     Feb29 := TDateTimeKit.AddSpan(Jan31, TDateTimeKit.CreatePeriod(0, 1));
+     // Result: February 29th (2024 is leap year)
+     ```
+   - **Durations** (`dskDuration`): Fixed-length time in seconds
+     ```pascal
+     // Example: Adding exactly 24 hours
+     Now := TDateTimeKit.GetNow;
+     Tomorrow := TDateTimeKit.AddSpan(Now, TDateTimeKit.CreateDuration(0, 0, 1));
+     ```
+
+2. **Corner Cases**:
+   - Month-end transitions are handled automatically:
+     ```pascal
+     // January 31st + 1 month = February 29th (in 2024)
+     // January 31st + 1 month = February 28th (in 2025)
+     ```
+   - Leap years are handled correctly:
+     ```pascal
+     // February 29th, 2024 + 1 year = February 28th, 2025
+     ```
+   - Time components are preserved unless explicitly changed
+
+3. **Intervals**:
+   - Start date is inclusive, end date is exclusive
+   - Perfect for defining ranges like quarters, months, years:
+     ```pascal
+     Q1_2024 := TDateTimeKit.CreateInterval(
+       EncodeDate(2024, 1, 1),    // January 1st, 2024
+       EncodeDate(2024, 4, 1)     // Up to (but not including) April 1st
+     );
+     ```
+
+4. **Best Practices**:
+   - Use `dskPeriod` for calendar calculations (e.g., "add 1 month")
+   - Use `dskDuration` for exact time differences (e.g., "exactly 24 hours")
+   - Always consider timezone implications when working with dates
+   - Remember that all operations return new values, never modify input

@@ -1,6 +1,6 @@
 unit TidyKit.DateTime;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
@@ -8,18 +8,31 @@ uses
   Classes, SysUtils, DateUtils;
 
 type
-  { TDateTimeKit provides a comprehensive set of date and time manipulation functions.
-    All operations are static (class functions) for ease of use and memory safety.
-    The kit follows a functional programming style where operations return new values
-    rather than modifying existing ones.
-    
-    This class is designed to be beginner-friendly and self-documenting. Each method
-    has detailed documentation explaining its purpose, parameters, and return values.
-    
-    Key concepts:
-    - TDateTime: Pascal's built-in type for storing date and time values
-    - Static methods: Can be called without creating a class instance
-    - Immutable operations: Methods don't modify input values, they return new ones }
+  { TDateSpanKind represents different ways to measure time spans }
+  TDateSpanKind = (
+    dskPeriod,   // Calendar time (months, years - variable length)
+    dskDuration  // Physical time (fixed length in seconds)
+  );
+  
+  { TDateSpan represents a span of time that can be added to or subtracted from dates }
+  TDateSpan = record
+    Kind: TDateSpanKind;    // How to interpret this span
+    Years: Integer;         // Number of years
+    Months: Integer;        // Number of months
+    Days: Integer;          // Number of days
+    Hours: Integer;         // Number of hours
+    Minutes: Integer;       // Number of minutes
+    Seconds: Integer;       // Number of seconds
+    Milliseconds: Integer;  // Number of milliseconds
+  end;
+  
+  { TInterval represents a specific span of time with start and end points }
+  TInterval = record
+    StartDate: TDateTime;   // Start of interval
+    EndDate: TDateTime;     // End of interval
+  end;
+
+  { TDateTimeKit provides a comprehensive set of date and time manipulation functions }
   TDateTimeKit = class
   public
     { Basic operations for getting and formatting date/time values }
@@ -542,6 +555,168 @@ type
       Returns:
         TDateTime - New date after adding/subtracting business days }
     class function AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
+    
+    { GetQuarter
+      Returns the quarter (1-4) for the given date.
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Integer - Quarter number (1-4) }
+    class function GetQuarter(const AValue: TDateTime): Integer; static;
+    
+    { IsAM
+      Checks if the time is in the AM (before noon).
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Boolean - True if time is before noon }
+    class function IsAM(const AValue: TDateTime): Boolean; static;
+    
+    { IsPM
+      Checks if the time is in the PM (after noon).
+      
+      Parameters:
+        AValue - The date/time to check
+        
+      Returns:
+        Boolean - True if time is after noon }
+    class function IsPM(const AValue: TDateTime): Boolean; static;
+    
+    { FloorDate
+      Rounds down to the nearest unit.
+      
+      Parameters:
+        AValue - The date/time to round
+        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+        
+      Returns:
+        TDateTime - Rounded down date/time }
+    class function FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
+    
+    { CeilingDate
+      Rounds up to the nearest unit.
+      
+      Parameters:
+        AValue - The date/time to round
+        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+        
+      Returns:
+        TDateTime - Rounded up date/time }
+    class function CeilingDate(const AValue: TDateTime; const AUnit: string): TDateTime; static;
+    
+    { Time Span Creation Functions }
+    
+    { CreatePeriod
+      Creates a calendar-based time span (handles months, leap years naturally).
+      
+      Parameters:
+        AYears, AMonths, etc. - Components of the period
+        
+      Returns:
+        TDateSpan - A period that can be added to dates }
+    class function CreatePeriod(const AYears: Integer = 0; const AMonths: Integer = 0;
+      const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+      const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
+      
+    { CreateDuration
+      Creates a fixed-length time span (in exact seconds).
+      
+      Parameters:
+        AYears, AMonths, etc. - Components of the duration
+        
+      Returns:
+        TDateSpan - A duration that can be added to dates }
+    class function CreateDuration(const AYears: Integer = 0; const AMonths: Integer = 0;
+      const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+      const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
+      
+    { CreateInterval
+      Creates a specific time interval between two dates.
+      
+      Parameters:
+        AStart - Start date/time
+        AEnd - End date/time
+        
+      Returns:
+        TInterval - An interval representing the span }
+    class function CreateInterval(const AStart, AEnd: TDateTime): TInterval; static;
+    
+    { Time Span Operations }
+    
+    { AddSpan
+      Adds a time span to a date.
+      
+      Parameters:
+        AValue - Original date/time
+        ASpan - Time span to add
+        
+      Returns:
+        TDateTime - New date with span added }
+    class function AddSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime; static;
+    
+    { SubtractSpan
+      Subtracts a time span from a date.
+      
+      Parameters:
+        AValue - Original date/time
+        ASpan - Time span to subtract
+        
+      Returns:
+        TDateTime - New date with span subtracted }
+    class function SubtractSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime; static;
+    
+    { SpanBetween
+      Calculates the time span between two dates.
+      
+      Parameters:
+        AStart - Start date/time
+        AEnd - End date/time
+        AKind - Kind of span to calculate (period/duration)
+        
+      Returns:
+        TDateSpan - Time span between the dates }
+    class function SpanBetween(const AStart, AEnd: TDateTime; 
+      const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
+      
+    { Interval Operations }
+    
+    { IsWithinInterval
+      Checks if a date falls within an interval.
+      
+      Parameters:
+        AValue - Date to check
+        AInterval - Interval to check against
+        
+      Returns:
+        Boolean - True if date is within interval }
+    class function IsWithinInterval(const AValue: TDateTime; 
+      const AInterval: TInterval): Boolean; static;
+      
+    { IntervalsOverlap
+      Checks if two intervals overlap.
+      
+      Parameters:
+        AInterval1, AInterval2 - Intervals to check
+        
+      Returns:
+        Boolean - True if intervals overlap }
+    class function IntervalsOverlap(const AInterval1, AInterval2: TInterval): Boolean; static;
+      
+    { IntervalLength
+      Gets the length of an interval as a span.
+      
+      Parameters:
+        AInterval - Interval to measure
+        AKind - Kind of span to return (period/duration)
+        
+      Returns:
+        TDateSpan - Length of the interval }
+    class function IntervalLength(const AInterval: TInterval; 
+      const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
   end;
 
 implementation
@@ -672,21 +847,45 @@ end;
 class function TDateTimeKit.SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime;
 var
   Y, M, D: Word;
+  NewD: Word;
 begin
   // Extract current date components
   DecodeDate(AValue, Y, M, D);
+  
+  // Handle Feb 29 corner case
+  if (M = 2) and (D = 29) and (not IsLeapYear(AYear)) then
+    NewD := 28
+  else
+    NewD := D;
+    
   // Create new date with updated year, preserving time portion
-  Result := EncodeDate(AYear, M, D) + Frac(AValue);
+  Result := EncodeDate(AYear, M, NewD) + Frac(AValue);
 end;
 
 class function TDateTimeKit.SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime;
 var
   Y, M, D: Word;
+  LastDay: Word;
+  NewD: Word;
+  TempDate: TDateTime;
 begin
   // Extract current date components
   DecodeDate(AValue, Y, M, D);
+  
+  // Create a temporary date with the target month
+  TempDate := EncodeDate(Y, AMonth, 1);
+  
+  // Get last day of target month using RTL function
+  LastDay := DaysInMonth(TempDate);
+  
+  // Adjust day if it exceeds the last day of target month
+  if D > LastDay then
+    NewD := LastDay
+  else
+    NewD := D;
+    
   // Create new date with updated month, preserving time portion
-  Result := EncodeDate(Y, AMonth, D) + Frac(AValue);
+  Result := EncodeDate(Y, AMonth, NewD) + Frac(AValue);
 end;
 
 class function TDateTimeKit.SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime;
@@ -929,6 +1128,290 @@ begin
     if IsBusinessDay(Result) then
       Dec(RemainingDays);
   end;
+end;
+
+class function TDateTimeKit.GetQuarter(const AValue: TDateTime): Integer;
+begin
+  Result := ((GetMonth(AValue) - 1) div 3) + 1;
+end;
+
+class function TDateTimeKit.IsAM(const AValue: TDateTime): Boolean;
+begin
+  Result := GetHour(AValue) < 12;
+end;
+
+class function TDateTimeKit.IsPM(const AValue: TDateTime): Boolean;
+begin
+  Result := GetHour(AValue) >= 12;
+end;
+
+class function TDateTimeKit.FloorDate(const AValue: TDateTime; const AUnit: string): TDateTime;
+var
+  Y, M, D: Word;
+  H, N, S, MS: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  DecodeTime(AValue, H, N, S, MS);
+  
+  case LowerCase(AUnit) of
+    'year': Result := EncodeDate(Y, 1, 1);
+    'month': Result := EncodeDate(Y, M, 1);
+    'day': Result := Trunc(AValue);
+    'hour': Result := Trunc(AValue) + EncodeTime(H, 0, 0, 0);
+    'minute': Result := Trunc(AValue) + EncodeTime(H, N, 0, 0);
+    'second': Result := Trunc(AValue) + EncodeTime(H, N, S, 0);
+    else
+      Result := AValue;  // Unknown unit, return as is
+  end;
+end;
+
+class function TDateTimeKit.CeilingDate(const AValue: TDateTime; 
+                                        const AUnit: string): TDateTime;
+var
+  Y, M, D: Word;
+  H, N, S, MS: Word;
+  LastDay: Word;
+begin
+  DecodeDate(AValue, Y, M, D);
+  DecodeTime(AValue, H, N, S, MS);
+  
+  case LowerCase(AUnit) of
+    'year': 
+      if (M = 1) and (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := EncodeDate(Y + 1, 1, 1);
+        
+    'month':
+      if (D = 1) and (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        if M = 12 then
+          Result := EncodeDate(Y + 1, 1, 1)
+        else
+          Result := EncodeDate(Y, M + 1, 1);
+          
+    'day':
+      if (H = 0) and (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + 1;
+        
+    'hour':
+      if (N = 0) and (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H + 1, 0, 0, 0);
+        
+    'minute':
+      if (S = 0) and (MS = 0) then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H, N + 1, 0, 0);
+        
+    'second':
+      if MS = 0 then
+        Result := AValue
+      else
+        Result := Trunc(AValue) + EncodeTime(H, N, S + 1, 0);
+    else
+      Result := AValue;  // Unknown unit, return as is
+  end;
+end;
+
+class function TDateTimeKit.CreatePeriod(const AYears, AMonths, ADays, 
+                                               AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+begin
+  Result.Kind := dskPeriod;
+  Result.Years := AYears;
+  Result.Months := AMonths;
+  Result.Days := ADays;
+  Result.Hours := AHours;
+  Result.Minutes := AMinutes;
+  Result.Seconds := ASeconds;
+  Result.Milliseconds := AMilliseconds;
+end;
+
+class function TDateTimeKit.CreateDuration(const AYears, AMonths, ADays, 
+                                                 AHours, AMinutes, ASeconds, AMilliseconds: Integer): TDateSpan;
+begin
+  Result.Kind := dskDuration;
+  // Convert everything to a consistent unit (milliseconds)
+  Result.Years := 0;
+  Result.Months := 0;
+  Result.Days := 0;
+  Result.Hours := 0;
+  Result.Minutes := 0;
+  Result.Seconds := ASeconds + 
+                   AMinutes * 60 + 
+                   AHours * 3600 + 
+                   ADays * 86400 +
+                   AMonths * 2592000 +  // Approximate - 30 days
+                   AYears * 31536000;   // Approximate - 365 days
+  Result.Milliseconds := AMilliseconds;
+end;
+
+class function TDateTimeKit.CreateInterval(const AStart, AEnd: TDateTime): TInterval;
+begin
+  Result.StartDate := AStart;
+  Result.EndDate := AEnd;
+end;
+
+class function TDateTimeKit.AddSpan(const AValue: TDateTime; 
+                                    const ASpan: TDateSpan): TDateTime;
+begin
+  case ASpan.Kind of
+    dskPeriod:
+      begin
+        // Use RTL functions for date arithmetic
+        Result := AValue;
+        if ASpan.Years <> 0 then
+          Result := IncYear(Result, ASpan.Years);
+        if ASpan.Months <> 0 then
+          Result := IncMonth(Result, ASpan.Months);
+        if ASpan.Days <> 0 then
+          Result := IncDay(Result, ASpan.Days);
+        if (ASpan.Hours <> 0) or (ASpan.Minutes <> 0) or 
+           (ASpan.Seconds <> 0) or (ASpan.Milliseconds <> 0) then
+          Result := Result + EncodeTime(ASpan.Hours, ASpan.Minutes,
+                                      ASpan.Seconds, ASpan.Milliseconds);
+      end;
+      
+    dskDuration:
+      begin
+        // Add exact number of seconds
+        Result := AValue + 
+                 (ASpan.Seconds / SecsPerDay) +
+                 (ASpan.Milliseconds / (SecsPerDay * 1000));
+      end;
+      
+    else
+      Result := AValue; // Unknown kind
+  end;
+end;
+
+class function TDateTimeKit.SubtractSpan(const AValue: TDateTime; 
+                                         const ASpan: TDateSpan): TDateTime;
+var
+  NegativeSpan: TDateSpan;
+begin
+  // Create negative version of span
+  NegativeSpan := ASpan;
+  NegativeSpan.Years := -ASpan.Years;
+  NegativeSpan.Months := -ASpan.Months;
+  NegativeSpan.Days := -ASpan.Days;
+  NegativeSpan.Hours := -ASpan.Hours;
+  NegativeSpan.Minutes := -ASpan.Minutes;
+  NegativeSpan.Seconds := -ASpan.Seconds;
+  NegativeSpan.Milliseconds := -ASpan.Milliseconds;
+  
+  Result := AddSpan(AValue, NegativeSpan);
+end;
+
+class function TDateTimeKit.SpanBetween(const AStart, AEnd: TDateTime;
+                                        const AKind: TDateSpanKind): TDateSpan;
+var
+  Y1, M1, D1, Y2, M2, D2: Word;
+  H1, N1, S1, MS1, H2, N2, S2, MS2: Word;
+  TempDate: TDateTime;
+begin
+  case AKind of
+    dskPeriod:
+      begin
+        // Extract components from both dates
+        DecodeDate(AStart, Y1, M1, D1);
+        DecodeTime(AStart, H1, N1, S1, MS1);
+        DecodeDate(AEnd, Y2, M2, D2);
+        DecodeTime(AEnd, H2, N2, S2, MS2);
+        
+        // Try exact year first
+        TempDate := IncYear(AStart, Y2 - Y1);
+        if CompareDateTime(TempDate, AEnd) = 0 then
+        begin
+          Result := CreatePeriod(Y2 - Y1);
+          Exit;
+        end;
+        
+        // Try exact month
+        TempDate := IncMonth(AStart, (Y2 - Y1) * 12 + (M2 - M1));
+        if CompareDateTime(TempDate, AEnd) = 0 then
+        begin
+          Result := CreatePeriod(Y2 - Y1, M2 - M1);
+          Exit;
+        end;
+        
+        // Calculate full period
+        Result.Kind := dskPeriod;
+        Result.Years := Y2 - Y1;
+        Result.Months := M2 - M1;
+        Result.Days := D2 - D1;
+        Result.Hours := H2 - H1;
+        Result.Minutes := N2 - N1;
+        Result.Seconds := S2 - S1;
+        Result.Milliseconds := MS2 - MS1;
+        
+        // Normalize using RTL functions
+        if Result.Milliseconds < 0 then begin
+          Dec(Result.Seconds);
+          Inc(Result.Milliseconds, 1000);
+        end;
+        if Result.Seconds < 0 then begin
+          Dec(Result.Minutes);
+          Inc(Result.Seconds, 60);
+        end;
+        if Result.Minutes < 0 then begin
+          Dec(Result.Hours);
+          Inc(Result.Minutes, 60);
+        end;
+        if Result.Hours < 0 then begin
+          Dec(Result.Days);
+          Inc(Result.Hours, 24);
+        end;
+        if Result.Days < 0 then begin
+          Dec(Result.Months);
+          TempDate := EncodeDate(Y1, M1, 1);
+          Inc(Result.Days, DaysInMonth(TempDate));
+        end;
+        if Result.Months < 0 then begin
+          Dec(Result.Years);
+          Inc(Result.Months, 12);
+        end;
+      end;
+      
+    dskDuration:
+      begin
+        // For durations, use direct subtraction and convert to seconds
+        Result.Kind := dskDuration;
+        Result.Years := 0;
+        Result.Months := 0;
+        Result.Days := 0;
+        Result.Hours := 0;
+        Result.Minutes := 0;
+        Result.Seconds := Round((AEnd - AStart) * SecsPerDay);
+        Result.Milliseconds := Round(Frac(AEnd - AStart) * SecsPerDay * 1000) mod 1000;
+      end;
+      
+    else
+      FillChar(Result, SizeOf(Result), 0);
+  end;
+end;
+
+class function TDateTimeKit.IsWithinInterval(const AValue: TDateTime;
+                                             const AInterval: TInterval): Boolean;
+begin
+  Result := (AValue >= AInterval.StartDate) and (AValue <= AInterval.EndDate);
+end;
+
+class function TDateTimeKit.IntervalsOverlap(const AInterval1, AInterval2: TInterval): Boolean;
+begin
+  Result := (AInterval1.StartDate <= AInterval2.EndDate) and
+            (AInterval1.EndDate >= AInterval2.StartDate);
+end;
+
+class function TDateTimeKit.IntervalLength(const AInterval: TInterval;
+                                           const AKind: TDateSpanKind): TDateSpan;
+begin
+  Result := SpanBetween(AInterval.StartDate, AInterval.EndDate, AKind);
 end;
 
 end. 
