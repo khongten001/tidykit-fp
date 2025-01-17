@@ -463,7 +463,7 @@ Time := TDateTimeKit.SetMinute(Value, Minute);    // Set minute
 Time := TDateTimeKit.SetSecond(Value, Second);    // Set second
 Time := TDateTimeKit.SetMillisecond(Value, MS);   // Set millisecond
 
-// Date manipulation
+// Date arithmetic
 Date := TDateTimeKit.AddYears(Value, Years);      // Add years
 Date := TDateTimeKit.AddMonths(Value, Months);    // Add months
 Date := TDateTimeKit.AddDays(Value, Days);        // Add days
@@ -483,6 +483,25 @@ Date := TDateTimeKit.EndOfWeek(Value);            // End of week
 Date := TDateTimeKit.EndOfDay(Value);             // End of day
 Date := TDateTimeKit.EndOfHour(Value);            // End of hour
 
+// Time spans and intervals
+// Create spans (three different types)
+Span := TDateTimeKit.CreatePeriod(1, 2, 3);       // 1 year, 2 months, 3 days (calendar time)
+Span := TDateTimeKit.CreateDuration(0, 0, 1);     // Exactly 24 hours (fixed time)
+Interval := TDateTimeKit.CreateInterval(Start, End); // Specific time span
+
+// Add/subtract spans
+Date := TDateTimeKit.AddSpan(Value, Span);        // Add a time span
+Date := TDateTimeKit.SubtractSpan(Value, Span);   // Subtract a time span
+
+// Calculate spans between dates
+Span := TDateTimeKit.SpanBetween(Start, End, dskPeriod);   // As calendar time
+Span := TDateTimeKit.SpanBetween(Start, End, dskDuration); // As fixed duration
+
+// Interval operations
+if TDateTimeKit.IsWithinInterval(Value, Interval) then     // Check if date in interval
+if TDateTimeKit.IntervalsOverlap(Interval1, Interval2) then // Check overlap
+Span := TDateTimeKit.IntervalLength(Interval);             // Get interval length
+
 // Comparisons
 if TDateTimeKit.IsBefore(Value, DateTime) then    // Check if before
 if TDateTimeKit.IsAfter(Value, DateTime) then     // Check if after
@@ -495,4 +514,39 @@ if TDateTimeKit.IsBusinessDay(Value) then         // Check if business day
 Date := TDateTimeKit.NextBusinessDay(Value);      // Get next business day
 Date := TDateTimeKit.PreviousBusinessDay(Value);  // Get previous business day
 Date := TDateTimeKit.AddBusinessDays(Value, Days);// Add business days
+
+// Additional utilities
+Quarter := TDateTimeKit.GetQuarter(Value);        // Get quarter (1-4)
+if TDateTimeKit.IsAM(Value) then                  // Check if morning
+if TDateTimeKit.IsPM(Value) then                  // Check if afternoon
+Date := TDateTimeKit.FloorDate(Value, 'hour');    // Round down to hour
+Date := TDateTimeKit.CeilingDate(Value, 'hour');  // Round up to hour
 ```
+
+#### Important Notes About DateTime Operations
+
+1. **Time Spans**: TidyKit supports three types of time spans:
+   - **Periods** (`dskPeriod`): Calendar time that respects month/year lengths
+   - **Durations** (`dskDuration`): Fixed-length time in seconds
+   - **Intervals** (`dskInterval`): Specific start-end spans
+
+2. **Corner Cases**:
+   - Month-end transitions are handled automatically (Jan 31 + 1 month = Feb 28/29)
+   - Leap years are handled correctly (Feb 29, 2024 + 1 year = Feb 28, 2025)
+   - Time components are preserved unless explicitly changed
+
+3. **Business Days**:
+   - Monday through Friday are considered business days
+   - Weekend days (Saturday and Sunday) are skipped
+   - `AddBusinessDays` properly handles multiple weeks
+
+4. **Intervals**:
+   - Start date is inclusive
+   - End date is exclusive
+   - A one-year interval should be like: Jan 1, 2024 00:00:00 to Jan 1, 2025 00:00:00
+
+5. **Best Practices**:
+   - Use `dskPeriod` for calendar calculations (e.g., "add 1 month")
+   - Use `dskDuration` for exact time differences (e.g., "exactly 24 hours")
+   - Use `dskInterval` for specific time ranges (e.g., "Q1 2024")
+   - Always consider timezone implications when working with dates
