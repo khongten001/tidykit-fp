@@ -168,6 +168,12 @@ type
     procedure Test107_DateBoundaryConversion;
     procedure Test108_InvalidTimezones;
     procedure Test109_ExtremeOffsets;
+    procedure Test110_DSTTransitionExactTime;
+    procedure Test111_DSTEndExactTime;
+    procedure Test112_LeapYearDST;
+    procedure Test113_InvalidTimeZoneEdgeCases;
+    procedure Test114_UTCOffsetEdgeCases;
+    procedure Test115_CrossBoundaryConversions;
   end;
 
   { TFSTests }
@@ -3538,6 +3544,203 @@ begin
     AssertTrue('Extreme negative offset should be handled',
       Abs(ConvertedDate - TestDate) <= 12/24); // Within 12 hours
   end;
+end;
+
+procedure TDateTimeTests.Test110_DSTTransitionExactTime;
+var
+  // March 10, 2024 1:59:59 AM (just before DST)
+  PreDST: TDateTime;
+  // March 10, 2024 2:00:00 AM (DST start - skipped hour)
+  DSTStart: TDateTime;
+  // March 10, 2024 3:00:00 AM (after DST start)
+  PostDST: TDateTime;
+  TZInfo: TTimeZoneInfo;
+begin
+  PreDST := EncodeDateTime(2024, 3, 10, 1, 59, 59, 0);
+  DSTStart := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+  PostDST := EncodeDateTime(2024, 3, 10, 3, 0, 0, 0);
+  
+  // Before DST
+  TZInfo := TDateTimeKit.GetTimeZone(PreDST);
+  AssertFalse('Time before DST should not be in DST', TZInfo.IsDST);
+  
+  // At DST start (2 AM becomes 3 AM)
+  TZInfo := TDateTimeKit.GetTimeZone(DSTStart);
+  AssertTrue('Time at DST start should be in DST', TZInfo.IsDST);
+  
+  // After DST
+  TZInfo := TDateTimeKit.GetTimeZone(PostDST);
+  AssertTrue('Time after DST start should be in DST', TZInfo.IsDST);
+end;
+
+procedure TDateTimeTests.Test111_DSTEndExactTime;
+var
+  // November 3, 2024 1:59:59 AM (before DST end)
+  PreStandard: TDateTime;
+  // November 3, 2024 2:00:00 AM (DST end - ambiguous hour)
+  DSTEnd: TDateTime;
+  // November 3, 2024 3:00:00 AM (after DST end)
+  PostStandard: TDateTime;
+  TZInfo: TTimeZoneInfo;
+begin
+  PreStandard := EncodeDateTime(2024, 11, 3, 1, 59, 59, 0);
+  DSTEnd := EncodeDateTime(2024, 11, 3, 2, 0, 0, 0);
+  PostStandard := EncodeDateTime(2024, 11, 3, 3, 0, 0, 0);
+  
+  // Before standard time
+  TZInfo := TDateTimeKit.GetTimeZone(PreStandard);
+  AssertTrue('Time before DST end should be in DST', TZInfo.IsDST);
+  
+  // At DST end (first 2 AM)
+  TZInfo := TDateTimeKit.GetTimeZone(DSTEnd);
+  AssertFalse('Time at DST end should not be in DST', TZInfo.IsDST);
+  
+  // After standard time
+  TZInfo := TDateTimeKit.GetTimeZone(PostStandard);
+  AssertFalse('Time after DST end should not be in DST', TZInfo.IsDST);
+end;
+
+procedure TDateTimeTests.Test112_LeapYearDST;
+var
+  // February 29, 2024 23:59:59 (leap day)
+  LeapDayEnd: TDateTime;
+  // March 1, 2024 00:00:00 (after leap day)
+  PostLeap: TDateTime;
+  // March 10, 2024 02:00:00 (DST start on leap year)
+  LeapDST: TDateTime;
+  TZInfo: TTimeZoneInfo;
+begin
+  LeapDayEnd := EncodeDateTime(2024, 2, 29, 23, 59, 59, 0);
+  PostLeap := EncodeDateTime(2024, 3, 1, 0, 0, 0, 0);
+  LeapDST := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+  
+  // End of leap day
+  TZInfo := TDateTimeKit.GetTimeZone(LeapDayEnd);
+  AssertFalse('End of leap day should not be in DST', TZInfo.IsDST);
+  
+  // Start of March
+  TZInfo := TDateTimeKit.GetTimeZone(PostLeap);
+  AssertFalse('Start of March should not be in DST', TZInfo.IsDST);
+  
+  // DST start in leap year
+  TZInfo := TDateTimeKit.GetTimeZone(LeapDST);
+  AssertTrue('DST start in leap year should be in DST', TZInfo.IsDST);
+end;
+
+procedure TDateTimeTests.Test113_InvalidTimeZoneEdgeCases;
+var
+  Now: TDateTime;
+begin
+  Now := TDateTimeKit.GetNow;
+  
+  // Empty string timezone
+  try
+    Now := TDateTimeKit.WithTimeZone(Now, '');
+    Fail('Empty timezone should raise exception');
+  except
+    on E: ETimeZoneError do
+      AssertTrue('Expected timezone error', True);
+  end;
+  
+  // Invalid timezone format
+  try
+    Now := TDateTimeKit.WithTimeZone(Now, 'Invalid/Timezone');
+    Fail('Invalid timezone should raise exception');
+  except
+    on E: ETimeZoneError do
+      AssertTrue('Expected timezone error', True);
+  end;
+  
+  // Timezone with special characters
+  try
+    Now := TDateTimeKit.WithTimeZone(Now, '#$%^&*');
+    Fail('Special characters should raise exception');
+  except
+    on E: ETimeZoneError do
+      AssertTrue('Expected timezone error', True);
+  end;
+end;
+
+procedure TDateTimeTests.Test114_UTCOffsetEdgeCases;
+var
+  TZInfo: TTimeZoneInfo;
+begin
+  // Test minimum valid offset (-12:00)
+  try
+    TZInfo.Offset := -12 * 60;
+    TDateTimeKit.ValidateTimeZoneOffset(TZInfo.Offset);
+    AssertTrue('Minimum UTC offset should be valid', True);
+  except
+    Fail('Valid minimum offset should not raise exception');
+  end;
+  
+  // Test maximum valid offset (+14:00)
+  try
+    TZInfo.Offset := 14 * 60;
+    TDateTimeKit.ValidateTimeZoneOffset(TZInfo.Offset);
+    AssertTrue('Maximum UTC offset should be valid', True);
+  except
+    Fail('Valid maximum offset should not raise exception');
+  end;
+  
+  // Test invalid negative offset
+  try
+    TZInfo.Offset := -13 * 60;
+    TDateTimeKit.ValidateTimeZoneOffset(TZInfo.Offset);
+    Fail('Invalid negative offset should raise exception');
+  except
+    on E: ETimeZoneError do
+      AssertTrue('Expected timezone error', True);
+  end;
+  
+  // Test invalid positive offset
+  try
+    TZInfo.Offset := 15 * 60;
+    TDateTimeKit.ValidateTimeZoneOffset(TZInfo.Offset);
+    Fail('Invalid positive offset should raise exception');
+  except
+    on E: ETimeZoneError do
+      AssertTrue('Expected timezone error', True);
+  end;
+end;
+
+procedure TDateTimeTests.Test115_CrossBoundaryConversions;
+var
+  // December 31, 2024 23:59:59
+  YearEnd: TDateTime;
+  // January 1, 2025 00:00:00
+  YearStart: TDateTime;
+  TZInfo: TTimeZoneInfo;
+  ConvertedEnd, ConvertedStart: TDateTime;
+  SystemTZ: string;
+begin
+  YearEnd := EncodeDateTime(2024, 12, 31, 23, 59, 59, 0);
+  YearStart := EncodeDateTime(2025, 1, 1, 0, 0, 0, 0);
+  SystemTZ := TDateTimeKit.GetSystemTimeZone;
+  
+  // First convert to UTC
+  ConvertedEnd := TDateTimeKit.WithTimeZone(YearEnd, 'UTC');
+  ConvertedStart := TDateTimeKit.WithTimeZone(YearStart, 'UTC');
+  
+  // Then convert back to system timezone
+  ConvertedEnd := TDateTimeKit.WithTimeZone(ConvertedEnd, SystemTZ);
+  ConvertedStart := TDateTimeKit.WithTimeZone(ConvertedStart, SystemTZ);
+  
+  // Get timezone info for verification
+  TZInfo := TDateTimeKit.GetTimeZone(ConvertedEnd);
+  AssertEquals('Should be back in system timezone', SystemTZ, TZInfo.Name);
+  
+  TZInfo := TDateTimeKit.GetTimeZone(ConvertedStart);
+  AssertEquals('Should be back in system timezone', SystemTZ, TZInfo.Name);
+  
+  // Verify chronological order is maintained
+  AssertTrue('Year end should be before year start after conversion', 
+             TDateTimeKit.IsBefore(ConvertedEnd, ConvertedStart));
+               
+  // Verify the time difference is preserved (should be 1 second)
+  AssertEquals('Time difference should be preserved',
+                1/SecsPerDay, // 1 second in TDateTime units
+                ConvertedStart - ConvertedEnd);
 end;
 
 initialization
