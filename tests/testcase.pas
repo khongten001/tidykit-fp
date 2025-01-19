@@ -157,6 +157,17 @@ type
     // IntervalGap Tests
     procedure Test97a_IntervalGap_NoOverlap;
     procedure Test97b_IntervalGap_Overlapping;
+    
+    // Timezone Tests
+    procedure Test101_GetTimeZone;
+    procedure Test102_GetSystemTimeZone;
+    procedure Test103_GetTimeZoneNames;
+    procedure Test104_WithTimeZone;
+    procedure Test105_ForceTimeZone;
+    procedure Test106_DSTTransition;
+    procedure Test107_DateBoundaryConversion;
+    procedure Test108_InvalidTimezones;
+    procedure Test109_ExtremeOffsets;
   end;
 
   { TFSTests }
@@ -3327,6 +3338,206 @@ const
 begin
   AssertEquals('CountSubString should work correctly',
     3, TStringKit.CountSubString(TestStr, 'Hello'));
+end;
+
+// Add test implementations at the end of the implementation section:
+
+procedure TDateTimeTests.Test101_GetTimeZone;
+var
+  TZInfo: TTimeZoneInfo;
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 1, 1) + EncodeTime(12, 0, 0, 0);
+  TZInfo := TDateTimeKit.GetTimeZone(TestDate);
+  
+  // Basic checks
+  AssertTrue('Timezone name should not be empty', TZInfo.Name <> '');
+  AssertTrue('Offset should be within reasonable range', (TZInfo.Offset >= -720) and (TZInfo.Offset <= 720));
+end;
+
+procedure TDateTimeTests.Test102_GetSystemTimeZone;
+var
+  SystemTZ: string;
+begin
+  SystemTZ := TDateTimeKit.GetSystemTimeZone;
+  AssertTrue('System timezone should not be empty', SystemTZ <> '');
+end;
+
+procedure TDateTimeTests.Test103_GetTimeZoneNames;
+var
+  TZNames: TStringArray;
+begin
+  TZNames := TDateTimeKit.GetTimeZoneNames;
+  AssertTrue('Should have at least one timezone name', Length(TZNames) > 0);
+  AssertTrue('First timezone name should not be empty', TZNames[0] <> '');
+end;
+
+procedure TDateTimeTests.Test104_WithTimeZone;
+var
+  TestDate: TDateTime;
+  CurrentTZ: string;
+  ConvertedDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 1, 1) + EncodeTime(12, 0, 0, 0);
+  CurrentTZ := TDateTimeKit.GetSystemTimeZone;
+  
+  try
+    // Convert to current timezone (should not change the time)
+    ConvertedDate := TDateTimeKit.WithTimeZone(TestDate, CurrentTZ);
+    AssertEquals('Time should not change when converting to same timezone',
+      TestDate, ConvertedDate);
+      
+    // Try invalid timezone
+    try
+      ConvertedDate := TDateTimeKit.WithTimeZone(TestDate, 'Invalid/Timezone');
+      Fail('Should raise exception for invalid timezone');
+    except
+      on E: Exception do
+        AssertTrue('Should raise appropriate exception', 
+          Pos('not found', E.Message) > 0);
+    end;
+  except
+    on E: Exception do
+      Fail('Unexpected exception: ' + E.Message);
+  end;
+end;
+
+procedure TDateTimeTests.Test105_ForceTimeZone;
+var
+  TestDate: TDateTime;
+  CurrentTZ: string;
+  ForcedDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 1, 1) + EncodeTime(12, 0, 0, 0);
+  CurrentTZ := TDateTimeKit.GetSystemTimeZone;
+  
+  try
+    // Force to current timezone
+    ForcedDate := TDateTimeKit.ForceTimeZone(TestDate, CurrentTZ);
+    AssertTrue('Forced timezone date should be different from original',
+      TestDate <> ForcedDate);
+      
+    // Try invalid timezone
+    try
+      ForcedDate := TDateTimeKit.ForceTimeZone(TestDate, 'Invalid/Timezone');
+      Fail('Should raise exception for invalid timezone');
+    except
+      on E: Exception do
+        AssertTrue('Should raise appropriate exception', 
+          Pos('not found', E.Message) > 0);
+    end;
+  except
+    on E: Exception do
+      Fail('Unexpected exception: ' + E.Message);
+  end;
+end;
+
+procedure TDateTimeTests.Test106_DSTTransition;
+var
+  TestDate: TDateTime;
+  DSTDate: TDateTime;
+  NonDSTDate: TDateTime;
+  TZInfo: TTimeZoneInfo;
+begin
+  // Test DST transition dates (using 2024 dates for US)
+  DSTDate := EncodeDate(2024, 3, 10) + EncodeTime(2, 0, 0, 0);    // 2 AM on DST start
+  NonDSTDate := EncodeDate(2024, 11, 3) + EncodeTime(2, 0, 0, 0); // 2 AM on DST end
+  
+  // Check DST start transition
+  TZInfo := TDateTimeKit.GetTimeZone(DSTDate);
+  AssertTrue('Should be in DST during summer', TZInfo.IsDST);
+  
+  // Check DST end transition
+  TZInfo := TDateTimeKit.GetTimeZone(NonDSTDate);
+  AssertFalse('Should not be in DST during winter', TZInfo.IsDST);
+  
+  // Test time conversion around DST transition
+  TestDate := TDateTimeKit.WithTimeZone(DSTDate, 'UTC');
+  AssertTrue('UTC conversion should handle DST transition',
+    Abs(TestDate - DSTDate) <= 2/24); // Within 2 hours difference
+end;
+
+procedure TDateTimeTests.Test107_DateBoundaryConversion;
+var
+  UTCDate: TDateTime;
+  LocalDate: TDateTime;
+  ConvertedDate: TDateTime;
+  SystemTZ: string;
+begin
+  // Test date boundary conversion (11 PM UTC on Jan 1 should be next day in some timezones)
+  UTCDate := EncodeDate(2024, 1, 1) + EncodeTime(23, 0, 0, 0);
+  SystemTZ := TDateTimeKit.GetSystemTimeZone;
+  
+  // Convert UTC to local time
+  LocalDate := TDateTimeKit.WithTimeZone(UTCDate, SystemTZ);
+  
+  // Convert back to UTC
+  ConvertedDate := TDateTimeKit.WithTimeZone(LocalDate, 'UTC');
+  
+  // Should get back the original UTC time
+  AssertEquals('Round-trip timezone conversion should preserve time',
+    UTCDate, ConvertedDate);
+end;
+
+procedure TDateTimeTests.Test108_InvalidTimezones;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := Now;
+  
+  // Test various invalid timezone names
+  try
+    TDateTimeKit.WithTimeZone(TestDate, '');
+    Fail('Empty timezone should raise exception');
+  except
+    on E: Exception do
+      AssertTrue('Should raise appropriate exception for empty timezone',
+        Pos('not found', E.Message) > 0);
+  end;
+  
+  try
+    TDateTimeKit.WithTimeZone(TestDate, 'Invalid/TZ');
+    Fail('Invalid timezone format should raise exception');
+  except
+    on E: Exception do
+      AssertTrue('Should raise appropriate exception for invalid format',
+        Pos('not found', E.Message) > 0);
+  end;
+  
+  try
+    TDateTimeKit.WithTimeZone(TestDate, 'UTC+Invalid');
+    Fail('Invalid UTC offset should raise exception');
+  except
+    on E: Exception do
+      AssertTrue('Should raise appropriate exception for invalid UTC offset',
+        Pos('not found', E.Message) > 0);
+  end;
+end;
+
+procedure TDateTimeTests.Test109_ExtremeOffsets;
+var
+  TestDate: TDateTime;
+  ConvertedDate: TDateTime;
+  TZInfo: TTimeZoneInfo;
+begin
+  TestDate := Now;
+  
+  // Test conversion with extreme positive offset (+14:00)
+  TZInfo := TDateTimeKit.GetTimeZone(TestDate);
+  if TZInfo.Offset = 14 * 60 then // +14:00
+  begin
+    ConvertedDate := TDateTimeKit.WithTimeZone(TestDate, 'UTC');
+    AssertTrue('Extreme positive offset should be handled',
+      Abs(ConvertedDate - TestDate) <= 14/24); // Within 14 hours
+  end;
+  
+  // Test conversion with extreme negative offset (-12:00)
+  if TZInfo.Offset = -12 * 60 then // -12:00
+  begin
+    ConvertedDate := TDateTimeKit.WithTimeZone(TestDate, 'UTC');
+    AssertTrue('Extreme negative offset should be handled',
+      Abs(ConvertedDate - TestDate) <= 12/24); // Within 12 hours
+  end;
 end;
 
 initialization

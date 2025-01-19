@@ -5,7 +5,10 @@ unit TidyKit.DateTime;
 interface
 
 uses
-  Classes, SysUtils, DateUtils;
+  Classes, SysUtils, DateUtils
+  {$IFDEF WINDOWS}
+  , Windows
+  {$ENDIF};
 
 const
   MillisecondsPerSecond = 1000;
@@ -23,7 +26,52 @@ const
   // Special values
   OneMillisecond = 1 / (SecondsPerDay * MillisecondsPerSecond);
 
+  // Windows timezone constants
+  {$IFDEF WINDOWS}
+  TIME_ZONE_ID_INVALID = DWORD($FFFFFFFF);
+  TIME_ZONE_ID_UNKNOWN = 0;
+  TIME_ZONE_ID_STANDARD = 1;
+  TIME_ZONE_ID_DAYLIGHT = 2;
+  {$ENDIF}
+
 type
+  { Custom exceptions }
+  ETimeZoneError = class(Exception);
+
+  {$IFDEF WINDOWS}
+  // Windows timezone structures
+  TSystemTime = Windows.TSystemTime;
+  PSystemTime = Windows.PSystemTime;
+  TTimeZoneInformation = Windows.TTimeZoneInformation;
+  PTimeZoneInformation = Windows.PTimeZoneInformation;
+  {$ELSE}
+  // Dummy timezone structures for non-Windows platforms
+  TSystemTime = record
+    wYear: Word;
+    wMonth: Word;
+    wDayOfWeek: Word;
+    wDay: Word;
+    wHour: Word;
+    wMinute: Word;
+    wSecond: Word;
+    wMilliseconds: Word;
+  end;
+  
+  PSystemTime = ^TSystemTime;
+  
+  TTimeZoneInformation = record
+    Bias: LongInt;
+    StandardName: array[0..31] of WideChar;
+    StandardDate: TSystemTime;
+    StandardBias: LongInt;
+    DaylightName: array[0..31] of WideChar;
+    DaylightDate: TSystemTime;
+    DaylightBias: LongInt;
+  end;
+  
+  PTimeZoneInformation = ^TTimeZoneInformation;
+  {$ENDIF}
+
   { TDateSpanKind represents different ways to measure time spans }
   TDateSpanKind = (
     dskPeriod,   // Calendar time (months, years - variable length)
@@ -775,8 +823,6 @@ type
     
     { Timezone functions }
     class function GetTimeZone(const AValue: TDateTime): TTimeZoneInfo; static;
-    class function WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
-    class function ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
     class function GetSystemTimeZone: string; static;
     class function GetTimeZoneNames: TStringArray; static;
     
@@ -796,6 +842,14 @@ type
     class function IntervalSetdiff(const AInterval1, AInterval2: TInterval): TInterval; static;
     class function IntervalUnion(const AInterval1, AInterval2: TInterval): TInterval; static;
     class function IntervalIntersection(const AInterval1, AInterval2: TInterval): TInterval; static;
+    
+    { Private helper functions for timezone validation }
+    class function IsValidTimeZoneName(const ATimeZone: string): Boolean; static;
+    class function IsValidUTCOffset(const AOffset: Integer): Boolean; static;
+    class function ValidateTimeZone(const ATimeZone: string): string; static;
+    class function ValidateTimeZoneOffset(const AOffset: Integer): Integer; static;
+    class function WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
+    class function ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
   end;
 
 implementation
@@ -1821,46 +1875,169 @@ begin
 end;
 
 class function TDateTimeKit.GetTimeZone(const AValue: TDateTime): TTimeZoneInfo;
+{$IFDEF WINDOWS}
+var
+  TZInfo: TTimeZoneInformation;
+  RetVal: DWORD;
+  SystemTime: TSystemTime;
+  LocalTime: TSystemTime;
 begin
-  // Implementation of GetTimeZone function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result.Name := '';
+  try
+    // Convert TDateTime to SystemTime
+    DateTimeToSystemTime(AValue, SystemTime);
+    
+    // Get timezone information
+    RetVal := GetTimeZoneInformation(TZInfo);
+    if RetVal = TIME_ZONE_ID_INVALID then
+    begin
+      Result.Name := 'UTC';
+      Result.Offset := 0;
+      Result.IsDST := False;
+      Exit;
+    end;
+    
+    // Convert to local time to check DST
+    if not SystemTimeToTzSpecificLocalTime(@TZInfo, @SystemTime, @LocalTime) then
+    begin
+      Result.Name := TZInfo.StandardName;
+      Result.Offset := -TZInfo.Bias;
+      Result.IsDST := False;
+      Exit;
+    end;
+    
+    case RetVal of
+      TIME_ZONE_ID_STANDARD:
+        begin
+          Result.Name := TZInfo.StandardName;
+          Result.Offset := -TZInfo.Bias - TZInfo.StandardBias;
+          Result.IsDST := False;
+        end;
+      TIME_ZONE_ID_DAYLIGHT:
+        begin
+          Result.Name := TZInfo.DaylightName;
+          Result.Offset := -TZInfo.Bias - TZInfo.DaylightBias;
+          Result.IsDST := True;
+        end;
+      else
+        begin
+          Result.Name := TZInfo.StandardName;
+          Result.Offset := -TZInfo.Bias;
+          Result.IsDST := False;
+        end;
+    end;
+  except
+    on E: Exception do
+    begin
+      Result.Name := 'UTC';
+      Result.Offset := 0;
+      Result.IsDST := False;
+    end;
+  end;
+end;
+{$ELSE}
+begin
+  Result.Name := 'UTC';
   Result.Offset := 0;
   Result.IsDST := False;
 end;
+{$ENDIF}
 
 class function TDateTimeKit.WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime;
+var
+  SourceTZ, TargetTZ: TTimeZoneInfo;
 begin
-  // Implementation of WithTimeZone function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result := 0;
+  // Validate timezone name
+  ValidateTimeZone(ATimeZone);
+  
+  try
+    // Get source and target timezone info
+    SourceTZ := GetTimeZone(AValue);
+    TargetTZ := GetTimeZone(AValue);
+    
+    // Validate offsets
+    ValidateTimeZoneOffset(SourceTZ.Offset);
+    ValidateTimeZoneOffset(TargetTZ.Offset);
+    
+    // Convert to UTC first
+    Result := AValue + (SourceTZ.Offset / MinutesPerDay);
+    
+    // Then to target timezone
+    if TargetTZ.Name <> 'UTC' then
+      Result := Result - (TargetTZ.Offset / MinutesPerDay);
+  except
+    on E: Exception do
+      raise ETimeZoneError.CreateFmt('Error converting time between timezones: %s', [E.Message]);
+  end;
 end;
 
 class function TDateTimeKit.ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime;
+var
+  TargetTZ: TTimeZoneInfo;
 begin
-  // Implementation of ForceTimeZone function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result := 0;
+  // Validate timezone name
+  ValidateTimeZone(ATimeZone);
+  
+  try
+    // Get target timezone info
+    TargetTZ := GetTimeZone(AValue);
+    
+    // Validate offset
+    ValidateTimeZoneOffset(TargetTZ.Offset);
+    
+    // Simply adjust the time without considering current timezone
+    Result := AValue - (TargetTZ.Offset / MinutesPerDay);
+  except
+    on E: Exception do
+      raise ETimeZoneError.CreateFmt('Error forcing timezone: %s', [E.Message]);
+  end;
 end;
 
 class function TDateTimeKit.GetSystemTimeZone: string;
+var
+  TZInfo: TTimeZoneInfo;
 begin
-  // Implementation of GetSystemTimeZone function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result := '';
+  TZInfo := GetTimeZone(Now);
+  Result := TZInfo.Name;
 end;
 
 class function TDateTimeKit.GetTimeZoneNames: TStringArray;
+{$IFDEF WINDOWS}
+var
+  TZInfo: TTimeZoneInformation;
+  RetVal: DWORD;
 begin
-  // Implementation of GetTimeZoneNames function
-  // This function is not provided in the original code block
-  // You may want to implement this function based on your specific requirements
-  Result := [];
+  try
+    RetVal := GetTimeZoneInformation(TZInfo);
+    if RetVal = TIME_ZONE_ID_INVALID then
+    begin
+      SetLength(Result, 1);
+      Result[0] := 'UTC';
+      Exit;
+    end;
+    
+    SetLength(Result, 2);
+    Result[0] := TZInfo.StandardName;
+    Result[1] := TZInfo.DaylightName;
+    
+    // Filter out empty names
+    if Result[0] = '' then
+      Result[0] := 'UTC';
+    if Result[1] = '' then
+      Result[1] := Result[0];
+  except
+    on E: Exception do
+    begin
+      SetLength(Result, 1);
+      Result[0] := 'UTC';
+    end;
+  end;
 end;
+{$ELSE}
+begin
+  SetLength(Result, 1);
+  Result[0] := 'UTC';
+end;
+{$ENDIF}
 
 class function TDateTimeKit.RollbackMonth(const AValue: TDateTime): TDateTime;
 var
@@ -2117,6 +2294,61 @@ begin
     else
       Result.EndDate := AInterval2.EndDate;
   end;
+end;
+
+{ Private helper functions for timezone validation }
+class function TDateTimeKit.IsValidTimeZoneName(const ATimeZone: string): Boolean;
+var
+  ValidNames: TStringArray;
+  I: Integer;
+begin
+  // Empty timezone is invalid
+  if ATimeZone = '' then
+    Exit(False);
+    
+  // UTC is always valid
+  if ATimeZone = 'UTC' then
+    Exit(True);
+  
+  try
+    // Check against list of valid timezone names
+    ValidNames := GetTimeZoneNames;
+    for I := Low(ValidNames) to High(ValidNames) do
+      if ValidNames[I] = ATimeZone then
+        Exit(True);
+  except
+    // If there's an error getting timezone names, only UTC is valid
+    Result := ATimeZone = 'UTC';
+  end;
+  
+  Result := False;
+end;
+
+class function TDateTimeKit.IsValidUTCOffset(const AOffset: Integer): Boolean;
+begin
+  // Valid UTC offsets are between -12:00 and +14:00 (in minutes)
+  Result := (AOffset >= -12 * 60) and (AOffset <= 14 * 60);
+end;
+
+class function TDateTimeKit.ValidateTimeZone(const ATimeZone: string): string;
+begin
+  // Empty timezone
+  if ATimeZone = '' then
+    raise ETimeZoneError.Create('Timezone name cannot be empty');
+    
+  // Check if timezone exists
+  if not IsValidTimeZoneName(ATimeZone) then
+    raise ETimeZoneError.CreateFmt('Timezone "%s" not found', [ATimeZone]);
+    
+  Result := ATimeZone;
+end;
+
+class function TDateTimeKit.ValidateTimeZoneOffset(const AOffset: Integer): Integer;
+begin
+  if not IsValidUTCOffset(AOffset) then
+    raise ETimeZoneError.CreateFmt('Invalid UTC offset: %d minutes (must be between -720 and +840)', [AOffset]);
+    
+  Result := AOffset;
 end;
 
 end. 
