@@ -140,6 +140,23 @@ type
     procedure Test98_IntervalSetdiff;
     procedure Test99_IntervalUnion;
     procedure Test100_IntervalIntersection;
+    
+    // EpiWeek Tests
+    procedure Test87a_EpiWeek_MidYear;
+    procedure Test87b_EpiWeek_FirstWeek;
+    procedure Test87c_EpiWeek_YearEnd;
+    
+    // StandardizePeriod Tests
+    procedure Test95a_StandardizePeriod_Milliseconds;
+    procedure Test95b_StandardizePeriod_Seconds;
+    procedure Test95c_StandardizePeriod_Minutes;
+    procedure Test95d_StandardizePeriod_Hours;
+    procedure Test95e_StandardizePeriod_Months;
+    procedure Test95f_StandardizePeriod_Complex;
+    
+    // IntervalGap Tests
+    procedure Test97a_IntervalGap_NoOverlap;
+    procedure Test97b_IntervalGap_Overlapping;
   end;
 
   { TFSTests }
@@ -1570,11 +1587,12 @@ begin
   AssertEquals('Years should include extra months', 2, Standardized.Years);
   AssertEquals('Months should be normalized', 1, Standardized.Months);
   AssertEquals('Days should include extra hours', 33, Standardized.Days);
-  AssertEquals('Hours should be normalized', 1, Standardized.Hours);
+  AssertEquals('Hours should be normalized', 2, Standardized.Hours);
   AssertEquals('Minutes should be normalized', 2, Standardized.Minutes);
   AssertEquals('Seconds should be normalized', 2, Standardized.Seconds);
   AssertEquals('Milliseconds should be normalized', 1, Standardized.Milliseconds);
 end;
+
 
 procedure TDateTimeTests.Test96_IntervalAlign;
 var
@@ -1681,6 +1699,134 @@ begin
   Result := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
   AssertEquals('Non-overlapping intervals should have empty intersection',
     0, Result.StartDate);
+end;
+
+{ EpiWeek Tests }
+procedure TDateTimeTests.Test87a_EpiWeek_MidYear;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 6, 15);
+  AssertEquals('Mid-year date should have correct epi week', 
+    24, TDateTimeKit.GetEpiWeek(TestDate));
+end;
+
+procedure TDateTimeTests.Test87b_EpiWeek_FirstWeek;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 1, 4);
+  AssertEquals('First full week should be week 1', 
+    1, TDateTimeKit.GetEpiWeek(TestDate));
+end;
+
+procedure TDateTimeTests.Test87c_EpiWeek_YearEnd;
+var
+  TestDate: TDateTime;
+begin
+  TestDate := EncodeDate(2024, 12, 31);
+  AssertEquals('Year-end week number should be correct', 
+    53, TDateTimeKit.GetEpiWeek(TestDate));
+end;
+
+{ StandardizePeriod Tests }
+procedure TDateTimeTests.Test95a_StandardizePeriod_Milliseconds;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(0, 0, 0, 0, 0, 0, 1001);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  AssertEquals('Milliseconds should be normalized', 1, Standardized.Milliseconds);
+  AssertEquals('Extra milliseconds should carry to seconds', 1, Standardized.Seconds);
+end;
+
+procedure TDateTimeTests.Test95b_StandardizePeriod_Seconds;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(0, 0, 0, 0, 0, 61, 0);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  AssertEquals('Seconds should be normalized', 1, Standardized.Seconds);
+  AssertEquals('Extra seconds should carry to minutes', 1, Standardized.Minutes);
+end;
+
+procedure TDateTimeTests.Test95c_StandardizePeriod_Minutes;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(0, 0, 0, 0, 61, 0, 0);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  AssertEquals('Minutes should be normalized', 1, Standardized.Minutes);
+  AssertEquals('Extra minutes should carry to hours', 1, Standardized.Hours);
+end;
+
+procedure TDateTimeTests.Test95d_StandardizePeriod_Hours;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(0, 0, 0, 25, 0, 0, 0);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  AssertEquals('Hours should be normalized', 1, Standardized.Hours);
+  AssertEquals('Extra hours should carry to days', 1, Standardized.Days);
+end;
+
+procedure TDateTimeTests.Test95e_StandardizePeriod_Months;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(0, 13, 0, 0, 0, 0, 0);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  AssertEquals('Months should be normalized', 1, Standardized.Months);
+  AssertEquals('Extra months should carry to years', 1, Standardized.Years);
+end;
+
+procedure TDateTimeTests.Test95f_StandardizePeriod_Complex;
+var
+  Period, Standardized: TDateSpan;
+begin
+  Period := TDateTimeKit.CreatePeriod(1, 13, 32, 25, 61, 61, 1001);
+  Standardized := TDateTimeKit.StandardizePeriod(Period);
+  
+  AssertEquals('Years should include extra months', 2, Standardized.Years);
+  AssertEquals('Months should be normalized', 1, Standardized.Months);
+  AssertEquals('Days should include extra hours', 33, Standardized.Days);
+  AssertEquals('Hours should be normalized', 2, Standardized.Hours);
+  AssertEquals('Minutes should be normalized', 2, Standardized.Minutes);
+  AssertEquals('Seconds should be normalized', 2, Standardized.Seconds);
+  AssertEquals('Milliseconds should be normalized', 1, Standardized.Milliseconds);
+end;
+
+{ IntervalGap Tests }
+procedure TDateTimeTests.Test97a_IntervalGap_NoOverlap;
+var
+  Interval1, Interval2: TInterval;
+  Gap: TDateSpan;
+begin
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 20),
+    EncodeDate(2024, 1, 31));
+  Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+  
+  AssertEquals('Gap should be 5 days', 5, Gap.Days);
+end;
+
+procedure TDateTimeTests.Test97b_IntervalGap_Overlapping;
+var
+  Interval1, Interval2: TInterval;
+  Gap: TDateSpan;
+begin
+  Interval1 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 1),
+    EncodeDate(2024, 1, 15));
+  Interval2 := TDateTimeKit.CreateInterval(
+    EncodeDate(2024, 1, 10),
+    EncodeDate(2024, 1, 31));
+  Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+  
+  AssertEquals('Overlapping intervals should have no gap', 0, Gap.Days);
 end;
 
 { TFSTests }

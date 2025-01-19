@@ -1784,29 +1784,34 @@ end;
 class function TDateTimeKit.GetEpiWeek(const AValue: TDateTime): Integer;
 var
   Y: Integer;
-  Dec28, ThisDate: TDateTime;
+  Jan4, ThisDate: TDateTime;
   ThisWeekMon, FirstWeekMon: TDateTime;
-  DayOfWeek: Integer;
 begin
+  // First get the epi year
   Y := GetEpiYear(AValue);
   ThisDate := AValue;
   
-  // Get December 28th of the previous year
-  if GetMonth(AValue) = 12 then
-    Dec28 := EncodeDate(GetYear(AValue), 12, 28)  // Use current year's Dec 28 for December
-  else
-    Dec28 := EncodeDate(Y - 1, 12, 28);  // Use previous year's Dec 28 for other months
+  // Get January 4th of the epi year (always in week 1)
+  Jan4 := EncodeDate(Y, 1, 4);
   
   // Get Monday of the week containing our date
-  DayOfWeek := DayOfTheWeek(ThisDate);
-  ThisWeekMon := Trunc(ThisDate) - ((DayOfWeek + 5) mod 7);
+  ThisWeekMon := Trunc(ThisDate) - ((DayOfTheWeek(ThisDate) + 5) mod 7);
   
-  // Get Monday of the week containing Dec 28
-  DayOfWeek := DayOfTheWeek(Dec28);
-  FirstWeekMon := Trunc(Dec28) - ((DayOfWeek + 5) mod 7);
+  // Get Monday of week 1 (the week containing Jan 4)
+  FirstWeekMon := Trunc(Jan4) - ((DayOfTheWeek(Jan4) + 5) mod 7);
   
   // Calculate week number
   Result := ((Trunc(ThisWeekMon) - Trunc(FirstWeekMon)) div 7) + 1;
+  
+  // Handle year-end special case
+  if (GetMonth(AValue) = 12) and (GetDay(AValue) >= 28) then
+  begin
+    // Check if we're in the last week
+    Jan4 := EncodeDate(Y + 1, 1, 4);
+    FirstWeekMon := Trunc(Jan4) - ((DayOfTheWeek(Jan4) + 5) mod 7);
+    if ThisWeekMon < FirstWeekMon then
+      Result := 53;
+  end;
 end;
 
 class function TDateTimeKit.GetSemester(const AValue: TDateTime): Integer;
@@ -1977,6 +1982,8 @@ begin
 end;
 
 class function TDateTimeKit.StandardizePeriod(const AValue: TDateSpan): TDateSpan;
+var
+  TotalHours: Integer;
 begin
   Result := AValue;
   
@@ -1988,17 +1995,13 @@ begin
   Inc(Result.Minutes, Result.Seconds div SecondsPerMinute);
   Result.Seconds := Result.Seconds mod SecondsPerMinute;
   
-  // Normalize minutes to hours
-  Inc(Result.Hours, Result.Minutes div MinutesPerHour);
+  // Calculate total hours including minutes
+  TotalHours := Result.Hours + (Result.Minutes div MinutesPerHour);
   Result.Minutes := Result.Minutes mod MinutesPerHour;
   
-  // Normalize hours to days
-  Inc(Result.Days, Result.Hours div HoursPerDay);
-  Result.Hours := Result.Hours mod HoursPerDay;
-  
-  // Normalize days to months (approximate)
-  Inc(Result.Months, Result.Days div 30);
-  Result.Days := Result.Days mod 30;
+  // Normalize total hours to days
+  Inc(Result.Days, TotalHours div HoursPerDay);
+  Result.Hours := TotalHours mod HoursPerDay;
   
   // Normalize months to years
   Inc(Result.Years, Result.Months div MonthsPerYear);
