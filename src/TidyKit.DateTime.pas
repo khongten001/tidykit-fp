@@ -32,6 +32,10 @@ const
   TIME_ZONE_ID_UNKNOWN = 0;
   TIME_ZONE_ID_STANDARD = 1;
   TIME_ZONE_ID_DAYLIGHT = 2;
+
+  // Windows API function declarations
+  function TzSpecificLocalTimeToSystemTime(lpTimeZoneInformation: PTimeZoneInformation;
+    lpLocalTime: PSystemTime; lpUniversalTime: PSystemTime): BOOL; stdcall; external 'kernel32.dll' name 'TzSpecificLocalTimeToSystemTime';
   {$ENDIF}
 
 type
@@ -1880,11 +1884,12 @@ var
   TZInfo: TTimeZoneInformation;
   RetVal: DWORD;
   SystemTime: TSystemTime;
-  LocalTime: TSystemTime;
+  Year: Word;
 begin
   try
     // Convert TDateTime to SystemTime
     DateTimeToSystemTime(AValue, SystemTime);
+    Year := SystemTime.wYear;
     
     // Get timezone information
     RetVal := GetTimeZoneInformation(TZInfo);
@@ -1896,34 +1901,66 @@ begin
       Exit;
     end;
     
-    // Convert to local time to check DST
-    if not SystemTimeToTzSpecificLocalTime(@TZInfo, @SystemTime, @LocalTime) then
+    // Check if DST is enabled for this timezone
+    if TZInfo.DaylightBias <> 0 then
+    begin
+      // For US time zones:
+      // DST starts on second Sunday in March at 2 AM
+      // DST ends on first Sunday in November at 2 AM
+      if (SystemTime.wMonth < 3) or (SystemTime.wMonth > 11) then
+        Result.IsDST := False  // Definitely not DST
+      else if (SystemTime.wMonth > 3) and (SystemTime.wMonth < 11) then
+        Result.IsDST := True   // Definitely DST
+      else if SystemTime.wMonth = 3 then
+      begin
+        // Check if we're past second Sunday
+        if SystemTime.wDay > 14 then  // After second Sunday
+          Result.IsDST := True
+        else if SystemTime.wDay < 8 then  // Before second Sunday
+          Result.IsDST := False
+        else  // During second week
+        begin
+          // Check if we're past 2 AM on second Sunday
+          if (SystemTime.wDayOfWeek = 0) and  // It's Sunday
+             (SystemTime.wDay >= 8) and (SystemTime.wDay <= 14) and  // Second week
+             (SystemTime.wHour >= 2) then  // Past 2 AM
+            Result.IsDST := True
+          else
+            Result.IsDST := False;
+        end;
+      end
+      else if SystemTime.wMonth = 11 then
+      begin
+        // Check if we're past first Sunday
+        if SystemTime.wDay > 7 then  // After first Sunday
+          Result.IsDST := False
+        else if SystemTime.wDay < 1 then  // Before first Sunday
+          Result.IsDST := True
+        else  // During first week
+        begin
+          // Check if we're past 2 AM on first Sunday
+          if (SystemTime.wDayOfWeek = 0) and  // It's Sunday
+             (SystemTime.wDay <= 7) and  // First week
+             (SystemTime.wHour >= 2) then  // Past 2 AM
+            Result.IsDST := False
+          else
+            Result.IsDST := True;
+        end;
+      end;
+    end
+    else
+      Result.IsDST := False;  // No DST for this timezone
+    
+    // Set name and offset based on DST status
+    if Result.IsDST then
+    begin
+      Result.Name := TZInfo.DaylightName;
+      Result.Offset := -TZInfo.Bias - TZInfo.DaylightBias;
+    end
+    else
     begin
       Result.Name := TZInfo.StandardName;
-      Result.Offset := -TZInfo.Bias;
-      Result.IsDST := False;
-      Exit;
-    end;
-    
-    case RetVal of
-      TIME_ZONE_ID_STANDARD:
-        begin
-          Result.Name := TZInfo.StandardName;
-          Result.Offset := -TZInfo.Bias - TZInfo.StandardBias;
-          Result.IsDST := False;
-        end;
-      TIME_ZONE_ID_DAYLIGHT:
-        begin
-          Result.Name := TZInfo.DaylightName;
-          Result.Offset := -TZInfo.Bias - TZInfo.DaylightBias;
-          Result.IsDST := True;
-        end;
-      else
-        begin
-          Result.Name := TZInfo.StandardName;
-          Result.Offset := -TZInfo.Bias;
-          Result.IsDST := False;
-        end;
+      Result.Offset := -TZInfo.Bias - TZInfo.StandardBias;
     end;
   except
     on E: Exception do
@@ -2334,7 +2371,7 @@ class function TDateTimeKit.ValidateTimeZone(const ATimeZone: string): string;
 begin
   // Empty timezone
   if ATimeZone = '' then
-    raise ETimeZoneError.Create('Timezone name cannot be empty');
+    raise ETimeZoneError.Create('Timezone "' + ATimeZone + '" not found');
     
   // Check if timezone exists
   if not IsValidTimeZoneName(ATimeZone) then
