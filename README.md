@@ -435,253 +435,190 @@ Str := TStringKit.RightStr(Text, Length);         // Get right part
 
 ### DateTime Operations
 
+### Basic Operations
 ```pascal
-// Basic operations
-Now := TDateTimeKit.GetNow;                       // Current date/time
-Today := TDateTimeKit.GetToday;                   // Current date (time = 00:00:00)
-Str := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss');  // Format date/time
-Date := TDateTimeKit.FromString('2024-01-15');    // Parse date string
-Date := TDateTimeKit.GetDateTime(Now);            // Validate/convert to TDateTime
+// Get current date/time
+Now := TDateTimeKit.GetNow;
+Today := TDateTimeKit.GetToday;  // Returns date with time set to 00:00:00
 
-// Parse specific date formats
-Date := TDateTimeKit.YMD('2024-01-15');          // Parse YYYY-MM-DD
-Date := TDateTimeKit.MDY('01-15-2024');          // Parse MM-DD-YYYY
-Date := TDateTimeKit.DMY('15-01-2024');          // Parse DD-MM-YYYY
-Date := TDateTimeKit.YQ('2024-1');               // Parse year and quarter
-Date := TDateTimeKit.DateDecimal(2024.5);        // Parse decimal year
+// Parse date strings
+Date1 := TDateTimeKit.FromString('2024-01-15');  // Uses system format
+Date2 := TDateTimeKit.FromString('15/01/2024', 'dd/mm/yyyy');  // Custom format
 
-// Additional component getters
-Year := TDateTimeKit.GetISOYear(Now);            // ISO week-numbering year
-Week := TDateTimeKit.GetISOWeek(Now);            // ISO week number (1-53)
-Year := TDateTimeKit.GetEpiYear(Now);            // Epidemiological year
-Week := TDateTimeKit.GetEpiWeek(Now);            // Epidemiological week
-Sem := TDateTimeKit.GetSemester(Now);            // Semester (1-2)
-Dec := TDateTimeKit.GetDecimalDate(Now);         // Get as decimal year
+// Format dates
+Str1 := TDateTimeKit.GetAsString(Now);  // Uses system format
+Str2 := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss');  // Custom format
 
-// Time spans (two types)
-// 1. Periods - Calendar time (respects month/year lengths)
-Period := TDateTimeKit.CreatePeriod(1);          // 1 year period
-Period := TDateTimeKit.CreatePeriod(0, 1);       // 1 month period
-Period := TDateTimeKit.CreatePeriod(0, 0, 1);    // 1 day period
-
-// 2. Durations - Fixed time (exact number of seconds)
-Duration := TDateTimeKit.CreateDuration(0, 0, 1); // Exactly 24 hours
-Duration := TDateTimeKit.CreateDuration(0, 0, 0, 12); // 12 hours
-
-// Time span operations
-NextYear := TDateTimeKit.AddSpan(Now, Period);    // Add time span
-LastYear := TDateTimeKit.SubtractSpan(Now, Period); // Subtract time span
-Span := TDateTimeKit.SpanBetween(Date1, Date2);   // Get span between dates
-Secs := TDateTimeKit.PeriodToSeconds(Period);     // Convert period to seconds
-Period := TDateTimeKit.SecondsToPeriod(Secs);     // Convert seconds to period
-Period := TDateTimeKit.StandardizePeriod(Period);  // Normalize period units
-
-// Intervals (specific time ranges)
-Interval := TDateTimeKit.CreateInterval(
-  EncodeDate(2024, 1, 1),    // Start (inclusive)
-  EncodeDate(2024, 4, 1)     // End (exclusive)
-);
-
-// Interval operations
-if TDateTimeKit.IsWithinInterval(Now, Interval) then    // Check if date in interval
-if TDateTimeKit.IntervalsOverlap(Int1, Int2) then      // Check if intervals overlap
-if TDateTimeKit.IntervalAlign(Int1, Int2) then         // Check if intervals adjacent
-Span := TDateTimeKit.IntervalGap(Int1, Int2);          // Get gap between intervals
-Diff := TDateTimeKit.IntervalSetdiff(Int1, Int2);      // Set difference
-Union := TDateTimeKit.IntervalUnion(Int1, Int2);       // Combine intervals
-Inter := TDateTimeKit.IntervalIntersection(Int1, Int2); // Get overlap
-
-// Date components - getters
-Year := TDateTimeKit.GetYear(Now);               // Get year (e.g., 2024)
-Month := TDateTimeKit.GetMonth(Now);             // Get month (1-12)
-Day := TDateTimeKit.GetDay(Now);                 // Get day (1-31)
-DayOfWeek := TDateTimeKit.GetDayOfWeek(Now);    // Get day of week (1=Sunday)
-DayOfYear := TDateTimeKit.GetDayOfYear(Now);    // Get day of year (1-366)
-Hour := TDateTimeKit.GetHour(Now);              // Get hour (0-23)
-Minute := TDateTimeKit.GetMinute(Now);          // Get minute (0-59)
-Second := TDateTimeKit.GetSecond(Now);          // Get second (0-59)
-MS := TDateTimeKit.GetMillisecond(Now);         // Get millisecond (0-999)
-Quarter := TDateTimeKit.GetQuarter(Now);        // Get quarter (1-4)
-
-// Date components - setters (create new date, don't modify input)
-Date := TDateTimeKit.SetYear(Now, 2024);         // Set year
-Date := TDateTimeKit.SetMonth(Now, 1);           // Set month (1-12)
-Date := TDateTimeKit.SetDay(Now, 1);             // Set day (1-31)
-Time := TDateTimeKit.SetHour(Now, 9);            // Set hour (0-23)
-Time := TDateTimeKit.SetMinute(Now, 30);         // Set minute (0-59)
-Time := TDateTimeKit.SetSecond(Now, 0);          // Set second (0-59)
-Time := TDateTimeKit.SetMillisecond(Now, 0);     // Set millisecond (0-999)
-
-// Date arithmetic
-Date := TDateTimeKit.AddYears(Now, 1);           // Add years
-Date := TDateTimeKit.AddMonths(Now, 1);          // Add months
-Date := TDateTimeKit.AddDays(Now, 1);            // Add days
-Date := TDateTimeKit.AddHours(Now, 1);           // Add hours
-Date := TDateTimeKit.AddMinutes(Now, 30);        // Add minutes
-Date := TDateTimeKit.AddSeconds(Now, 30);        // Add seconds
-
-// Period start/end
-Date := TDateTimeKit.StartOfYear(Now);           // First moment of year
-Date := TDateTimeKit.StartOfMonth(Now);          // First moment of month
-Date := TDateTimeKit.StartOfWeek(Now);           // First moment of week
-Date := TDateTimeKit.StartOfDay(Now);            // Start of day (00:00:00)
-Date := TDateTimeKit.StartOfHour(Now);           // Start of hour (XX:00:00)
-Date := TDateTimeKit.EndOfYear(Now);             // Last moment of year
-Date := TDateTimeKit.EndOfMonth(Now);            // Last moment of month
-Date := TDateTimeKit.EndOfWeek(Now);             // Last moment of week
-Date := TDateTimeKit.EndOfDay(Now);              // End of day (23:59:59.999)
-Date := TDateTimeKit.EndOfHour(Now);             // End of hour (XX:59:59.999)
-
-// Date rounding
-Date := TDateTimeKit.FloorDate(Now, duMonth);    // Round down to unit
-Date := TDateTimeKit.CeilingDate(Now, duMonth);  // Round up to unit
-Date := TDateTimeKit.RoundDate(Now, duMonth);    // Round to nearest unit
-
-// Month rolling
-Date := TDateTimeKit.RollbackMonth(Now);         // Roll to last day of prev month
-Date := TDateTimeKit.RollForwardMonth(Now);      // Roll to first day of next month
-
-// Comparisons
-if TDateTimeKit.IsBefore(Date1, Date2) then      // Check if before
-if TDateTimeKit.IsAfter(Date1, Date2) then       // Check if after
-if TDateTimeKit.IsSameDay(Date1, Date2) then     // Check if same day
-if TDateTimeKit.IsSameMonth(Date1, Date2) then   // Check if same month
-if TDateTimeKit.IsSameYear(Date1, Date2) then    // Check if same year
-if TDateTimeKit.IsAM(Now) then                   // Check if before noon
-if TDateTimeKit.IsPM(Now) then                   // Check if after noon
-
-// Business days
-if TDateTimeKit.IsBusinessDay(Now) then          // Check if business day
-Date := TDateTimeKit.NextBusinessDay(Now);       // Get next business day
-Date := TDateTimeKit.PreviousBusinessDay(Now);   // Get previous business day
-Date := TDateTimeKit.AddBusinessDays(Now, 5);    // Add 5 business days
-
-// Timezone operations
-TZInfo := TDateTimeKit.GetTimeZone(Now);              // Get timezone info for date
-WriteLn('Timezone: ', TZInfo.Name);                   // Timezone name
-WriteLn('Offset: ', TZInfo.Offset);                   // Minutes from UTC
-WriteLn('DST: ', TZInfo.IsDST);                       // Is Daylight Saving Time
-
-SystemTZ := TDateTimeKit.GetSystemTimeZone;           // Get system timezone
-TZNames := TDateTimeKit.GetTimeZoneNames;             // Get available timezone names
-
-// Convert between timezones
-UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');         // Convert to UTC
-Local := TDateTimeKit.WithTimeZone(UTC, SystemTZ);    // Convert to local time
-
-// Force timezone (ignores current timezone)
-Forced := TDateTimeKit.ForceTimeZone(Now, 'UTC');     // Force to UTC
+// Parse with specific formats
+Date3 := TDateTimeKit.YMD('2024-01-15');  // Year-Month-Day
+Date4 := TDateTimeKit.MDY('01-15-2024');  // Month-Day-Year
+Date5 := TDateTimeKit.DMY('15-01-2024');  // Day-Month-Year
+Date6 := TDateTimeKit.YQ('2024-1');       // Year-Quarter
 ```
 
-#### Timezone Best Practices and Troubleshooting
+### Component Access
+```pascal
+// Get components
+Year := TDateTimeKit.GetYear(Now);        // e.g., 2024
+Month := TDateTimeKit.GetMonth(Now);      // 1-12
+Day := TDateTimeKit.GetDay(Now);          // 1-31
+Hour := TDateTimeKit.GetHour(Now);        // 0-23
+Minute := TDateTimeKit.GetMinute(Now);    // 0-59
+Second := TDateTimeKit.GetSecond(Now);    // 0-59
+MS := TDateTimeKit.GetMillisecond(Now);   // 0-999
 
-1. **Working with Timezones**
-   - Always store dates in UTC internally
-   - Convert to local time only for display
-   - Use explicit timezone conversions rather than implicit ones
-   ```pascal
-   // Good: Explicit timezone handling
-   UTCTime := TDateTimeKit.WithTimeZone(LocalTime, 'UTC');
-   DisplayTime := TDateTimeKit.WithTimeZone(UTCTime, SystemTZ);
-   
-   // Bad: Implicit timezone assumptions
-   DisplayTime := LocalTime; // Timezone unclear
-   ```
+// Additional components
+DOW := TDateTimeKit.GetDayOfWeek(Now);    // 1=Sunday to 7=Saturday
+DOY := TDateTimeKit.GetDayOfYear(Now);    // 1-366
+Quarter := TDateTimeKit.GetQuarter(Now);   // 1-4
+Semester := TDateTimeKit.GetSemester(Now); // 1-2
 
-2. **Handling DST Transitions**
-   - Be aware of DST transition dates
-   - Handle ambiguous times during DST fallback
-   - Account for skipped times during DST spring forward
-   ```pascal
-   // Example: Handling DST transition
-   procedure HandleDSTTransition(const ADateTime: TDateTime);
-   var
-     TZInfo: TTimeZoneInfo;
-   begin
-     TZInfo := TDateTimeKit.GetTimeZone(ADateTime);
-     if TZInfo.IsDST then
-       WriteLn('Time is in DST period')
-     else
-       WriteLn('Time is in standard time');
-       
-     // Convert to UTC to avoid ambiguity
-     UTCTime := TDateTimeKit.WithTimeZone(ADateTime, 'UTC');
-   end;
-   ```
+// ISO calendar
+ISOYear := TDateTimeKit.GetISOYear(Now);   // ISO-8601 year
+ISOWeek := TDateTimeKit.GetISOWeek(Now);   // ISO-8601 week (1-53)
 
-3. **Working with Different Timezone Formats**
-   - Windows timezone names (e.g., 'Eastern Standard Time')
-   - IANA timezone names (e.g., 'America/New_York')
-   - UTC offsets (e.g., 'UTC+01:00')
-   ```pascal
-   // Example: Working with different timezone formats
-   SystemTZ := TDateTimeKit.GetSystemTimeZone;    // Get system timezone
-   UTCTime := TDateTimeKit.WithTimeZone(Now, 'UTC');  // Convert to UTC
-   LocalTime := TDateTimeKit.WithTimeZone(UTCTime, SystemTZ);  // Back to local
-   ```
+// Epidemiological calendar
+EpiYear := TDateTimeKit.GetEpiYear(Now);   // Epi year
+EpiWeek := TDateTimeKit.GetEpiWeek(Now);   // Epi week (1-53)
+```
 
-4. **Common Timezone Issues and Solutions**
+### Component Modification
+```pascal
+// Set components (returns new TDateTime)
+NewDate := TDateTimeKit.SetYear(Now, 2025);
+NewDate := TDateTimeKit.SetMonth(Now, 6);
+NewDate := TDateTimeKit.SetDay(Now, 15);
+NewDate := TDateTimeKit.SetHour(Now, 14);
+NewDate := TDateTimeKit.SetMinute(Now, 30);
+NewDate := TDateTimeKit.SetSecond(Now, 45);
+NewDate := TDateTimeKit.SetMilliSecond(Now, 500);
+```
 
-   a. **Missing Timezone Information**
-   ```pascal
-   // Problem: Unknown timezone
-   if TDateTimeKit.GetTimeZone(ADateTime).Name = '' then
-     // Use system timezone as fallback
-     Result := TDateTimeKit.WithTimeZone(ADateTime, TDateTimeKit.GetSystemTimeZone)
-   else
-     Result := ADateTime;
-   ```
+### Date Arithmetic
+```pascal
+// Add/subtract time units
+NewDate := TDateTimeKit.AddYears(Now, 1);    // Add 1 year
+NewDate := TDateTimeKit.AddMonths(Now, -2);  // Subtract 2 months
+NewDate := TDateTimeKit.AddDays(Now, 7);     // Add 7 days
+NewDate := TDateTimeKit.AddHours(Now, 12);   // Add 12 hours
+NewDate := TDateTimeKit.AddMinutes(Now, 30); // Add 30 minutes
+NewDate := TDateTimeKit.AddSeconds(Now, -15); // Subtract 15 seconds
 
-   b. **Invalid Timezone Names**
-   ```pascal
-   // Solution: Validate timezone names
-   var
-     ValidTZNames: TStringArray;
-   begin
-     ValidTZNames := TDateTimeKit.GetTimeZoneNames;
-     if IndexStr(DesiredTZ, ValidTZNames) >= 0 then
-       Result := TDateTimeKit.WithTimeZone(ADateTime, DesiredTZ)
-     else
-       raise Exception.Create('Invalid timezone name');
-   end;
-   ```
+// Business day operations
+NewDate := TDateTimeKit.AddBusinessDays(Now, 5);  // Add 5 business days
+NextBDay := TDateTimeKit.NextBusinessDay(Now);     // Next business day
+PrevBDay := TDateTimeKit.PreviousBusinessDay(Now); // Previous business day
+```
 
-   c. **DST Transition Edge Cases**
-   ```pascal
-   // Solution: Handle ambiguous DST times
-   if IsAmbiguousDSTTime(ADateTime) then
-   begin
-     // Convert to UTC first to avoid ambiguity
-     UTCTime := TDateTimeKit.WithTimeZone(ADateTime, 'UTC');
-     // Then convert back to desired timezone
-     Result := TDateTimeKit.WithTimeZone(UTCTime, TargetTZ);
-   end;
-   ```
+### Period Operations
+```pascal
+// Create periods and durations
+Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
+Duration := TDateTimeKit.CreateDuration(0, 0, 1);  // 1 day fixed duration
 
-   d. **Cross-Platform Timezone Names**
-   ```pascal
-   // Solution: Use platform-independent timezone handling
-   {$IFDEF WINDOWS}
-   // Use Windows timezone names
-   TZ := 'Eastern Standard Time';
-   {$ELSE}
-   // Use IANA timezone names
-   TZ := 'America/New_York';
-   {$ENDIF}
-   Result := TDateTimeKit.WithTimeZone(ADateTime, TZ);
-   ```
+// Add/subtract periods
+NewDate := TDateTimeKit.AddSpan(Now, Period);
+NewDate := TDateTimeKit.SubtractSpan(Now, Period);
 
-5. **Performance Considerations**
-   - Cache timezone information for frequently used timezones
-   - Batch timezone conversions when possible
-   - Use `ForceTimeZone` for bulk operations where exact precision isn't required
-   ```pascal
-   // Example: Efficient bulk timezone conversion
-   procedure ConvertDateArray(var Dates: array of TDateTime; const TargetTZ: string);
-   var
-     I: Integer;
-   begin
-     for I := Low(Dates) to High(Dates) do
-       Dates[I] := TDateTimeKit.ForceTimeZone(Dates[I], TargetTZ);
-   end;
-   ```
+// Calculate span between dates
+Span := TDateTimeKit.SpanBetween(Date1, Date2, dskPeriod);  // As period
+Span := TDateTimeKit.SpanBetween(Date1, Date2, dskDuration); // As duration
+
+// Convert periods
+Seconds := TDateTimeKit.PeriodToSeconds(Period);
+Period := TDateTimeKit.SecondsToPeriod(Seconds);
+Period := TDateTimeKit.StandardizePeriod(Period);  // Normalize units
+```
+
+### Interval Operations
+```pascal
+// Create and check intervals
+Interval := TDateTimeKit.CreateInterval(Start, End);
+IsWithin := TDateTimeKit.IsWithinInterval(Now, Interval);
+DoOverlap := TDateTimeKit.IntervalsOverlap(Interval1, Interval2);
+
+// Interval manipulations
+Aligned := TDateTimeKit.IntervalAlign(Interval1, Interval2);
+Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+Diff := TDateTimeKit.IntervalSetdiff(Interval1, Interval2);
+Union := TDateTimeKit.IntervalUnion(Interval1, Interval2);
+Intersect := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+```
+
+### Period Boundaries
+```pascal
+// Start of period
+StartYear := TDateTimeKit.StartOfYear(Now);
+StartMonth := TDateTimeKit.StartOfMonth(Now);
+StartWeek := TDateTimeKit.StartOfWeek(Now);
+StartDay := TDateTimeKit.StartOfDay(Now);
+StartHour := TDateTimeKit.StartOfHour(Now);
+
+// End of period
+EndYear := TDateTimeKit.EndOfYear(Now);
+EndMonth := TDateTimeKit.EndOfMonth(Now);
+EndWeek := TDateTimeKit.EndOfWeek(Now);
+EndDay := TDateTimeKit.EndOfDay(Now);
+EndHour := TDateTimeKit.EndOfHour(Now);
+```
+
+### Timezone Operations
+```pascal
+// Get timezone information
+TZInfo := TDateTimeKit.GetTimeZone(Now);
+WriteLn('Timezone: ', TZInfo.Name);      // Timezone name
+WriteLn('Offset: ', TZInfo.Offset);      // Offset in minutes from UTC
+WriteLn('DST: ', TZInfo.IsDST);         // Is Daylight Saving Time?
+
+// System timezone
+SystemTZ := TDateTimeKit.GetSystemTimeZone;  // Get system timezone
+TZNames := TDateTimeKit.GetTimeZoneNames;    // Get available timezone names
+
+// Convert between timezones
+UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');           // Convert to UTC
+Local := TDateTimeKit.WithTimeZone(UTC, SystemTZ);      // Convert to local
+Forced := TDateTimeKit.ForceTimeZone(Now, 'UTC');       // Force to UTC
+```
+
+### Date Comparisons
+```pascal
+// Basic comparisons
+IsBefore := TDateTimeKit.IsBefore(Date1, Date2);
+IsAfter := TDateTimeKit.IsAfter(Date1, Date2);
+SameDay := TDateTimeKit.IsSameDay(Date1, Date2);
+SameMonth := TDateTimeKit.IsSameMonth(Date1, Date2);
+SameYear := TDateTimeKit.IsSameYear(Date1, Date2);
+
+// Time of day
+IsAM := TDateTimeKit.IsAM(Now);  // Before noon
+IsPM := TDateTimeKit.IsPM(Now);  // After noon
+```
+
+### Date Rounding
+```pascal
+// Round to nearest unit
+Rounded := TDateTimeKit.RoundDate(Now, duHour);    // Round to hour
+Rounded := TDateTimeKit.RoundDate(Now, duDay);     // Round to day
+Rounded := TDateTimeKit.RoundDate(Now, duMonth);   // Round to month
+
+// Floor to unit
+Floored := TDateTimeKit.FloorDate(Now, duHour);   // Floor to hour
+Floored := TDateTimeKit.FloorDate(Now, duDay);    // Floor to day
+Floored := TDateTimeKit.FloorDate(Now, duMonth);  // Floor to month
+
+// Ceiling to unit
+Ceiling := TDateTimeKit.CeilingDate(Now, duHour);  // Ceiling to hour
+Ceiling := TDateTimeKit.CeilingDate(Now, duDay);   // Ceiling to day
+Ceiling := TDateTimeKit.CeilingDate(Now, duMonth); // Ceiling to month
+```
+
+### Special Operations
+```pascal
+// Month rolling
+PrevMonth := TDateTimeKit.RollbackMonth(Now);    // Last day of previous month
+NextMonth := TDateTimeKit.RollForwardMonth(Now);  // First day of next month
+
+// Decimal dates
+DecimalDate := TDateTimeKit.GetDecimalDate(Now);  // e.g., 2024.45
+DateFromDec := TDateTimeKit.DateDecimal(2024.45); // Convert back
+```
