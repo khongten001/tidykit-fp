@@ -73,7 +73,7 @@ Contributions for testing and validation on other platforms are welcome!
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/iwan/TidyKit.git
+   git clone https://github.com/ikelaiah/tidykit-fp
    ```
 
 2. Add the `src` directory to your project's unit search path:
