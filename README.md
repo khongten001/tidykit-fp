@@ -20,7 +20,9 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
   - [ ] Add edge case tests
   
 - [ ] Add more examples
-  - [ ] Add real-world usage examples
+  - [x] Add real-world usage examples (see examples/DateTimeExample)
+  - [ ] Add more examples for StringKit
+  - [ ] Add more examples for FileKit
   - [ ] Add cookbook with common patterns
   - [ ] Add sample applications
 
@@ -121,6 +123,8 @@ TidyKit requires:
 
 ## Quick Start
 
+
+
 ```pascal
 uses
   TidyKit;
@@ -182,41 +186,69 @@ end;
 
 // DateTime operations example
 var
-  CurrentDate: TDateTime;
-  NextMonth: TDateTime;
+  CurrentDate, NextMonth: TDateTime;
+  Period: TDateSpan;
+  Interval: TInterval;
   FormattedDate: string;
 begin
   // Get current date/time
   CurrentDate := TDateTimeKit.GetNow;
+  
+  // Basic formatting
+  FormattedDate := TDateTimeKit.GetAsString(CurrentDate, 'yyyy-mm-dd hh:nn:ss');
+  WriteLn(FormattedDate);
+  
+  // Parse dates with specific formats
+  CurrentDate := TDateTimeKit.FromString('2024-03-15 14:30:00', 'yyyy-mm-dd hh:nn:ss');
+  CurrentDate := TDateTimeKit.YMD('2024-03-15');  // Year-Month-Day
+  CurrentDate := TDateTimeKit.MDY('03-15-2024');  // Month-Day-Year
+  CurrentDate := TDateTimeKit.DMY('15-03-2024');  // Day-Month-Year
+  CurrentDate := TDateTimeKit.YQ('2024-1');       // Year-Quarter
   
   // Date manipulations
   NextMonth := TDateTimeKit.AddMonths(CurrentDate, 1);
   NextMonth := TDateTimeKit.SetHour(NextMonth, 9);
   NextMonth := TDateTimeKit.SetMinute(NextMonth, 0);
   
-  // Date parts
-  CurrentDate := TDateTimeKit.SetYear(CurrentDate, 2024);
-  CurrentDate := TDateTimeKit.SetMonth(CurrentDate, 3);
-  CurrentDate := TDateTimeKit.SetDay(CurrentDate, 15);
+  // Period operations
+  Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
+  NextMonth := TDateTimeKit.AddSpan(CurrentDate, Period);
   
+  // Interval operations
+  Interval := TDateTimeKit.CreateInterval(CurrentDate, NextMonth);
+  if TDateTimeKit.IsWithinInterval(TDateTimeKit.GetNow, Interval) then
+    WriteLn('Current date is within interval');
+    
   // Business day operations
   if TDateTimeKit.IsBusinessDay(CurrentDate) then
     WriteLn('Is a business day');
-    
-  // Next business day
   CurrentDate := TDateTimeKit.NextBusinessDay(CurrentDate);
+  CurrentDate := TDateTimeKit.AddBusinessDays(CurrentDate, 5);
   
-  // Date comparisons
-  if TDateTimeKit.IsAfter(CurrentDate, TDateTimeKit.GetNow) then
-    WriteLn('Future date');
-    
-  // Date formatting
-  FormattedDate := TDateTimeKit.GetAsString(CurrentDate, 'yyyy-mm-dd hh:nn:ss');
-  WriteLn(FormattedDate);
+  // Period boundaries
+  CurrentDate := TDateTimeKit.StartOfYear(CurrentDate);
+  CurrentDate := TDateTimeKit.EndOfMonth(CurrentDate);
+  CurrentDate := TDateTimeKit.StartOfWeek(CurrentDate);
   
-  // Period start/end
-  CurrentDate := TDateTimeKit.StartOfMonth(CurrentDate);  // Beginning of month
-  CurrentDate := TDateTimeKit.EndOfMonth(CurrentDate);    // End of month
+  // Date rounding
+  CurrentDate := TDateTimeKit.RoundDate(CurrentDate, TDateUnit.duHour);
+  CurrentDate := TDateTimeKit.FloorDate(CurrentDate, TDateUnit.duDay);
+  CurrentDate := TDateTimeKit.CeilingDate(CurrentDate, TDateUnit.duMonth);
+  
+  // Calendar calculations
+  WriteLn('ISO Year: ', TDateTimeKit.GetISOYear(CurrentDate));
+  WriteLn('ISO Week: ', TDateTimeKit.GetISOWeek(CurrentDate));
+  WriteLn('Epi Year: ', TDateTimeKit.GetEpiYear(CurrentDate));
+  WriteLn('Epi Week: ', TDateTimeKit.GetEpiWeek(CurrentDate));
+  
+  // Timezone operations
+  WriteLn('System timezone: ', TDateTimeKit.GetSystemTimeZone);
+  CurrentDate := TDateTimeKit.WithTimeZone(CurrentDate, 'UTC');
+  
+  // Special operations
+  CurrentDate := TDateTimeKit.RollbackMonth(CurrentDate);  // Last day of previous month
+  CurrentDate := TDateTimeKit.RollForwardMonth(CurrentDate);  // First day of next month
+  WriteLn('As decimal year: ', TDateTimeKit.GetDecimalDate(CurrentDate):0:4);
 end;
 
 // FileSystem operations example
@@ -309,6 +341,18 @@ begin
   WriteLn('Archive: ', Attrs.Archive);
 end;
 ```
+
+## Examples
+
+You can find complete examples in the `examples` directory:
+
+1. `DateTimeExample` - Demonstrates comprehensive date/time operations including:
+   - Basic date/time parsing and formatting
+   - Period and interval operations
+   - Business day calculations
+   - Calendar operations (ISO and Epidemiological weeks)
+   - Timezone handling
+   - Date rounding and special operations
 
 ## Cheat Sheet
 
