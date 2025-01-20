@@ -30,6 +30,8 @@ type
   TDateSpanKind = TidyKit.DateTime.TDateSpanKind;
   TDateSpan = TidyKit.DateTime.TDateSpan;
   TInterval = TidyKit.DateTime.TInterval;
+  TDateUnit = TidyKit.DateTime.TDateUnit;
+  TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
 
 implementation
 

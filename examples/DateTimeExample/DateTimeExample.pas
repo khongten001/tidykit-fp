@@ -135,7 +135,7 @@ begin
   WriteLn('After subtracting duration: ', TDateTimeKit.GetAsString(Future));
   
   // Calculate span between dates
-  Span := TDateTimeKit.SpanBetween(Now, Future, dskPeriod);
+  Span := TDateTimeKit.SpanBetween(Now, Future, TDateSpanKind.dskPeriod);
   WriteLn('Period between dates:');
   WriteLn('  Years: ', Span.Years);
   WriteLn('  Months: ', Span.Months);
@@ -281,21 +281,21 @@ begin
   WriteLn('Original: ', TDateTimeKit.GetAsString(Now));
   
   // Round to various units
-  Rounded := TDateTimeKit.RoundDate(Now, duHour);
+  Rounded := TDateTimeKit.RoundDate(Now, TDateUnit.duHour);
   WriteLn('Rounded to hour: ', TDateTimeKit.GetAsString(Rounded));
   
-  Rounded := TDateTimeKit.RoundDate(Now, duDay);
+  Rounded := TDateTimeKit.RoundDate(Now, TDateUnit.duDay);
   WriteLn('Rounded to day: ', TDateTimeKit.GetAsString(Rounded));
   
-  Rounded := TDateTimeKit.RoundDate(Now, duMonth);
+  Rounded := TDateTimeKit.RoundDate(Now, TDateUnit.duMonth);
   WriteLn('Rounded to month: ', TDateTimeKit.GetAsString(Rounded));
   
   // Floor to various units
-  Rounded := TDateTimeKit.FloorDate(Now, duHour);
+  Rounded := TDateTimeKit.FloorDate(Now, TDateUnit.duHour);
   WriteLn('Floor to hour: ', TDateTimeKit.GetAsString(Rounded));
   
   // Ceiling to various units
-  Rounded := TDateTimeKit.CeilingDate(Now, duHour);
+  Rounded := TDateTimeKit.CeilingDate(Now, TDateUnit.duHour);
   WriteLn('Ceiling to hour: ', TDateTimeKit.GetAsString(Rounded));
 end;
 
