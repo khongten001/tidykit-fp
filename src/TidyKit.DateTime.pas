@@ -1686,10 +1686,15 @@ var
   Year, Quarter: Integer;
   Parts: TStringDynArray;
 begin
-  // Split the string by common delimiters (- or /)
-  Parts := SplitString(AValue, '-/');
+  // Try hyphen first
+  Parts := SplitString(AValue, '-');
   if Length(Parts) <> 2 then
-    raise EConvertError.Create('Invalid YQ format. Expected YYYY-Q or YYYY/Q');
+  begin
+    // If hyphen didn't work, try slash
+    Parts := SplitString(AValue, '/');
+    if Length(Parts) <> 2 then
+      raise EConvertError.Create('Invalid YQ format. Expected YYYY-Q or YYYY/Q');
+  end;
     
   if not TryStrToInt(Parts[0], Year) or
      not TryStrToInt(Parts[1], Quarter) then
