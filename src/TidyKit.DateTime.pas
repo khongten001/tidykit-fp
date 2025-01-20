@@ -891,18 +891,42 @@ end;
 class function TDateTimeKit.FromString(const AValue: string; const AFormat: string): TDateTime;
 var
   FormatSettings: TFormatSettings;
+  Value: TDateTime;
 begin
   // Get system default format settings
   FormatSettings := DefaultFormatSettings;
   
-  // Parse string to DateTime using either default or custom format
+  // If no format specified, try with different separators
   if AFormat = '' then
-    Result := StrToDateTime(AValue, FormatSettings)
+  begin
+    // First try with dash separator
+    FormatSettings.DateSeparator := '-';
+    if TryStrToDateTime(AValue, Value, FormatSettings) then
+    begin
+      Result := Value;
+      Exit;
+    end;
+    
+    // Then try with slash separator
+    FormatSettings.DateSeparator := '/';
+    if TryStrToDateTime(AValue, Value, FormatSettings) then
+    begin
+      Result := Value;
+      Exit;
+    end;
+    
+    // If both failed, raise an exception
+    raise EConvertError.CreateFmt('Could not convert "%s" to date/time', [AValue]);
+  end
   else
   begin
-    // Use provided format for parsing
-    FormatSettings.ShortDateFormat := AFormat;
-    Result := StrToDateTime(AValue, FormatSettings);
+    try
+      // Parse using FormatDateTime's format string
+      Result := ScanDateTime(AFormat, AValue);
+    except
+      on E: Exception do
+        raise EConvertError.CreateFmt('Could not convert "%s" to date/time using format "%s"', [AValue, AFormat]);
+    end;
   end;
 end;
 
