@@ -89,7 +89,7 @@ Contributions for testing and validation on other platforms are welcome!
      cthreads,
      {$ENDIF}
      Classes, SysUtils,
-     TidyKit;  // Add this line to use TidyKit
+     TidyKit; // Add this line to use TidyKit
    
    begin
      // Your code here

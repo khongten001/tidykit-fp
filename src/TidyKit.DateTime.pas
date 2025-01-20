@@ -5,7 +5,7 @@ unit TidyKit.DateTime;
 interface
 
 uses
-  Classes, SysUtils, DateUtils
+  Classes, SysUtils, DateUtils, StrUtils, Types
   {$IFDEF WINDOWS}
   , Windows
   {$ENDIF};
@@ -1620,82 +1620,74 @@ end;
 
 class function TDateTimeKit.YMD(const AValue: string): TDateTime;
 var
-  Year, Month, Day: Integer;
-  Parts: TStringArray;
+  FormatSettings: TFormatSettings;
+  Value: TDateTime;
 begin
-  // Split the string by common delimiters (- or /)
-  Parts := AValue.Split(['-', '/']);
-  if Length(Parts) <> 3 then
-    raise EConvertError.Create('Invalid YMD format. Expected YYYY-MM-DD or YYYY/MM/DD');
-    
-  if not TryStrToInt(Parts[0], Year) or
-     not TryStrToInt(Parts[1], Month) or
-     not TryStrToInt(Parts[2], Day) then
-    raise EConvertError.Create('Invalid YMD format. All parts must be numbers');
-    
-  if not IsValidDate(Year, Month, Day) then
-    raise EConvertError.Create('Invalid date values');
-    
-  Result := EncodeDate(Year, Month, Day);
+  FormatSettings := DefaultFormatSettings;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'yyyy/mm/dd';
+  
+  if TryStrToDate(AValue, Value, FormatSettings) then
+    Result := Value
+  else
+  begin
+    FormatSettings.DateSeparator := '/';
+    if TryStrToDate(AValue, Value, FormatSettings) then
+      Result := Value
+    else
+      raise EConvertError.Create('Invalid YMD format. Expected YYYY-MM-DD or YYYY/MM/DD');
+  end;
 end;
 
 class function TDateTimeKit.MDY(const AValue: string): TDateTime;
 var
-  Year, Month, Day: Integer;
-  Parts: TStringArray;
+  FormatSettings: TFormatSettings;
+  Value: TDateTime;
 begin
-  // Split the string by common delimiters (- or /)
-  Parts := AValue.Split(['-', '/']);
-  if Length(Parts) <> 3 then
-    raise EConvertError.Create('Invalid MDY format. Expected MM-DD-YYYY or MM/DD/YYYY');
-    
-  if not TryStrToInt(Parts[0], Month) or
-     not TryStrToInt(Parts[1], Day) or
-     not TryStrToInt(Parts[2], Year) then
-    raise EConvertError.Create('Invalid MDY format. All parts must be numbers');
-    
-  // Handle 2-digit years
-  if Year < 100 then
-    Year := Year + 2000;
-    
-  if not IsValidDate(Year, Month, Day) then
-    raise EConvertError.Create('Invalid date values');
-    
-  Result := EncodeDate(Year, Month, Day);
+  FormatSettings := DefaultFormatSettings;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'mm/dd/yyyy';
+  
+  if TryStrToDate(AValue, Value, FormatSettings) then
+    Result := Value
+  else
+  begin
+    FormatSettings.DateSeparator := '/';
+    if TryStrToDate(AValue, Value, FormatSettings) then
+      Result := Value
+    else
+      raise EConvertError.Create('Invalid MDY format. Expected MM-DD-YYYY or MM/DD/YYYY');
+  end;
 end;
 
 class function TDateTimeKit.DMY(const AValue: string): TDateTime;
 var
-  Year, Month, Day: Integer;
-  Parts: TStringArray;
+  FormatSettings: TFormatSettings;
+  Value: TDateTime;
 begin
-  // Split the string by common delimiters (- or /)
-  Parts := AValue.Split(['-', '/']);
-  if Length(Parts) <> 3 then
-    raise EConvertError.Create('Invalid DMY format. Expected DD-MM-YYYY or DD/MM/YYYY');
-    
-  if not TryStrToInt(Parts[0], Day) or
-     not TryStrToInt(Parts[1], Month) or
-     not TryStrToInt(Parts[2], Year) then
-    raise EConvertError.Create('Invalid DMY format. All parts must be numbers');
-    
-  // Handle 2-digit years
-  if Year < 100 then
-    Year := Year + 2000;
-    
-  if not IsValidDate(Year, Month, Day) then
-    raise EConvertError.Create('Invalid date values');
-    
-  Result := EncodeDate(Year, Month, Day);
+  FormatSettings := DefaultFormatSettings;
+  FormatSettings.DateSeparator := '-';
+  FormatSettings.ShortDateFormat := 'dd/mm/yyyy';
+  
+  if TryStrToDate(AValue, Value, FormatSettings) then
+    Result := Value
+  else
+  begin
+    FormatSettings.DateSeparator := '/';
+    if TryStrToDate(AValue, Value, FormatSettings) then
+      Result := Value
+    else
+      raise EConvertError.Create('Invalid DMY format. Expected DD-MM-YYYY or DD/MM/YYYY');
+  end;
 end;
 
 class function TDateTimeKit.YQ(const AValue: string): TDateTime;
 var
   Year, Quarter: Integer;
-  Parts: TStringArray;
+  Parts: TStringDynArray;
 begin
   // Split the string by common delimiters (- or /)
-  Parts := AValue.Split(['-', '/']);
+  Parts := SplitString(AValue, '-/');
   if Length(Parts) <> 2 then
     raise EConvertError.Create('Invalid YQ format. Expected YYYY-Q or YYYY/Q');
     

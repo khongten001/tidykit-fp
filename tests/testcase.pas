@@ -174,6 +174,10 @@ type
     procedure Test113_InvalidTimeZoneEdgeCases;
     procedure Test114_UTCOffsetEdgeCases;
     procedure Test115_CrossBoundaryConversions;
+    // Date parsing tests
+    procedure Test71_YMD;
+    procedure Test72_MDY;
+    procedure Test73_DMY;
   end;
 
   { TFSTests }
@@ -3741,6 +3745,33 @@ begin
   AssertEquals('Time difference should be preserved',
                 1/SecsPerDay, // 1 second in TDateTime units
                 ConvertedStart - ConvertedEnd);
+end;
+
+procedure TDateTimeTests.Test71_YMD;
+var
+  Expected: TDateTime;
+begin
+  Expected := EncodeDate(2024, 3, 15);
+  AssertEquals('YMD with hyphen', Expected, FDateTime.YMD('2024-03-15'));
+  AssertEquals('YMD with slash', Expected, FDateTime.YMD('2024/03/15'));
+end;
+
+procedure TDateTimeTests.Test72_MDY;
+var
+  Expected: TDateTime;
+begin
+  Expected := EncodeDate(2024, 3, 15);
+  AssertEquals('MDY with hyphen', Expected, FDateTime.MDY('03-15-2024'));
+  AssertEquals('MDY with slash', Expected, FDateTime.MDY('03/15/2024'));
+end;
+
+procedure TDateTimeTests.Test73_DMY;
+var
+  Expected: TDateTime;
+begin
+  Expected := EncodeDate(2024, 3, 15);
+  AssertEquals('DMY with hyphen', Expected, FDateTime.DMY('15-03-2024'));
+  AssertEquals('DMY with slash', Expected, FDateTime.DMY('15/03/2024'));
 end;
 
 initialization
