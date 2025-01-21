@@ -9,7 +9,6 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 
 - [ ] Add comprehensive documentation
   - [ ] Add detailed API reference
-  - [ ] Add more code examples
   - [ ] Add best practices guide
   - [ ] Add troubleshooting guide
   
@@ -19,13 +18,10 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
   
 - [ ] Add more examples
   - [x] Add real-world usage examples of DateTimeKit (see examples/DateTimeExample)
-  - [ ] Add real-world usage examples of StringKit (see examples/StringExample)
-  - [ ] Add real-world usage examples of FileKit (see examples/FileExample)
-  - [ ] Add more examples for StringKit
-  - [ ] Add more examples for FileKit
+  - [x] Add real-world usage examples of StringKit (see examples/StringExample)
+  - [x] Add real-world usage examples of FileKit (see examples/FileExample)
   - [ ] Add cookbook with common patterns
-  - [ ] Add sample applications
-
+  
 
 ## Features
 
@@ -390,13 +386,32 @@ end;
 
 You can find complete examples in the `examples` directory:
 
-1. `DateTimeExample` - Demonstrates comprehensive date/time operations including:
+1. `examples/DateTimeExample` - Demonstrates comprehensive date/time operations including:
    - Basic date/time parsing and formatting
    - Period and interval operations
    - Business day calculations
    - Calendar operations (ISO and Epidemiological weeks)
    - Timezone handling
    - Date rounding and special operations
+
+2. `examples/FileKitExample` - Shows file system operations including:
+   - Basic file reading/writing
+   - Directory creation and manipulation 
+   - File searching and listing
+   - Path operations
+   - File attributes
+   - Temporary file handling
+   - Text file operations
+
+3. `examples/StringKitExample` - Demonstrates string manipulation features:
+   - Case conversion and comparison
+   - Substring operations
+   - Pattern matching and replacement
+   - String splitting and joining
+   - Whitespace handling
+   - String validation
+   - Text transformation
+
 
 ## Cheat Sheet
 
