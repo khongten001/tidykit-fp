@@ -3,7 +3,7 @@ program StringKitExample;
 {$mode objfpc}{$H+}{$J-}
 
 uses
-  Classes, SysUtils, TidyKit.Strings;
+  Classes, SysUtils, TidyKit;
 
 type
   TTextProcessor = class
