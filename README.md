@@ -1,6 +1,6 @@
 # TidyKit
 
-A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified interface for common operations. TidyKit brings modern functionality to Free Pascal while maintaining traditional Pascal programming style.
+A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified interface for common operations. TidyKit brings enhanced functionality to Free Pascal while maintaining traditional Pascal programming style.
 
 
 > [!WARNING]
@@ -29,14 +29,14 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
 
 ## Features
 
-- 🗂️ FileSystem Operations: Modern FS operations inspired by Node.js fs module
+- 🗂️ FileSystem Operations: Enhanced FS operations inspired by Node.js fs module
   - File reading/writing
   - Directory creation/deletion
   - File/directory listing (recursive and non-recursive)
   - File searching and attributes
   - Path manipulation and normalization
-- 📝 String Operations: Modern string handling with comprehensive methods
-- 📅 DateTime Operations: Modern date and time manipulation
+- 📝 String Operations: Comprehensive string handling with extensive methods
+- 📅 DateTime Operations: Feature-rich date and time manipulation
 - 🎯 FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
 - 💻 Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
 - 🚀 Static Functions: No instance management or memory leaks, just call and use
