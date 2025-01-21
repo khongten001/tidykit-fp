@@ -341,7 +341,7 @@ begin
     
     FileOps := TFileOperations.Create(WorkDir);
     try
-      WriteLn('TFileKit Example Program');
+      WriteLn('TidyKit Example Program');
       WriteLn('======================');
       WriteLn('Working Directory: ', WorkDir);
       WriteLn;
