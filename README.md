@@ -1,7 +1,6 @@
 # TidyKit
 
-A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified interface for common operations. TidyKit brings enhanced functionality to Free Pascal while maintaining traditional Pascal programming style.
-
+TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
 > [!WARNING]
 > This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
@@ -13,14 +12,15 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
   - [ ] Add more code examples
   - [ ] Add best practices guide
   - [ ] Add troubleshooting guide
-  - [ ] Add contribution guidelines
   
 - [ ] Expand test coverage
   - [ ] Add more unit tests
   - [ ] Add edge case tests
   
 - [ ] Add more examples
-  - [x] Add real-world usage examples (see examples/DateTimeExample)
+  - [x] Add real-world usage examples of DateTimeKit (see examples/DateTimeExample)
+  - [ ] Add real-world usage examples of StringKit (see examples/StringExample)
+  - [ ] Add real-world usage examples of FileKit (see examples/FileExample)
   - [ ] Add more examples for StringKit
   - [ ] Add more examples for FileKit
   - [ ] Add cookbook with common patterns
