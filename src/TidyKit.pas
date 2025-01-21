@@ -20,7 +20,21 @@ type
   TFileKit = TidyKit.FS.TFileKit;
   TSearchResults = TidyKit.FS.TSearchResults;
   TFileSortOrder = TidyKit.FS.TFileSortOrder;
+  TFileAttributes = TidyKit.FS.TFileAttributes;
+  TSearchResult = TidyKit.FS.TSearchResult;
+  TStringArray = TidyKit.FS.TStringArray;
 
+const
+  { Re-export filesystem constants }
+  fsNone = TidyKit.FS.fsNone;
+  fsName = TidyKit.FS.fsName;
+  fsNameDesc = TidyKit.FS.fsNameDesc;
+  fsDate = TidyKit.FS.fsDate;
+  fsDateDesc = TidyKit.FS.fsDateDesc;
+  fsSize = TidyKit.FS.fsSize;
+  fsSizeDesc = TidyKit.FS.fsSizeDesc;
+
+type
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
   TStringMatches = TidyKit.Strings.TStringMatches;

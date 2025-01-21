@@ -1,7 +1,6 @@
 # TidyKit
 
-A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified interface for common operations. TidyKit brings modern functionality to Free Pascal while maintaining traditional Pascal programming style.
-
+TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
 > [!WARNING]
 > This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
@@ -10,37 +9,63 @@ A comprehensive toolkit for Free Pascal that provides an easy-to-use, unified in
 
 - [ ] Add comprehensive documentation
   - [ ] Add detailed API reference
-  - [ ] Add more code examples
   - [ ] Add best practices guide
   - [ ] Add troubleshooting guide
-  - [ ] Add contribution guidelines
   
 - [ ] Expand test coverage
   - [ ] Add more unit tests
   - [ ] Add edge case tests
   
 - [ ] Add more examples
-  - [x] Add real-world usage examples (see examples/DateTimeExample)
-  - [ ] Add more examples for StringKit
-  - [ ] Add more examples for FileKit
+  - [x] Add real-world usage examples of DateTimeKit (see examples/DateTimeExample)
+  - [x] Add real-world usage examples of StringKit (see examples/StringExample)
+  - [x] Add real-world usage examples of FileKit (see examples/FileExample)
   - [ ] Add cookbook with common patterns
-  - [ ] Add sample applications
-
+  
 
 ## Features
 
-- 🗂️ FileSystem Operations: Modern FS operations inspired by Node.js fs module
-  - File reading/writing
-  - Directory creation/deletion
-  - File/directory listing (recursive and non-recursive)
-  - File searching and attributes
-  - Path manipulation and normalization
-- 📝 String Operations: Modern string handling with comprehensive methods
-- 📅 DateTime Operations: Modern date and time manipulation
-- 🎯 FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
-- 💻 Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
-- 🚀 Static Functions: No instance management or memory leaks, just call and use
-- 🔒 Memory Safe: Proper resource management with no memory leaks
+### 🗂️ FileSystem Operations
+- File reading/writing with encoding detection
+- Directory creation/deletion with recursive options
+- File/directory listing with sorting options (by name, date, size)
+- File searching with pattern matching
+- File attributes and metadata handling
+- Path manipulation and normalization
+- Temporary file/directory creation
+- Cross-platform path handling
+- File encoding detection (UTF-8, UTF-16, UTF-32, ASCII)
+- File type detection (text vs binary)
+
+### 📝 String Operations
+- Basic operations: trim, case conversion, substring
+- Pattern matching with regex support
+- String padding and alignment (left, right, center)
+- Word operations and tokenization
+- String tests (contains, starts with, ends with)
+- String manipulation (replace, duplicate, reverse)
+- Whitespace handling (collapse, remove)
+- String metrics (length, count substrings)
+
+### 📅 DateTime Operations
+- Date/time parsing and formatting
+- Component access (year, month, day, etc.)
+- Date arithmetic (add/subtract periods)
+- Business day calculations
+- Period and interval operations
+- Date rounding and boundaries
+- Calendar calculations (ISO weeks, epidemiological weeks)
+- Timezone handling (with enhanced Windows support)
+- Date comparisons and tests
+- Special date operations (rollback/forward month)
+
+### 🎯 Core Features
+- FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
+- Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
+- Static Functions: No instance management or memory leaks
+- Memory Safe: Proper resource management
+- Exception Handling: Custom exception types for better error handling
+- Consistent API: Similar patterns across all modules
 
 ## Platform Compatibility
 
@@ -56,6 +81,19 @@ All operations automatically handle platform-specific differences:
 - Line endings (CR, LF, CRLF)
 - File system permissions
 - Date/time handling (timezones, DST)
+
+### Platform-Specific Notes
+
+#### Windows
+- ✅ Full timezone support with DST handling
+- ✅ Complete file attribute support
+- ✅ Advanced file system operations
+
+#### Unix-like Systems (Linux, macOS, FreeBSD)
+- ⚠️ Basic timezone support (UTC only)
+- ✅ Unix-style file permissions
+- ✅ Symbolic link support
+- ⚠️ Limited file attribute support
 
 ## Platform Testing Status
 
@@ -78,7 +116,7 @@ Contributions for testing and validation on other platforms are welcome!
 
 2. Add the `src` directory to your project's unit search path:
    - In Lazarus: Project -> Project Options -> Compiler Options -> Paths -> Other unit files
-   - In FPC: Use `-Fu` command line option or add to `fpc.cfg`
+   - In FPC: Use `-Fu` command line option
 
 3. Add `TidyKit` to your uses clause:
    ```pascal
@@ -119,17 +157,15 @@ TidyKit requires:
 - Windows: Fully tested and supported
 - Linux/macOS/FreeBSD: Designed to work but needs testing
 - Unicode: Full UTF-8 support
-- Thread Safety: All operations are thread-safe
+- Thread Safety: Most immutable operations (like DateTime calculations) are thread-safe, but file operations should be synchronized when used across threads
 
 ## Quick Start
 
-
-
+### String Operations
 ```pascal
 uses
   TidyKit;
 
-// String operations example
 var
   Str: string;
   Words: TStringArray;
@@ -183,8 +219,10 @@ begin
   if TStringKit.EndsWith('World', 'ld') then
     WriteLn('Ends with ld');
 end;
+```
 
-// DateTime operations example
+### DateTime Operations
+```pascal
 var
   CurrentDate, NextMonth: TDateTime;
   Period: TDateSpan;
@@ -250,8 +288,10 @@ begin
   CurrentDate := TDateTimeKit.RollForwardMonth(CurrentDate);  // First day of next month
   WriteLn('As decimal year: ', TDateTimeKit.GetDecimalDate(CurrentDate):0:4);
 end;
+```
 
-// FileSystem operations example
+### FileSystem Operations
+```pascal
 var
   Content: string;
   Files: TSearchResults;
@@ -346,13 +386,32 @@ end;
 
 You can find complete examples in the `examples` directory:
 
-1. `DateTimeExample` - Demonstrates comprehensive date/time operations including:
+1. `examples/DateTimeExample` - Demonstrates comprehensive date/time operations including:
    - Basic date/time parsing and formatting
    - Period and interval operations
    - Business day calculations
    - Calendar operations (ISO and Epidemiological weeks)
    - Timezone handling
    - Date rounding and special operations
+
+2. `examples/FileKitExample` - Shows file system operations including:
+   - Basic file reading/writing
+   - Directory creation and manipulation 
+   - File searching and listing
+   - Path operations
+   - File attributes
+   - Temporary file handling
+   - Text file operations
+
+3. `examples/StringKitExample` - Demonstrates string manipulation features:
+   - Case conversion and comparison
+   - Substring operations
+   - Pattern matching and replacement
+   - String splitting and joining
+   - Whitespace handling
+   - String validation
+   - Text transformation
+
 
 ## Cheat Sheet
 
