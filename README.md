@@ -29,18 +29,47 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 
 ## Features
 
-- 🗂️ FileSystem Operations: Enhanced FS operations inspired by Node.js fs module
-  - File reading/writing
-  - Directory creation/deletion
-  - File/directory listing (recursive and non-recursive)
-  - File searching and attributes
-  - Path manipulation and normalization
-- 📝 String Operations: Comprehensive string handling with extensive methods
-- 📅 DateTime Operations: Feature-rich date and time manipulation
-- 🎯 FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
-- 💻 Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
-- 🚀 Static Functions: No instance management or memory leaks, just call and use
-- 🔒 Memory Safe: Proper resource management with no memory leaks
+### 🗂️ FileSystem Operations
+- File reading/writing with encoding detection
+- Directory creation/deletion with recursive options
+- File/directory listing with sorting options (by name, date, size)
+- File searching with pattern matching
+- File attributes and metadata handling
+- Path manipulation and normalization
+- Temporary file/directory creation
+- Cross-platform path handling
+- File encoding detection (UTF-8, UTF-16, UTF-32, ASCII)
+- File type detection (text vs binary)
+
+### 📝 String Operations
+- Basic operations: trim, case conversion, substring
+- Pattern matching with regex support
+- String padding and alignment (left, right, center)
+- Word operations and tokenization
+- String tests (contains, starts with, ends with)
+- String manipulation (replace, duplicate, reverse)
+- Whitespace handling (collapse, remove)
+- String metrics (length, count substrings)
+
+### 📅 DateTime Operations
+- Date/time parsing and formatting
+- Component access (year, month, day, etc.)
+- Date arithmetic (add/subtract periods)
+- Business day calculations
+- Period and interval operations
+- Date rounding and boundaries
+- Calendar calculations (ISO weeks, epidemiological weeks)
+- Timezone handling (with enhanced Windows support)
+- Date comparisons and tests
+- Special date operations (rollback/forward month)
+
+### 🎯 Core Features
+- FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
+- Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
+- Static Functions: No instance management or memory leaks
+- Memory Safe: Proper resource management
+- Exception Handling: Custom exception types for better error handling
+- Consistent API: Similar patterns across all modules
 
 ## Platform Compatibility
 
@@ -56,6 +85,19 @@ All operations automatically handle platform-specific differences:
 - Line endings (CR, LF, CRLF)
 - File system permissions
 - Date/time handling (timezones, DST)
+
+### Platform-Specific Notes
+
+#### Windows
+- ✅ Full timezone support with DST handling
+- ✅ Complete file attribute support
+- ✅ Advanced file system operations
+
+#### Unix-like Systems (Linux, macOS, FreeBSD)
+- ⚠️ Basic timezone support (UTC only)
+- ✅ Unix-style file permissions
+- ✅ Symbolic link support
+- ⚠️ Limited file attribute support
 
 ## Platform Testing Status
 
@@ -119,17 +161,15 @@ TidyKit requires:
 - Windows: Fully tested and supported
 - Linux/macOS/FreeBSD: Designed to work but needs testing
 - Unicode: Full UTF-8 support
-- Thread Safety: All operations are thread-safe
+- Thread Safety: Most immutable operations (like DateTime calculations) are thread-safe, but file operations should be synchronized when used across threads
 
 ## Quick Start
 
-
-
+### String Operations
 ```pascal
 uses
   TidyKit;
 
-// String operations example
 var
   Str: string;
   Words: TStringArray;
@@ -183,8 +223,10 @@ begin
   if TStringKit.EndsWith('World', 'ld') then
     WriteLn('Ends with ld');
 end;
+```
 
-// DateTime operations example
+### DateTime Operations
+```pascal
 var
   CurrentDate, NextMonth: TDateTime;
   Period: TDateSpan;
@@ -250,8 +292,10 @@ begin
   CurrentDate := TDateTimeKit.RollForwardMonth(CurrentDate);  // First day of next month
   WriteLn('As decimal year: ', TDateTimeKit.GetDecimalDate(CurrentDate):0:4);
 end;
+```
 
-// FileSystem operations example
+### FileSystem Operations
+```pascal
 var
   Content: string;
   Files: TSearchResults;
