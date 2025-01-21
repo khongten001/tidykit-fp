@@ -78,7 +78,7 @@ Contributions for testing and validation on other platforms are welcome!
 
 2. Add the `src` directory to your project's unit search path:
    - In Lazarus: Project -> Project Options -> Compiler Options -> Paths -> Other unit files
-   - In FPC: Use `-Fu` command line option or add to `fpc.cfg`
+   - In FPC: Use `-Fu` command line option
 
 3. Add `TidyKit` to your uses clause:
    ```pascal
