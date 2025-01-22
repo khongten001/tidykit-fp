@@ -74,7 +74,7 @@ end;
 procedure TTextProcessor.ShowPatternMatching;
 var
   EmailMatches: TMatchesResults;  // Stores detailed match information including position
-  AllMatches: TStringArray;      // Stores just the matched strings
+  AllMatches: TStringArray;       // Stores just the matched strings
   I: Integer;
 begin
   WriteLn('Pattern Matching:');
@@ -110,11 +110,11 @@ begin
   WriteLn('String Analysis:');
   WriteLn('----------------');
   WriteLn('Length: ', TStringKit.GetLength(FText));                    // String length
-  WriteLn('Is Empty? ', TStringKit.IsEmpty(FText));                   // Checks if string is empty
-  WriteLn('Contains "Hello"? ', TStringKit.Contains(FText, 'Hello')); // Substring search
+  WriteLn('Is Empty? ', TStringKit.IsEmpty(FText));                    // Checks if string is empty
+  WriteLn('Contains "Hello"? ', TStringKit.Contains(FText, 'Hello'));  // Substring search
   WriteLn('Starts with "The"? ', TStringKit.StartsWith(FText, 'The')); // Prefix check
-  WriteLn('Ends with "!"? ', TStringKit.EndsWith(FText, '!'));        // Suffix check
-  WriteLn('Count of "l": ', TStringKit.CountSubString(FText, 'l'));   // Counts occurrences
+  WriteLn('Ends with "!"? ', TStringKit.EndsWith(FText, '!'));         // Suffix check
+  WriteLn('Count of "l": ', TStringKit.CountSubString(FText, 'l'));    // Counts occurrences
   WriteLn;
 end;
 
