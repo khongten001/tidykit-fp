@@ -19,9 +19,19 @@ type
     Length: Integer;   // Length of the matched text
   end;
   
-  { Array types for storing multiple results }
-  TStringMatches = array of TStringMatch;
-  TStringArray = array of string;
+  {
+    TMatchResults
+    --------------
+    Array of TStringMatch records for pattern matching results.
+  }
+  TMatchesResults = array of TStringMatch;
+
+  {
+   TMatchStrings
+   -------------
+   Array of strings for general string list operations or extracted matches.
+  }
+  TMatchStrings = array of string;
 
   { TStringKit
     ----------
@@ -174,7 +184,7 @@ type
         
       Returns:
         Array of TStringMatch records with match details. }
-    class function ExtractMatches(const Text, Pattern: string): TStringMatches; static;
+    class function ExtractMatches(const Text, Pattern: string): TMatchesResults; static;
     
     { Extracts all matching substrings using a pattern.
       
@@ -184,7 +194,7 @@ type
         
       Returns:
         Array of matched substrings. }
-    class function ExtractAllMatches(const Text, Pattern: string): TStringArray; static;
+    class function ExtractAllMatches(const Text, Pattern: string): TMatchStrings; static;
     
     { Tests if a string matches a regular expression pattern.
       
@@ -225,7 +235,7 @@ type
         
       Returns:
         Array of words from the text. }
-    class function GetWords(const AText: string): TStringArray; static;
+    class function GetWords(const AText: string): TMatchStrings; static;
     
     { Counts occurrences of a substring in text.
       
@@ -469,7 +479,7 @@ begin
   end;
 end;
 
-class function TStringKit.ExtractMatches(const Text, Pattern: string): TStringMatches;
+class function TStringKit.ExtractMatches(const Text, Pattern: string): TMatchesResults;
 var
   RegEx: TRegExpr;
   MatchCount: Integer;
@@ -494,9 +504,9 @@ begin
   end;
 end;
 
-class function TStringKit.ExtractAllMatches(const Text, Pattern: string): TStringArray;
+class function TStringKit.ExtractAllMatches(const Text, Pattern: string): TMatchStrings;
 var
-  Matches: TStringMatches;
+  Matches: TMatchesResults;
   I: Integer;
 begin
   Result := nil;
@@ -539,7 +549,7 @@ begin
   Result := StringReplace(Text, OldText, NewText, [rfReplaceAll]);
 end;
 
-class function TStringKit.GetWords(const AText: string): TStringArray;
+class function TStringKit.GetWords(const AText: string): TMatchStrings;
 var
   WordList: TStringList;
   I: Integer;

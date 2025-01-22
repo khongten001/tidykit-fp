@@ -22,7 +22,7 @@ type
   TFileSortOrder = TidyKit.FS.TFileSortOrder;
   TFileAttributes = TidyKit.FS.TFileAttributes;
   TSearchResult = TidyKit.FS.TSearchResult;
-  TStringArray = TidyKit.FS.TStringArray;
+  TFilePathArray = TidyKit.FS.TFilePathArray;
 
 const
   { Re-export filesystem constants }
@@ -34,10 +34,26 @@ const
   fsSize = TidyKit.FS.fsSize;
   fsSizeDesc = TidyKit.FS.fsSizeDesc;
 
+  { Re-export datetime constants }
+  duSecond = TidyKit.DateTime.duSecond;
+  duMinute = TidyKit.DateTime.duMinute;
+  duHour = TidyKit.DateTime.duHour;
+  duDay = TidyKit.DateTime.duDay;
+  duWeek = TidyKit.DateTime.duWeek;
+  duMonth = TidyKit.DateTime.duMonth;
+  duBiMonth = TidyKit.DateTime.duBiMonth;
+  duQuarter = TidyKit.DateTime.duQuarter;
+  duHalfYear = TidyKit.DateTime.duHalfYear;
+  duYear = TidyKit.DateTime.duYear;
+
+  { Re-export date span kind constants }
+  dskPeriod = TidyKit.DateTime.dskPeriod;
+  dskDuration = TidyKit.DateTime.dskDuration;
+
 type
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
-  TStringMatches = TidyKit.Strings.TStringMatches;
+  TMatchesResults = TidyKit.Strings.TMatchesResults;
 
   { Re-export the datetime types }
   TDateTimeKit = TidyKit.DateTime.TDateTimeKit;
@@ -46,6 +62,7 @@ type
   TInterval = TidyKit.DateTime.TInterval;
   TDateUnit = TidyKit.DateTime.TDateUnit;
   TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
+  ETimeZoneError = TidyKit.DateTime.ETimeZoneError;
 
 implementation
 
