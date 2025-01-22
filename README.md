@@ -5,6 +5,46 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 > [!WARNING]
 > This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
 
+## Table of Contents
+- [TidyKit](#tidykit)
+  - [Table of Contents](#table-of-contents)
+  - [TODO](#todo)
+  - [Features](#features)
+    - [🗂️ FileSystem Operations](#️-filesystem-operations)
+    - [📝 String Operations](#-string-operations)
+    - [📅 DateTime Operations](#-datetime-operations)
+    - [🎯 Core Features](#-core-features)
+  - [Platform Compatibility](#platform-compatibility)
+    - [Platform-Specific Notes](#platform-specific-notes)
+      - [Windows](#windows)
+      - [Unix-like Systems (Linux, macOS, FreeBSD)](#unix-like-systems-linux-macos-freebsd)
+  - [Platform Testing Status](#platform-testing-status)
+  - [Installation](#installation)
+    - [Dependencies](#dependencies)
+    - [Compatibility Notes](#compatibility-notes)
+  - [Quick Start](#quick-start)
+    - [String Operations](#string-operations)
+    - [DateTime Operations](#datetime-operations)
+    - [FileSystem Operations](#filesystem-operations)
+  - [Examples](#examples)
+  - [Cheat Sheet](#cheat-sheet)
+    - [File System Operations](#file-system-operations)
+    - [String operations](#string-operations-1)
+    - [DateTime Operations](#datetime-operations-1)
+      - [Basic Operations](#basic-operations)
+      - [Component Access](#component-access)
+      - [Component Modification](#component-modification)
+      - [Date Arithmetic](#date-arithmetic)
+      - [Period Operations](#period-operations)
+      - [Interval Operations](#interval-operations)
+      - [Period Boundaries](#period-boundaries)
+      - [Timezone Operations](#timezone-operations)
+      - [Date Comparisons](#date-comparisons)
+      - [Date Rounding](#date-rounding)
+      - [Special Operations](#special-operations)
+
+
+
 ## TODO
 
 - [ ] Add comprehensive documentation
@@ -538,7 +578,7 @@ Str := TStringKit.RightStr(Text, Length);         // Get right part
 
 ### DateTime Operations
 
-### Basic Operations
+#### Basic Operations
 ```pascal
 // Get current date/time
 Now := TDateTimeKit.GetNow;
@@ -559,7 +599,7 @@ Date5 := TDateTimeKit.DMY('15-01-2024');  // Day-Month-Year
 Date6 := TDateTimeKit.YQ('2024-1');       // Year-Quarter
 ```
 
-### Component Access
+#### Component Access
 ```pascal
 // Get components
 Year := TDateTimeKit.GetYear(Now);        // e.g., 2024
@@ -585,7 +625,7 @@ EpiYear := TDateTimeKit.GetEpiYear(Now);   // Epi year
 EpiWeek := TDateTimeKit.GetEpiWeek(Now);   // Epi week (1-53)
 ```
 
-### Component Modification
+#### Component Modification
 ```pascal
 // Set components (returns new TDateTime)
 NewDate := TDateTimeKit.SetYear(Now, 2025);
@@ -597,7 +637,7 @@ NewDate := TDateTimeKit.SetSecond(Now, 45);
 NewDate := TDateTimeKit.SetMilliSecond(Now, 500);
 ```
 
-### Date Arithmetic
+#### Date Arithmetic
 ```pascal
 // Add/subtract time units
 NewDate := TDateTimeKit.AddYears(Now, 1);    // Add 1 year
@@ -613,7 +653,7 @@ NextBDay := TDateTimeKit.NextBusinessDay(Now);     // Next business day
 PrevBDay := TDateTimeKit.PreviousBusinessDay(Now); // Previous business day
 ```
 
-### Period Operations
+#### Period Operations
 ```pascal
 // Create periods and durations
 Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
@@ -633,7 +673,7 @@ Period := TDateTimeKit.SecondsToPeriod(Seconds);
 Period := TDateTimeKit.StandardizePeriod(Period);  // Normalize units
 ```
 
-### Interval Operations
+#### Interval Operations
 ```pascal
 // Create and check intervals
 Interval := TDateTimeKit.CreateInterval(Start, End);
@@ -648,7 +688,7 @@ Union := TDateTimeKit.IntervalUnion(Interval1, Interval2);
 Intersect := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
 ```
 
-### Period Boundaries
+#### Period Boundaries
 ```pascal
 // Start of period
 StartYear := TDateTimeKit.StartOfYear(Now);
@@ -665,7 +705,7 @@ EndDay := TDateTimeKit.EndOfDay(Now);
 EndHour := TDateTimeKit.EndOfHour(Now);
 ```
 
-### Timezone Operations
+#### Timezone Operations
 ```pascal
 // Get timezone information
 TZInfo := TDateTimeKit.GetTimeZone(Now);
@@ -683,7 +723,7 @@ Local := TDateTimeKit.WithTimeZone(UTC, SystemTZ);      // Convert to local
 Forced := TDateTimeKit.ForceTimeZone(Now, 'UTC');       // Force to UTC
 ```
 
-### Date Comparisons
+#### Date Comparisons
 ```pascal
 // Basic comparisons
 IsBefore := TDateTimeKit.IsBefore(Date1, Date2);
@@ -697,7 +737,7 @@ IsAM := TDateTimeKit.IsAM(Now);  // Before noon
 IsPM := TDateTimeKit.IsPM(Now);  // After noon
 ```
 
-### Date Rounding
+#### Date Rounding
 ```pascal
 // Round to nearest unit
 Rounded := TDateTimeKit.RoundDate(Now, duHour);    // Round to hour
@@ -715,7 +755,7 @@ Ceiling := TDateTimeKit.CeilingDate(Now, duDay);   // Ceiling to day
 Ceiling := TDateTimeKit.CeilingDate(Now, duMonth); // Ceiling to month
 ```
 
-### Special Operations
+#### Special Operations
 ```pascal
 // Month rolling
 PrevMonth := TDateTimeKit.RollbackMonth(Now);    // Last day of previous month
