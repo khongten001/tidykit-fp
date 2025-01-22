@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, DateUtils, fpcunit, testutils, testregistry,
-  TidyKit, TidyKit.FS, TidyKit.Strings, TidyKit.DateTime;
+  TidyKit;
 
 type
   TStringArray = array of string;
@@ -830,13 +830,13 @@ begin
   Interval.EndDate := EncodeDate(2025, 1, 1);    // 2025-01-01 00:00:00.000
   
   // Test period length
-  Span := TDateTimeKit.IntervalLength(Interval, TidyKit.DateTime.dskPeriod);
+  Span := TDateTimeKit.IntervalLength(Interval, dskPeriod);
   AssertEquals('Interval length should be 1 year', 1, Span.Years);
   AssertEquals('No remaining months', 0, Span.Months);
   AssertEquals('No remaining days', 0, Span.Days);
   
   // Test duration length (366 days for leap year 2024)
-  Span := TDateTimeKit.IntervalLength(Interval, TidyKit.DateTime.dskDuration);
+  Span := TDateTimeKit.IntervalLength(Interval, dskDuration);
   AssertEquals('Duration should be calculated in seconds',
     366 * 24 * 60 * 60,  // Full leap year 2024
     Span.Seconds);
@@ -2890,34 +2890,34 @@ begin
   FileSetDate(File3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));
   
   // Test name sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsName);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsName);
   AssertEquals('First file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test name sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsNameDesc);
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsNameDesc);
   AssertEquals('First file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[0]));
   AssertEquals('Last file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[2]));
   
   // Test date sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsDate);
-  AssertEquals('First file should be a_file.txt (oldest)', 'a_file.txt', ExtractFileName(Files[0]));
-  AssertEquals('Last file should be c_file.txt (newest)', 'c_file.txt', ExtractFileName(Files[2]));
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsDate);
+  AssertEquals('First file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[0]));
+  AssertEquals('Last file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test date sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsDateDesc);
-  AssertEquals('First file should be c_file.txt (newest)', 'c_file.txt', ExtractFileName(Files[0]));
-  AssertEquals('Last file should be a_file.txt (oldest)', 'a_file.txt', ExtractFileName(Files[2]));
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsDateDesc);
+  AssertEquals('First file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[0]));
+  AssertEquals('Last file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[2]));
   
   // Test size sorting (ascending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsSize);
-  AssertEquals('First file should be a_file.txt (smallest)', 'a_file.txt', ExtractFileName(Files[0]));
-  AssertEquals('Last file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[2]));
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSize);
+  AssertEquals('First file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[0]));
+  AssertEquals('Last file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[2]));
   
   // Test size sorting (descending)
-  Files := TFileKit.ListFiles(FTestDir, '*', False, TidyKit.FS.fsSizeDesc);  // Changed from fsSize to fsSizeDesc
-  AssertEquals('First file should be c_file.txt (largest)', 'c_file.txt', ExtractFileName(Files[0]));
-  AssertEquals('Last file should be a_file.txt (smallest)', 'a_file.txt', ExtractFileName(Files[2]));
+  Files := TFileKit.ListFiles(FTestDir, '*', False, fsSizeDesc);
+  AssertEquals('First file should be c_file.txt', 'c_file.txt', ExtractFileName(Files[0]));
+  AssertEquals('Last file should be a_file.txt', 'a_file.txt', ExtractFileName(Files[2]));
 end;
 
 procedure TFSTests.Test34h_ListDirectoriesWithPattern;
@@ -2987,22 +2987,22 @@ begin
   FileSetDate(Dir3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));
   
   // Test name sorting (ascending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsName);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsName);
   AssertEquals('First directory should be a_dir', 'a_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be c_dir', 'c_dir', ExtractFileName(Dirs[2]));
   
   // Test name sorting (descending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsNameDesc);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsNameDesc);
   AssertEquals('First directory should be c_dir', 'c_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be a_dir', 'a_dir', ExtractFileName(Dirs[2]));
   
   // Test date sorting (ascending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsDate);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsDate);
   AssertEquals('First directory should be a_dir (oldest)', 'a_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be c_dir (newest)', 'c_dir', ExtractFileName(Dirs[2]));
   
   // Test date sorting (descending)
-  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, TidyKit.FS.fsDateDesc);
+  Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsDateDesc);
   AssertEquals('First directory should be c_dir (newest)', 'c_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be a_dir (oldest)', 'a_dir', ExtractFileName(Dirs[2]));
 end;
@@ -3241,7 +3241,7 @@ procedure TStringTests.Test18_Extract;
 const
   TestStr = 'The year is 2024';
 var
-  Matches: TStringMatches;
+  Matches: TMatchesResults;
 begin
   Matches := TStringKit.ExtractMatches(TestStr, '\d+');
   AssertEquals('ExtractMatches should work correctly',

@@ -35,12 +35,12 @@ type
   end;
 
   { 
-    TStringArray 
+    TFilePathArray
     -------------
     A dynamic array of strings used to store lists of filenames or directory names.
     This type is commonly used for returning results from file listing operations.
   }
-  TStringArray = array of string;
+  TFilePathArray = array of string;
 
   { 
     TFileSortOrder 
@@ -204,7 +204,7 @@ type
     class function ListDirectories(const APath: string; 
       const Pattern: string = '*'; 
       const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TStringArray; static;
+      const SortOrder: TFileSortOrder = fsNone): TFilePathArray; static;
 
     { Lists all files in a specified path.
       
@@ -219,7 +219,7 @@ type
     class function ListFiles(const APath: string; 
       const Pattern: string = '*'; 
       const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TStringArray; static;
+      const SortOrder: TFileSortOrder = fsNone): TFilePathArray; static;
     
     { Changes a file's extension.
       
@@ -1605,11 +1605,11 @@ end;
 class function TFileKit.ListDirectories(const APath: string; 
   const Pattern: string = '*'; 
   const Recursive: Boolean = False;
-  const SortOrder: TFileSortOrder = fsNone): TStringArray;
+  const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
 var
   SearchRec: TSearchRec;
   DirList: TStringList;
-  SubDirs: TStringArray;
+  SubDirs: TFilePathArray;
   NormalizedPath: string;
   FullPath: string;
   I: Integer;
@@ -1670,12 +1670,12 @@ end;
 class function TFileKit.ListFiles(const APath: string; 
   const Pattern: string = '*'; 
   const Recursive: Boolean = False;
-  const SortOrder: TFileSortOrder = fsNone): TStringArray;
+  const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
 var
   SearchRec: TSearchRec;
   FileList: TStringList;
-  SubDirs: TStringArray;
-  SubFiles: TStringArray;
+  SubDirs: TFilePathArray;
+  SubFiles: TFilePathArray;
   NormalizedPath: string;
   FullPath: string;
   I: Integer;

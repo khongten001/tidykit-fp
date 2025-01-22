@@ -1,29 +1,61 @@
-# TidyKit
+# 🧰 TidyKit
 
 TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
 > [!WARNING]
-> This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
+> ⚠️ This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
 
-## TODO
+## 📑 Table of Contents
+- [🧰 TidyKit](#-tidykit)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [✅ TODO](#-todo)
+  - [✨ Features](#-features)
+    - [🗂️ FileSystem Operations](#️-filesystem-operations)
+    - [📝 String Operations](#-string-operations)
+    - [📅 DateTime Operations](#-datetime-operations)
+    - [🎯 Core Features](#-core-features)
+  - [🌐 Platform Compatibility](#-platform-compatibility)
+    - [📝 Platform-Specific Notes](#-platform-specific-notes)
+      - [Windows](#windows)
+      - [Unix-like Systems (Linux, macOS, FreeBSD)](#unix-like-systems-linux-macos-freebsd)
+  - [🧪 Platform Testing Status](#-platform-testing-status)
+  - [📦 Installation](#-installation)
+    - [📚 Dependencies](#-dependencies)
+    - [ℹ️ Compatibility Notes](#ℹ️-compatibility-notes)
+  - [🚀 Quick Start](#-quick-start)
+    - [📝 String Operations](#-string-operations-1)
+    - [📅 DateTime Operations](#-datetime-operations-1)
+    - [🗂️ FileSystem Operations](#️-filesystem-operations-1)
+  - [🧪 Unit Testing](#-unit-testing)
+  - [📚 Examples](#-examples)
+  - [🤝 Contributing](#-contributing)
+  - [📝 License](#-license)
+  - [🙏 Acknowledgments](#-acknowledgments)
+  - [📞 Contact](#-contact)
+  - [📋 Cheat Sheet](#-cheat-sheet)
+    - [File System Operations](#file-system-operations)
+    - [String operations](#string-operations)
+    - [DateTime Operations](#datetime-operations)
+      - [Basic Operations](#basic-operations)
+      - [Component Access](#component-access)
+      - [Component Modification](#component-modification)
+      - [Date Arithmetic](#date-arithmetic)
+      - [Period Operations](#period-operations)
+      - [Interval Operations](#interval-operations)
+
+## ✅ TODO
 
 - [ ] Add comprehensive documentation
   - [ ] Add detailed API reference
-  - [ ] Add best practices guide
-  - [ ] Add troubleshooting guide
-  
+  - [ ] Add best practices / cookbook guide
+  - [ ] Add troubleshooting guide  
+
 - [ ] Expand test coverage
   - [ ] Add more unit tests
   - [ ] Add edge case tests
   
-- [ ] Add more examples
-  - [x] Add real-world usage examples of DateTimeKit (see examples/DateTimeExample)
-  - [x] Add real-world usage examples of StringKit (see examples/StringExample)
-  - [x] Add real-world usage examples of FileKit (see examples/FileExample)
-  - [ ] Add cookbook with common patterns
-  
 
-## Features
+## ✨ Features
 
 ### 🗂️ FileSystem Operations
 - File reading/writing with encoding detection
@@ -66,23 +98,24 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - Memory Safe: Proper resource management
 - Exception Handling: Custom exception types for better error handling
 - Consistent API: Similar patterns across all modules
+- **Partial Symbolic Link Support:** Detects symbolic links but lacks full manipulation capabilities
 
-## Platform Compatibility
+## 🌐 Platform Compatibility
 
 TidyKit is designed to be platform-independent and works across:
-- Windows (32/64-bit)
-- Linux
-- macOS
-- FreeBSD
-- Any platform supported by Free Pascal
+- 🪟 Windows (32/64-bit)
+- 🐧 Linux
+- 🍎 macOS
+- 🐡 FreeBSD
+- 🔄 Any platform supported by Free Pascal
 
 All operations automatically handle platform-specific differences:
-- File paths (directory separators, drive letters)
-- Line endings (CR, LF, CRLF)
-- File system permissions
-- Date/time handling (timezones, DST)
+- 📁 File paths (directory separators, drive letters)
+- ↩️ Line endings (CR, LF, CRLF)
+- 🔒 File system permissions
+- ⏰ Date/time handling (timezones, DST)
 
-### Platform-Specific Notes
+### 📝 Platform-Specific Notes
 
 #### Windows
 - ✅ Full timezone support with DST handling
@@ -92,10 +125,10 @@ All operations automatically handle platform-specific differences:
 #### Unix-like Systems (Linux, macOS, FreeBSD)
 - ⚠️ Basic timezone support (UTC only)
 - ✅ Unix-style file permissions
-- ✅ Symbolic link support
+- ⚠️ Partial Symbolic Link Support: Detects symbolic links but lacks full manipulation capabilities
 - ⚠️ Limited file attribute support
 
-## Platform Testing Status
+## 🧪 Platform Testing Status
 
 ⚠️ **Note**: Current testing has been performed on:
 - ✅ Windows (32/64-bit)
@@ -105,9 +138,9 @@ While the library is designed to be cross-platform, the following platforms have
 - ⚠️ macOS
 - ⚠️ FreeBSD
 
-Contributions for testing and validation on other platforms are welcome!
+Contributions for testing and validation on other platforms are welcome! 🤝
 
-## Installation
+## 📦 Installation
 
 1. Clone this repository:
    ```bash
@@ -115,8 +148,8 @@ Contributions for testing and validation on other platforms are welcome!
    ```
 
 2. Add the `src` directory to your project's unit search path:
-   - In Lazarus: Project -> Project Options -> Compiler Options -> Paths -> Other unit files
-   - In FPC: Use `-Fu` command line option
+   - 🔧 In Lazarus: Project -> Project Options -> Compiler Options -> Paths -> Other unit files
+   - ⌨️ In FPC: Use `-Fu` command line option
 
 3. Add `TidyKit` to your uses clause:
    ```pascal
@@ -146,22 +179,22 @@ Contributions for testing and validation on other platforms are welcome!
    end.
    ```
 
-### Dependencies
+### 📚 Dependencies
 
 TidyKit requires:
-- Free Pascal Compiler (FPC) 3.2.2 or later
-- No external dependencies required
+- 🔨 Free Pascal Compiler (FPC) 3.2.2 or later
+- 🆓 No external dependencies required
 
-### Compatibility Notes
+### ℹ️ Compatibility Notes
 
-- Windows: Fully tested and supported
-- Linux/macOS/FreeBSD: Designed to work but needs testing
-- Unicode: Full UTF-8 support
-- Thread Safety: Most immutable operations (like DateTime calculations) are thread-safe, but file operations should be synchronized when used across threads
+- 🪟 Windows: Fully tested and supported
+- 🐧 Linux/macOS/FreeBSD: Designed to work but needs testing
+- 🌐 Unicode: Full UTF-8 support
+- 🔄 Thread Safety: Most immutable operations (like DateTime calculations) are thread-safe, but file operations should be synchronized when used across threads
 
-## Quick Start
+## 🚀 Quick Start
 
-### String Operations
+### 📝 String Operations
 ```pascal
 uses
   TidyKit;
@@ -221,7 +254,7 @@ begin
 end;
 ```
 
-### DateTime Operations
+### 📅 DateTime Operations
 ```pascal
 var
   CurrentDate, NextMonth: TDateTime;
@@ -290,7 +323,7 @@ begin
 end;
 ```
 
-### FileSystem Operations
+### 🗂️ FileSystem Operations
 ```pascal
 var
   Content: string;
@@ -382,38 +415,73 @@ begin
 end;
 ```
 
-## Examples
+## 🧪 Unit Testing
+
+To run the unit tests,
+
+1. Open the `tests/TestRunner.lpi` file in Lazarus.
+2. Compile.
+3. In your terminal, 
+
+```bash
+$ ./tests/TestRunner.exe -a --format=plain
+```
+
+It may take a few seconds to run.
+
+
+## 📚 Examples
 
 You can find complete examples in the `examples` directory:
 
 1. `examples/DateTimeExample` - Demonstrates comprehensive date/time operations including:
-   - Basic date/time parsing and formatting
-   - Period and interval operations
-   - Business day calculations
-   - Calendar operations (ISO and Epidemiological weeks)
-   - Timezone handling
-   - Date rounding and special operations
+   - ⏰ Basic date/time parsing and formatting
+   - 📊 Period and interval operations
+   - 📆 Business day calculations
+   - 🗓️ Calendar operations (ISO and Epidemiological weeks)
+   - 🌐 Timezone handling
+   - 🔄 Date rounding and special operations
 
 2. `examples/FileKitExample` - Shows file system operations including:
-   - Basic file reading/writing
-   - Directory creation and manipulation 
-   - File searching and listing
-   - Path operations
-   - File attributes
-   - Temporary file handling
-   - Text file operations
+   - 📄 Basic file reading/writing
+   - 📁 Directory creation and manipulation 
+   - 🔍 File searching and listing
+   - 🛣️ Path operations
+   - 🏷️ File attributes
+   - 📝 Temporary file handling
+   - 📋 Text file operations
 
 3. `examples/StringKitExample` - Demonstrates string manipulation features:
-   - Case conversion and comparison
-   - Substring operations
-   - Pattern matching and replacement
-   - String splitting and joining
-   - Whitespace handling
-   - String validation
-   - Text transformation
+   - 🔠 Case conversion and comparison
+   - ✂️ Substring operations
+   - 🔍 Pattern matching and replacement
+   - 🔄 String splitting and joining
+   - ⌨️ Whitespace handling
+   - ✅ String validation
+   - 🔄 Text transformation
 
+## 🤝 Contributing
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
 
-## Cheat Sheet
+1. Fork the Project
+2. Create your Feature Branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your Changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the Branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
+
+## 📝 License
+This project is licensed under the MIT License - see the [LICENSE.md](LICENSE.md) file for details.
+
+## 🙏 Acknowledgments
+Inspired by modern CLI frameworks
+Built with Free Pascal and Lazarus IDE
+
+## 📞 Contact
+Your Name - ikelaiah
+
+Project Link: https://github.com/ikelaiah/tidykit-fp
+
+## 📋 Cheat Sheet
 
 ### File System Operations
 
@@ -538,7 +606,7 @@ Str := TStringKit.RightStr(Text, Length);         // Get right part
 
 ### DateTime Operations
 
-### Basic Operations
+#### Basic Operations
 ```pascal
 // Get current date/time
 Now := TDateTimeKit.GetNow;
@@ -559,7 +627,7 @@ Date5 := TDateTimeKit.DMY('15-01-2024');  // Day-Month-Year
 Date6 := TDateTimeKit.YQ('2024-1');       // Year-Quarter
 ```
 
-### Component Access
+#### Component Access
 ```pascal
 // Get components
 Year := TDateTimeKit.GetYear(Now);        // e.g., 2024
@@ -585,7 +653,7 @@ EpiYear := TDateTimeKit.GetEpiYear(Now);   // Epi year
 EpiWeek := TDateTimeKit.GetEpiWeek(Now);   // Epi week (1-53)
 ```
 
-### Component Modification
+#### Component Modification
 ```pascal
 // Set components (returns new TDateTime)
 NewDate := TDateTimeKit.SetYear(Now, 2025);
@@ -597,7 +665,7 @@ NewDate := TDateTimeKit.SetSecond(Now, 45);
 NewDate := TDateTimeKit.SetMilliSecond(Now, 500);
 ```
 
-### Date Arithmetic
+#### Date Arithmetic
 ```pascal
 // Add/subtract time units
 NewDate := TDateTimeKit.AddYears(Now, 1);    // Add 1 year
@@ -613,7 +681,7 @@ NextBDay := TDateTimeKit.NextBusinessDay(Now);     // Next business day
 PrevBDay := TDateTimeKit.PreviousBusinessDay(Now); // Previous business day
 ```
 
-### Period Operations
+#### Period Operations
 ```pascal
 // Create periods and durations
 Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
@@ -633,95 +701,5 @@ Period := TDateTimeKit.SecondsToPeriod(Seconds);
 Period := TDateTimeKit.StandardizePeriod(Period);  // Normalize units
 ```
 
-### Interval Operations
-```pascal
-// Create and check intervals
-Interval := TDateTimeKit.CreateInterval(Start, End);
-IsWithin := TDateTimeKit.IsWithinInterval(Now, Interval);
-DoOverlap := TDateTimeKit.IntervalsOverlap(Interval1, Interval2);
-
-// Interval manipulations
-Aligned := TDateTimeKit.IntervalAlign(Interval1, Interval2);
-Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
-Diff := TDateTimeKit.IntervalSetdiff(Interval1, Interval2);
-Union := TDateTimeKit.IntervalUnion(Interval1, Interval2);
-Intersect := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
-```
-
-### Period Boundaries
-```pascal
-// Start of period
-StartYear := TDateTimeKit.StartOfYear(Now);
-StartMonth := TDateTimeKit.StartOfMonth(Now);
-StartWeek := TDateTimeKit.StartOfWeek(Now);
-StartDay := TDateTimeKit.StartOfDay(Now);
-StartHour := TDateTimeKit.StartOfHour(Now);
-
-// End of period
-EndYear := TDateTimeKit.EndOfYear(Now);
-EndMonth := TDateTimeKit.EndOfMonth(Now);
-EndWeek := TDateTimeKit.EndOfWeek(Now);
-EndDay := TDateTimeKit.EndOfDay(Now);
-EndHour := TDateTimeKit.EndOfHour(Now);
-```
-
-### Timezone Operations
-```pascal
-// Get timezone information
-TZInfo := TDateTimeKit.GetTimeZone(Now);
-WriteLn('Timezone: ', TZInfo.Name);      // Timezone name
-WriteLn('Offset: ', TZInfo.Offset);      // Offset in minutes from UTC
-WriteLn('DST: ', TZInfo.IsDST);         // Is Daylight Saving Time?
-
-// System timezone
-SystemTZ := TDateTimeKit.GetSystemTimeZone;  // Get system timezone
-TZNames := TDateTimeKit.GetTimeZoneNames;    // Get available timezone names
-
-// Convert between timezones
-UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');           // Convert to UTC
-Local := TDateTimeKit.WithTimeZone(UTC, SystemTZ);      // Convert to local
-Forced := TDateTimeKit.ForceTimeZone(Now, 'UTC');       // Force to UTC
-```
-
-### Date Comparisons
-```pascal
-// Basic comparisons
-IsBefore := TDateTimeKit.IsBefore(Date1, Date2);
-IsAfter := TDateTimeKit.IsAfter(Date1, Date2);
-SameDay := TDateTimeKit.IsSameDay(Date1, Date2);
-SameMonth := TDateTimeKit.IsSameMonth(Date1, Date2);
-SameYear := TDateTimeKit.IsSameYear(Date1, Date2);
-
-// Time of day
-IsAM := TDateTimeKit.IsAM(Now);  // Before noon
-IsPM := TDateTimeKit.IsPM(Now);  // After noon
-```
-
-### Date Rounding
-```pascal
-// Round to nearest unit
-Rounded := TDateTimeKit.RoundDate(Now, duHour);    // Round to hour
-Rounded := TDateTimeKit.RoundDate(Now, duDay);     // Round to day
-Rounded := TDateTimeKit.RoundDate(Now, duMonth);   // Round to month
-
-// Floor to unit
-Floored := TDateTimeKit.FloorDate(Now, duHour);   // Floor to hour
-Floored := TDateTimeKit.FloorDate(Now, duDay);    // Floor to day
-Floored := TDateTimeKit.FloorDate(Now, duMonth);  // Floor to month
-
-// Ceiling to unit
-Ceiling := TDateTimeKit.CeilingDate(Now, duHour);  // Ceiling to hour
-Ceiling := TDateTimeKit.CeilingDate(Now, duDay);   // Ceiling to day
-Ceiling := TDateTimeKit.CeilingDate(Now, duMonth); // Ceiling to month
-```
-
-### Special Operations
-```pascal
-// Month rolling
-PrevMonth := TDateTimeKit.RollbackMonth(Now);    // Last day of previous month
-NextMonth := TDateTimeKit.RollForwardMonth(Now);  // First day of next month
-
-// Decimal dates
-DecimalDate := TDateTimeKit.GetDecimalDate(Now);  // e.g., 2024.45
-DateFromDec := TDateTimeKit.DateDecimal(2024.45); // Convert back
+#### Interval Operations
 ```

@@ -26,7 +26,6 @@ Thank you for your interest in contributing to TidyKit! We want to make contribu
 
 ### Code Style
 
-- Follow traditional Pascal style (no inline var, no anonymous functions, no lambda)
 - Use meaningful variable and function names
 - Add comments for complex logic
 - Keep functions focused and small
