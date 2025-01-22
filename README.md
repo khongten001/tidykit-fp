@@ -26,6 +26,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
     - [String Operations](#string-operations)
     - [DateTime Operations](#datetime-operations)
     - [FileSystem Operations](#filesystem-operations)
+  - [Unit Testing](#unit-testing)
   - [Examples](#examples)
   - [Cheat Sheet](#cheat-sheet)
     - [File System Operations](#file-system-operations)
@@ -44,23 +45,16 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
       - [Special Operations](#special-operations)
 
 
-
 ## TODO
 
 - [ ] Add comprehensive documentation
   - [ ] Add detailed API reference
-  - [ ] Add best practices guide
-  - [ ] Add troubleshooting guide
-  
+  - [ ] Add best practices / cookbook guide
+  - [ ] Add troubleshooting guide  
+
 - [ ] Expand test coverage
   - [ ] Add more unit tests
   - [ ] Add edge case tests
-  
-- [ ] Add more examples
-  - [x] Add real-world usage examples of DateTimeKit (see examples/DateTimeExample)
-  - [x] Add real-world usage examples of StringKit (see examples/StringExample)
-  - [x] Add real-world usage examples of FileKit (see examples/FileExample)
-  - [ ] Add cookbook with common patterns
   
 
 ## Features
@@ -421,6 +415,21 @@ begin
   WriteLn('Archive: ', Attrs.Archive);
 end;
 ```
+
+## Unit Testing
+
+To run the unit tests,
+
+1. Open the `tests/TestRunner.lpi` file in Lazarus.
+2. Compile.
+3. In your terminal, 
+
+```bash
+$ ./tests/TestRunner.exe -a --format=plain
+```
+
+It may take a few seconds to run.
+
 
 ## Examples
 
