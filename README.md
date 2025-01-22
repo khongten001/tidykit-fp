@@ -98,6 +98,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - Memory Safe: Proper resource management
 - Exception Handling: Custom exception types for better error handling
 - Consistent API: Similar patterns across all modules
+- **Partial Symbolic Link Support:** Detects symbolic links but lacks full manipulation capabilities
 
 ## 🌐 Platform Compatibility
 
@@ -124,7 +125,7 @@ All operations automatically handle platform-specific differences:
 #### Unix-like Systems (Linux, macOS, FreeBSD)
 - ⚠️ Basic timezone support (UTC only)
 - ✅ Unix-style file permissions
-- ✅ Symbolic link support
+- ⚠️ Partial Symbolic Link Support: Detects symbolic links but lacks full manipulation capabilities
 - ⚠️ Limited file attribute support
 
 ## 🧪 Platform Testing Status
