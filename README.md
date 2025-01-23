@@ -3,7 +3,9 @@
 TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
 > [!WARNING]
-> ⚠️ This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
+> This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. 
+> 
+> Use with caution in production environments.
 
 ## 📑 Table of Contents
 - [🧰 TidyKit](#-tidykit)
@@ -42,6 +44,10 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
       - [Date Arithmetic](#date-arithmetic)
       - [Period Operations](#period-operations)
       - [Interval Operations](#interval-operations)
+      - [Date Comparison](#date-comparison)
+      - [Period Boundaries](#period-boundaries)
+      - [Date Rounding](#date-rounding)
+      - [Timezone Operations](#timezone-operations)
 
 ## ✅ TODO
 
@@ -412,6 +418,16 @@ begin
   WriteLn('System: ', Attrs.System);
   WriteLn('Directory: ', Attrs.Directory);
   WriteLn('Archive: ', Attrs.Archive);
+
+  // Symbolic link operations
+  TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
+  TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
+  TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
+  Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
+  if TFileKit.IsSymLink('link.txt') then ...                // Check if path is symlink
+
+  // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
+  // On Unix/Linux, regular users can create symlinks in their own directories
 end;
 ```
 
@@ -554,6 +570,16 @@ Dir := TFileKit.GetTempDir;                                // Get temp directory
 // Temporary files
 TempFile := TFileKit.CreateTempFile('prefix_');           // Create temp file
 TempDir := TFileKit.CreateTempDirectory('prefix_');       // Create temp directory
+
+// Symbolic link operations
+TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
+TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
+TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
+Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
+if TFileKit.IsSymLink('link.txt') then ...                // Check if path is symlink
+
+// Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
+// On Unix/Linux, regular users can create symlinks in their own directories
 ```
 
 ### String operations
@@ -609,27 +635,28 @@ Str := TStringKit.RightStr(Text, Length);         // Get right part
 #### Basic Operations
 ```pascal
 // Get current date/time
-Now := TDateTimeKit.GetNow;
-Today := TDateTimeKit.GetToday;  // Returns date with time set to 00:00:00
+Now := TDateTimeKit.GetNow;                // Current date and time
+Today := TDateTimeKit.GetToday;            // Current date at midnight
 
 // Parse date strings
-Date1 := TDateTimeKit.FromString('2024-01-15');  // Uses system format
+Date1 := TDateTimeKit.FromString('2024-01-15');                // System format
 Date2 := TDateTimeKit.FromString('15/01/2024', 'dd/mm/yyyy');  // Custom format
 
 // Format dates
-Str1 := TDateTimeKit.GetAsString(Now);  // Uses system format
-Str2 := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss');  // Custom format
+Str1 := TDateTimeKit.GetAsString(Now);                        // System format
+Str2 := TDateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss'); // Custom format
 
 // Parse with specific formats
-Date3 := TDateTimeKit.YMD('2024-01-15');  // Year-Month-Day
-Date4 := TDateTimeKit.MDY('01-15-2024');  // Month-Day-Year
-Date5 := TDateTimeKit.DMY('15-01-2024');  // Day-Month-Year
-Date6 := TDateTimeKit.YQ('2024-1');       // Year-Quarter
+Date3 := TDateTimeKit.YMD('2024-01-15');    // Year-Month-Day
+Date4 := TDateTimeKit.MDY('01-15-2024');    // Month-Day-Year
+Date5 := TDateTimeKit.DMY('15-01-2024');    // Day-Month-Year
+Date6 := TDateTimeKit.YQ('2024-1');         // Year-Quarter
+Date7 := TDateTimeKit.DateDecimal(2024.5);  // Decimal year
 ```
 
 #### Component Access
 ```pascal
-// Get components
+// Basic components
 Year := TDateTimeKit.GetYear(Now);        // e.g., 2024
 Month := TDateTimeKit.GetMonth(Now);      // 1-12
 Day := TDateTimeKit.GetDay(Now);          // 1-31
@@ -638,7 +665,7 @@ Minute := TDateTimeKit.GetMinute(Now);    // 0-59
 Second := TDateTimeKit.GetSecond(Now);    // 0-59
 MS := TDateTimeKit.GetMillisecond(Now);   // 0-999
 
-// Additional components
+// Calendar components
 DOW := TDateTimeKit.GetDayOfWeek(Now);    // 1=Sunday to 7=Saturday
 DOY := TDateTimeKit.GetDayOfYear(Now);    // 1-366
 Quarter := TDateTimeKit.GetQuarter(Now);   // 1-4
@@ -651,6 +678,10 @@ ISOWeek := TDateTimeKit.GetISOWeek(Now);   // ISO-8601 week (1-53)
 // Epidemiological calendar
 EpiYear := TDateTimeKit.GetEpiYear(Now);   // Epi year
 EpiWeek := TDateTimeKit.GetEpiWeek(Now);   // Epi week (1-53)
+
+// Time of day
+IsAM := TDateTimeKit.IsAM(Now);            // Before noon
+IsPM := TDateTimeKit.IsPM(Now);            // After noon
 ```
 
 #### Component Modification
@@ -668,32 +699,37 @@ NewDate := TDateTimeKit.SetMilliSecond(Now, 500);
 #### Date Arithmetic
 ```pascal
 // Add/subtract time units
-NewDate := TDateTimeKit.AddYears(Now, 1);    // Add 1 year
-NewDate := TDateTimeKit.AddMonths(Now, -2);  // Subtract 2 months
-NewDate := TDateTimeKit.AddDays(Now, 7);     // Add 7 days
-NewDate := TDateTimeKit.AddHours(Now, 12);   // Add 12 hours
-NewDate := TDateTimeKit.AddMinutes(Now, 30); // Add 30 minutes
+NewDate := TDateTimeKit.AddYears(Now, 1);     // Add 1 year
+NewDate := TDateTimeKit.AddMonths(Now, -2);   // Subtract 2 months
+NewDate := TDateTimeKit.AddDays(Now, 7);      // Add 7 days
+NewDate := TDateTimeKit.AddHours(Now, 12);    // Add 12 hours
+NewDate := TDateTimeKit.AddMinutes(Now, 30);  // Add 30 minutes
 NewDate := TDateTimeKit.AddSeconds(Now, -15); // Subtract 15 seconds
 
 // Business day operations
-NewDate := TDateTimeKit.AddBusinessDays(Now, 5);  // Add 5 business days
+NewDate := TDateTimeKit.AddBusinessDays(Now, 5);   // Add 5 business days
 NextBDay := TDateTimeKit.NextBusinessDay(Now);     // Next business day
 PrevBDay := TDateTimeKit.PreviousBusinessDay(Now); // Previous business day
+IsWorkDay := TDateTimeKit.IsBusinessDay(Now);      // Check if business day
+
+// Month rolling
+NewDate := TDateTimeKit.RollbackMonth(Now);     // Last day of previous month
+NewDate := TDateTimeKit.RollForwardMonth(Now);  // First day of next month
 ```
 
 #### Period Operations
 ```pascal
 // Create periods and durations
-Period := TDateTimeKit.CreatePeriod(1, 2, 3);  // 1 year, 2 months, 3 days
-Duration := TDateTimeKit.CreateDuration(0, 0, 1);  // 1 day fixed duration
+Period := TDateTimeKit.CreatePeriod(1, 2, 3);     // 1 year, 2 months, 3 days
+Duration := TDateTimeKit.CreateDuration(0, 0, 1); // 1 day fixed duration
 
 // Add/subtract periods
 NewDate := TDateTimeKit.AddSpan(Now, Period);
 NewDate := TDateTimeKit.SubtractSpan(Now, Period);
 
 // Calculate span between dates
-Span := TDateTimeKit.SpanBetween(Date1, Date2, dskPeriod);  // As period
-Span := TDateTimeKit.SpanBetween(Date1, Date2, dskDuration); // As duration
+Span := TDateTimeKit.SpanBetween(Date1, Date2, dskPeriod);    // As period
+Span := TDateTimeKit.SpanBetween(Date1, Date2, dskDuration);  // As duration
 
 // Convert periods
 Seconds := TDateTimeKit.PeriodToSeconds(Period);
@@ -702,4 +738,69 @@ Period := TDateTimeKit.StandardizePeriod(Period);  // Normalize units
 ```
 
 #### Interval Operations
+```pascal
+// Create and manipulate intervals
+Interval := TDateTimeKit.CreateInterval(StartDate, EndDate);  // Create interval
+if TDateTimeKit.IsWithinInterval(TestDate, Interval) then     // Test if date in interval
+if TDateTimeKit.IntervalsOverlap(Interval1, Interval2) then   // Test if intervals overlap
+
+// Interval calculations
+Length := TDateTimeKit.IntervalLength(Interval);              // Get interval length
+Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);        // Get gap between intervals
+Diff := TDateTimeKit.IntervalSetdiff(Interval1, Interval2);   // Set difference
+Union := TDateTimeKit.IntervalUnion(Interval1, Interval2);    // Union of intervals
+Inter := TDateTimeKit.IntervalIntersection(Interval1, Interval2); // Intersection
+
+// Interval alignment
+if TDateTimeKit.IntervalAlign(Interval1, Interval2) then      // Check if intervals align
+```
+
+#### Date Comparison
+```pascal
+// Compare dates
+if TDateTimeKit.IsBefore(Date1, Date2) then      // Date1 < Date2
+if TDateTimeKit.IsAfter(Date1, Date2) then       // Date1 > Date2
+if TDateTimeKit.IsSameDay(Date1, Date2) then     // Same calendar day
+if TDateTimeKit.IsSameMonth(Date1, Date2) then   // Same month and year
+if TDateTimeKit.IsSameYear(Date1, Date2) then    // Same year
+```
+
+#### Period Boundaries
+```pascal
+// Start of period
+Start := TDateTimeKit.StartOfYear(Now);    // First moment of year
+Start := TDateTimeKit.StartOfMonth(Now);   // First moment of month
+Start := TDateTimeKit.StartOfWeek(Now);    // First moment of week
+Start := TDateTimeKit.StartOfDay(Now);     // First moment of day
+Start := TDateTimeKit.StartOfHour(Now);    // First moment of hour
+
+// End of period
+End := TDateTimeKit.EndOfYear(Now);        // Last moment of year
+End := TDateTimeKit.EndOfMonth(Now);       // Last moment of month
+End := TDateTimeKit.EndOfWeek(Now);        // Last moment of week
+End := TDateTimeKit.EndOfDay(Now);         // Last moment of day
+End := TDateTimeKit.EndOfHour(Now);        // Last moment of hour
+```
+
+#### Date Rounding
+```pascal
+// Round dates to nearest unit
+Round := TDateTimeKit.RoundDate(Now, duMonth);    // Round to nearest month
+Floor := TDateTimeKit.FloorDate(Now, duMonth);    // Round down to month start
+Ceil := TDateTimeKit.CeilingDate(Now, duMonth);   // Round up to month end
+
+// Available units: duSecond, duMinute, duHour, duDay, duWeek,
+// duMonth, duBiMonth, duQuarter, duSeason, duHalfYear, duYear
+```
+
+#### Timezone Operations
+```pascal
+// Get timezone information
+TZ := TDateTimeKit.GetTimeZone(Now);           // Current timezone info
+SystemTZ := TDateTimeKit.GetSystemTimeZone;     // System timezone name
+TZNames := TDateTimeKit.GetTimeZoneNames;       // Available timezone names
+
+// Convert between timezones
+UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');   // Convert to UTC
+Local := TDateTimeKit.ForceTimeZone(Now, 'EST'); // Force timezone
 ```

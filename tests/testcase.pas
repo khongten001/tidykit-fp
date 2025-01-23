@@ -248,6 +248,11 @@ type
     procedure Test34g_ListFilesWithSorting;
     procedure Test34h_ListDirectoriesWithPattern;
     procedure Test34i_ListDirectoriesWithSorting;
+    // Symlink operations
+    procedure Test40_CreateSymLink;
+    procedure Test41_DeleteSymLink;
+    procedure Test42_ResolveSymLink;
+    procedure Test43_IsSymLink;
   end;
 
   { TStringTests }
@@ -3086,6 +3091,173 @@ begin
   finally
     if DirectoryExists(TempDir) then
       RemoveDir(TempDir);
+  end;
+end;
+
+procedure TFSTests.Test40_CreateSymLink;
+var
+  TargetFile, LinkFile: string;
+begin
+  TargetFile := TFileKit.CombinePaths(FTestDir, 'target.txt');
+  LinkFile := TFileKit.CombinePaths(FTestDir, 'link.txt');
+  
+  try
+    // Create a target file
+    TFileKit.WriteFile(TargetFile, 'Test content');
+    
+    // Create symlink
+    try
+      TFileKit.CreateSymLink(TargetFile, LinkFile);
+      
+      // Only verify if symlink creation succeeded
+      AssertTrue('Symlink should exist', TFileKit.Exists(LinkFile));
+      AssertTrue('Path should be a symlink', TFileKit.IsSymLink(LinkFile));
+      
+      // Verify content can be read through symlink
+      AssertEquals('Content should be readable through symlink', 
+                 'Test content', 
+                 TFileKit.ReadFile(LinkFile));
+    except
+      on E: ETidyKitException do
+      begin
+        // Skip test if we don't have permissions
+        if (Pos('privilege', E.Message) > 0) or 
+           (Pos('permission', E.Message) > 0) then
+          Ignore('Skipping symlink test - insufficient privileges');
+        raise;
+      end;
+    end;
+  finally
+    if TFileKit.Exists(LinkFile) then
+      TFileKit.DeleteFile(LinkFile);
+    if TFileKit.Exists(TargetFile) then
+      TFileKit.DeleteFile(TargetFile);
+  end;
+end;
+
+procedure TFSTests.Test41_DeleteSymLink;
+var
+  TargetFile, LinkFile: string;
+begin
+  TargetFile := TFileKit.CombinePaths(FTestDir, 'target.txt');
+  LinkFile := TFileKit.CombinePaths(FTestDir, 'link.txt');
+  
+  try
+    // Create target and symlink
+    TFileKit.WriteFile(TargetFile, 'Test content');
+    try
+      TFileKit.CreateSymLink(TargetFile, LinkFile);
+      
+      // Only proceed with delete test if create succeeded
+      if TFileKit.IsSymLink(LinkFile) then
+      begin
+        // Delete symlink
+        TFileKit.DeleteSymLink(LinkFile);
+        
+        // Verify symlink was deleted but target remains
+        AssertFalse('Symlink should not exist', TFileKit.Exists(LinkFile));
+        AssertTrue('Target file should still exist', TFileKit.Exists(TargetFile));
+      end
+      else
+        Ignore('Skipping symlink deletion test - could not create symlink');
+    except
+      on E: ETidyKitException do
+      begin
+        if (Pos('privilege', E.Message) > 0) or 
+           (Pos('permission', E.Message) > 0) then
+          Ignore('Skipping symlink deletion test - insufficient privileges');
+        raise;
+      end;
+    end;
+  finally
+    if TFileKit.Exists(LinkFile) then
+      TFileKit.DeleteFile(LinkFile);
+    if TFileKit.Exists(TargetFile) then
+      TFileKit.DeleteFile(TargetFile);
+  end;
+end;
+
+procedure TFSTests.Test42_ResolveSymLink;
+var
+  TargetFile, LinkFile, ResolvedPath: string;
+begin
+  TargetFile := TFileKit.CombinePaths(FTestDir, 'target.txt');
+  LinkFile := TFileKit.CombinePaths(FTestDir, 'link.txt');
+  
+  try
+    // Create target and symlink
+    TFileKit.WriteFile(TargetFile, 'Test content');
+    try
+      TFileKit.CreateSymLink(TargetFile, LinkFile);
+      
+      // Only proceed with resolve test if create succeeded
+      if TFileKit.IsSymLink(LinkFile) then
+      begin
+        // Resolve symlink
+        ResolvedPath := TFileKit.ResolveSymLink(LinkFile);
+        
+        // Verify resolved path matches target
+        AssertEquals('Resolved path should match target', 
+                   TFileKit.NormalizePath(TargetFile), 
+                   TFileKit.NormalizePath(ResolvedPath));
+      end
+      else
+        Ignore('Skipping symlink resolution test - could not create symlink');
+    except
+      on E: ETidyKitException do
+      begin
+        if (Pos('privilege', E.Message) > 0) or 
+           (Pos('permission', E.Message) > 0) then
+          Ignore('Skipping symlink resolution test - insufficient privileges');
+        raise;
+      end;
+    end;
+  finally
+    if TFileKit.Exists(LinkFile) then
+      TFileKit.DeleteFile(LinkFile);
+    if TFileKit.Exists(TargetFile) then
+      TFileKit.DeleteFile(TargetFile);
+  end;
+end;
+
+procedure TFSTests.Test43_IsSymLink;
+var
+  TargetFile, LinkFile: string;
+begin
+  TargetFile := TFileKit.CombinePaths(FTestDir, 'target.txt');
+  LinkFile := TFileKit.CombinePaths(FTestDir, 'link.txt');
+  
+  try
+    // Create target and symlink
+    TFileKit.WriteFile(TargetFile, 'Test content');
+    try
+      TFileKit.CreateSymLink(TargetFile, LinkFile);
+      
+      // Only proceed with detection test if create succeeded
+      if TFileKit.Exists(LinkFile) then
+      begin
+        // Verify symlink detection
+        AssertTrue('Link should be detected as symlink', TFileKit.IsSymLink(LinkFile));
+        AssertFalse('Target should not be detected as symlink', TFileKit.IsSymLink(TargetFile));
+        AssertFalse('Non-existent file should not be detected as symlink', 
+                  TFileKit.IsSymLink(TFileKit.CombinePaths(FTestDir, 'nonexistent.txt')));
+      end
+      else
+        Ignore('Skipping symlink detection test - could not create symlink');
+    except
+      on E: ETidyKitException do
+      begin
+        if (Pos('privilege', E.Message) > 0) or 
+           (Pos('permission', E.Message) > 0) then
+          Ignore('Skipping symlink detection test - insufficient privileges');
+        raise;
+      end;
+    end;
+  finally
+    if TFileKit.Exists(LinkFile) then
+      TFileKit.DeleteFile(LinkFile);
+    if TFileKit.Exists(TargetFile) then
+      TFileKit.DeleteFile(TargetFile);
   end;
 end;
 
