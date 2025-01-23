@@ -506,6 +506,36 @@ type
 
     { Creates a symbolic link.
       
+      Platform-specific behavior:
+      -------------------------
+      Windows:
+      - By default, requires Administrator privileges
+      - Exception: Windows 10/11 with Developer Mode enabled allows non-admin users to create symlinks
+      - Both creating and copying symlinks require appropriate privileges
+      - Use SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE flag for Developer Mode support
+      
+      Unix/Linux:
+      - Regular users can create symlinks by default in their own directories
+      - No special privileges (sudo) needed for basic symlink operations
+      - Only requires sudo/root for:
+        * Creating symlinks in system directories (e.g., /usr/bin, /etc)
+        * Creating symlinks in other users' directories
+        * Some special filesystem operations
+      - Regular users can copy symlinks they have read access to
+      
+      Error handling:
+      --------------
+      Windows errors:
+      - ERROR_PRIVILEGE_NOT_HELD: Run as Administrator or enable Developer Mode
+      - ERROR_INVALID_PARAMETER: Check if target path exists
+      - ERROR_PATH_NOT_FOUND: Verify directory structure
+      
+      Unix errors:
+      - EACCES: Check directory write permissions
+      - EEXIST: Link path already exists
+      - ENOENT: Target path doesn't exist
+      - EPERM: Operation requires elevated privileges
+      
       Parameters:
         ATargetPath - The path that the symlink will point to.
         ALinkPath - The path where the symlink will be created.
@@ -1807,6 +1837,10 @@ var
   ErrorCode: DWORD;
   ErrorMsg: string;
   {$ENDIF}
+  {$IFDEF UNIX}
+  ErrorCode: Integer;
+  ErrorMsg: string;
+  {$ENDIF}
 begin
   {$IFDEF WINDOWS}
   // Add SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE for Windows 10 Developer Mode
@@ -1820,7 +1854,7 @@ begin
     ErrorCode := GetLastError;
     case ErrorCode of
       ERROR_PRIVILEGE_NOT_HELD:
-        ErrorMsg := 'Insufficient privileges. Try running as administrator or enable Developer Mode';
+        ErrorMsg := 'Windows requires Administrator privileges or Developer Mode enabled to create symlinks';
       ERROR_INVALID_PARAMETER:
         ErrorMsg := 'Invalid parameter. Target path may not exist';
       ERROR_PATH_NOT_FOUND:
@@ -1834,8 +1868,20 @@ begin
   {$IFDEF UNIX}
   if fpSymlink(PChar(ATargetPath), PChar(ALinkPath)) <> 0 then
   begin
-    ErrorMsg := SysErrorMessage(fpgeterrno);
-    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s', [ErrorMsg]);
+    ErrorCode := fpgeterrno;
+    case ErrorCode of
+      ESysEACCES:
+        ErrorMsg := 'Permission denied. Target directory may not be writable';
+      ESysEEXIST:
+        ErrorMsg := 'File already exists at link path';
+      ESysENOENT:
+        ErrorMsg := 'Target path does not exist';
+      ESysEPERM:
+        ErrorMsg := 'Operation not permitted. Directory may require root privileges';
+      else
+        ErrorMsg := SysErrorMessage(ErrorCode);
+    end;
+    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   {$ENDIF}
 end;
