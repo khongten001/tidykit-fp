@@ -412,6 +412,16 @@ begin
   WriteLn('System: ', Attrs.System);
   WriteLn('Directory: ', Attrs.Directory);
   WriteLn('Archive: ', Attrs.Archive);
+
+  // Symbolic link operations
+  TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
+  TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
+  TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
+  Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
+  if TFileKit.IsSymLink('link.txt') then ...                // Check if path is symlink
+
+  // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
+  // On Unix/Linux, regular users can create symlinks in their own directories
 end;
 ```
 
@@ -554,6 +564,16 @@ Dir := TFileKit.GetTempDir;                                // Get temp directory
 // Temporary files
 TempFile := TFileKit.CreateTempFile('prefix_');           // Create temp file
 TempDir := TFileKit.CreateTempDirectory('prefix_');       // Create temp directory
+
+// Symbolic link operations
+TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
+TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
+TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
+Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
+if TFileKit.IsSymLink('link.txt') then ...                // Check if path is symlink
+
+// Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
+// On Unix/Linux, regular users can create symlinks in their own directories
 ```
 
 ### String operations
