@@ -3,7 +3,9 @@
 TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
 > [!WARNING]
-> ⚠️ This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. Use with caution in production environments.
+> This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. 
+> 
+> Use with caution in production environments.
 
 ## 📑 Table of Contents
 - [🧰 TidyKit](#-tidykit)
