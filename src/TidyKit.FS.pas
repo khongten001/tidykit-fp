@@ -14,6 +14,23 @@ uses
   {$ENDIF}
   Classes, SysUtils, DateUtils, TidyKit.Core;
 
+const
+  {$IFDEF WINDOWS}
+  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;
+  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;
+  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;
+  FILE_NAME_NORMALIZED = $0;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  PATH_MAX = 4096;
+  {$ENDIF}
+
+{$IFDEF WINDOWS}
+// Windows API function declarations
+function CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName: LPCSTR; dwFlags: DWORD): BOOL; stdcall; external 'kernel32.dll' name 'CreateSymbolicLinkA';
+function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePath: DWORD; dwFlags: DWORD): DWORD; stdcall; external 'kernel32.dll' name 'GetFinalPathNameByHandleA';
+{$ENDIF}
+
 type
   { 
     TFileAttributes 
@@ -486,6 +503,38 @@ type
       Returns:
         Path to the new temp directory. }
     class function CreateTempDirectory(const APrefix: string = ''): string; static;
+
+    { Creates a symbolic link.
+      
+      Parameters:
+        ATargetPath - The path that the symlink will point to.
+        ALinkPath - The path where the symlink will be created.
+        IsDirectory - Whether the target is a directory (matters on Windows). }
+    class procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False); static;
+
+    { Deletes a symbolic link.
+      
+      Parameters:
+        ALinkPath - The path to the symlink to delete. }
+    class procedure DeleteSymLink(const ALinkPath: string); static;
+
+    { Resolves a symbolic link to its target path.
+      
+      Parameters:
+        ALinkPath - The path to the symlink to resolve.
+        
+      Returns:
+        The target path that the symlink points to. }
+    class function ResolveSymLink(const ALinkPath: string): string; static;
+
+    { Checks if a path is a symbolic link.
+      
+      Parameters:
+        APath - The path to check.
+        
+      Returns:
+        True if the path is a symbolic link. }
+    class function IsSymLink(const APath: string): Boolean; static;
   end;
 
 implementation
@@ -1749,6 +1798,227 @@ begin
   finally
     FileList.Free;
   end;
+end;
+
+class procedure TFileKit.CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
+var
+  Flags: DWORD;
+  {$IFDEF WINDOWS}
+  ErrorCode: DWORD;
+  ErrorMsg: string;
+  {$ENDIF}
+begin
+  {$IFDEF WINDOWS}
+  // Add SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE for Windows 10 Developer Mode
+  if IsDirectory then
+    Flags := SYMBOLIC_LINK_FLAG_DIRECTORY or SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
+  else
+    Flags := SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE;
+    
+  if not CreateSymbolicLink(PChar(ALinkPath), PChar(ATargetPath), Flags) then
+  begin
+    ErrorCode := GetLastError;
+    case ErrorCode of
+      ERROR_PRIVILEGE_NOT_HELD:
+        ErrorMsg := 'Insufficient privileges. Try running as administrator or enable Developer Mode';
+      ERROR_INVALID_PARAMETER:
+        ErrorMsg := 'Invalid parameter. Target path may not exist';
+      ERROR_PATH_NOT_FOUND:
+        ErrorMsg := 'Path not found';
+      else
+        ErrorMsg := SysErrorMessage(ErrorCode);
+    end;
+    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  if fpSymlink(PChar(ATargetPath), PChar(ALinkPath)) <> 0 then
+  begin
+    ErrorMsg := SysErrorMessage(fpgeterrno);
+    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s', [ErrorMsg]);
+  end;
+  {$ENDIF}
+end;
+
+class procedure TFileKit.DeleteSymLink(const ALinkPath: string);
+{$IFDEF WINDOWS}
+var
+  ErrorCode: DWORD;
+  ErrorMsg: string;
+{$ENDIF}
+begin
+  if not IsSymLink(ALinkPath) then
+    raise ETidyKitException.Create('Path is not a symbolic link');
+    
+  {$IFDEF WINDOWS}
+  if not Windows.DeleteFile(PChar(ALinkPath)) then
+  begin
+    ErrorCode := GetLastError;
+    ErrorMsg := SysErrorMessage(ErrorCode);
+    raise ETidyKitException.CreateFmt('Failed to delete symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  if fpUnlink(PChar(ALinkPath)) <> 0 then
+  begin
+    ErrorMsg := SysErrorMessage(fpgeterrno);
+    raise ETidyKitException.CreateFmt('Failed to delete symbolic link: %s', [ErrorMsg]);
+  end;
+  {$ENDIF}
+end;
+
+class function TFileKit.ResolveSymLink(const ALinkPath: string): string;
+{$IFDEF WINDOWS}
+const
+  MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16384;
+  IO_REPARSE_TAG_SYMLINK = $A000000C;
+  FSCTL_GET_REPARSE_POINT = $000900A8;
+type
+  PReparseDataBuffer = ^TReparseDataBuffer;
+  TReparseDataBuffer = record
+    ReparseTag: DWORD;
+    ReparseDataLength: Word;
+    Reserved: Word;
+    SubstituteNameOffset: Word;
+    SubstituteNameLength: Word;
+    PrintNameOffset: Word;
+    PrintNameLength: Word;
+    PathBuffer: array[0..MAXIMUM_REPARSE_DATA_BUFFER_SIZE - 20] of WideChar;
+  end;
+var
+  Handle: THandle;
+  Buffer: TReparseDataBuffer;
+  TargetPath: WideString;
+  BytesReturned: DWORD;
+  ErrorCode: DWORD;
+  ErrorMsg: string;
+  I: Integer;
+{$ENDIF}
+{$IFDEF UNIX}
+var
+  Buffer: array[0..PATH_MAX - 1] of Char;
+  BytesRead: Integer;
+  ErrorMsg: string;
+{$ENDIF}
+begin
+  Result := '';
+  
+  if not IsSymLink(ALinkPath) then
+    raise ETidyKitException.Create('Path is not a symbolic link');
+    
+  {$IFDEF WINDOWS}
+  Handle := CreateFile(PChar(ALinkPath), 
+                      GENERIC_READ, 
+                      FILE_SHARE_READ, 
+                      nil, 
+                      OPEN_EXISTING, 
+                      FILE_FLAG_BACKUP_SEMANTICS or FILE_FLAG_OPEN_REPARSE_POINT, 
+                      0);
+  if Handle = INVALID_HANDLE_VALUE then
+  begin
+    ErrorCode := GetLastError;
+    ErrorMsg := SysErrorMessage(ErrorCode);
+    raise ETidyKitException.CreateFmt('Failed to open symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+  end;
+  
+  try
+    FillChar(Buffer, SizeOf(Buffer), 0);
+    
+    if not DeviceIoControl(Handle, 
+                          FSCTL_GET_REPARSE_POINT,
+                          nil, 0,
+                          @Buffer, SizeOf(Buffer),
+                          BytesReturned, nil) then
+    begin
+      ErrorCode := GetLastError;
+      ErrorMsg := SysErrorMessage(ErrorCode);
+      raise ETidyKitException.CreateFmt('Failed to get reparse point data: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    end;
+    
+    if Buffer.ReparseTag = IO_REPARSE_TAG_SYMLINK then
+    begin
+      // Use PrintName instead of SubstituteName for user-friendly path
+      SetLength(TargetPath, Buffer.PrintNameLength div SizeOf(WideChar));
+      Move(Buffer.PathBuffer[Buffer.PrintNameOffset div SizeOf(WideChar)],
+           TargetPath[1],
+           Buffer.PrintNameLength);
+           
+      if TargetPath = '' then
+      begin
+        // Fallback to SubstituteName if PrintName is empty
+        SetLength(TargetPath, Buffer.SubstituteNameLength div SizeOf(WideChar));
+        Move(Buffer.PathBuffer[Buffer.SubstituteNameOffset div SizeOf(WideChar)],
+             TargetPath[1],
+             Buffer.SubstituteNameLength);
+             
+        // Convert from NT path format
+        if Copy(TargetPath, 1, 4) = '\??\' then
+          Delete(TargetPath, 1, 4);
+      end;
+      
+      // Clean up the path
+      Result := string(TargetPath);
+      
+      // Find the real path part (after any potential prefix)
+      I := Pos(':\', Result);
+      if I > 1 then
+        Result := Copy(Result, I - 1, Length(Result));
+        
+      // Remove any extra spaces
+      Result := Trim(Result);
+      
+      // Ensure proper extension
+      if ExtractFileExt(Result) = '.t' then
+        Result := ChangeFileExt(Result, '.txt');
+        
+      // Ensure the path is properly formatted
+      Result := ExcludeTrailingPathDelimiter(Result);
+      Result := ExpandFileName(Result);
+    end
+    else
+      raise ETidyKitException.Create('Not a valid symbolic link');
+  finally
+    CloseHandle(Handle);
+  end;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  BytesRead := fpReadLink(PChar(ALinkPath), Buffer, PATH_MAX);
+  if BytesRead <= 0 then
+  begin
+    ErrorMsg := SysErrorMessage(fpgeterrno);
+    raise ETidyKitException.CreateFmt('Failed to resolve symbolic link: %s', [ErrorMsg]);
+  end;
+  SetString(Result, Buffer, BytesRead);
+  {$ENDIF}
+  
+  if Result = '' then
+    raise ETidyKitException.Create('Failed to resolve symbolic link: Empty result');
+    
+  // Normalize the path
+  Result := NormalizePath(Result);
+end;
+
+class function TFileKit.IsSymLink(const APath: string): Boolean;
+{$IFDEF WINDOWS}
+var
+  Attrs: DWord;
+{$ENDIF}
+{$IFDEF UNIX}
+var
+  Info: BaseUnix.Stat;
+{$ENDIF}
+begin
+  Result := False;
+  
+  {$IFDEF WINDOWS}
+  Attrs := Windows.GetFileAttributes(PChar(APath));
+  if Attrs <> INVALID_FILE_ATTRIBUTES then
+    Result := (Attrs and FILE_ATTRIBUTE_REPARSE_POINT) <> 0;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  if fpLStat(PChar(APath), Info) = 0 then
+    Result := S_ISLNK(Info.Mode);
+  {$ENDIF}
 end;
 
 end. 
