@@ -15,14 +15,17 @@ uses
   Classes, SysUtils, DateUtils, TidyKit.Core;
 
 const
+  DEBUG_MODE = False; // Global flag to enable/disable detailed debugging output for file operations
+  
   {$IFDEF WINDOWS}
-  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;
-  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;
-  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;
-  FILE_NAME_NORMALIZED = $0;
+  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Windows API flag: target is a directory
+  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;  // Windows API flag: allow non-admin symlink creation
+  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;           // Windows API flag: open symlink itself, not target
+  FILE_NAME_NORMALIZED = $0;                          // Windows API flag: get normalized path without . or .. components
   {$ENDIF}
+  
   {$IFDEF UNIX}
-  PATH_MAX = 4096;
+  PATH_MAX = 4096;  // Maximum length of a file path on Unix/Linux systems (includes null terminator)
   {$ENDIF}
 
 {$IFDEF WINDOWS}
@@ -770,26 +773,30 @@ begin
   Result.IsDirectory := DirectoryExists(NormalPath);
   Result.Attributes := GetFileAttributes(NormalPath);
   
-  WriteLn('CreateSearchResult: Processing file: ', NormalPath);
+  if DEBUG_MODE then
+    WriteLn('CreateSearchResult: Processing file: ', NormalPath);
   
   Found := FindFirst(NormalPath, faAnyFile, SearchRec) = 0;
   try
     if Found then
     begin
-      WriteLn('CreateSearchResult: Found file with size: ', SearchRec.Size);
+      if DEBUG_MODE then
+        WriteLn('CreateSearchResult: Found file with size: ', SearchRec.Size);
       Result.Size := SearchRec.Size;
       Result.LastModified := FileDateToDateTime(SearchRec.Time);
     end
     else
     begin
-      WriteLn('CreateSearchResult: Could not find file: ', NormalPath);
+      if DEBUG_MODE then
+        WriteLn('CreateSearchResult: Could not find file: ', NormalPath);
     end;
   finally
     if Found then
       FindClose(SearchRec);
   end;
   
-  WriteLn('CreateSearchResult: Final result - Name: ', Result.FileName, ' Size: ', Result.Size);
+  if DEBUG_MODE then
+    WriteLn('CreateSearchResult: Final result - Name: ', Result.FileName, ' Size: ', Result.Size);
   NormalPath := '';
 end;
 
@@ -1009,18 +1016,21 @@ begin
     Exit;
     
   NormalPath := NormalizePath(APath);
-  WriteLn('GetSize: Getting size for file: ', NormalPath);
+  if DEBUG_MODE then
+    WriteLn('GetSize: Getting size for file: ', NormalPath);
   
   Found := FindFirst(NormalPath, faAnyFile, SearchRec) = 0;
   try
     if Found then
     begin
       Result := SearchRec.Size;
-      WriteLn('GetSize: Found file with size: ', Result);
+      if DEBUG_MODE then
+        WriteLn('GetSize: Found file with size: ', Result);
     end
     else
     begin
-      WriteLn('GetSize: Could not find file: ', NormalPath);
+      if DEBUG_MODE then
+        WriteLn('GetSize: Could not find file: ', NormalPath);
     end;
   finally
     if Found then
@@ -1107,37 +1117,47 @@ var
   I: Integer;
 begin
   SetLength(Result, 0);
-  
-  WriteLn('SearchFiles: Starting search');
-  WriteLn('SearchFiles: Input path = ', APath);
-  WriteLn('SearchFiles: Pattern = ', APattern);
-  WriteLn('SearchFiles: Recursive = ', Recursive);
+
+  if DEBUG_MODE then
+  begin
+    WriteLn('SearchFiles: Starting search');
+    WriteLn('SearchFiles: Input path = ', APath);
+    WriteLn('SearchFiles: Pattern = ', APattern);
+    WriteLn('SearchFiles: Recursive = ', Recursive);
+  end;
   
   if DirectoryExists(APath) then
   begin
     SearchDir := APath;
-    WriteLn('SearchFiles: Using directory path = ', SearchDir);
+    if DEBUG_MODE then
+      WriteLn('SearchFiles: Using directory path = ', SearchDir);
   end
   else if APath <> '' then
   begin
     SearchDir := ExtractFilePath(ExpandFileName(APath));
-    WriteLn('SearchFiles: Using extracted path = ', SearchDir);
+    if DEBUG_MODE then
+      WriteLn('SearchFiles: Using extracted path = ', SearchDir);
   end
   else
   begin
     SearchDir := GetCurrentDir;
-    WriteLn('SearchFiles: Using current directory = ', SearchDir);
+    if DEBUG_MODE then
+      WriteLn('SearchFiles: Using current directory = ', SearchDir);
   end;
     
   Result := SearchFilesIn(SearchDir, APattern, Recursive);
-  WriteLn('SearchFiles: Found ', Length(Result), ' files');
+  if DEBUG_MODE then
+    WriteLn('SearchFiles: Found ', Length(Result), ' files');
   
   // Debug output for found files
-  for I := 0 to High(Result) do
+  if DEBUG_MODE then
   begin
-    WriteLn('SearchFiles: File[', I, '] = ', Result[I].FileName);
-    WriteLn('SearchFiles: Path[', I, '] = ', Result[I].FullPath);
-    WriteLn('SearchFiles: Size[', I, '] = ', Result[I].Size);
+    for I := 0 to High(Result) do
+    begin
+      WriteLn('SearchFiles: File[', I, '] = ', Result[I].FileName);
+      WriteLn('SearchFiles: Path[', I, '] = ', Result[I].FullPath);
+      WriteLn('SearchFiles: Size[', I, '] = ', Result[I].Size);
+    end;
   end;
 end;
 
@@ -1155,20 +1175,25 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
     SetLength(Result, 0);
     NDir := NormalizePath(RawDir);
     
-    WriteLn('SearchFilesIn: Searching in directory: ', NDir);
-    WriteLn('SearchFilesIn: Pattern: ', Pat);
-    WriteLn('SearchFilesIn: Recursive: ', Rec);
+    if DEBUG_MODE then
+    begin
+      WriteLn('SearchFilesIn: Searching in directory: ', NDir);
+      WriteLn('SearchFilesIn: Pattern: ', Pat);
+      WriteLn('SearchFilesIn: Recursive: ', Rec);
+    end;
     
     if Visited.IndexOf(NDir) >= 0 then
     begin
-      WriteLn('SearchFilesIn: Directory already visited: ', NDir);
+      if DEBUG_MODE then
+        WriteLn('SearchFilesIn: Directory already visited: ', NDir);
       Exit;
     end;
     Visited.Add(NDir);
 
     if not DirectoryExists(NDir) then
     begin
-      WriteLn('SearchFilesIn: Directory does not exist: ', NDir);
+      if DEBUG_MODE then
+        WriteLn('SearchFilesIn: Directory does not exist: ', NDir);
       Exit;
     end;
     
@@ -1184,16 +1209,21 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
             FullPath := IncludeTrailingPathDelimiter(NDir) + SearchRec.Name;
             if (SearchRec.Attr and faDirectory) = 0 then
             begin
-              WriteLn('SearchFilesIn: Found file: ', SearchRec.Name, ' in ', NDir);
-              WriteLn('SearchFilesIn: File size: ', SearchRec.Size);
+              if DEBUG_MODE then
+              begin
+                WriteLn('SearchFilesIn: Found file: ', SearchRec.Name, ' in ', NDir);
+                WriteLn('SearchFilesIn: File size: ', SearchRec.Size);
+              end;
               OldLen := Length(Result);
               SetLength(Result, OldLen + 1);
               Result[OldLen] := CreateSearchResult(FullPath);
-              WriteLn('SearchFilesIn: Added file with size: ', Result[OldLen].Size);
+              if DEBUG_MODE then
+                WriteLn('SearchFilesIn: Added file with size: ', Result[OldLen].Size);
             end
             else if Rec then
             begin
-              WriteLn('SearchFilesIn: Found subdirectory: ', SearchRec.Name);
+              if DEBUG_MODE then
+                WriteLn('SearchFilesIn: Found subdirectory: ', SearchRec.Name);
               SubDirs.Add(FullPath);
             end;
           end;
@@ -1215,7 +1245,8 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
                ((SearchRec.Attr and faSymLink) = 0) then
             begin
               FullPath := IncludeTrailingPathDelimiter(NDir) + SearchRec.Name;
-              WriteLn('SearchFilesIn: Found directory for recursive search: ', SearchRec.Name);
+              if DEBUG_MODE then
+                WriteLn('SearchFilesIn: Found directory for recursive search: ', SearchRec.Name);
               SubDirs.Add(FullPath);
             end;
             Found := FindNext(SearchRec) = 0;
@@ -1225,20 +1256,31 @@ class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const 
         end;
 
         // Process subdirectories
+        if DEBUG_MODE then
         WriteLn('SearchFilesIn: Processing ', SubDirs.Count, ' subdirectories');
+        
         for I := 0 to SubDirs.Count - 1 do
         begin
-          WriteLn('SearchFilesIn: Recursing into subdirectory: ', SubDirs[I]);
+        
+          if DEBUG_MODE then
+            WriteLn('SearchFilesIn: Recursing into subdirectory: ', SubDirs[I]);
+        
           SubResults := DoSearch(SubDirs[I], Pat, True, Visited);
           if Length(SubResults) > 0 then
           begin
-            WriteLn('SearchFilesIn: Found ', Length(SubResults), ' files in subdirectory');
+        
+            if DEBUG_MODE then
+              WriteLn('SearchFilesIn: Found ', Length(SubResults), ' files in subdirectory');
+        
             OldLen := Length(Result);
             SetLength(Result, OldLen + Length(SubResults));
             for J := 0 to High(SubResults) do
             begin
               Result[OldLen + J] := SubResults[J];
-              WriteLn('SearchFilesIn: Added file from subdirectory: ', Result[OldLen + J].FileName, ' Size: ', Result[OldLen + J].Size);
+        
+              if DEBUG_MODE then
+                WriteLn('SearchFilesIn: Added file from subdirectory: ', Result[OldLen + J].FileName, ' Size: ', Result[OldLen + J].Size);
+        
             end;
           end;
           SetLength(SubResults, 0);
@@ -1261,13 +1303,18 @@ begin
     VisitedDirs.Sorted := True;
     VisitedDirs.Duplicates := dupIgnore;
     Result := DoSearch(ADirectory, APattern, Recursive, VisitedDirs);
-    WriteLn('SearchFilesIn: Total files found: ', Length(Result));
-    for I := 0 to High(Result) do
+    
+    if DEBUG_MODE then
     begin
-      WriteLn('SearchFilesIn: Final file[', I, '] = ', Result[I].FileName);
-      WriteLn('SearchFilesIn: Final path[', I, '] = ', Result[I].FullPath);
-      WriteLn('SearchFilesIn: Final size[', I, '] = ', Result[I].Size);
+      WriteLn('SearchFilesIn: Total files found: ', Length(Result));
+      for I := 0 to High(Result) do
+      begin
+        WriteLn('SearchFilesIn: Final file[', I, '] = ', Result[I].FileName);
+        WriteLn('SearchFilesIn: Final path[', I, '] = ', Result[I].FullPath);
+        WriteLn('SearchFilesIn: Final size[', I, '] = ', Result[I].Size);
+      end;
     end;
+  
   finally
     VisitedDirs.Free;
   end;
@@ -1292,7 +1339,10 @@ begin
         if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
            ((SearchRec.Attr and faDirectory) = 0) then
         begin
-          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+
+          if DEBUG_MODE then
+            WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+        
           if (Result = '') or (FileDateToDateTime(SearchRec.Time) > NewestTime) then
           begin
             Result := SearchRec.Name;
@@ -1313,7 +1363,10 @@ begin
       begin
         if not Files[I].IsDirectory then
         begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
+
+          if DEBUG_MODE then
+            WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
+        
           if (Result = '') or (Files[I].LastModified > NewestTime) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
@@ -1346,7 +1399,10 @@ begin
         if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') and 
            ((SearchRec.Attr and faDirectory) = 0) then
         begin
-          WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+
+          if DEBUG_MODE then
+            WriteLn('Checking file: ', SearchRec.Name, ' Time: ', DateTimeToStr(FileDateToDateTime(SearchRec.Time)));
+        
           if (Result = '') or (FileDateToDateTime(SearchRec.Time) < OldestTime) then
           begin
             Result := SearchRec.Name;
@@ -1367,7 +1423,10 @@ begin
       begin
         if not Files[I].IsDirectory then
         begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
+
+          if DEBUG_MODE then
+            WriteLn('Checking file (recursive): ', Files[I].FileName, ' Time: ', DateTimeToStr(Files[I].LastModified));
+        
           if (Result = '') or (Files[I].LastModified < OldestTime) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
@@ -1402,7 +1461,10 @@ begin
            ((SearchRec.Attr and faDirectory) = 0) then
         begin
           FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-          WriteLn('Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+
+          if DEBUG_MODE then
+            WriteLn('Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+          
           if (Result = '') or (GetSize(FullPath) > LargestSize) then
           begin
             Result := SearchRec.Name;
@@ -1423,7 +1485,10 @@ begin
       begin
         if not Files[I].IsDirectory then
         begin
-          WriteLn('Checking file (recursive): ', Files[I].FileName, ' Size: ', Files[I].Size);
+          
+          if DEBUG_MODE then
+            WriteLn('Checking file (recursive): ', Files[I].FileName, ' Size: ', Files[I].Size);
+          
           if (Result = '') or (Files[I].Size > LargestSize) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
@@ -1448,8 +1513,11 @@ begin
   Result := '';
   SmallestSize := High(Int64);
   
-  WriteLn('FindSmallestFile: Starting search in ', APath, ' with pattern ', APattern);
-  WriteLn('FindSmallestFile: Recursive = ', Recursive);
+  if DEBUG_MODE then
+  begin
+    WriteLn('FindSmallestFile: Starting search in ', APath, ' with pattern ', APattern);
+    WriteLn('FindSmallestFile: Recursive = ', Recursive);
+  end;
   
   if not Recursive then
   begin
@@ -1461,12 +1529,18 @@ begin
            ((SearchRec.Attr and faDirectory) = 0) then
         begin
           FullPath := IncludeTrailingPathDelimiter(APath) + SearchRec.Name;
-          WriteLn('FindSmallestFile: Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+          
+          if DEBUG_MODE then
+            WriteLn('FindSmallestFile: Checking file: ', SearchRec.Name, ' Size: ', GetSize(FullPath));
+          
           if (Result = '') or (GetSize(FullPath) < SmallestSize) then
           begin
             Result := SearchRec.Name;
             SmallestSize := GetSize(FullPath);
-            WriteLn('FindSmallestFile: New smallest file found: ', Result, ' Size: ', SmallestSize);
+            
+            if DEBUG_MODE then
+              WriteLn('FindSmallestFile: New smallest file found: ', Result, ' Size: ', SmallestSize);
+          
           end;
         end;
       until FindNext(SearchRec) <> 0;
@@ -1479,25 +1553,37 @@ begin
     // Recursive search using SearchFiles
     Files := SearchFiles(APath, APattern, True);
     try
-      WriteLn('FindSmallestFile: Found ', Length(Files), ' files in recursive search');
+
+      if DEBUG_MODE then
+        WriteLn('FindSmallestFile: Found ', Length(Files), ' files in recursive search');
+    
       for I := 0 to High(Files) do
       begin
         if not Files[I].IsDirectory then
         begin
-          WriteLn('FindSmallestFile: Checking file (recursive): ', Files[I].FileName, 
-                 ' Path: ', Files[I].FullPath,
-                 ' Size: ', Files[I].Size);
+
+          if DEBUG_MODE then
+            WriteLn('FindSmallestFile: Checking file (recursive): ', Files[I].FileName, 
+                   ' Path: ', Files[I].FullPath,
+                   ' Size: ', Files[I].Size);
+          
           if (Result = '') or (Files[I].Size < SmallestSize) then
           begin
             Result := ExtractFileName(Files[I].FullPath);
             SmallestSize := Files[I].Size;
-            WriteLn('FindSmallestFile: New smallest file found: ', Result, ' Size: ', SmallestSize);
+            
+            if DEBUG_MODE then
+              WriteLn('FindSmallestFile: New smallest file found: ', Result, ' Size: ', SmallestSize);
+          
           end
           else if (Files[I].Size = SmallestSize) and (ExtractFileName(Files[I].FullPath) < Result) then
           begin
             // If sizes are equal, use alphabetical order
             Result := ExtractFileName(Files[I].FullPath);
-            WriteLn('FindSmallestFile: Found equal size file, using alphabetical order: ', Result);
+            
+            if DEBUG_MODE then
+              WriteLn('FindSmallestFile: Found equal size file, using alphabetical order: ', Result);
+          
           end;
         end;
       end;
@@ -1506,7 +1592,8 @@ begin
     end;
   end;
   
-  WriteLn('FindSmallestFile: Final result = ', Result, ' with size = ', SmallestSize);
+  if DEBUG_MODE then
+    WriteLn('FindSmallestFile: Final result = ', Result, ' with size = ', SmallestSize);
 end;
 
 class function TFileKit.GetUserDir: string;
@@ -1753,7 +1840,6 @@ class function TFileKit.ListFiles(const APath: string;
 var
   SearchRec: TSearchRec;
   FileList: TStringList;
-  SubDirs: TFilePathArray;
   SubFiles: TFilePathArray;
   NormalizedPath: string;
   FullPath: string;
