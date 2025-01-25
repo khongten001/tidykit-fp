@@ -15,15 +15,17 @@ uses
   Classes, SysUtils, DateUtils, TidyKit.Core;
 
 const
-  DEBUG_MODE = False;
+  DEBUG_MODE = False; // Global flag to enable/disable detailed debugging output for file operations
+  
   {$IFDEF WINDOWS}
-  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;
-  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;
-  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;
-  FILE_NAME_NORMALIZED = $0;
+  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Windows API flag: target is a directory
+  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;  // Windows API flag: allow non-admin symlink creation
+  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;           // Windows API flag: open symlink itself, not target
+  FILE_NAME_NORMALIZED = $0;                          // Windows API flag: get normalized path without . or .. components
   {$ENDIF}
+  
   {$IFDEF UNIX}
-  PATH_MAX = 4096;
+  PATH_MAX = 4096;  // Maximum length of a file path on Unix/Linux systems (includes null terminator)
   {$ENDIF}
 
 {$IFDEF WINDOWS}
