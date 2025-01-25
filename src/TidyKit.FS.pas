@@ -12,10 +12,10 @@ uses
   {$IFDEF WINDOWS}
   Windows,   // Windows API units for interacting with the Windows operating system
   {$ENDIF}
-  Classes, SysUtils, DateUtils, TidyKit.Core;
+  Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils;
 
 const
-  DEBUG_MODE = False; // Global flag to enable/disable detailed debugging output for file operations
+  DEBUG_MODE = True; // Enable debugging output
   
   {$IFDEF WINDOWS}
   SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Windows API flag: target is a directory
@@ -568,6 +568,15 @@ type
       Returns:
         True if the path is a symbolic link. }
     class function IsSymLink(const APath: string): Boolean; static;
+
+    { Compresses files into a ZIP archive. }
+    class procedure CompressToZip(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*'); static;
+    { Decompresses files from a ZIP archive. }
+    class procedure DecompressFromZip(const AZipPath, ADestPath: string; const Pattern: string = '*'); static;
+    { Compresses files into a TAR archive. }
+    class procedure CompressToTar(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*'); static;
+    { Decompresses files from a TAR archive. }
+    class procedure DecompressFromTar(const ATarPath, ADestPath: string; const Pattern: string = '*'); static;
   end;
 
 implementation
@@ -575,6 +584,7 @@ implementation
 { Forward declarations }
 function CompareByDate(List: TStringList; Index1, Index2: Integer): Integer; forward;
 function CompareBySize(List: TStringList; Index1, Index2: Integer): Integer; forward;
+function MatchPattern(const FileName, Pattern: string): Boolean; forward;
 
 { Platform-specific helper functions }
 
@@ -2151,6 +2161,322 @@ begin
   if fpLStat(PChar(APath), Info) = 0 then
     Result := S_ISLNK(Info.Mode);
   {$ENDIF}
+end;
+
+class procedure TFileKit.CompressToZip(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*');
+var
+  Zipper: TZipper;
+  Files: TFilePathArray;
+  I: Integer;
+  BaseDir: string;
+begin
+  if DEBUG_MODE then
+    WriteLn('CompressToZip: Starting compression of ', APath, ' to ', ADestPath);
+    
+  BaseDir := IncludeTrailingPathDelimiter(ExpandFileName(APath));
+  
+  if DEBUG_MODE then
+    WriteLn('CompressToZip: Base directory is ', BaseDir);
+  
+  Zipper := TZipper.Create;
+  try
+    Zipper.FileName := ADestPath;
+    Files := ListFiles(APath, Pattern, Recursive);
+    
+    if DEBUG_MODE then
+      WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
+    
+    // Add each file with its relative path
+    for I := 0 to High(Files) do
+    begin
+      if DEBUG_MODE then
+        WriteLn('CompressToZip: Adding file ', Files[I]);
+        
+      // Store only the relative path in the ZIP
+      Zipper.Entries.AddFileEntry(
+        Files[I],  // Actual file to read
+        ExtractRelativePath(BaseDir, Files[I])  // Path to store in ZIP
+      );
+    end;
+    
+    if DEBUG_MODE then
+      WriteLn('CompressToZip: Creating ZIP file');
+      
+    Zipper.ZipAllFiles;  // This will create the ZIP file
+    
+    if DEBUG_MODE then
+      WriteLn('CompressToZip: ZIP file created successfully');
+  finally
+    Zipper.Free;  // This will close all resources
+    if DEBUG_MODE then
+      WriteLn('CompressToZip: Resources freed');
+  end;
+end;
+
+class procedure TFileKit.DecompressFromZip(const AZipPath, ADestPath: string; const Pattern: string = '*');
+var
+  UnZipper: TUnZipper;
+  DestDir: string;
+begin
+  if DEBUG_MODE then
+    WriteLn('DecompressFromZip: Starting decompression of ', AZipPath, ' to ', ADestPath);
+    
+  // Ensure absolute, normalized path with trailing delimiter
+  DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
+  
+  if DEBUG_MODE then
+    WriteLn('DecompressFromZip: Destination directory is ', DestDir);
+    
+  if not ForceDirectories(DestDir) then
+  begin
+    if DEBUG_MODE then
+      WriteLn('DecompressFromZip: Failed to create destination directory');
+    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
+  end;
+  
+  if not FileExists(AZipPath) then
+  begin
+    if DEBUG_MODE then
+      WriteLn('DecompressFromZip: ZIP file not found');
+    raise ETidyKitException.CreateFmt('ZIP file not found: %s', [AZipPath]);
+  end;
+  
+  UnZipper := TUnZipper.Create;
+  try
+    UnZipper.FileName := AZipPath;
+    UnZipper.OutputPath := ExcludeTrailingPathDelimiter(DestDir);  // UnZipper adds its own delimiter
+    
+    if DEBUG_MODE then
+      WriteLn('DecompressFromZip: Examining ZIP file');
+      
+    UnZipper.Examine;  // Read the ZIP directory
+    
+    if DEBUG_MODE then
+    begin
+      WriteLn('DecompressFromZip: Found ', UnZipper.Entries.Count, ' entries');
+      WriteLn('DecompressFromZip: Output path is ', UnZipper.OutputPath);
+    end;
+      
+    UnZipper.UnZipAllFiles;  // Extract all files
+    
+    if DEBUG_MODE then
+      WriteLn('DecompressFromZip: Files extracted successfully');
+  finally
+    UnZipper.Free;  // This will close all resources
+    if DEBUG_MODE then
+      WriteLn('DecompressFromZip: Resources freed');
+  end;
+end;
+
+class procedure TFileKit.CompressToTar(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*');
+var
+  TarWriter: TTarWriter;
+  Files: TFilePathArray;
+  I: Integer;
+  BaseDir: string;
+  FileStream: TFileStream;
+  TarFileName: string;
+begin
+  if DEBUG_MODE then
+    WriteLn('CompressToTar: Starting compression of ', APath, ' to ', ADestPath);
+    
+  BaseDir := IncludeTrailingPathDelimiter(ExpandFileName(APath));
+  TarFileName := ExpandFileName(ADestPath);  // Get full path of TAR file
+  
+  if DEBUG_MODE then
+    WriteLn('CompressToTar: Base directory is ', BaseDir);
+  
+  // Delete existing file if it exists
+  if FileExists(TarFileName) then
+  begin
+    if DEBUG_MODE then
+      WriteLn('CompressToTar: Deleting existing TAR file');
+    DeleteFile(TarFileName);
+  end;
+  
+  // Get files before creating TAR
+  Files := ListFiles(APath, Pattern, Recursive);
+  
+  // Filter out the TAR file itself from the list
+  for I := High(Files) downto 0 do
+  begin
+    if SameFileName(Files[I], TarFileName) then
+    begin
+      if DEBUG_MODE then
+        WriteLn('CompressToTar: Excluding TAR file from archive');
+      Delete(Files, I, 1);
+    end;
+  end;
+  
+  if DEBUG_MODE then
+    WriteLn('CompressToTar: Found ', Length(Files), ' files to compress');
+  
+  // Create output file with exclusive access
+  try
+    FileStream := TFileStream.Create(TarFileName, fmCreate or fmShareExclusive);
+  except
+    on E: Exception do
+    begin
+      if DEBUG_MODE then
+        WriteLn('CompressToTar: Failed to create TAR file - ', E.Message);
+      raise ETidyKitException.CreateFmt('Failed to create TAR file: %s - %s', [TarFileName, E.Message]);
+    end;
+  end;
+  
+  try
+    if DEBUG_MODE then
+      WriteLn('CompressToTar: Creating TAR writer');
+      
+    TarWriter := TTarWriter.Create(FileStream);
+    try
+      // Add each file with its relative path
+      for I := 0 to High(Files) do
+      begin
+        if DEBUG_MODE then
+          WriteLn('CompressToTar: Adding file ', Files[I]);
+          
+        // Store only the relative path in the TAR
+        TarWriter.AddFile(
+          Files[I],  // Actual file to read
+          ExtractRelativePath(BaseDir, Files[I])  // Path to store in TAR
+        );
+      end;
+      
+      if DEBUG_MODE then
+        WriteLn('CompressToTar: Writing TAR footer');
+        
+      TarWriter.Finalize;  // Write TAR footer
+      
+      if DEBUG_MODE then
+        WriteLn('CompressToTar: TAR file created successfully');
+    finally
+      TarWriter.Free;
+      if DEBUG_MODE then
+        WriteLn('CompressToTar: TAR writer freed');
+    end;
+  finally
+    FileStream.Free;
+    if DEBUG_MODE then
+      WriteLn('CompressToTar: File stream freed');
+  end;
+end;
+
+class procedure TFileKit.DecompressFromTar(const ATarPath, ADestPath: string; const Pattern: string = '*');
+var
+  TarArchive: TTarArchive;
+  DirRec: TTarDirRec;
+  OutputFile: string;
+  DestDir: string;
+  FileStream: TFileStream;
+begin
+  if DEBUG_MODE then
+    WriteLn('DecompressFromTar: Starting decompression of ', ATarPath, ' to ', ADestPath);
+    
+  // Ensure absolute, normalized path with trailing delimiter
+  DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
+  
+  if DEBUG_MODE then
+    WriteLn('DecompressFromTar: Destination directory is ', DestDir);
+    
+  if not ForceDirectories(DestDir) then
+  begin
+    if DEBUG_MODE then
+      WriteLn('DecompressFromTar: Failed to create destination directory');
+    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
+  end;
+  
+  if not FileExists(ATarPath) then
+  begin
+    if DEBUG_MODE then
+      WriteLn('DecompressFromTar: TAR file not found');
+    raise ETidyKitException.CreateFmt('TAR file not found: %s', [ATarPath]);
+  end;
+  
+  // Open TAR file with shared read access
+  try
+    FileStream := TFileStream.Create(ATarPath, fmOpenRead or fmShareDenyWrite);
+  except
+    on E: Exception do
+    begin
+      if DEBUG_MODE then
+        WriteLn('DecompressFromTar: Failed to open TAR file - ', E.Message);
+      raise ETidyKitException.CreateFmt('Failed to open TAR file: %s - %s', [ATarPath, E.Message]);
+    end;
+  end;
+  
+  try
+    if DEBUG_MODE then
+      WriteLn('DecompressFromTar: Creating TAR archive reader');
+      
+    TarArchive := TTarArchive.Create(FileStream);
+    try
+      if DEBUG_MODE then
+        WriteLn('DecompressFromTar: Reading TAR entries');
+        
+      while TarArchive.FindNext(DirRec) do
+      begin
+        if MatchPattern(DirRec.Name, Pattern) then
+        begin
+          // Combine destination directory with relative path from TAR
+          OutputFile := DestDir + DirRec.Name;
+          
+          if DEBUG_MODE then
+            WriteLn('DecompressFromTar: Extracting file ', DirRec.Name, ' to ', OutputFile);
+            
+          if not ForceDirectories(ExtractFilePath(OutputFile)) then
+          begin
+            if DEBUG_MODE then
+              WriteLn('DecompressFromTar: Failed to create directory for file');
+            raise ETidyKitException.CreateFmt('Failed to create directory: %s', [ExtractFilePath(OutputFile)]);
+          end;
+          
+          if DirRec.FileType = ftNormal then
+          begin
+            try
+              TarArchive.ReadFile(OutputFile);
+              if DEBUG_MODE then
+                WriteLn('DecompressFromTar: File extracted successfully');
+            except
+              on E: Exception do
+              begin
+                if DEBUG_MODE then
+                  WriteLn('DecompressFromTar: Failed to extract file - ', E.Message);
+                raise ETidyKitException.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
+              end;
+            end;
+          end;
+        end;
+      end;
+      
+      if DEBUG_MODE then
+        WriteLn('DecompressFromTar: All files extracted successfully');
+    finally
+      TarArchive.Free;
+      if DEBUG_MODE then
+        WriteLn('DecompressFromTar: TAR archive reader freed');
+    end;
+  finally
+    FileStream.Free;
+    if DEBUG_MODE then
+      WriteLn('DecompressFromTar: File stream freed');
+  end;
+end;
+
+function MatchPattern(const FileName, Pattern: string): Boolean;
+begin
+  Result := False;
+  if Pattern = '*' then
+    Exit(True);
+    
+  // Simple wildcard matching for now
+  if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
+    Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
+  else if Pattern[1] = '*' then
+    Result := AnsiEndsText(Copy(Pattern, 2, MaxInt), FileName)
+  else if Pattern[Length(Pattern)] = '*' then
+    Result := AnsiStartsText(Copy(Pattern, 1, Length(Pattern)-1), FileName)
+  else
+    Result := AnsiSameText(Pattern, FileName);
 end;
 
 end. 

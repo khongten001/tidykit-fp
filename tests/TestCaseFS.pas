@@ -86,6 +86,11 @@ type
     procedure Test41_DeleteSymLink;
     procedure Test42_ResolveSymLink;
     procedure Test43_IsSymLink;
+    // Compression and decompression tests
+    procedure Test44_CompressToZip;
+    procedure Test45_DecompressFromZip;
+    procedure Test46_CompressToTar;
+    procedure Test47_DecompressFromTar;
   end;
 
 implementation
@@ -510,19 +515,14 @@ end;
 procedure TFSTests.Test26_SearchFiles;
 var
   Results: TSearchResults;
-  SR: TSearchRec;
   SubDir: string;
 begin
-  WriteLn('Test26_SearchFiles:Starting');
-  // Clean up any existing txt files
-  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
-  try
-    repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
-  end;
+  WriteLn('Test26_SearchFiles: Starting');
+  
+  // Clean up the entire test directory first
+  if DirectoryExists(FTestDir) then
+    TFileKit.DeleteDirectory(FTestDir, True);
+  ForceDirectories(FTestDir);
 
   // Create test files in root directory
   TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
@@ -551,7 +551,7 @@ begin
   finally
     SetLength(Results, 0);
   end;
-  WriteLn('Test26_SearchFiles:Finished');
+  WriteLn('Test26_SearchFiles: Finished');
 end;
 
 procedure TFSTests.Test27_FindLastModifiedFile;
@@ -1596,6 +1596,122 @@ begin
   end;
 
   WriteLn('Test43_IsSymLink: Finished');
+end;
+
+procedure TFSTests.Test44_CompressToZip;
+var
+  ZipFile: string;
+  TestContent: string;
+begin
+  WriteLn('Test44_CompressToZip: Starting');
+  ZipFile := FTestDir + PathDelim + 'test.zip';
+  TestContent := 'Test Content';
+  
+  // Clean up any existing files
+  if FileExists(ZipFile) then
+    DeleteFile(ZipFile);
+  if FileExists(FTestFile) then
+    DeleteFile(FTestFile);
+    
+  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.CompressToZip(FTestDir, ZipFile);
+  AssertTrue('ZIP file should be created', FileExists(ZipFile));
+  WriteLn('Test44_CompressToZip: Finished');
+end;
+
+procedure TFSTests.Test45_DecompressFromZip;
+var
+  ZipFile: string;
+  ExtractDir: string;
+  TestContent: string;
+  ExtractedFile: string;
+begin
+  WriteLn('Test45_DecompressFromZip: Starting');
+  ZipFile := FTestDir + PathDelim + 'test.zip';
+  ExtractDir := FTestDir + PathDelim + 'extracted';
+  TestContent := 'Test Content';
+  ExtractedFile := ExtractDir + PathDelim + 'test.txt';
+  
+  // Clean up any existing files
+  if FileExists(ZipFile) then
+    DeleteFile(ZipFile);
+  if DirectoryExists(ExtractDir) then
+    RemoveDir(ExtractDir);
+  if FileExists(FTestFile) then
+    DeleteFile(FTestFile);
+    
+  // Create test file and compress it
+  ForceDirectories(ExtractDir);
+  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.CompressToZip(FTestDir, ZipFile);
+  
+  // Verify ZIP was created
+  AssertTrue('ZIP file should be created', FileExists(ZipFile));
+  
+  // Extract and verify
+  TFileKit.DecompressFromZip(ZipFile, ExtractDir);
+  AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
+  AssertEquals('Extracted content should match original',
+    TestContent, TFileKit.ReadFile(ExtractedFile));
+  WriteLn('Test45_DecompressFromZip: Finished');
+end;
+
+procedure TFSTests.Test46_CompressToTar;
+var
+  TarFile: string;
+  TestContent: string;
+begin
+  WriteLn('Test46_CompressToTar: Starting');
+  TarFile := FTestDir + PathDelim + 'test.tar';
+  TestContent := 'Test Content';
+  
+  // Clean up any existing files
+  if FileExists(TarFile) then
+    DeleteFile(TarFile);
+  if FileExists(FTestFile) then
+    DeleteFile(FTestFile);
+    
+  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.CompressToTar(FTestDir, TarFile);
+  AssertTrue('TAR file should be created', FileExists(TarFile));
+  WriteLn('Test46_CompressToTar: Finished');
+end;
+
+procedure TFSTests.Test47_DecompressFromTar;
+var
+  TarFile: string;
+  ExtractDir: string;
+  TestContent: string;
+  ExtractedFile: string;
+begin
+  WriteLn('Test47_DecompressFromTar: Starting');
+  TarFile := FTestDir + PathDelim + 'test.tar';
+  ExtractDir := FTestDir + PathDelim + 'extracted';
+  TestContent := 'Test Content';
+  ExtractedFile := ExtractDir + PathDelim + 'test.txt';
+  
+  // Clean up any existing files
+  if FileExists(TarFile) then
+    DeleteFile(TarFile);
+  if DirectoryExists(ExtractDir) then
+    RemoveDir(ExtractDir);
+  if FileExists(FTestFile) then
+    DeleteFile(FTestFile);
+    
+  // Create test file and compress it
+  ForceDirectories(ExtractDir);
+  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.CompressToTar(FTestDir, TarFile);
+  
+  // Verify TAR was created
+  AssertTrue('TAR file should be created', FileExists(TarFile));
+  
+  // Extract and verify
+  TFileKit.DecompressFromTar(TarFile, ExtractDir);
+  AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
+  AssertEquals('Extracted content should match original',
+    TestContent, TFileKit.ReadFile(ExtractedFile));
+  WriteLn('Test47_DecompressFromTar: Finished');
 end;
 
 initialization
