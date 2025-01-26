@@ -28,6 +28,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
     - [📝 String Operations](#-string-operations-1)
     - [📅 DateTime Operations](#-datetime-operations-1)
     - [🗂️ FileSystem Operations](#️-filesystem-operations-1)
+  - [📖 Documentation](#-documentation)
   - [🧪 Unit Testing](#-unit-testing)
   - [📚 Examples](#-examples)
   - [🤝 Contributing](#-contributing)
@@ -64,11 +65,13 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
   - ZIP file creation and extraction (using `zipper` unit)
     - Single file compression
     - Directory compression (recursive and non-recursive)
+    - Pattern-based file selection (e.g., '*.txt', '*.dat')
     - Selective file extraction
     - Directory structure preservation
   - TAR file creation and extraction (using `libtar` unit)
     - Single file archiving
     - Directory archiving (recursive and non-recursive)
+    - Pattern-based file selection (e.g., '*.txt', '*.dat')
     - Directory structure preservation with explicit entries
     - Sequential access to archive contents
 
@@ -428,19 +431,25 @@ begin
 
   // Archive operations - ZIP
   TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
-  TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory
+  TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory (non-recursive)
   TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
+  TFileKit.CompressToZip('sourcedir', 'archive.zip', True, '*.txt'); // Compress only .txt files
   TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
-  TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract matching files
+  TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract only .txt files
 
   // Archive operations - TAR
   TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
-  TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory
+  TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory (non-recursive)
   TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
+  TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
   TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
-  TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract matching files
+  TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 end;
 ```
+
+## 📖 Documentation
+
+See the [cheat-sheet.md](docs/cheat-sheet.md) for a quick reference of the library's features.  
 
 ## 🧪 Unit Testing
 

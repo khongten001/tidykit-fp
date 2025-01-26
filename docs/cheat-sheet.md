@@ -85,17 +85,19 @@ if TFileKit.IsSymLink('link.txt') then ...                // Check if path is sy
 
 // Archive operations - ZIP
 TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
-TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory
+TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory (non-recursive)
 TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
+TFileKit.CompressToZip('sourcedir', 'archive.zip', True, '*.txt'); // Compress only .txt files
 TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
-TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract matching files
+TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract only .txt files
 
 // Archive operations - TAR
 TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
-TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory
+TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory (non-recursive)
 TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
+TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
 TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
-TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract matching files
+TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 ```
 
 ## String operations
