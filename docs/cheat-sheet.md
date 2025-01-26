@@ -1,6 +1,19 @@
 
 # 📋 Cheat Sheet
 
+This is a quick reference for the library's features.
+
+## Table of Contents
+
+- [File System Operations](#file-system-operations)
+  - [Basic File Operations](#basic-file-operations)
+  - [Directory Operations](#directory-operations) 
+  - [File Listing](#file-listing)
+  - [Directory Listing](#directory-listing)
+  - [Path Operations](#path-operations)
+  - [File Information](#file-information)
+
+
 ## File System Operations
 
 ```pascal
