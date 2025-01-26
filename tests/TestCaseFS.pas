@@ -91,6 +91,10 @@ type
     procedure Test45_DecompressFromZip;
     procedure Test46_CompressToTar;
     procedure Test47_DecompressFromTar;
+    procedure Test44b_CompressToZipRecursive;
+    procedure Test45b_DecompressFromZipRecursive;
+    procedure Test46b_CompressToTarRecursive;
+    procedure Test47b_DecompressFromTarRecursive;
   end;
 
 implementation
@@ -1712,6 +1716,257 @@ begin
   AssertEquals('Extracted content should match original',
     TestContent, TFileKit.ReadFile(ExtractedFile));
   WriteLn('Test47_DecompressFromTar: Finished');
+end;
+
+procedure TFSTests.Test44b_CompressToZipRecursive;
+var
+  ZipFile: string;
+  SubDir1, SubDir2, DeepDir: string;
+  TestFile1, TestFile2, TestFile3, TestFile4: string;
+begin
+  WriteLn('Test44b_CompressToZipRecursive: Starting');
+  ZipFile := FTestDir + PathDelim + 'test_recursive.zip';
+  
+  // Clean up any existing files
+  if FileExists(ZipFile) then
+    DeleteFile(ZipFile);
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
+  end;
+  ForceDirectories(FTestDir);
+  
+  // Create test directory structure
+  SubDir1 := FTestDir + PathDelim + 'dir1';
+  SubDir2 := FTestDir + PathDelim + 'dir2';
+  DeepDir := SubDir1 + PathDelim + 'deep';
+  ForceDirectories(SubDir1);
+  ForceDirectories(SubDir2);
+  ForceDirectories(DeepDir);
+  
+  // Create test files in various directories
+  TestFile1 := FTestDir + PathDelim + 'root1.txt';
+  TestFile2 := SubDir1 + PathDelim + 'file1.txt';
+  TestFile3 := SubDir2 + PathDelim + 'file2.dat';
+  TestFile4 := DeepDir + PathDelim + 'deep.txt';
+  
+  TFileKit.WriteFile(TestFile1, 'Root content 1');
+  TFileKit.WriteFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteFile(TestFile4, 'Deep content');
+  
+  // Compress the entire directory structure
+  TFileKit.CompressToZip(FTestDir, ZipFile, True);
+  AssertTrue('ZIP file should be created', FileExists(ZipFile));
+  
+  WriteLn('Test44b_CompressToZipRecursive: Finished');
+end;
+
+procedure TFSTests.Test45b_DecompressFromZipRecursive;
+var
+  ZipFile: string;
+  ExtractDir: string;
+  SubDir1, SubDir2, DeepDir: string;
+  TestFile1, TestFile2, TestFile3, TestFile4: string;
+begin
+  WriteLn('Test45b_DecompressFromZipRecursive: Starting');
+  ZipFile := FTestDir + PathDelim + 'test_recursive.zip';
+  ExtractDir := FTestDir + PathDelim + 'extracted_recursive';
+  
+  // Clean up and prepare directories
+  if DirectoryExists(ExtractDir) then
+  begin
+    TFileKit.DeleteDirectory(ExtractDir, True);
+    RemoveDir(ExtractDir);
+  end;
+  ForceDirectories(ExtractDir);
+  
+  // Create test directory structure and files
+  SubDir1 := FTestDir + PathDelim + 'dir1';
+  SubDir2 := FTestDir + PathDelim + 'dir2';
+  DeepDir := SubDir1 + PathDelim + 'deep';
+  ForceDirectories(SubDir1);
+  ForceDirectories(SubDir2);
+  ForceDirectories(DeepDir);
+  
+  TestFile1 := FTestDir + PathDelim + 'root1.txt';
+  TestFile2 := SubDir1 + PathDelim + 'file1.txt';
+  TestFile3 := SubDir2 + PathDelim + 'file2.dat';
+  TestFile4 := DeepDir + PathDelim + 'deep.txt';
+  
+  TFileKit.WriteFile(TestFile1, 'Root content 1');
+  TFileKit.WriteFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteFile(TestFile4, 'Deep content');
+  
+  // Create ZIP file in a different directory to avoid including it in the archive
+  ZipFile := GetTempDir + PathDelim + 'test_recursive.zip';
+  if FileExists(ZipFile) then
+    DeleteFile(ZipFile);
+    
+  // Compress then extract
+  TFileKit.CompressToZip(FTestDir, ZipFile, True);
+  TFileKit.DecompressFromZip(ZipFile, ExtractDir);
+  
+  // Verify directory structure was preserved
+  AssertTrue('Extracted dir1 should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir1'));
+  AssertTrue('Extracted dir2 should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir2'));
+  AssertTrue('Extracted deep directory should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep'));
+    
+  // Verify all files were extracted with correct content
+  AssertTrue('Root file should exist',
+    FileExists(ExtractDir + PathDelim + 'root1.txt'));
+  AssertTrue('Dir1 file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+  AssertTrue('Dir2 file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+  AssertTrue('Deep file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    
+  // Verify content integrity
+  AssertEquals('Root file content should match',
+    'Root content 1', TFileKit.ReadFile(ExtractDir + PathDelim + 'root1.txt'));
+  AssertEquals('Dir1 file content should match',
+    'Dir1 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+  AssertEquals('Dir2 file content should match',
+    'Dir2 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+  AssertEquals('Deep file content should match',
+    'Deep content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    
+  // Clean up
+  if FileExists(ZipFile) then
+    DeleteFile(ZipFile);
+    
+  WriteLn('Test45b_DecompressFromZipRecursive: Finished');
+end;
+
+procedure TFSTests.Test46b_CompressToTarRecursive;
+var
+  TarFile: string;
+  SubDir1, SubDir2, DeepDir: string;
+  TestFile1, TestFile2, TestFile3, TestFile4: string;
+begin
+  WriteLn('Test46b_CompressToTarRecursive: Starting');
+  TarFile := FTestDir + PathDelim + 'test_recursive.tar';
+  
+  // Clean up any existing files
+  if FileExists(TarFile) then
+    DeleteFile(TarFile);
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
+  end;
+  ForceDirectories(FTestDir);
+  
+  // Create test directory structure
+  SubDir1 := FTestDir + PathDelim + 'dir1';
+  SubDir2 := FTestDir + PathDelim + 'dir2';
+  DeepDir := SubDir1 + PathDelim + 'deep';
+  ForceDirectories(SubDir1);
+  ForceDirectories(SubDir2);
+  ForceDirectories(DeepDir);
+  
+  // Create test files in various directories
+  TestFile1 := FTestDir + PathDelim + 'root1.txt';
+  TestFile2 := SubDir1 + PathDelim + 'file1.txt';
+  TestFile3 := SubDir2 + PathDelim + 'file2.dat';
+  TestFile4 := DeepDir + PathDelim + 'deep.txt';
+  
+  TFileKit.WriteFile(TestFile1, 'Root content 1');
+  TFileKit.WriteFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteFile(TestFile4, 'Deep content');
+  
+  // Compress the entire directory structure
+  TFileKit.CompressToTar(FTestDir, TarFile, True);
+  AssertTrue('TAR file should be created', FileExists(TarFile));
+  
+  WriteLn('Test46b_CompressToTarRecursive: Finished');
+end;
+
+procedure TFSTests.Test47b_DecompressFromTarRecursive;
+var
+  TarFile: string;
+  ExtractDir: string;
+  SubDir1, SubDir2, DeepDir: string;
+  TestFile1, TestFile2, TestFile3, TestFile4: string;
+begin
+  WriteLn('Test47b_DecompressFromTarRecursive: Starting');
+  ExtractDir := FTestDir + PathDelim + 'extracted_recursive';
+  
+  // Clean up and prepare directories
+  if DirectoryExists(ExtractDir) then
+  begin
+    TFileKit.DeleteDirectory(ExtractDir, True);
+    RemoveDir(ExtractDir);
+  end;
+  ForceDirectories(ExtractDir);
+  
+  // Create test directory structure and files
+  SubDir1 := FTestDir + PathDelim + 'dir1';
+  SubDir2 := FTestDir + PathDelim + 'dir2';
+  DeepDir := SubDir1 + PathDelim + 'deep';
+  ForceDirectories(SubDir1);
+  ForceDirectories(SubDir2);
+  ForceDirectories(DeepDir);
+  
+  TestFile1 := FTestDir + PathDelim + 'root1.txt';
+  TestFile2 := SubDir1 + PathDelim + 'file1.txt';
+  TestFile3 := SubDir2 + PathDelim + 'file2.dat';
+  TestFile4 := DeepDir + PathDelim + 'deep.txt';
+  
+  TFileKit.WriteFile(TestFile1, 'Root content 1');
+  TFileKit.WriteFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteFile(TestFile4, 'Deep content');
+  
+  // Create TAR file in a different directory to avoid including it in the archive
+  TarFile := GetTempDir + PathDelim + 'test_recursive.tar';
+  if FileExists(TarFile) then
+    DeleteFile(TarFile);
+    
+  // Compress then extract
+  TFileKit.CompressToTar(FTestDir, TarFile, True);
+  TFileKit.DecompressFromTar(TarFile, ExtractDir);
+  
+  // Verify directory structure was preserved
+  AssertTrue('Extracted dir1 should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir1'));
+  AssertTrue('Extracted dir2 should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir2'));
+  AssertTrue('Extracted deep directory should exist', 
+    DirectoryExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep'));
+    
+  // Verify all files were extracted with correct content
+  AssertTrue('Root file should exist',
+    FileExists(ExtractDir + PathDelim + 'root1.txt'));
+  AssertTrue('Dir1 file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+  AssertTrue('Dir2 file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+  AssertTrue('Deep file should exist',
+    FileExists(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    
+  // Verify content integrity
+  AssertEquals('Root file content should match',
+    'Root content 1', TFileKit.ReadFile(ExtractDir + PathDelim + 'root1.txt'));
+  AssertEquals('Dir1 file content should match',
+    'Dir1 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+  AssertEquals('Dir2 file content should match',
+    'Dir2 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+  AssertEquals('Deep file content should match',
+    'Deep content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    
+  // Clean up
+  if FileExists(TarFile) then
+    DeleteFile(TarFile);
+    
+  WriteLn('Test47b_DecompressFromTarRecursive: Finished');
 end;
 
 initialization
