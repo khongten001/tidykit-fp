@@ -74,6 +74,17 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - Cross-platform path handling
 - File encoding detection (UTF-8, UTF-16, UTF-32, ASCII)
 - File type detection (text vs binary)
+- Archive operations:
+  - ZIP file creation and extraction (using `zipper` unit)
+    - Single file compression
+    - Directory compression (recursive and non-recursive)
+    - Selective file extraction
+    - Directory structure preservation
+  - TAR file creation and extraction (using `libtar` unit)
+    - Single file archiving
+    - Directory archiving (recursive and non-recursive)
+    - Directory structure preservation with explicit entries
+    - Sequential access to archive contents
 
 ### 📝 String Operations
 - Basic operations: trim, case conversion, substring
@@ -428,6 +439,20 @@ begin
 
   // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
   // On Unix/Linux, regular users can create symlinks in their own directories
+
+  // Archive operations - ZIP
+  TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
+  TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory
+  TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
+  TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
+  TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract matching files
+
+  // Archive operations - TAR
+  TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
+  TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory
+  TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
+  TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
+  TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract matching files
 end;
 ```
 
@@ -580,6 +605,20 @@ if TFileKit.IsSymLink('link.txt') then ...                // Check if path is sy
 
 // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
 // On Unix/Linux, regular users can create symlinks in their own directories
+
+// Archive operations - ZIP
+TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
+TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory
+TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
+TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
+TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract matching files
+
+// Archive operations - TAR
+TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
+TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory
+TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
+TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
+TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract matching files
 ```
 
 ### String operations

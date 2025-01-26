@@ -2167,8 +2167,10 @@ class procedure TFileKit.CompressToZip(const APath, ADestPath: string; const Rec
 var
   Zipper: TZipper;
   Files: TFilePathArray;
+  Dirs: TStringArray;
   I: Integer;
   BaseDir: string;
+  RelativePath: string;
 begin
   if DEBUG_MODE then
     WriteLn('CompressToZip: Starting compression of ', APath, ' to ', ADestPath);
@@ -2178,25 +2180,25 @@ begin
   if DEBUG_MODE then
     WriteLn('CompressToZip: Base directory is ', BaseDir);
   
+  // Get files first
+  Files := ListFiles(APath, Pattern, Recursive);
+  
+  if DEBUG_MODE then
+    WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
+  
   Zipper := TZipper.Create;
   try
     Zipper.FileName := ADestPath;
-    Files := ListFiles(APath, Pattern, Recursive);
-    
-    if DEBUG_MODE then
-      WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
     
     // Add each file with its relative path
     for I := 0 to High(Files) do
     begin
+      RelativePath := ExtractRelativePath(BaseDir, Files[I]);
       if DEBUG_MODE then
-        WriteLn('CompressToZip: Adding file ', Files[I]);
+        WriteLn('CompressToZip: Adding file ', RelativePath);
         
       // Store only the relative path in the ZIP
-      Zipper.Entries.AddFileEntry(
-        Files[I],  // Actual file to read
-        ExtractRelativePath(BaseDir, Files[I])  // Path to store in ZIP
-      );
+      Zipper.Entries.AddFileEntry(Files[I], RelativePath);
     end;
     
     if DEBUG_MODE then
@@ -2272,10 +2274,13 @@ class procedure TFileKit.CompressToTar(const APath, ADestPath: string; const Rec
 var
   TarWriter: TTarWriter;
   Files: TFilePathArray;
+  Dirs: TStringArray;
   I: Integer;
   BaseDir: string;
   FileStream: TFileStream;
   TarFileName: string;
+  RelativePath: string;
+  ModTime: TDateTime;
 begin
   if DEBUG_MODE then
     WriteLn('CompressToTar: Starting compression of ', APath, ' to ', ADestPath);
@@ -2294,7 +2299,15 @@ begin
     DeleteFile(TarFileName);
   end;
   
-  // Get files before creating TAR
+  // Get directories first (if recursive)
+  if Recursive then
+  begin
+    Dirs := ListDirectories(APath, '*', True);
+    if DEBUG_MODE then
+      WriteLn('CompressToTar: Found ', Length(Dirs), ' directories');
+  end;
+  
+  // Get files
   Files := ListFiles(APath, Pattern, Recursive);
   
   // Filter out the TAR file itself from the list
@@ -2312,34 +2325,36 @@ begin
     WriteLn('CompressToTar: Found ', Length(Files), ' files to compress');
   
   // Create output file with exclusive access
-  try
-    FileStream := TFileStream.Create(TarFileName, fmCreate or fmShareExclusive);
-  except
-    on E: Exception do
-    begin
-      if DEBUG_MODE then
-        WriteLn('CompressToTar: Failed to create TAR file - ', E.Message);
-      raise ETidyKitException.CreateFmt('Failed to create TAR file: %s - %s', [TarFileName, E.Message]);
-    end;
-  end;
-  
+  FileStream := TFileStream.Create(TarFileName, fmCreate or fmShareExclusive);
   try
     if DEBUG_MODE then
       WriteLn('CompressToTar: Creating TAR writer');
       
     TarWriter := TTarWriter.Create(FileStream);
     try
+      // Add directories first (if recursive)
+      if Recursive then
+      begin
+        for I := 0 to High(Dirs) do
+        begin
+          // TAR format requires trailing path delimiter for directories
+          RelativePath := IncludeTrailingPathDelimiter(ExtractRelativePath(BaseDir, Dirs[I]));
+          ModTime := GetLastWriteTime(Dirs[I]);
+          if DEBUG_MODE then
+            WriteLn('CompressToTar: Adding directory ', RelativePath);
+          TarWriter.AddDir(RelativePath, ModTime);
+        end;
+      end;
+      
       // Add each file with its relative path
       for I := 0 to High(Files) do
       begin
+        RelativePath := ExtractRelativePath(BaseDir, Files[I]);
         if DEBUG_MODE then
-          WriteLn('CompressToTar: Adding file ', Files[I]);
+          WriteLn('CompressToTar: Adding file ', RelativePath);
           
         // Store only the relative path in the TAR
-        TarWriter.AddFile(
-          Files[I],  // Actual file to read
-          ExtractRelativePath(BaseDir, Files[I])  // Path to store in TAR
-        );
+        TarWriter.AddFile(Files[I], RelativePath);
       end;
       
       if DEBUG_MODE then
@@ -2348,7 +2363,10 @@ begin
       TarWriter.Finalize;  // Write TAR footer
       
       if DEBUG_MODE then
-        WriteLn('CompressToTar: TAR file created successfully');
+        begin
+          WriteLn('CompressToTar: TAR file created successfully');
+          WriteLn('CompressToTar: Final file size is ', FileStream.Size, ' bytes');
+        end;
     finally
       TarWriter.Free;
       if DEBUG_MODE then
@@ -2367,7 +2385,8 @@ var
   DirRec: TTarDirRec;
   OutputFile: string;
   DestDir: string;
-  FileStream: TFileStream;
+  EntryCount: Integer;
+  DirToCreate: string;
 begin
   if DEBUG_MODE then
     WriteLn('DecompressFromTar: Starting decompression of ', ATarPath, ' to ', ADestPath);
@@ -2392,73 +2411,96 @@ begin
     raise ETidyKitException.CreateFmt('TAR file not found: %s', [ATarPath]);
   end;
   
-  // Open TAR file with shared read access
-  try
-    FileStream := TFileStream.Create(ATarPath, fmOpenRead or fmShareDenyWrite);
-  except
-    on E: Exception do
-    begin
-      if DEBUG_MODE then
-        WriteLn('DecompressFromTar: Failed to open TAR file - ', E.Message);
-      raise ETidyKitException.CreateFmt('Failed to open TAR file: %s - %s', [ATarPath, E.Message]);
-    end;
-  end;
-  
+  // Create TAR archive directly with filename
+  TarArchive := TTarArchive.Create(ATarPath);
   try
     if DEBUG_MODE then
-      WriteLn('DecompressFromTar: Creating TAR archive reader');
+      WriteLn('DecompressFromTar: Reading TAR entries');
       
-    TarArchive := TTarArchive.Create(FileStream);
-    try
+    // Reset the archive to start reading from the beginning
+    TarArchive.Reset;
+      
+    EntryCount := 0;
+    while TarArchive.FindNext(DirRec) do
+    begin
+      Inc(EntryCount);
+
       if DEBUG_MODE then
-        WriteLn('DecompressFromTar: Reading TAR entries');
-        
-      while TarArchive.FindNext(DirRec) do
       begin
+        WriteLn('DecompressFromTar: Size = ', DirRec.Size, ' bytes');
+        WriteLn('DecompressFromTar: Found entry #', EntryCount);
+        WriteLn('DecompressFromTar: Name = ', DirRec.Name);
+        WriteLn('DecompressFromTar: Type = ', Integer(DirRec.FileType));
+      end;
+        
+      // Handle directory entries
+      if DirRec.FileType = ftDirectory then
+      begin
+        // For directory entries, use the full path
+        DirToCreate := DestDir + ExcludeTrailingPathDelimiter(DirRec.Name);
+        
+        if DEBUG_MODE then
+          WriteLn('DecompressFromTar: Creating directory ', DirToCreate);
+          
+        if not ForceDirectories(DirToCreate) then
+        begin
+          if DEBUG_MODE then
+            WriteLn('DecompressFromTar: Failed to create directory');
+          raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
+        end;
+        
+        Continue;  // Skip to next entry
+      end;
+      
+      // Handle file entries
+      if DirRec.FileType = ftNormal then
+      begin
+        OutputFile := DestDir + DirRec.Name;
+        
+        if DEBUG_MODE then
+          WriteLn('DecompressFromTar: Processing file ', DirRec.Name);
+          
         if MatchPattern(DirRec.Name, Pattern) then
         begin
-          // Combine destination directory with relative path from TAR
-          OutputFile := DestDir + DirRec.Name;
-          
           if DEBUG_MODE then
-            WriteLn('DecompressFromTar: Extracting file ', DirRec.Name, ' to ', OutputFile);
+            WriteLn('DecompressFromTar: Extracting file ', OutputFile);
             
-          if not ForceDirectories(ExtractFilePath(OutputFile)) then
+          // Create parent directory for file
+          DirToCreate := ExtractFilePath(OutputFile);
+          if not ForceDirectories(DirToCreate) then
           begin
             if DEBUG_MODE then
               WriteLn('DecompressFromTar: Failed to create directory for file');
-            raise ETidyKitException.CreateFmt('Failed to create directory: %s', [ExtractFilePath(OutputFile)]);
+            raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
           end;
-          
-          if DirRec.FileType = ftNormal then
-          begin
-            try
-              TarArchive.ReadFile(OutputFile);
+            
+          try
+            TarArchive.ReadFile(OutputFile);
+            if DEBUG_MODE then
+              WriteLn('DecompressFromTar: File extracted successfully');
+          except
+            on E: Exception do
+            begin
               if DEBUG_MODE then
-                WriteLn('DecompressFromTar: File extracted successfully');
-            except
-              on E: Exception do
-              begin
-                if DEBUG_MODE then
-                  WriteLn('DecompressFromTar: Failed to extract file - ', E.Message);
-                raise ETidyKitException.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
-              end;
+                WriteLn('DecompressFromTar: Failed to extract file - ', E.Message);
+              raise ETidyKitException.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
             end;
           end;
-        end;
+        end
+        else if DEBUG_MODE then
+          WriteLn('DecompressFromTar: Skipping file ', DirRec.Name, ' (does not match pattern)');
       end;
-      
-      if DEBUG_MODE then
-        WriteLn('DecompressFromTar: All files extracted successfully');
-    finally
-      TarArchive.Free;
-      if DEBUG_MODE then
-        WriteLn('DecompressFromTar: TAR archive reader freed');
+    end;
+    
+    if DEBUG_MODE then
+    begin
+      WriteLn('DecompressFromTar: Found ', EntryCount, ' entries in total');
+      WriteLn('DecompressFromTar: All files extracted successfully');
     end;
   finally
-    FileStream.Free;
+    TarArchive.Free;
     if DEBUG_MODE then
-      WriteLn('DecompressFromTar: File stream freed');
+      WriteLn('DecompressFromTar: TAR archive reader freed');
   end;
 end;
 
