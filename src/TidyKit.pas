@@ -9,7 +9,8 @@ uses
   TidyKit.Core,
   TidyKit.FS,
   TidyKit.Strings,
-  TidyKit.DateTime;
+  TidyKit.DateTime,
+  TidyKit.Crypto;
 
 type
   { Re-export the core types }
@@ -63,6 +64,9 @@ type
   TDateUnit = TidyKit.DateTime.TDateUnit;
   TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
   ETimeZoneError = TidyKit.DateTime.ETimeZoneError;
+
+  { Re-export the crypto types }
+  TCryptoKit = TidyKit.Crypto.TCryptoKit;
 
 implementation
 

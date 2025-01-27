@@ -16,6 +16,11 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
     - [📝 String Operations](#-string-operations)
     - [📅 DateTime Operations](#-datetime-operations)
     - [🎯 Core Features](#-core-features)
+    - [🔒 Cryptographic Operations](#-cryptographic-operations)
+      - [Hashing Functions](#hashing-functions)
+      - [Encoding](#encoding)
+      - [Encryption Algorithms](#encryption-algorithms)
+      - [Security Best Practices](#security-best-practices)
   - [🌐 Platform Compatibility](#-platform-compatibility)
     - [📝 Platform-Specific Notes](#-platform-specific-notes)
       - [Windows](#windows)
@@ -28,6 +33,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
     - [📝 String Operations](#-string-operations-1)
     - [📅 DateTime Operations](#-datetime-operations-1)
     - [🗂️ FileSystem Operations](#️-filesystem-operations-1)
+    - [🔒 Cryptographic Operations](#-cryptographic-operations-1)
   - [📖 Documentation](#-documentation)
   - [🧪 Unit Testing](#-unit-testing)
   - [📚 Examples](#-examples)
@@ -105,6 +111,118 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - Exception Handling: Custom exception types for better error handling
 - Consistent API: Similar patterns across all modules
 - **Partial Symbolic Link Support:** Detects symbolic links but lacks full manipulation capabilities
+
+### 🔒 Cryptographic Operations
+
+The `TCryptoKit` module provides comprehensive cryptographic functionality using FPC's RTL libraries:
+
+#### Hashing Functions
+- MD5 hashing
+- SHA1 hashing
+- SHA256 hashing
+
+```pascal
+hash := TCryptoKit.SHA256Hash('Hello, World!');
+```
+
+#### Encoding
+- Base64 encoding/decoding
+
+```pascal
+encoded := TCryptoKit.Base64Encode('Hello, World!');
+decoded := TCryptoKit.Base64Decode(encoded);
+```
+
+#### Encryption Algorithms
+
+1. **Simple XOR Encryption**
+   - Basic XOR-based encryption/decryption
+   - Suitable for basic data obfuscation
+   - Not recommended for sensitive data
+
+```pascal
+encrypted := TCryptoKit.XORCrypt(plainText, key);
+decrypted := TCryptoKit.XORCrypt(encrypted, key); // Same operation decrypts
+```
+
+2. **Blowfish**
+   - Block cipher with variable key length (up to 56 bytes)
+   - Suitable for legacy systems
+   - Includes automatic padding
+
+```pascal
+encrypted := TCryptoKit.BlowfishCrypt(plainText, key, bmEncrypt);
+decrypted := TCryptoKit.BlowfishCrypt(encrypted, key, bmDecrypt);
+```
+
+3. **AES (Advanced Encryption Standard)**
+   - Industry-standard encryption
+   - Supports multiple key sizes: 128, 192, and 256 bits
+   - Three block operation modes:
+
+   a. **CBC Mode** (Cipher Block Chaining)
+   - Best for: File encryption, data at rest
+   - Features:
+     * Traditional block cipher mode
+     * Requires padding
+     * Sequential encryption
+     * Provides confidentiality
+
+   ```pascal
+   encrypted := TCryptoKit.AESCrypt(plainText, key, iv, ks256, abmCBC, amEncrypt);
+   decrypted := TCryptoKit.AESCrypt(encrypted, key, iv, ks256, abmCBC, amDecrypt);
+   ```
+
+   b. **CTR Mode** (Counter)
+   - Best for: Streaming data, real-time encryption
+   - Features:
+     * Stream cipher mode
+     * No padding required
+     * Parallelizable
+     * High performance
+
+   ```pascal
+   encrypted := TCryptoKit.AESCrypt(plainText, key, iv, ks256, abmCTR, amEncrypt);
+   decrypted := TCryptoKit.AESCrypt(encrypted, key, iv, ks256, abmCTR, amDecrypt);
+   ```
+
+   c. **GCM Mode** (Galois/Counter Mode)
+   - Best for: Network protocols, data in transit
+   - Features:
+     * Authenticated encryption
+     * No padding required
+     * Parallelizable
+     * Provides both confidentiality and authenticity
+     * Supports Additional Authenticated Data (AAD)
+
+   ```pascal
+   // With authentication data
+   encrypted := TCryptoKit.AESCrypt(plainText, key, iv, ks256, abmGCM, amEncrypt, aad);
+   decrypted := TCryptoKit.AESCrypt(encrypted, key, iv, ks256, abmGCM, amDecrypt, aad);
+   ```
+
+#### Security Best Practices
+
+1. Key Management:
+   - Use strong, random keys
+   - Never reuse keys
+   - Store keys securely
+
+2. IV/Nonce Usage:
+   - Use unique IV/nonce for each encryption
+   - Never reuse IV/nonce with the same key
+   - For CTR and GCM modes, nonce reuse is catastrophic
+
+3. Mode Selection:
+   - For new applications, prefer GCM mode
+   - Use CBC mode for file encryption
+   - Use CTR mode for streaming data
+   - Always use authenticated encryption (GCM) for network protocols
+
+4. Additional Security:
+   - For CBC mode, consider adding HMAC for authenticity
+   - Keep encryption keys and authentication keys separate
+   - Use strong random number generators for key/IV generation
 
 ## 🌐 Platform Compatibility
 
@@ -444,6 +562,58 @@ begin
   TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
   TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
   TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
+end;
+```
+
+### 🔒 Cryptographic Operations
+```pascal
+uses
+  TidyKit;
+
+var
+  PlainText, Encrypted, Decrypted: string;
+  Key, IV, AAD: string;
+begin
+  PlainText := 'Secret message';
+  Key := 'MySecretKey123456';
+  IV := 'InitVector123456!';
+  AAD := 'Additional authenticated data';
+
+  // Hashing
+  WriteLn('SHA256: ', TCryptoKit.SHA256Hash(PlainText));
+  WriteLn('MD5: ', TCryptoKit.MD5Hash(PlainText));
+  WriteLn('SHA1: ', TCryptoKit.SHA1Hash(PlainText));
+
+  // Base64 encoding/decoding
+  Encrypted := TCryptoKit.Base64Encode(PlainText);
+  WriteLn('Base64 encoded: ', Encrypted);
+  Decrypted := TCryptoKit.Base64Decode(Encrypted);
+  WriteLn('Base64 decoded: ', Decrypted);
+
+  // Simple XOR encryption (basic, not for sensitive data)
+  Encrypted := TCryptoKit.XORCrypt(PlainText, Key);
+  Decrypted := TCryptoKit.XORCrypt(Encrypted, Key);
+  WriteLn('XOR decrypted: ', Decrypted);
+
+  // Blowfish encryption (legacy support)
+  Encrypted := TCryptoKit.BlowfishCrypt(PlainText, Key, bmEncrypt);
+  Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
+  WriteLn('Blowfish decrypted: ', Decrypted);
+
+  // AES encryption - GCM mode (recommended for new applications)
+  Encrypted := TCryptoKit.AESCrypt(PlainText, Key, IV, ks256, abmGCM, amEncrypt, AAD);
+  Decrypted := TCryptoKit.AESCrypt(Encrypted, Key, IV, ks256, abmGCM, amDecrypt, AAD);
+  WriteLn('AES-GCM decrypted: ', Decrypted);
+
+  // AES encryption - CBC mode (for file encryption)
+  Encrypted := TCryptoKit.AESCrypt(PlainText, Key, IV, ks256, abmCBC, amEncrypt);
+  Decrypted := TCryptoKit.AESCrypt(Encrypted, Key, IV, ks256, abmCBC, amDecrypt);
+  WriteLn('AES-CBC decrypted: ', Decrypted);
+
+  // AES encryption - CTR mode (for streaming data)
+  Encrypted := TCryptoKit.AESCrypt(PlainText, Key, IV, ks256, abmCTR, amEncrypt);
+  Decrypted := TCryptoKit.AESCrypt(Encrypted, Key, IV, ks256, abmCTR, amDecrypt);
+  WriteLn('AES-CTR decrypted: ', Decrypted);
 end;
 ```
 
