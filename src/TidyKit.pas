@@ -67,6 +67,16 @@ type
 
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
+  TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+  TAESMode = TidyKit.Crypto.TAESMode;
+  TAESContext = TidyKit.Crypto.TAESContext;
+  TAESKit = TidyKit.Crypto.TAESKit;
+
+const
+  { Re-export AES mode constants }
+  amECB = TidyKit.Crypto.amECB;
+  amCBC = TidyKit.Crypto.amCBC;
+  amCTR = TidyKit.Crypto.amCTR;
 
 implementation
 

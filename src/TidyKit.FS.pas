@@ -15,7 +15,7 @@ uses
   Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils;
 
 const
-  DEBUG_MODE = True; // Enable debugging output
+  DEBUG_MODE = False; // Enable debugging output
   
   {$IFDEF WINDOWS}
   SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Windows API flag: target is a directory

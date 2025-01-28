@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry, TidyKit,
-  TidyKit.Crypto;
+  TidyKit.Crypto, TidyKit.Crypto.AES;
 
 type
   { TTestCaseCrypto }
@@ -47,6 +47,24 @@ type
     procedure Test64_BlowfishWithEmptyKey;
     procedure Test65_BlowfishWithLongKey;
     procedure Test66_BlowfishWithUnicodeString;
+
+    // AES tests (80-99)
+    procedure Test80_AESECBEncryption;
+    procedure Test81_AESECBDecryption;
+    procedure Test82_AESECBRoundTrip;
+    procedure Test83_AESCBCEncryption;
+    procedure Test84_AESCBCDecryption;
+    procedure Test85_AESCBCRoundTrip;
+    procedure Test86_AESCTREncryption;
+    procedure Test87_AESCTRDecryption;
+    procedure Test88_AESCTRRoundTrip;
+    procedure Test89_AESWithEmptyString;
+    procedure Test90_AESWithEmptyKey;
+    procedure Test91_AESWithLongKey;
+    procedure Test92_AESWithUnicodeString;
+    procedure Test93_AESWithKnownVector;
+    procedure Test94_AESPaddingHandling;
+    procedure Test95_AESIVHandling;
   end;
 
 implementation
@@ -250,6 +268,247 @@ begin
   Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, FKey, bmDecrypt);
   AssertEquals('Blowfish with Unicode string',
     UnicodeText, Decrypted);
+end;
+
+// AES tests (80-99)
+procedure TTestCaseCrypto.Test80_AESECBEncryption;
+var
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amECB);
+  AssertTrue('AES ECB encryption should change the data', FPlainText <> Encrypted);
+  AssertTrue('AES ECB encryption should produce non-empty output', Encrypted <> '');
+end;
+
+procedure TTestCaseCrypto.Test81_AESECBDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amECB);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amECB);
+  AssertEquals('AES ECB decryption should restore original data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test82_AESECBRoundTrip;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amECB);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amECB);
+  AssertEquals('AES ECB round trip should preserve data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test83_AESCBCEncryption;
+var
+  Encrypted1, Encrypted2: string;
+begin
+  // Same plaintext encrypted twice should yield different results due to random IV
+  Encrypted1 := TCryptoKit.AESEncrypt(FPlainText, FKey, amCBC);
+  Encrypted2 := TCryptoKit.AESEncrypt(FPlainText, FKey, amCBC);
+  AssertTrue('AES CBC encryption should change the data', FPlainText <> Encrypted1);
+  AssertTrue('AES CBC encryption with same input should produce different output',
+    Encrypted1 <> Encrypted2);
+end;
+
+procedure TTestCaseCrypto.Test84_AESCBCDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amCBC);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCBC);
+  AssertEquals('AES CBC decryption should restore original data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test85_AESCBCRoundTrip;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amCBC);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCBC);
+  AssertEquals('AES CBC round trip should preserve data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test86_AESCTREncryption;
+var
+  Encrypted1, Encrypted2: string;
+begin
+  // Same plaintext encrypted twice should yield different results due to random IV
+  Encrypted1 := TCryptoKit.AESEncrypt(FPlainText, FKey, amCTR);
+  Encrypted2 := TCryptoKit.AESEncrypt(FPlainText, FKey, amCTR);
+  AssertTrue('AES CTR encryption should change the data', FPlainText <> Encrypted1);
+  AssertTrue('AES CTR encryption with same input should produce different output',
+    Encrypted1 <> Encrypted2);
+end;
+
+procedure TTestCaseCrypto.Test87_AESCTRDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amCTR);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCTR);
+  AssertEquals('AES CTR decryption should restore original data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test88_AESCTRRoundTrip;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, FKey, amCTR);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCTR);
+  AssertEquals('AES CTR round trip should preserve data',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test89_AESWithEmptyString;
+var
+  Encrypted, Decrypted: string;
+begin
+  // Test all modes with empty string
+  Encrypted := TCryptoKit.AESEncrypt('', FKey, amECB);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amECB);
+  AssertEquals('AES ECB with empty string', '', Decrypted);
+
+  Encrypted := TCryptoKit.AESEncrypt('', FKey, amCBC);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCBC);
+  AssertEquals('AES CBC with empty string', '', Decrypted);
+
+  Encrypted := TCryptoKit.AESEncrypt('', FKey, amCTR);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCTR);
+  AssertEquals('AES CTR with empty string', '', Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test90_AESWithEmptyKey;
+begin
+  try
+    TCryptoKit.AESEncrypt(FPlainText, '', amECB);
+    Fail('AES encryption should fail with empty key');
+  except
+    on E: Exception do
+      AssertTrue('Exception message should mention key',
+        Pos('key', LowerCase(E.Message)) > 0);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test91_AESWithLongKey;
+const
+  LongKey = 'ThisIsAVeryLongKeyThatExceedsTheMaximumLengthForAESKeys';
+var
+  Encrypted, Decrypted: string;
+begin
+  // AES should use only the first 16 bytes of the key
+  Encrypted := TCryptoKit.AESEncrypt(FPlainText, LongKey, amCBC);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, LongKey, amCBC);
+  AssertEquals('AES with long key should work',
+    FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test92_AESWithUnicodeString;
+const
+  UnicodeText = '你好，世界！';
+var
+  Encrypted, Decrypted: string;
+begin
+  // Test all modes with Unicode
+  Encrypted := TCryptoKit.AESEncrypt(UnicodeText, FKey, amECB);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amECB);
+  AssertEquals('AES ECB with Unicode string', UnicodeText, Decrypted);
+
+  Encrypted := TCryptoKit.AESEncrypt(UnicodeText, FKey, amCBC);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCBC);
+  AssertEquals('AES CBC with Unicode string', UnicodeText, Decrypted);
+
+  Encrypted := TCryptoKit.AESEncrypt(UnicodeText, FKey, amCTR);
+  Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCTR);
+  AssertEquals('AES CTR with Unicode string', UnicodeText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test93_AESWithKnownVector;
+const
+  // Test vector from NIST Special Publication 800-38A
+  PlainText = '6bc1bee22e409f96e93d7e117393172a';
+  Key = '2b7e151628aed2a6abf7158809cf4f3c';
+  ExpectedCipher = '3ad77bb40d7a3660a89ecaf32466ef97';
+var
+  Context: TAESContext;
+  State: array[0..3, 0..3] of Byte;
+  HexStr: string;
+  I, J: Integer;
+  ByteVal: Byte;
+begin
+  // Convert hex string to state array
+  for I := 0 to 3 do
+    for J := 0 to 3 do
+    begin
+      ByteVal := StrToInt('$' + Copy(PlainText, (I*4 + J)*2 + 1, 2));
+      State[I, J] := ByteVal;
+    end;
+
+  // Initialize context with key
+  SetLength(HexStr, Length(Key) div 2);
+  for I := 0 to Length(HexStr) - 1 do
+    HexStr[I+1] := Chr(StrToInt('$' + Copy(Key, I*2 + 1, 2)));
+
+  TAESKit.InitContext(Context, TEncoding.UTF8.GetBytes(HexStr));
+
+  // Encrypt
+  TAESKit.ECBEncrypt(Context, State, AES_BLOCKLEN);
+
+  // Convert result to hex string for comparison
+  HexStr := '';
+  for I := 0 to 3 do
+    for J := 0 to 3 do
+      HexStr := HexStr + IntToHex(State[I, J], 2);
+
+  // Compare with expected cipher text
+  AssertEquals('AES ECB encryption should match NIST test vector',
+    LowerCase(ExpectedCipher), LowerCase(HexStr));
+end;
+
+procedure TTestCaseCrypto.Test94_AESPaddingHandling;
+const
+  TestData: array[0..3] of string = (
+    'A',                    // 1 byte - needs 15 bytes padding
+    'ABCDEFGHIJKLMNO',     // 15 bytes - needs 1 byte padding
+    'ABCDEFGHIJKLMNOP',    // 16 bytes - needs 16 bytes padding
+    'ABCDEFGHIJKLMNOPQ'    // 17 bytes - needs 15 bytes padding
+  );
+var
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  for I := 0 to High(TestData) do
+  begin
+    Encrypted := TCryptoKit.AESEncrypt(TestData[I], FKey, amCBC);
+    Decrypted := TCryptoKit.AESDecrypt(Encrypted, FKey, amCBC);
+    AssertEquals(Format('AES padding test for length %d', [Length(TestData[I])]),
+      TestData[I], Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test95_AESIVHandling;
+var
+  Context: TAESContext;
+  IV: array[0..15] of Byte;
+  I: Integer;
+begin
+  // Test that IV is properly initialized
+  TAESKit.InitContext(Context, TEncoding.UTF8.GetBytes(FKey));
+  for I := 0 to 15 do
+    AssertEquals(Format('IV byte %d should be zero after InitContext', [I]),
+      0, Context.IV[I]);
+
+  // Test that IV can be set
+  for I := 0 to 15 do
+    IV[I] := I;
+  TAESKit.SetIV(Context, IV);
+  for I := 0 to 15 do
+    AssertEquals(Format('IV byte %d should match after SetIV', [I]),
+      I, Context.IV[I]);
 end;
 
 initialization

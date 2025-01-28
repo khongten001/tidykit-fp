@@ -5,7 +5,8 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math,
+  TidyKit.Crypto.AES;
 
 type
   { TBlowfishMode
@@ -80,7 +81,41 @@ type
       Returns:
         Encrypted/decrypted string in Base64 format. }
     class function BlowfishCrypt(const Text, Key: string; Mode: TBlowfishMode): string; static;
+
+    { AES encryption of a string.
+      
+      Parameters:
+        Text - The string to encrypt.
+        Key - The encryption key.
+        Mode - The AES mode (ECB, CBC, or CTR).
+        
+      Returns:
+        Encrypted string in Base64 format. }
+    class function AESEncrypt(const Text, Key: string; Mode: TAESMode): string; static;
+
+    { AES decryption of a string.
+      
+      Parameters:
+        CipherText - The encrypted string to decrypt.
+        Key - The encryption key.
+        Mode - The AES mode (ECB, CBC, or CTR).
+        
+      Returns:
+        Decrypted string. }
+    class function AESDecrypt(const CipherText, Key: string; Mode: TAESMode): string; static;
   end;
+
+// Re-export AES types
+type
+  TAESMode = TidyKit.Crypto.AES.TAESMode;
+  TAESContext = TidyKit.Crypto.AES.TAESContext;
+  TAESKit = TidyKit.Crypto.AES.TAESKit;
+
+const
+  // Re-export AES mode constants
+  amECB = TidyKit.Crypto.AES.amECB;
+  amCBC = TidyKit.Crypto.AES.amCBC;
+  amCTR = TidyKit.Crypto.AES.amCTR;
 
 implementation
 
@@ -223,6 +258,16 @@ begin
   finally
     Context.Free;
   end;
+end;
+
+class function TCryptoKit.AESEncrypt(const Text, Key: string; Mode: TAESMode): string;
+begin
+  Result := TAESKit.EncryptString(Text, Key, Mode);
+end;
+
+class function TCryptoKit.AESDecrypt(const CipherText, Key: string; Mode: TAESMode): string;
+begin
+  Result := TAESKit.DecryptString(CipherText, Key, Mode);
 end;
 
 end. 
