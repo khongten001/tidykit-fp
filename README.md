@@ -12,10 +12,15 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
   - [📑 Table of Contents](#-table-of-contents)
   - [✅ TODO](#-todo)
   - [✨ Features](#-features)
+    - [🎯 Core Features](#-core-features)
     - [🗂️ FileSystem Operations](#️-filesystem-operations)
     - [📝 String Operations](#-string-operations)
     - [📅 DateTime Operations](#-datetime-operations)
-    - [🎯 Core Features](#-core-features)
+    - [🔒 Cryptographic Operations](#-cryptographic-operations)
+      - [Hashing Functions](#hashing-functions)
+      - [Encoding](#encoding)
+      - [Encryption Algorithms](#encryption-algorithms)
+      - [Security Best Practices](#security-best-practices)
   - [🌐 Platform Compatibility](#-platform-compatibility)
     - [📝 Platform-Specific Notes](#-platform-specific-notes)
       - [Windows](#windows)
@@ -28,6 +33,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
     - [📝 String Operations](#-string-operations-1)
     - [📅 DateTime Operations](#-datetime-operations-1)
     - [🗂️ FileSystem Operations](#️-filesystem-operations-1)
+    - [🔒 Cryptographic Operations](#-cryptographic-operations-1)
   - [📖 Documentation](#-documentation)
   - [🧪 Unit Testing](#-unit-testing)
   - [📚 Examples](#-examples)
@@ -49,6 +55,15 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
   
 
 ## ✨ Features
+
+### 🎯 Core Features
+- FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
+- Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
+- Static Functions: No instance management or memory leaks
+- Memory Safe: Proper resource management
+- Exception Handling: Custom exception types for better error handling
+- Consistent API: Similar patterns across all modules
+- **Partial Symbolic Link Support:** Detects symbolic links but lacks full manipulation capabilities
 
 ### 🗂️ FileSystem Operations
 - File reading/writing with encoding detection
@@ -97,14 +112,66 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - Date comparisons and tests
 - Special date operations (rollback/forward month)
 
-### 🎯 Core Features
-- FPC 3.2.2 Compatible: No inline var, anonymous functions, or lambda
-- Cross-Platform: Works on Windows, Linux, macOS, and FreeBSD
-- Static Functions: No instance management or memory leaks
-- Memory Safe: Proper resource management
-- Exception Handling: Custom exception types for better error handling
-- Consistent API: Similar patterns across all modules
-- **Partial Symbolic Link Support:** Detects symbolic links but lacks full manipulation capabilities
+### 🔒 Cryptographic Operations
+
+The `TCryptoKit` module provides essential cryptographic functionality using FPC's RTL libraries:
+
+#### Hashing Functions
+- MD5 hashing
+- SHA1 hashing
+
+```pascal
+hash := TCryptoKit.MD5Hash('Hello, World!');
+hash := TCryptoKit.SHA1Hash('Hello, World!');
+```
+
+#### Encoding
+- Base64 encoding/decoding
+
+```pascal
+encoded := TCryptoKit.Base64Encode('Hello, World!');
+decoded := TCryptoKit.Base64Decode(encoded);
+```
+
+#### Encryption Algorithms
+
+1. **Simple XOR Encryption**
+   - Basic XOR-based encryption/decryption
+   - Suitable for basic data obfuscation
+   - Not recommended for sensitive data
+
+```pascal
+encrypted := TCryptoKit.XORCrypt(plainText, key);
+decrypted := TCryptoKit.XORCrypt(encrypted, key); // Same operation decrypts
+```
+
+2. **Blowfish**
+   - Block cipher with variable key length (up to 56 bytes)
+   - Suitable for legacy systems
+   - Includes automatic padding
+   - Output is Base64 encoded for safe storage/transmission
+
+```pascal
+encrypted := TCryptoKit.BlowfishCrypt(plainText, key, bmEncrypt);
+decrypted := TCryptoKit.BlowfishCrypt(encrypted, key, bmDecrypt);
+```
+
+#### Security Best Practices
+
+1. Key Management:
+   - Use strong, random keys
+   - Never reuse keys
+   - Store keys securely
+
+2. Algorithm Selection:
+   - Use XOR encryption only for basic data obfuscation
+   - Blowfish is suitable for legacy systems
+   - Consider modern alternatives for new applications
+
+3. Additional Security:
+   - Keep encryption keys separate from other application data
+   - Use strong random number generators for key generation
+   - Consider adding additional authentication mechanisms
 
 ## 🌐 Platform Compatibility
 
@@ -444,6 +511,48 @@ begin
   TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
   TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
   TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
+end;
+```
+
+### 🔒 Cryptographic Operations
+```pascal
+uses
+  TidyKit;
+
+var
+  PlainText, Encrypted, Decrypted: string;
+  Key: string;
+begin
+  PlainText := 'Secret message';
+  Key := 'MySecretKey123456';
+
+  // Hashing
+  WriteLn('MD5: ', TCryptoKit.MD5Hash(PlainText));
+  WriteLn('SHA1: ', TCryptoKit.SHA1Hash(PlainText));
+
+  // Base64 encoding/decoding
+  Encrypted := TCryptoKit.Base64Encode(PlainText);
+  WriteLn('Base64 encoded: ', Encrypted);
+  Decrypted := TCryptoKit.Base64Decode(Encrypted);
+  WriteLn('Base64 decoded: ', Decrypted);
+
+  // Simple XOR encryption (basic, not for sensitive data)
+  Encrypted := TCryptoKit.XORCrypt(PlainText, Key);
+  Decrypted := TCryptoKit.XORCrypt(Encrypted, Key);
+  WriteLn('XOR decrypted: ', Decrypted);
+
+  // Blowfish encryption (legacy support)
+  Encrypted := TCryptoKit.BlowfishCrypt(PlainText, Key, bmEncrypt);
+  Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
+  WriteLn('Blowfish decrypted: ', Decrypted);
+
+  // Error handling example
+  if (Encrypted = '') or (Decrypted = '') then
+    WriteLn('Encryption or decryption failed');
+    
+  // Key length handling for Blowfish
+  if Length(Key) > 56 then
+    SetLength(Key, 56);  // Truncate to maximum allowed length
 end;
 ```
 
