@@ -206,7 +206,7 @@ var
 begin
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[I][J] := State[I][J] xor RoundKey[(Round * Nb * 4) + (I * Nb) + J];
+      State[J][I] := State[J][I] xor RoundKey[(Round * Nb * 4) + (I * Nb) + J];
 end;
 
 class procedure TAESKit.SubBytes(var State: TState);
@@ -215,7 +215,7 @@ var
 begin
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[I][J] := SBox[State[I][J]];
+      State[J][I] := SBox[State[J][I]];
 end;
 
 class procedure TAESKit.InvSubBytes(var State: TState);
@@ -224,7 +224,7 @@ var
 begin
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[I][J] := RSBox[State[I][J]];
+      State[J][I] := RSBox[State[J][I]];
 end;
 
 class procedure TAESKit.ShiftRows(var State: TState);
@@ -283,7 +283,7 @@ end;
 
 class procedure TAESKit.MixColumns(var State: TState);
 var
-  I: Integer;
+  I, J: Integer;
   Tmp, Tm, T: Byte;
 begin
   for I := 0 to 3 do
@@ -312,27 +312,27 @@ var
 begin
   for I := 0 to 3 do
   begin
-    A := State[I][0];
-    B := State[I][1];
-    C := State[I][2];
-    D := State[I][3];
+    A := State[0][I];
+    B := State[1][I];
+    C := State[2][I];
+    D := State[3][I];
 
-    State[I][0] := (XTime(XTime(XTime(A)))) xor
+    State[0][I] := (XTime(XTime(XTime(A)))) xor
                    (XTime(XTime(B)) xor XTime(B)) xor
                    (XTime(C) xor C) xor
                    (D);
 
-    State[I][1] := (A) xor
+    State[1][I] := (A) xor
                    (XTime(XTime(XTime(B)))) xor
                    (XTime(XTime(C)) xor XTime(C)) xor
                    (XTime(D) xor D);
 
-    State[I][2] := (XTime(A) xor A) xor
+    State[2][I] := (XTime(A) xor A) xor
                    (B) xor
                    (XTime(XTime(XTime(C)))) xor
                    (XTime(XTime(D)) xor XTime(D));
 
-    State[I][3] := (XTime(XTime(A)) xor XTime(A)) xor
+    State[3][I] := (XTime(XTime(A)) xor XTime(A)) xor
                    (XTime(B) xor B) xor
                    (C) xor
                    (XTime(XTime(XTime(D))));
@@ -669,10 +669,18 @@ begin
       if (PaddingLen = 0) or (PaddingLen > AES_BLOCKLEN) then
         raise Exception.Create('Invalid padding length');
         
-      // Verify padding
+      // Verify padding - all padding bytes must be equal to PaddingLen
       for BlockPos := Length(Data) - PaddingLen to Length(Data) - 1 do
+      begin
         if Data[BlockPos] <> PaddingLen then
+        begin
+          // If padding verification fails, try treating the entire block as data
+          // This handles cases where the last block doesn't need padding
+          if (Length(Data) mod AES_BLOCKLEN = 0) and (Mode = amCTR) then
+            Exit(TEncoding.UTF8.GetString(Data));
           raise Exception.Create('Invalid padding');
+        end;
+      end;
           
       SetLength(Data, Length(Data) - PaddingLen);
     end;
