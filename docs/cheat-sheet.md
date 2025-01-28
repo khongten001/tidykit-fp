@@ -1,4 +1,3 @@
-
 # 📋 Cheat Sheet
 
 This is a quick reference for the library's features.
@@ -334,4 +333,115 @@ TZNames := TDateTimeKit.GetTimeZoneNames;       // Available timezone names
 // Convert between timezones
 UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');   // Convert to UTC
 Local := TDateTimeKit.ForceTimeZone(Now, 'EST'); // Force timezone
+```
+
+## Cryptographic Operations
+
+### Hashing
+```pascal
+// MD5 Hash
+hash := TCryptoKit.MD5Hash('Hello, World!');  // Returns MD5 hash as hex string
+
+// SHA1 Hash
+hash := TCryptoKit.SHA1Hash('Hello, World!'); // Returns SHA1 hash as hex string
+```
+
+### Base64 Encoding/Decoding
+```pascal
+// Encode string to Base64
+encoded := TCryptoKit.Base64Encode('Hello, World!');
+
+// Decode Base64 back to string
+decoded := TCryptoKit.Base64Decode(encoded);
+```
+
+### XOR Encryption
+```pascal
+const
+  Text = 'Secret message';
+  Key = 'MyKey123';
+
+// Encrypt
+encrypted := TCryptoKit.XORCrypt(Text, Key);
+
+// Decrypt (same operation)
+decrypted := TCryptoKit.XORCrypt(encrypted, Key);
+
+// Note: XOR encryption is symmetric - the same operation both encrypts and decrypts
+// Not recommended for sensitive data
+```
+
+### Blowfish Encryption
+```pascal
+const
+  Text = 'Secret message';
+  Key = 'MySecretKey123456'; // Up to 56 bytes
+
+// Encrypt (returns Base64 encoded string)
+encrypted := TCryptoKit.BlowfishCrypt(Text, Key, bmEncrypt);
+
+// Decrypt (expects Base64 encoded input)
+decrypted := TCryptoKit.BlowfishCrypt(encrypted, Key, bmDecrypt);
+
+// Error handling
+if decrypted = '' then
+  WriteLn('Decryption failed');
+
+// Empty input handling
+if TCryptoKit.BlowfishCrypt('', Key, bmEncrypt) = '' then
+  WriteLn('Empty input returns empty output');
+if TCryptoKit.BlowfishCrypt(Text, '', bmEncrypt) = '' then
+  WriteLn('Empty key returns empty output');
+```
+
+### Best Practices
+```pascal
+// 1. Key Management
+// - Generate strong random keys
+// - Never store keys in source code
+// - Protect keys in secure storage
+var
+  Key: string;
+begin
+  // Bad - key in source:
+  Key := 'hardcoded123';  // DON'T DO THIS
+  
+  // Better - load from secure configuration:
+  Key := LoadKeyFromSecureStorage;
+  try
+    // Use key here
+  finally
+    Key := '';  // Clear sensitive data
+  end;
+end;
+
+// 2. Error Handling
+var
+  Encrypted, Decrypted: string;
+begin
+  try
+    Encrypted := TCryptoKit.BlowfishCrypt(PlainText, Key, bmEncrypt);
+    if Encrypted = '' then
+      raise Exception.Create('Encryption failed');
+      
+    Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
+    if Decrypted = '' then
+      raise Exception.Create('Decryption failed');
+  except
+    on E: Exception do
+      // Handle error appropriately
+  end;
+end;
+
+// 3. Input Validation
+var
+  PlainText, Key: string;
+begin
+  // Validate input before encryption
+  if (Length(PlainText) = 0) or (Length(Key) = 0) then
+    Exit;
+    
+  if Length(Key) > 56 then  // Blowfish key length limit
+    SetLength(Key, 56);
+end;
 ```
