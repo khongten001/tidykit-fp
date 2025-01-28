@@ -158,13 +158,23 @@ begin
 end;
 
 class function TSHA256.SmallSigma0(x: Cardinal): Cardinal;
+var
+  r1, r2, s: Cardinal;
 begin
-  Result := RorDWord(x, 7) xor RorDWord(x, 18) xor (x shr 3);
+  r1 := RorDWord(x, 7);
+  r2 := RorDWord(x, 18);
+  s := x shr 3;
+  Result := r1 xor r2 xor s;
 end;
 
 class function TSHA256.SmallSigma1(x: Cardinal): Cardinal;
+var
+  r1, r2, s: Cardinal;
 begin
-  Result := RorDWord(x, 17) xor RorDWord(x, 19) xor (x shr 10);
+  r1 := RorDWord(x, 17);
+  r2 := RorDWord(x, 19);
+  s := x shr 10;
+  Result := r1 xor r2 xor s;
 end;
 
 class procedure TSHA256.CardinalToBigEndian(Value: Cardinal; var Bytes; StartIndex: Integer = 0);
@@ -230,7 +240,7 @@ end;
 procedure TSHA256.PrepareSchedule(const Block: TSHA256Block);
 var
   t: Integer;
-  s0, s1: Cardinal;
+  s0, s1, temp: Cardinal;
 begin
   { First 16 words are the block itself }
   for t := 0 to 15 do
@@ -244,9 +254,11 @@ begin
     s1 := SmallSigma1(FW[t-2]);
     
     { Calculate new word using modular arithmetic }
-    FW[t] := (FW[t-16] + s0) and $FFFFFFFF;  { First addition }
-    FW[t] := (FW[t] + FW[t-7]) and $FFFFFFFF;  { Second addition }
-    FW[t] := (FW[t] + s1) and $FFFFFFFF;  { Final addition }
+    temp := FW[t-16];
+    temp := (temp + s0) and $FFFFFFFF;
+    temp := (temp + FW[t-7]) and $FFFFFFFF;
+    temp := (temp + s1) and $FFFFFFFF;
+    FW[t] := temp;
   end;
 end;
 
@@ -254,7 +266,7 @@ procedure TSHA256.Compress;
 var
   a, b, c, d, e, f, g, h: Cardinal;
   t: Integer;
-  T1, T2: Cardinal;
+  T1, T2, Ch_efg, Maj_abc, Sigma1_e, Sigma0_a: Cardinal;
 begin
   { Initialize working variables with current hash value }
   a := FState[0];
@@ -269,27 +281,38 @@ begin
   { Main loop }
   for t := 0 to 63 do
   begin
-    T1 := h + BigSigma1(e) + Ch(e, f, g) + RoundConstants[t] + FW[t];
-    T2 := BigSigma0(a) + Maj(a, b, c);
+    { Calculate intermediate values with proper modular arithmetic }
+    Sigma1_e := BigSigma1(e);
+    Ch_efg := Ch(e, f, g);
+    T1 := h;
+    T1 := (T1 + Sigma1_e) and $FFFFFFFF;
+    T1 := (T1 + Ch_efg) and $FFFFFFFF;
+    T1 := (T1 + RoundConstants[t]) and $FFFFFFFF;
+    T1 := (T1 + FW[t]) and $FFFFFFFF;
+    
+    Sigma0_a := BigSigma0(a);
+    Maj_abc := Maj(a, b, c);
+    T2 := (Sigma0_a + Maj_abc) and $FFFFFFFF;
+    
     h := g;
     g := f;
     f := e;
-    e := d + T1;
+    e := (d + T1) and $FFFFFFFF;
     d := c;
     c := b;
     b := a;
-    a := T1 + T2;
+    a := (T1 + T2) and $FFFFFFFF;
   end;
   
   { Update hash state }
-  Inc(FState[0], a);
-  Inc(FState[1], b);
-  Inc(FState[2], c);
-  Inc(FState[3], d);
-  Inc(FState[4], e);
-  Inc(FState[5], f);
-  Inc(FState[6], g);
-  Inc(FState[7], h);
+  FState[0] := (FState[0] + a) and $FFFFFFFF;
+  FState[1] := (FState[1] + b) and $FFFFFFFF;
+  FState[2] := (FState[2] + c) and $FFFFFFFF;
+  FState[3] := (FState[3] + d) and $FFFFFFFF;
+  FState[4] := (FState[4] + e) and $FFFFFFFF;
+  FState[5] := (FState[5] + f) and $FFFFFFFF;
+  FState[6] := (FState[6] + g) and $FFFFFFFF;
+  FState[7] := (FState[7] + h) and $FFFFFFFF;
 end;
 
 procedure TSHA256.ProcessBlock(const Block: TSHA256Block);

@@ -214,7 +214,7 @@ end;
 
 procedure TAES.ExpandKey(const Key; KeySize: TAESKeySize);
 var
-  KeyWords: array[0..7] of Cardinal;
+  KeyWords: array[0..59] of Cardinal;  { Increased size to handle all key sizes }
   Temp: Cardinal;
   i, Nk, Nr: Integer;
 begin
@@ -226,13 +226,16 @@ begin
     raise Exception.Create('Invalid key size');
   end;
 
-  { Copy the key into the first Nk words }
-  Move(Key, KeyWords, 4 * Nk);
+  FRounds := Nr;  { Store number of rounds }
 
+  { Copy the key into the first Nk words }
+  Move(Key, KeyWords[0], 4 * Nk);
+
+  { Key expansion }
   i := Nk;
   while i < 4 * (Nr + 1) do
   begin
-    Temp := KeyWords[(i-1)];
+    Temp := KeyWords[i-1];
     
     if (i mod Nk) = 0 then
     begin
@@ -445,12 +448,12 @@ end;
 procedure TAES.ProcessGCM(var Block: TAESBlock; Encrypt: Boolean);
 const
   { GCM reduction polynomial }
-  R = $E1000000;
+  R = $E1;  { Changed from $E1000000 to $E1 }
 var
   H, X, Y: TAESBlock;
   i, j, k: Integer;
-  Bit: Byte;
-  V: Cardinal;
+  V: array[0..1] of Cardinal;  { Use two 32-bit values for 64-bit arithmetic }
+  Carry: Boolean;
 begin
   if not FAuthenticated then
   begin
@@ -482,16 +485,44 @@ begin
         if (Y[i] and (1 shl j)) <> 0 then
           XorBlock(X, H);
           
-        { Right shift H }
-        V := 0;
-        for k := 15 downto 0 do
+        { Right shift H with carry }
+        Carry := False;
+        V[1] := 0;
+        V[0] := 0;
+        
+        { Load H into V }
+        for k := 0 to 7 do
         begin
-          V := (V shl 8) or H[k];
-          if k > 0 then
-            H[k] := Byte(V shr 8);
+          V[1] := (V[1] shl 8) or H[k];
+          V[0] := (V[0] shl 8) or H[k+8];
         end;
-        if (V and 1) <> 0 then
-          H[0] := H[0] xor R;
+        
+        { Shift right by 1 }
+        if (V[1] and 1) <> 0 then
+          Carry := True;
+        V[1] := V[1] shr 1;
+        if Carry then
+          V[1] := V[1] or $80000000;
+          
+        Carry := False;
+        if (V[0] and 1) <> 0 then
+          Carry := True;
+        V[0] := V[0] shr 1;
+        if Carry then
+          V[0] := V[0] or $80000000;
+          
+        { Store back to H }
+        for k := 7 downto 0 do
+        begin
+          H[k+8] := V[0] and $FF;
+          V[0] := V[0] shr 8;
+          H[k] := V[1] and $FF;
+          V[1] := V[1] shr 8;
+        end;
+        
+        { Apply reduction if needed }
+        if Carry then
+          H[15] := H[15] xor R;
       end;
   end
   else
@@ -504,7 +535,7 @@ begin
     Move(Block[0], Y[0], 16);
     XorBlock(Y, H);
     
-    { Galois field multiplication }
+    { Galois field multiplication - same as encrypt path }
     FillChar(X, 16, 0);
     for i := 0 to 15 do
       for j := 7 downto 0 do
@@ -512,16 +543,44 @@ begin
         if (Y[i] and (1 shl j)) <> 0 then
           XorBlock(X, H);
           
-        { Right shift H }
-        V := 0;
-        for k := 15 downto 0 do
+        { Right shift H with carry }
+        Carry := False;
+        V[1] := 0;
+        V[0] := 0;
+        
+        { Load H into V }
+        for k := 0 to 7 do
         begin
-          V := (V shl 8) or H[k];
-          if k > 0 then
-            H[k] := Byte(V shr 8);
+          V[1] := (V[1] shl 8) or H[k];
+          V[0] := (V[0] shl 8) or H[k+8];
         end;
-        if (V and 1) <> 0 then
-          H[0] := H[0] xor R;
+        
+        { Shift right by 1 }
+        if (V[1] and 1) <> 0 then
+          Carry := True;
+        V[1] := V[1] shr 1;
+        if Carry then
+          V[1] := V[1] or $80000000;
+          
+        Carry := False;
+        if (V[0] and 1) <> 0 then
+          Carry := True;
+        V[0] := V[0] shr 1;
+        if Carry then
+          V[0] := V[0] or $80000000;
+          
+        { Store back to H }
+        for k := 7 downto 0 do
+        begin
+          H[k+8] := V[0] and $FF;
+          V[0] := V[0] shr 8;
+          H[k] := V[1] and $FF;
+          V[1] := V[1] shr 8;
+        end;
+        
+        { Apply reduction if needed }
+        if Carry then
+          H[15] := H[15] xor R;
       end;
     
     { XOR with ciphertext }
@@ -763,55 +822,55 @@ const
     $3B,$32,$29,$20,$1F,$16,$0D,$04,$73,$7A,$61,$68,$57,$5E,$45,$4C,
     $AB,$A2,$B9,$B0,$8F,$86,$9D,$94,$E3,$EA,$F1,$F8,$C7,$CE,$D5,$DC,
     $76,$7F,$64,$6D,$52,$5B,$40,$49,$3E,$37,$2C,$25,$1A,$13,$08,$01,
-    $E6,$EF,$F4,$FD,$C2,$CB,$D0,$D9,$AE,$A7,$BC,$B5,$8A,$83,$98,$91,
-    $4D,$44,$5F,$56,$69,$60,$7B,$72,$05,$0C,$17,$1E,$21,$28,$33,$3A,
-    $DD,$D4,$CF,$C6,$F9,$F0,$EB,$E2,$95,$9C,$87,$8E,$B1,$B8,$A3,$AA,
-    $EC,$E5,$FE,$F7,$C8,$C1,$DA,$D3,$A4,$AD,$B6,$BF,$80,$89,$92,$9B,
-    $7C,$75,$6E,$67,$58,$51,$4A,$43,$34,$3D,$26,$2F,$10,$19,$02,$0B,
-    $D7,$DE,$C5,$CC,$F3,$FA,$E1,$E8,$9F,$96,$8D,$84,$BB,$B2,$A9,$A0,
-    $47,$4E,$55,$5C,$63,$6A,$71,$78,$0F,$06,$1D,$14,$2B,$22,$39,$30,
-    $9A,$93,$88,$81,$BE,$B7,$AC,$A5,$D2,$DB,$C0,$C9,$F6,$FF,$E4,$ED,
-    $0A,$03,$18,$11,$2E,$27,$3C,$35,$42,$4B,$50,$59,$66,$6F,$74,$7D,
-    $A1,$A8,$B3,$BA,$85,$8C,$97,$9E,$E9,$E0,$FB,$F2,$C3,$CA,$D5,$DC,
-    $31,$38,$23,$2A,$15,$1C,$07,$0E,$79,$70,$6B,$62,$5D,$54,$4F,$46
+    $E6,$EF,$F4,$FD,$C2,$CB,$D0,$D9,$AE,$A5,$B8,$B3,$82,$89,$94,$9F,
+    $46,$4D,$50,$5B,$6A,$61,$7C,$77,$05,$0C,$17,$1E,$21,$28,$33,$3A,
+    $DD,$D4,$CF,$C6,$F9,$F0,$EB,$E2,$95,$9C,$87,$8E,$A4,$AD,$BC,$B1,
+    $3D,$30,$27,$2E,$03,$0E,$19,$10,$79,$74,$63,$6A,$45,$48,$5F,$56,
+    $B1,$BC,$AB,$A2,$8D,$80,$97,$9E,$F5,$F8,$EF,$E6,$C9,$C4,$D3,$DA,
+    $56,$5B,$4C,$45,$68,$65,$72,$7B,$14,$19,$0E,$07,$2A,$27,$30,$39,
+    $96,$9B,$8C,$85,$A8,$A5,$B2,$BB,$D4,$D9,$CE,$C7,$E2,$EF,$F8,$F1,
+    $4A,$47,$50,$5B,$7A,$77,$6E,$65,$04,$09,$1E,$15,$34,$39,$2E,$23,
+    $6D,$60,$77,$7A,$59,$54,$43,$4E,$05,$08,$1F,$12,$31,$3C,$2B,$26,
+    $B1,$BC,$AB,$A6,$85,$88,$9F,$92,$D9,$D4,$C3,$CE,$ED,$E0,$F7,$F2,
+    $0C,$01,$16,$1B,$38,$35,$22,$2F,$64,$69,$7E,$73,$50,$5D,$4A,$47
   );
   
   MulB: array[0..255] of Byte = (
     $00,$0B,$16,$1D,$2C,$27,$3A,$31,$58,$53,$4E,$45,$74,$7F,$62,$69,
     $B0,$BB,$A6,$AD,$9C,$97,$8A,$81,$E8,$E3,$FE,$F5,$C4,$CF,$D2,$D9,
     $7B,$70,$6D,$66,$57,$5C,$41,$4A,$23,$28,$35,$3E,$0F,$04,$19,$12,
-    $CB,$C0,$DD,$D6,$E7,$EC,$F1,$FA,$93,$98,$85,$8E,$BF,$B4,$A9,$A2,
+    $CB,$C0,$DD,$D6,$E7,$EC,$F1,$FA,$93,$98,$85,$8E,$BF,$B4,$A9,$B2,
     $F6,$FD,$E0,$EB,$DA,$D1,$CC,$C7,$AE,$A5,$B8,$B3,$82,$89,$94,$9F,
     $46,$4D,$50,$5B,$6A,$61,$7C,$77,$1E,$15,$08,$03,$32,$3F,$28,$25,
-    $8D,$86,$9B,$90,$A1,$AA,$B7,$BC,$D5,$DE,$C3,$C8,$F9,$F2,$EF,$E4,
+    $8D,$86,$9B,$90,$A1,$AA,$B7,$BC,$D5,$DE,$C3,$C8,$F9,$F2,$E3,$E8,
     $3D,$36,$2B,$20,$11,$1A,$07,$0C,$65,$6E,$73,$78,$49,$42,$5F,$54,
     $F7,$FC,$E1,$EA,$DB,$D0,$CD,$C6,$AF,$A4,$B9,$B2,$83,$88,$95,$9E,
     $47,$4C,$51,$5A,$6B,$60,$7D,$76,$1F,$14,$09,$02,$33,$3E,$29,$24,
-    $8C,$87,$9A,$91,$A0,$AB,$B6,$BD,$D4,$DF,$C2,$C9,$F8,$F3,$EE,$E5,
-    $3C,$37,$2A,$21,$10,$1B,$06,$0D,$64,$6F,$72,$79,$48,$43,$5E,$55,
-    $01,$0A,$17,$1C,$2D,$26,$3B,$30,$59,$52,$4F,$44,$75,$7E,$63,$68,
-    $B1,$BA,$A7,$AC,$9D,$96,$8B,$80,$E9,$E2,$FF,$F4,$C5,$CE,$D3,$D8,
-    $7A,$71,$6C,$67,$56,$5D,$40,$4B,$22,$29,$34,$3F,$0E,$05,$18,$13,
-    $CA,$C1,$DC,$D7,$E6,$ED,$F0,$FB,$92,$99,$84,$8F,$BE,$B5,$A8,$A3
+    $8C,$87,$9A,$91,$A0,$AB,$B6,$BD,$D4,$DF,$C2,$C9,$F8,$F3,$E8,$E5,
+    $3C,$37,$2A,$21,$10,$1B,$06,$0D,$64,$69,$7E,$73,$50,$5D,$4A,$47,
+    $01,$0A,$17,$1C,$3F,$32,$25,$28,$63,$6E,$79,$74,$57,$58,$4F,$42,
+    $D7,$D8,$CB,$C0,$E1,$EE,$F9,$F2,$95,$9A,$89,$82,$A3,$AC,$BD,$B6,
+    $6D,$62,$71,$7A,$5B,$54,$47,$4C,$25,$2E,$3F,$34,$15,$1A,$09,$02,
+    $B7,$BA,$AD,$A0,$83,$8E,$99,$94,$DF,$D2,$C5,$C8,$EB,$E6,$F1,$FC
   );
   
   MulD: array[0..255] of Byte = (
     $00,$0D,$1A,$17,$34,$39,$2E,$23,$68,$65,$72,$7F,$5C,$51,$46,$4B,
     $D0,$DD,$CA,$C7,$E4,$E9,$FE,$F3,$B8,$B5,$A2,$AF,$8C,$81,$96,$9B,
-    $BB,$B6,$A1,$AC,$8F,$82,$95,$98,$D3,$DE,$C9,$C4,$E7,$EA,$FD,$F0,
+    $BB,$B6,$A1,$AC,$8F,$82,$95,$98,$D3,$DE,$C9,$C4,$E7,$EA,$FF,$F2,
     $6B,$66,$71,$7C,$5F,$52,$45,$48,$03,$0E,$19,$14,$37,$3A,$2D,$20,
     $6D,$60,$77,$7A,$59,$54,$43,$4E,$05,$08,$1F,$12,$31,$3C,$2B,$26,
-    $BD,$B0,$A7,$AA,$89,$84,$93,$9E,$D5,$D8,$CB,$C6,$E5,$E8,$FB,$F6,
-    $D6,$DB,$CC,$C1,$E2,$EF,$F8,$F5,$BE,$B3,$A4,$A9,$8A,$87,$90,$9D,
+    $BD,$B0,$A7,$AA,$89,$84,$93,$9E,$D5,$D8,$CF,$C2,$E1,$EE,$F9,$F4,
+    $D6,$DB,$CC,$C1,$E2,$EF,$F8,$F5,$B8,$B5,$A2,$AF,$8C,$81,$96,$9B,
     $06,$0B,$1C,$11,$32,$3F,$28,$25,$6E,$63,$74,$79,$5A,$57,$40,$4D,
-    $DA,$D7,$C0,$CD,$EC,$E1,$F6,$F3,$B8,$B5,$A2,$AF,$8C,$81,$96,$9B,
-    $4D,$40,$57,$5A,$79,$74,$63,$6E,$25,$28,$3F,$32,$11,$1C,$0B,$06,
-    $5D,$50,$67,$6A,$49,$44,$53,$5E,$15,$18,$0F,$02,$21,$2C,$3B,$36,
-    $B1,$BC,$AB,$A6,$85,$88,$9F,$92,$D9,$D4,$C3,$CE,$ED,$E0,$F7,$FA,
-    $B7,$BA,$AD,$A0,$83,$8E,$99,$94,$DF,$D2,$C5,$C8,$EB,$E6,$F1,$F2,
-    $41,$4C,$5B,$56,$75,$78,$6F,$62,$29,$24,$33,$3E,$1D,$10,$07,$0A,
-    $5D,$50,$67,$6A,$49,$44,$53,$5E,$15,$18,$0F,$02,$21,$2C,$3B,$36,
-    $B1,$BC,$AB,$A6,$85,$88,$9F,$92,$D9,$D4,$C3,$CE,$ED,$E0,$F7,$FA
+    $DA,$D7,$C0,$CD,$EE,$E3,$F4,$F9,$B2,$BF,$A8,$A5,$86,$8B,$9C,$91,
+    $0A,$07,$10,$1D,$3E,$33,$24,$29,$62,$6F,$78,$75,$56,$5B,$4C,$41,
+    $61,$6C,$7B,$76,$55,$58,$4F,$42,$09,$04,$13,$1E,$3D,$30,$27,$2A,
+    $B1,$BC,$AB,$A6,$85,$88,$9F,$92,$D9,$D4,$C3,$CE,$ED,$E0,$F7,$F2,
+    $0C,$01,$16,$1B,$38,$35,$22,$2F,$64,$69,$7E,$73,$50,$5D,$4A,$47,
+    $DC,$D1,$C6,$CB,$E8,$E5,$F2,$FF,$B4,$B9,$AC,$A1,$82,$8F,$98,$95,
+    $67,$6A,$7D,$70,$53,$5E,$49,$44,$0F,$02,$15,$18,$3B,$36,$21,$2C,
+    $B7,$BA,$AD,$A0,$83,$8E,$99,$94,$DF,$D2,$C5,$C8,$EB,$E6,$F1,$FC
   );
   
   MulE: array[0..255] of Byte = (
