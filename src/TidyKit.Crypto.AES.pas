@@ -132,24 +132,15 @@ var
   Tempa: array[0..3] of Byte;
 begin
   // The first round key is the key itself
-  for I := 0 to AES_NK[KeySize] - 1 do
-  begin
-    RoundKey[I * 4] := Key[I * 4];
-    RoundKey[I * 4 + 1] := Key[I * 4 + 1];
-    RoundKey[I * 4 + 2] := Key[I * 4 + 2];
-    RoundKey[I * 4 + 3] := Key[I * 4 + 3];
-  end;
+  for I := 0 to AES_NK[KeySize] * 4 - 1 do
+    RoundKey[I] := Key[I];
 
   // All other round keys are found from the previous round keys
   I := AES_NK[KeySize];
   while I < Nb * (AES_NR[KeySize] + 1) do
   begin
-    // Copy previous word
-    K := (I - 1) * 4;
-    Tempa[0] := RoundKey[K];
-    Tempa[1] := RoundKey[K + 1];
-    Tempa[2] := RoundKey[K + 2];
-    Tempa[3] := RoundKey[K + 3];
+    for J := 0 to 3 do
+      Tempa[J] := RoundKey[(I - 1) * 4 + J];
 
     if (I mod AES_NK[KeySize] = 0) then
     begin
@@ -178,13 +169,10 @@ begin
       Tempa[3] := SBox[Tempa[3]];
     end;
 
-    // XOR with previous round key
-    J := I * 4;
+    // XOR with four-byte block from previous round
     K := (I - AES_NK[KeySize]) * 4;
-    RoundKey[J] := RoundKey[K] xor Tempa[0];
-    RoundKey[J + 1] := RoundKey[K + 1] xor Tempa[1];
-    RoundKey[J + 2] := RoundKey[K + 2] xor Tempa[2];
-    RoundKey[J + 3] := RoundKey[K + 3] xor Tempa[3];
+    for J := 0 to 3 do
+      RoundKey[I * 4 + J] := RoundKey[K + J] xor Tempa[J];
 
     Inc(I);
   end;
@@ -206,7 +194,7 @@ var
 begin
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[J][I] := State[J][I] xor RoundKey[(Round * Nb * 4) + (I * Nb) + J];
+      State[J][I] := State[J][I] xor RoundKey[Round * Nb * 4 + I * Nb + J];
 end;
 
 class procedure TAESKit.SubBytes(var State: TState);
@@ -283,25 +271,20 @@ end;
 
 class procedure TAESKit.MixColumns(var State: TState);
 var
-  I, J: Integer;
-  Tmp, Tm, T: Byte;
+  I: Integer;
+  A, B, C, D: Byte;
 begin
   for I := 0 to 3 do
   begin
-    T := State[0][I];
-    Tmp := State[0][I] xor State[1][I] xor State[2][I] xor State[3][I];
-    Tm := State[0][I] xor State[1][I];
-    Tm := XTime(Tm);
-    State[0][I] := State[0][I] xor Tm xor Tmp;
-    Tm := State[1][I] xor State[2][I];
-    Tm := XTime(Tm);
-    State[1][I] := State[1][I] xor Tm xor Tmp;
-    Tm := State[2][I] xor State[3][I];
-    Tm := XTime(Tm);
-    State[2][I] := State[2][I] xor Tm xor Tmp;
-    Tm := State[3][I] xor T;
-    Tm := XTime(Tm);
-    State[3][I] := State[3][I] xor Tm xor Tmp;
+    A := State[0][I];
+    B := State[1][I];
+    C := State[2][I];
+    D := State[3][I];
+
+    State[0][I] := XTime(A) xor XTime(B) xor B xor C xor D;
+    State[1][I] := A xor XTime(B) xor XTime(C) xor C xor D;
+    State[2][I] := A xor B xor XTime(C) xor XTime(D) xor D;
+    State[3][I] := XTime(A) xor A xor B xor C xor XTime(D);
   end;
 end;
 
@@ -317,25 +300,25 @@ begin
     C := State[2][I];
     D := State[3][I];
 
-    State[0][I] := (XTime(XTime(XTime(A)))) xor
-                   (XTime(XTime(B)) xor XTime(B)) xor
-                   (XTime(C) xor C) xor
-                   (D);
+    State[0][I] := XTime(XTime(XTime(A))) xor XTime(XTime(A)) xor XTime(A) xor
+                   XTime(XTime(XTime(B))) xor XTime(B) xor B xor
+                   XTime(XTime(XTime(C))) xor C xor
+                   XTime(XTime(XTime(D))) xor D;
 
-    State[1][I] := (A) xor
-                   (XTime(XTime(XTime(B)))) xor
-                   (XTime(XTime(C)) xor XTime(C)) xor
-                   (XTime(D) xor D);
+    State[1][I] := XTime(XTime(XTime(A))) xor A xor
+                   XTime(XTime(XTime(B))) xor XTime(XTime(B)) xor XTime(B) xor
+                   XTime(XTime(XTime(C))) xor XTime(C) xor C xor
+                   XTime(XTime(XTime(D))) xor D;
 
-    State[2][I] := (XTime(A) xor A) xor
-                   (B) xor
-                   (XTime(XTime(XTime(C)))) xor
-                   (XTime(XTime(D)) xor XTime(D));
+    State[2][I] := XTime(XTime(XTime(A))) xor A xor
+                   XTime(XTime(XTime(B))) xor B xor
+                   XTime(XTime(XTime(C))) xor XTime(XTime(C)) xor XTime(C) xor
+                   XTime(XTime(XTime(D))) xor XTime(D) xor D;
 
-    State[3][I] := (XTime(XTime(A)) xor XTime(A)) xor
-                   (XTime(B) xor B) xor
-                   (C) xor
-                   (XTime(XTime(XTime(D))));
+    State[3][I] := XTime(XTime(XTime(A))) xor XTime(A) xor A xor
+                   XTime(XTime(XTime(B))) xor B xor
+                   XTime(XTime(XTime(C))) xor C xor
+                   XTime(XTime(XTime(D))) xor XTime(XTime(D)) xor XTime(D);
   end;
 end;
 
@@ -347,14 +330,18 @@ begin
   Nr := AES_NR[KeySize];
   AddRoundKey(0, State, RoundKey);
 
-  for Round := 1 to Nr do
+  for Round := 1 to Nr - 1 do
   begin
     SubBytes(State);
     ShiftRows(State);
-    if Round < Nr then
-      MixColumns(State);
+    MixColumns(State);
     AddRoundKey(Round, State, RoundKey);
   end;
+
+  // Final round (no MixColumns)
+  SubBytes(State);
+  ShiftRows(State);
+  AddRoundKey(Nr, State, RoundKey);
 end;
 
 class procedure TAESKit.InvCipher(var State: TState; const RoundKey: array of Byte; KeySize: TAESKeySize);
@@ -365,14 +352,18 @@ begin
   Nr := AES_NR[KeySize];
   AddRoundKey(Nr, State, RoundKey);
 
-  for Round := Nr - 1 downto 0 do
+  for Round := Nr - 1 downto 1 do
   begin
     InvShiftRows(State);
     InvSubBytes(State);
     AddRoundKey(Round, State, RoundKey);
-    if Round > 0 then
-      InvMixColumns(State);
+    InvMixColumns(State);
   end;
+
+  // Final round (no InvMixColumns)
+  InvShiftRows(State);
+  InvSubBytes(State);
+  AddRoundKey(0, State, RoundKey);
 end;
 
 class procedure TAESKit.XorWithIv(var Buf; const Iv: array of Byte; BlockLen: Integer);
@@ -506,7 +497,7 @@ class function TAESKit.EncryptString(const Text, Key: string; Mode: TAESMode; Ke
 var
   Context: TAESContext;
   Data, KeyBytes, TextBytes, IVBytes: TBytes;
-  PaddedLen: Integer;
+  PaddedLen, I: Integer;
   TempStr: AnsiString;
 begin
   // Handle empty input
@@ -523,35 +514,48 @@ begin
       SetLength(KeyBytes, AES_KEYLEN[KeySize]);
 
     // Calculate padded length (multiple of AES_BLOCKLEN)
-    PaddedLen := ((Length(TextBytes) + AES_BLOCKLEN - 1) div AES_BLOCKLEN) * AES_BLOCKLEN;
-    SetLength(Data, PaddedLen);
-    
-    // Copy text and add PKCS7 padding
-    if Length(TextBytes) > 0 then
-      Move(TextBytes[0], Data[0], Length(TextBytes));
-    for PaddedLen := Length(TextBytes) to Length(Data) - 1 do
-      Data[PaddedLen] := Byte(Length(Data) - Length(TextBytes));
+    if Mode = amCTR then
+      PaddedLen := Length(TextBytes)
+    else
+    begin
+      PaddedLen := ((Length(TextBytes) + AES_BLOCKLEN - 1) div AES_BLOCKLEN) * AES_BLOCKLEN;
+      SetLength(Data, PaddedLen);
+      
+      // Copy text and add PKCS7 padding
+      if Length(TextBytes) > 0 then
+        Move(TextBytes[0], Data[0], Length(TextBytes));
+      for I := Length(TextBytes) to Length(Data) - 1 do
+        Data[I] := Byte(Length(Data) - Length(TextBytes));
+    end;
 
     // Generate random IV for CBC and CTR modes
     if Mode in [amCBC, amCTR] then
     begin
       SetLength(IVBytes, AES_BLOCKLEN);
-      for PaddedLen := 0 to AES_BLOCKLEN - 1 do
-        IVBytes[PaddedLen] := Random(256);
+      for I := 0 to AES_BLOCKLEN - 1 do
+        IVBytes[I] := Random(256);
       InitContextIV(Context, KeyBytes, IVBytes, KeySize);
     end
     else
       InitContext(Context, KeyBytes, KeySize);
 
+    // For CTR mode, use original data
+    if Mode = amCTR then
+    begin
+      SetLength(Data, Length(TextBytes));
+      if Length(TextBytes) > 0 then
+        Move(TextBytes[0], Data[0], Length(TextBytes));
+    end;
+
     // Encrypt based on mode
     case Mode of
       amECB: 
         begin
-          PaddedLen := 0;
-          while PaddedLen < Length(Data) do
+          I := 0;
+          while I < Length(Data) do
           begin
-            ECBEncrypt(Context, Data[PaddedLen], AES_BLOCKLEN);
-            Inc(PaddedLen, AES_BLOCKLEN);
+            ECBEncrypt(Context, Data[I], AES_BLOCKLEN);
+            Inc(I, AES_BLOCKLEN);
           end;
         end;
       amCBC: CBCEncrypt(Context, Data[0], Length(Data));
@@ -561,18 +565,17 @@ begin
     // For CBC and CTR modes, prepend IV to the result
     if Mode in [amCBC, amCTR] then
     begin
-      // Combine IV and Data into a single buffer
       SetLength(TextBytes, Length(IVBytes) + Length(Data));
       Move(IVBytes[0], TextBytes[0], Length(IVBytes));
       Move(Data[0], TextBytes[Length(IVBytes)], Length(Data));
       
-      // Convert to Base64 using FPC RTL
+      // Convert to Base64
       SetString(TempStr, PAnsiChar(@TextBytes[0]), Length(TextBytes));
       Result := string(EncodeStringBase64(TempStr));
     end
     else
     begin
-      // Convert to Base64 using FPC RTL
+      // Convert to Base64
       SetString(TempStr, PAnsiChar(@Data[0]), Length(Data));
       Result := string(EncodeStringBase64(TempStr));
     end;
@@ -644,7 +647,7 @@ begin
     if Length(Data) = 0 then
       Exit('');
 
-    if Length(Data) mod AES_BLOCKLEN <> 0 then
+    if (Mode <> amCTR) and (Length(Data) mod AES_BLOCKLEN <> 0) then
       raise Exception.Create('Invalid ciphertext: length not multiple of block size');
 
     // Decrypt based on mode
@@ -662,8 +665,8 @@ begin
       amCTR: CTRCrypt(Context, Data[0], Length(Data));
     end;
 
-    // Remove PKCS7 padding
-    if Length(Data) > 0 then
+    // Remove PKCS7 padding (not needed for CTR mode)
+    if (Mode <> amCTR) and (Length(Data) > 0) then
     begin
       PaddingLen := Data[Length(Data) - 1];
       if (PaddingLen = 0) or (PaddingLen > AES_BLOCKLEN) then
@@ -673,13 +676,7 @@ begin
       for BlockPos := Length(Data) - PaddingLen to Length(Data) - 1 do
       begin
         if Data[BlockPos] <> PaddingLen then
-        begin
-          // If padding verification fails, try treating the entire block as data
-          // This handles cases where the last block doesn't need padding
-          if (Length(Data) mod AES_BLOCKLEN = 0) and (Mode = amCTR) then
-            Exit(TEncoding.UTF8.GetString(Data));
           raise Exception.Create('Invalid padding');
-        end;
       end;
           
       SetLength(Data, Length(Data) - PaddingLen);
