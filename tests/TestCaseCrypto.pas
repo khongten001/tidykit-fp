@@ -431,42 +431,68 @@ procedure TTestCaseCrypto.Test93_AESWithKnownVector;
 const
   // Test vector from NIST Special Publication 800-38A
   PlainText = '6bc1bee22e409f96e93d7e117393172a';
-  Key = '2b7e151628aed2a6abf7158809cf4f3c';
+  KeyHex = '2b7e151628aed2a6abf7158809cf4f3c';
   ExpectedCipher = '3ad77bb40d7a3660a89ecaf32466ef97';
 var
   Context: TAESContext;
   State: array[0..3, 0..3] of Byte;
-  HexStr: string;
   I, J: Integer;
   ByteVal: Byte;
+  KeyBytes: TBytes;
+  HexStr: string;
 begin
-  // Convert hex string to state array
-  for I := 0 to 3 do
-    for J := 0 to 3 do
+  WriteLn('Test93_AESWithKnownVector: Starting');
+  WriteLn('NIST Test Vector:');
+  WriteLn('PlainText: ', PlainText);
+  WriteLn('Key: ', KeyHex);
+  WriteLn('Expected: ', ExpectedCipher);
+  WriteLn;
+
+  // Convert PlainText hex string to State array in column-major order
+  for J := 0 to 3 do
+    for I := 0 to 3 do
     begin
-      ByteVal := StrToInt('$' + Copy(PlainText, (I*4 + J)*2 + 1, 2));
+      ByteVal := StrToInt('$' + Copy(PlainText, (J*4 + I)*2 + 1, 2));
       State[I, J] := ByteVal;
     end;
 
-  // Initialize context with key
-  SetLength(HexStr, Length(Key) div 2);
-  for I := 0 to Length(HexStr) - 1 do
-    HexStr[I+1] := Chr(StrToInt('$' + Copy(Key, I*2 + 1, 2)));
+  // Print initial state
+  WriteLn('Expected initial state:');
+  for I := 0 to 3 do
+  begin
+    for J := 0 to 3 do
+      Write(IntToHex(State[I, J], 2));
+    WriteLn;
+  end;
+  WriteLn;
 
-  TAESKit.InitContext(Context, TEncoding.UTF8.GetBytes(HexStr));
+  // Convert Key hex string to byte array
+  SetLength(KeyBytes, Length(KeyHex) div 2);
+  for I := 0 to Length(KeyHex) div 2 - 1 do
+    KeyBytes[I] := StrToInt('$' + Copy(KeyHex, I*2 + 1, 2));
+  
+  // Initialize context with key
+  TAESKit.InitContext(Context, KeyBytes, ks128);
 
   // Encrypt
   TAESKit.ECBEncrypt(Context, State, AES_BLOCKLEN);
 
-  // Convert result to hex string for comparison
+  // Convert result to hex string for comparison in column-major order
   HexStr := '';
-  for I := 0 to 3 do
-    for J := 0 to 3 do
+  for J := 0 to 3 do
+    for I := 0 to 3 do
       HexStr := HexStr + IntToHex(State[I, J], 2);
+
+  // Print final result
+  WriteLn('Final result:');
+  WriteLn('Got:      ', LowerCase(HexStr));
+  WriteLn('Expected: ', LowerCase(ExpectedCipher));
+  WriteLn;
 
   // Compare with expected cipher text
   AssertEquals('AES ECB encryption should match NIST test vector',
     LowerCase(ExpectedCipher), LowerCase(HexStr));
+  WriteLn('Test93_AESWithKnownVector: Finished');
 end;
 
 procedure TTestCaseCrypto.Test94_AESPaddingHandling;
