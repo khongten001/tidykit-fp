@@ -335,113 +335,162 @@ UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');   // Convert to UTC
 Local := TDateTimeKit.ForceTimeZone(Now, 'EST'); // Force timezone
 ```
 
-## Cryptographic Operations
+## 🔒 Cryptographic Operations
 
-### Hashing
+### Hash Functions
+
 ```pascal
-// MD5 Hash
-hash := TCryptoKit.MD5Hash('Hello, World!');  // Returns MD5 hash as hex string
+// MD5 (legacy, not recommended for security)
+hash := TCryptoKit.MD5Hash('text');  // 128-bit output
 
-// SHA1 Hash
-hash := TCryptoKit.SHA1Hash('Hello, World!'); // Returns SHA1 hash as hex string
+// SHA-1 (legacy, not recommended for security)
+hash := TCryptoKit.SHA1Hash('text'); // 160-bit output
+
+// SHA-256 (recommended for general use)
+hash := TCryptoKit.SHA256Hash('text'); // 256-bit output
+
+// SHA-512 (recommended for 64-bit systems)
+hash := TCryptoKit.SHA512Hash('text'); // 512-bit output
+
+// SHA-512/256 (FIPS 180-4 compliant, recommended for 64-bit systems)
+hash := TCryptoKit.SHA512_256Hash('text'); // 256-bit output
 ```
 
 ### Base64 Encoding/Decoding
-```pascal
-// Encode string to Base64
-encoded := TCryptoKit.Base64Encode('Hello, World!');
 
-// Decode Base64 back to string
+```pascal
+// Encoding
+encoded := TCryptoKit.Base64Encode('Hello, World!');
+// Result: 'SGVsbG8sIFdvcmxkIQ=='
+
+// Decoding
+decoded := TCryptoKit.Base64Decode('SGVsbG8sIFdvcmxkIQ==');
+// Result: 'Hello, World!'
+
+// Error handling
+if (encoded = '') or (decoded = '') then
+  WriteLn('Encoding/decoding failed');
+```
+
+### XOR Encryption (Basic)
+
+```pascal
+// Basic encryption (not for sensitive data)
+const
+  Key = 'MySecretKey123';
+var
+  Text: string = 'Hello, World!';
+  Encrypted, Decrypted: string;
+begin
+  // Encrypt
+  Encrypted := TCryptoKit.XORCrypt(Text, Key);
+  
+  // Decrypt (same operation)
+  Decrypted := TCryptoKit.XORCrypt(Encrypted, Key);
+  
+  // Key wrapping is automatic for long texts
+  LongText := 'Very long text...';
+  Encrypted := TCryptoKit.XORCrypt(LongText, 'short key');
+end;
+```
+
+### Blowfish Encryption (Legacy Support)
+
+```pascal
+// Encryption
+const
+  Key = 'MySecretKey123456'; // Up to 56 bytes
+var
+  Text: string = 'Hello, World!';
+  Encrypted, Decrypted: string;
+begin
+  // Encrypt
+  Encrypted := TCryptoKit.BlowfishCrypt(Text, Key, bmEncrypt);
+  
+  // Decrypt
+  Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
+  
+  // Key length handling
+  if Length(Key) > 56 then
+    SetLength(Key, 56);  // Truncate to maximum allowed length
+end;
+```
+
+### Common Use Cases
+
+1. Password Hashing (use SHA-256 or SHA-512/256):
+```pascal
+userPasswordHash := TCryptoKit.SHA512_256Hash(password + salt);
+```
+
+2. File Checksum:
+```pascal
+fileContent := TFileKit.ReadFile('myfile.txt');
+checksum := TCryptoKit.SHA256Hash(fileContent);
+```
+
+3. Data Integrity Check:
+```pascal
+originalHash := TCryptoKit.SHA512_256Hash(originalData);
+receivedHash := TCryptoKit.SHA512_256Hash(receivedData);
+isValid := originalHash = receivedHash;
+```
+
+4. Safe String Storage:
+```pascal
+// Store sensitive string in Base64
+encoded := TCryptoKit.Base64Encode(sensitiveString);
+// Later, decode it
 decoded := TCryptoKit.Base64Decode(encoded);
 ```
 
-### XOR Encryption
-```pascal
-const
-  Text = 'Secret message';
-  Key = 'MyKey123';
-
-// Encrypt
-encrypted := TCryptoKit.XORCrypt(Text, Key);
-
-// Decrypt (same operation)
-decrypted := TCryptoKit.XORCrypt(encrypted, Key);
-
-// Note: XOR encryption is symmetric - the same operation both encrypts and decrypts
-// Not recommended for sensitive data
-```
-
-### Blowfish Encryption
-```pascal
-const
-  Text = 'Secret message';
-  Key = 'MySecretKey123456'; // Up to 56 bytes
-
-// Encrypt (returns Base64 encoded string)
-encrypted := TCryptoKit.BlowfishCrypt(Text, Key, bmEncrypt);
-
-// Decrypt (expects Base64 encoded input)
-decrypted := TCryptoKit.BlowfishCrypt(encrypted, Key, bmDecrypt);
-
-// Error handling
-if decrypted = '' then
-  WriteLn('Decryption failed');
-
-// Empty input handling
-if TCryptoKit.BlowfishCrypt('', Key, bmEncrypt) = '' then
-  WriteLn('Empty input returns empty output');
-if TCryptoKit.BlowfishCrypt(Text, '', bmEncrypt) = '' then
-  WriteLn('Empty key returns empty output');
-```
-
 ### Best Practices
-```pascal
-// 1. Key Management
-// - Generate strong random keys
-// - Never store keys in source code
-// - Protect keys in secure storage
-var
-  Key: string;
-begin
-  // Bad - key in source:
-  Key := 'hardcoded123';  // DON'T DO THIS
-  
-  // Better - load from secure configuration:
-  Key := LoadKeyFromSecureStorage;
-  try
-    // Use key here
-  finally
-    Key := '';  // Clear sensitive data
-  end;
-end;
 
-// 2. Error Handling
-var
-  Encrypted, Decrypted: string;
-begin
-  try
-    Encrypted := TCryptoKit.BlowfishCrypt(PlainText, Key, bmEncrypt);
-    if Encrypted = '' then
-      raise Exception.Create('Encryption failed');
-      
-    Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
-    if Decrypted = '' then
-      raise Exception.Create('Decryption failed');
-  except
-    on E: Exception do
-      // Handle error appropriately
-  end;
-end;
+1. Hash Function Selection:
+   - New applications: Use SHA-256 or SHA-512/256
+   - Legacy compatibility: MD5 or SHA-1 only if required
+   - Performance on 64-bit: Prefer SHA-512/256
 
-// 3. Input Validation
-var
-  PlainText, Key: string;
-begin
-  // Validate input before encryption
-  if (Length(PlainText) = 0) or (Length(Key) = 0) then
-    Exit;
-    
-  if Length(Key) > 56 then  // Blowfish key length limit
-    SetLength(Key, 56);
-end;
-```
+2. Key Management:
+   - Generate strong random keys
+   - Never store keys in plaintext
+   - Never reuse keys across systems
+   - Rotate keys periodically
+
+3. Algorithm Usage:
+   - XOR: Only for basic data obfuscation
+   - Blowfish: Only for legacy system compatibility
+   - Base64: Safe string encoding, not encryption
+   - Modern hashes: Always use salt for passwords
+
+4. Error Handling:
+   ```pascal
+   try
+     hash := TCryptoKit.SHA512_256Hash(data);
+     if hash = '' then
+       raise Exception.Create('Hashing failed');
+   except
+     on E: Exception do
+       // Handle error
+   end;
+   ```
+
+### Security Notes
+
+1. **Hash Collisions**:
+   - MD5: Known collisions, avoid for security
+   - SHA-1: Theoretically broken, avoid for security
+   - SHA-256/SHA-512: No known practical collisions
+
+2. **Performance**:
+   - SHA-512/256: Better on 64-bit systems
+   - SHA-256: Better on 32-bit systems
+   - Base64: Minimal overhead
+   - Blowfish: Moderate CPU usage
+
+3. **Output Sizes**:
+   - MD5: 32 hex chars (128 bits)
+   - SHA-1: 40 hex chars (160 bits)
+   - SHA-256: 64 hex chars (256 bits)
+   - SHA-512: 128 hex chars (512 bits)
+   - SHA-512/256: 64 hex chars (256 bits)

@@ -119,11 +119,29 @@ The `TCryptoKit` module provides essential cryptographic functionality using FPC
 #### Hashing Functions
 - MD5 hashing
 - SHA1 hashing
+- SHA-256 hashing
+- SHA-512 hashing
+- SHA-512/256 hashing (FIPS 180-4 compliant)
 
 ```pascal
+// Basic hash functions
 hash := TCryptoKit.MD5Hash('Hello, World!');
 hash := TCryptoKit.SHA1Hash('Hello, World!');
+
+// SHA-2 family
+hash := TCryptoKit.SHA256Hash('Hello, World!');   // 256-bit output
+hash := TCryptoKit.SHA512Hash('Hello, World!');   // 512-bit output
+hash := TCryptoKit.SHA512_256Hash('Hello, World!'); // 256-bit output using SHA-512 internals
 ```
+
+The SHA-512/256 implementation is fully compliant with FIPS 180-4, using:
+- Proper initialization vectors
+- Full 512-bit internal state
+- Correct truncation to 256 bits
+- Big-endian byte ordering
+- Standard block padding
+
+See [SHA-512/256 Implementation](docs/SHA512_256_Implementation.md) for detailed implementation notes.
 
 #### Encoding
 - Base64 encoding/decoding
@@ -158,17 +176,22 @@ decrypted := TCryptoKit.BlowfishCrypt(encrypted, key, bmDecrypt);
 
 #### Security Best Practices
 
-1. Key Management:
+1. Hash Function Selection:
+   - Use SHA-256 or SHA-512/256 for new applications
+   - MD5 and SHA-1 are provided for legacy compatibility only
+   - SHA-512/256 offers same security as SHA-256 with potentially better performance on 64-bit systems
+
+2. Key Management:
    - Use strong, random keys
    - Never reuse keys
    - Store keys securely
 
-2. Algorithm Selection:
+3. Algorithm Selection:
    - Use XOR encryption only for basic data obfuscation
    - Blowfish is suitable for legacy systems
    - Consider modern alternatives for new applications
 
-3. Additional Security:
+4. Additional Security:
    - Keep encryption keys separate from other application data
    - Use strong random number generators for key generation
    - Consider adding additional authentication mechanisms
