@@ -2,18 +2,34 @@
 
 This is a quick reference for the library's features.
 
+ 
 ## Table of Contents
 
-- [File System Operations](#file-system-operations)
-  - [Basic File Operations](#basic-file-operations)
-  - [Directory Operations](#directory-operations) 
-  - [File Listing](#file-listing)
-  - [Directory Listing](#directory-listing)
-  - [Path Operations](#path-operations)
-  - [File Information](#file-information)
+- [📋 Cheat Sheet](#-cheat-sheet)
+  - [Table of Contents](#table-of-contents)
+  - [📁File System Operations](#file-system-operations)
+  - [🧵String operations](#string-operations)
+  - [🕙 DateTime Operations](#-datetime-operations)
+    - [Basic Operations](#basic-operations)
+    - [Component Access](#component-access)
+    - [Component Modification](#component-modification)
+    - [Date Arithmetic](#date-arithmetic)
+    - [Period Operations](#period-operations)
+    - [Interval Operations](#interval-operations)
+    - [Date Comparison](#date-comparison)
+    - [Period Boundaries](#period-boundaries)
+    - [Date Rounding](#date-rounding)
+    - [Timezone Operations](#timezone-operations)
+  - [🔒 Cryptographic Operations](#-cryptographic-operations)
+    - [Hash Functions](#hash-functions)
+    - [Base64 Encoding/Decoding](#base64-encodingdecoding)
+    - [XOR Encryption (Basic)](#xor-encryption-basic)
+    - [Blowfish Encryption (Legacy Support)](#blowfish-encryption-legacy-support)
+    - [Common Use Cases](#common-use-cases)
+    - [Best Practices](#best-practices)
+    - [Security Notes](#security-notes)
 
-
-## File System Operations
+## 📁File System Operations
 
 ```pascal
 // Basic file operations
@@ -112,7 +128,7 @@ TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract al
 TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 ```
 
-## String operations
+## 🧵String operations
 
 ```pascal
 // Basic string operations
@@ -160,7 +176,7 @@ Str := TStringKit.LeftStr(Text, Length);          // Get left part
 Str := TStringKit.RightStr(Text, Length);         // Get right part
 ```
 
-## DateTime Operations
+## 🕙 DateTime Operations
 
 ### Basic Operations
 ```pascal
