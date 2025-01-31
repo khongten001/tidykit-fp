@@ -5,7 +5,7 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2;
 
 type
   { TBlowfishMode
@@ -13,6 +13,7 @@ type
     Defines the operation mode for Blowfish encryption/decryption }
   TBlowfishMode = (bmEncrypt, bmDecrypt);
 
+type
   { TCryptoKit
     ----------
     A comprehensive toolkit for cryptographic operations.
@@ -41,6 +42,34 @@ type
       Returns:
         SHA1 hash as a hexadecimal string. }
     class function SHA1Hash(const Text: string): string; static;
+    
+    { Computes SHA256 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA256 hash as a hexadecimal string. }
+    class function SHA256Hash(const Text: string): string; static;
+    
+    { Computes SHA512 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA512 hash as a hexadecimal string. }
+    class function SHA512Hash(const Text: string): string; static;
+    
+    { Computes SHA512/256 hash of a string.
+      This is a truncated version of SHA512, providing 256-bit security.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA512/256 hash as a hexadecimal string. }
+    class function SHA512_256Hash(const Text: string): string; static;
     
     { Encodes a string to Base64.
       
@@ -115,6 +144,21 @@ end;
 class function TCryptoKit.SHA1Hash(const Text: string): string;
 begin
   Result := SHA1Print(SHA1String(Text));
+end;
+
+class function TCryptoKit.SHA256Hash(const Text: string): string;
+begin
+  Result := TSHA2.SHA256(Text);
+end;
+
+class function TCryptoKit.SHA512Hash(const Text: string): string;
+begin
+  Result := TSHA2.SHA512(Text);
+end;
+
+class function TCryptoKit.SHA512_256Hash(const Text: string): string;
+begin
+  Result := TSHA2.SHA512_256(Text);
 end;
 
 class function TCryptoKit.Base64Encode(const Text: string): string;
