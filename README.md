@@ -2,6 +2,11 @@
 
 TidyKit is a Free Pascal library that helps you tackle common tasks faster, with clean, type-safe code.
 
+## 🎯 Why TidyKit?
+
+- **Simplified APIs**: Common operations in just one line of code
+- **Type Safety**: Catch errors at compile time, not runtime
+
 > [!WARNING]
 > This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. 
 > 
@@ -54,17 +59,17 @@ end.
 
 ```pascal
 // String operations
-WriteLn(TStringKit.PadCenter('title', 20, '')); // title
+WriteLn(TStringKit.PadCenter('title', 20, '*'));  // *******title********
 
 // DateTime operations
-WriteLn(TDateTimeKit.GetAsString(TDateTimeKit.GetNow, 'yyyy-mm-dd'));
+WriteLn(TDateTimeKit.GetAsString(TDateTimeKit.GetNow, 'yyyy-mm-dd'));  // 2024-03-20
 
 // File operations
 TFileKit.WriteFile('output.txt', 'Hello World');
-Files := TFileKit.ListFiles('.', '.txt', True); // Recursive search
+Files := TFileKit.ListFiles('.', '*.txt', True);  // Recursive search for .txt files
 
 // Crypto operations
-WriteLn(TCryptoKit.SHA256Hash('Hello World'));
+WriteLn(TCryptoKit.SHA256Hash('Hello World'));  // 64-char hex string
 ```
 
 

@@ -1,7 +1,6 @@
 # 📋 Cheat Sheet
 
-This is a quick reference for the library's features.
-
+A comprehensive reference of TidyKit's features and usage examples.
  
 ## Table of Contents
 
