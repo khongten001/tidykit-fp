@@ -5,8 +5,7 @@ unit TestCaseCrypto;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit,
-  TidyKit.Crypto;
+  Classes, SysUtils, fpcunit, testregistry, TidyKit;
 
 type
   { TTestCaseCrypto }

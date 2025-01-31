@@ -6,6 +6,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 
 - **Simplified APIs**: Common operations in just one line of code
 - **Type Safety**: Catch errors at compile time, not runtime
+- **Flexible Usage**: Use the entire toolkit or just the modules you need
 
 > [!WARNING]
 > This library is currently in early development stage. The API is not stable and may undergo breaking changes between versions. 
@@ -20,16 +21,47 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 - 🛡️ **Memory Safe**: Proper resource management
 - ⚡ **High Performance**: Optimized for both 32-bit and 64-bit systems
 - 📦 **Zero Dependencies**: Just FPC standard library
+- 🔄 **Modular Design**: Use only what you need
 
-## 🚀 Quick Start
+## 📚 Available Modules
 
-1. Clone and add to your project:
+- 🔒 **Cryptographic Operations** (TidyKit.Crypto)
+  - Hash functions (MD5, SHA1, SHA2 family)
+  - Encryption (Blowfish, XOR)
+  - Base64 encoding/decoding
 
-```bash
-git clone https://github.com/ikelaiah/tidykit-fp
-```
+- 🗂️ **FileSystem Operations** (TidyKit.FS)
+  - File searching and filtering
+  - Path manipulation
+  - File attributes handling
+  - Basic zip and tar support
 
-2. Add the following to your project's `uses` clause:
+- 📝 **String Operations** (TidyKit.Strings)
+  - Pattern matching
+  - String transformations
+  - Text processing
+
+- 📅 **DateTime Operations** (TidyKit.DateTime)
+  - Date arithmetic
+  - Time zone handling
+  - Duration calculations
+
+## 🚀 Installation
+
+1. Clone the repository:
+   ```bash
+   git clone https://github.com/ikelaiah/tidykit-fp
+   ```
+
+2. Add the `src` directory to your project's search path.
+
+## 📖 Usage
+
+TidyKit offers two flexible ways to use its functionality:
+
+### 1. Complete Package
+
+If you want to use multiple features from TidyKit, simply use the main unit:
 
 ```pascal
 program MyProject;
@@ -41,37 +73,100 @@ uses
   cthreads,
   {$ENDIF}
   Classes, SysUtils,
-  TidyKit; // Add this line
+  TidyKit;  // Include everything
 
+var
+  Hash: string;
+  Files: TSearchResults;
 begin
-  // Your code here
+  // Use any TidyKit functionality
+  Hash := TCryptoKit.SHA256Hash('test');
+  Files := TFileKit.FindFiles('*.pas');
 end.
 ```
 
-## 📚 Available Modules
+### 2. Individual Modules
 
-- 📝 **String Operations**: Pattern matching, transformations, and text manipulation
-- 📅 **DateTime Operations**: Parsing, formatting, arithmetic, and timezone handling
-- 🗂️ **FileSystem Operations**: File/directory operations, path handling, archives (basic zip and tar support)
-- 🔒 **Cryptographic Operations**: Hashing, encoding, and basic encryption
+For better control over dependencies and potentially smaller binary size, you can use only the specific modules you need:
+
+```pascal
+program MyProject;
+
+{$mode objfpc}{$H+}{$J-}
+
+uses
+  {$IFDEF UNIX}
+  cthreads,
+  {$ENDIF}
+  Classes, SysUtils,
+  TidyKit.Crypto,  // Only if you need cryptographic functions
+  TidyKit.FS;      // Only if you need filesystem operations
+
+var
+  Hash: string;
+  Files: TSearchResults;
+begin
+  Hash := TCryptoKit.SHA256Hash('test');
+  Files := TFileKit.FindFiles('*.pas');
+end.
+```
+
+Available modules:
+- `TidyKit.Crypto` - Cryptographic operations
+- `TidyKit.FS` - File system operations
+- `TidyKit.Strings` - String manipulation
+- `TidyKit.DateTime` - Date and time utilities
+- `TidyKit.Core` - Core functionality
 
 ## 💡 Example Usage
 
+### Cryptography
 ```pascal
-// String operations
-WriteLn(TStringKit.PadCenter('title', 20, '*'));  // *******title********
+uses
+  TidyKit.Crypto;
 
-// DateTime operations
-WriteLn(TDateTimeKit.GetAsString(TDateTimeKit.GetNow, 'yyyy-mm-dd'));  // 2024-03-20
-
-// File operations
-TFileKit.WriteFile('output.txt', 'Hello World');
-Files := TFileKit.ListFiles('.', '*.txt', True);  // Recursive search for .txt files
-
-// Crypto operations
-WriteLn(TCryptoKit.SHA256Hash('Hello World'));  // 64-char hex string
+var
+  EncryptedText: string;
+begin
+  // Hash
+  WriteLn(TCryptoKit.SHA256Hash('test'));
+  
+  // Encryption
+  EncryptedText := TCryptoKit.BlowfishCrypt('Secret text', 'key', bmEncrypt);
+  WriteLn(TCryptoKit.BlowfishCrypt(EncryptedText, 'key', bmDecrypt));
+end;
 ```
 
+### File Operations
+```pascal
+uses
+  TidyKit.FS;
+
+var
+  Files: TSearchResults;
+begin
+  Files := TFileKit.FindFiles('*.txt', True);  // True for recursive search
+  try
+    for var File in Files do
+      WriteLn(File.Name);
+  finally
+    Files.Free;
+  end;
+end;
+```
+
+### Date/Time Operations
+```pascal
+uses
+  TidyKit.DateTime;
+
+var
+  NextWeek: TDateTime;
+begin
+  NextWeek := TDateTimeKit.AddInterval(Now, 1, duWeek);
+  WriteLn(DateTimeToStr(NextWeek));
+end;
+```
 
 ## 📖 Documentation
 

@@ -1,3 +1,24 @@
+{
+  TidyKit.Crypto.SHA2 - Secure Hash Algorithm 2 Implementation
+  
+  SECURITY CONSIDERATIONS:
+  - This implementation follows FIPS 180-4 specification
+  - Handles memory in a deterministic way
+  - Uses overflow protection in critical sections
+  - Implements proper padding according to spec
+  
+  USAGE WARNINGS:
+  - SHA2 is cryptographically secure but should not be used for password storage
+    (use dedicated password hashing functions like Argon2 instead)
+  - For digital signatures, prefer SHA-512 over SHA-256 when possible
+  - Always validate input data before hashing
+  
+  IMPLEMENTATION NOTES:
+  - All arithmetic is performed with overflow checking where critical
+  - Proper endianness handling for cross-platform compatibility
+  - Constant-time operations for core functions
+}
+
 unit TidyKit.Crypto.SHA2;
 
 {$mode objfpc}{$H+}{$J-}
@@ -8,15 +29,16 @@ uses
   Classes, SysUtils;
 
 type
-  TSHA2_256State = array[0..7] of Cardinal;
-  TSHA2_512State = array[0..7] of QWord;
-  TSHA2_256Block = array[0..15] of Cardinal;
-  TSHA2_512Block = array[0..15] of QWord;
+  { Core types for SHA-256 operations }
+  TSHA2_256State = array[0..7] of Cardinal;  // Holds the 256-bit internal state
+  TSHA2_512State = array[0..7] of QWord;     // Holds the 512-bit internal state
+  TSHA2_256Block = array[0..15] of Cardinal; // 512-bit message block for SHA-256
+  TSHA2_512Block = array[0..15] of QWord;    // 1024-bit message block for SHA-512
 
-  { UInt128 record for handling 128-bit arithmetic }
+  { UInt128 record for handling 128-bit arithmetic in message length calculations }
   TUInt128 = record
-    Lo: QWord;
-    Hi: QWord;
+    Lo: QWord;  // Lower 64 bits
+    Hi: QWord;  // Upper 64 bits
   end;
 
   { TSHA2 }
@@ -86,6 +108,9 @@ const
   );
 
 { Helper functions implementation }
+
+{ SwapEndian: Converts 32-bit value between big-endian and little-endian
+  Critical for cross-platform compatibility since SHA2 operates in big-endian }
 class function TSHA2.SwapEndian(Value: Cardinal): Cardinal;
 begin
   Result := (Value shr 24) or
@@ -94,6 +119,8 @@ begin
             (Value shl 24);
 end;
 
+{ SwapEndian64: 64-bit version of endianness conversion
+  Used by SHA-512 operations which work with 64-bit words }
 class function TSHA2.SwapEndian64(Value: QWord): QWord;
 begin
   Result := (Value shr 56) or
@@ -106,26 +133,37 @@ begin
             (Value shl 56);
 end;
 
+{ RightRotate: Performs right rotation on 32-bit values
+  Critical operation in SHA-256 compression function }
 class function TSHA2.RightRotate(Value: Cardinal; Bits: Byte): Cardinal;
 begin
   Result := (Value shr Bits) or (Value shl (32 - Bits));
 end;
 
+{ RightRotate64: 64-bit version of right rotation
+  Used in SHA-512 compression function }
 class function TSHA2.RightRotate64(Value: QWord; Bits: Byte): QWord;
 begin
   Result := (Value shr Bits) or (Value shl (64 - Bits));
 end;
 
+{ Ch (Choose): One of the core functions in SHA-2
+  For each bit position, chooses between y and z based on x
+  Important: This implementation is constant-time }
 class function TSHA2.Ch(x, y, z: Cardinal): Cardinal;
 begin
   Result := (x and y) xor (not x and z);
 end;
 
+{ Ch64: 64-bit version of the Choose function }
 class function TSHA2.Ch64(x, y, z: QWord): QWord;
 begin
   Result := (x and y) xor (not x and z);
 end;
 
+{ Maj (Majority): Another core function in SHA-2
+  For each bit position, takes the majority value of x, y, and z
+  Important: This implementation is constant-time }
 class function TSHA2.Maj(x, y, z: Cardinal): Cardinal;
 begin
   Result := (x and y) xor (x and z) xor (y and z);
@@ -176,25 +214,32 @@ begin
   Result := RightRotate64(x, 19) xor RightRotate64(x, 61) xor (x shr 6);
 end;
 
-{ Helper function for 128-bit addition }
+{ Add128: Safe 128-bit addition for message length calculations
+  SECURITY NOTE: Properly handles overflow conditions }
 class procedure TSHA2.Add128(var Sum: TUInt128; Value: QWord);
 var
   PrevLo: QWord;
 begin
   PrevLo := Sum.Lo;
   Sum.Lo := Sum.Lo + Value;
-  // If Sum.Lo < PrevLo, it means we had an overflow
+  // Detect overflow and increment high bits accordingly
   if Sum.Lo < PrevLo then
     Inc(Sum.Hi);
 end;
 
-{ Main transform procedures }
+{ SHA256Transform: Core transformation function for SHA-256
+  SECURITY NOTES:
+  - All arithmetic uses QWord for intermediate calculations to prevent overflow
+  - Constant-time operations for cryptographic security
+  - Follows FIPS 180-4 specification exactly
+  
+  WARNING: This procedure assumes valid input block size (512 bits) }
 class procedure TSHA2.SHA256Transform(var State: TSHA2_256State; const Block: TSHA2_256Block);
 var
   W: array[0..63] of Cardinal;
   A, B, C, D, E, F, G, H, T1, T2: Cardinal;
   I: Integer;
-  Sum: QWord; // Use QWord for intermediate calculations to prevent overflow
+  Sum: QWord; // Used for safe arithmetic without overflow
 begin
   // Initialize working variables
   A := State[0];
@@ -257,6 +302,13 @@ begin
   State[7] := Cardinal(Sum and $FFFFFFFF);
 end;
 
+{ SHA512Transform: Core transformation function for SHA-512
+  SECURITY NOTES:
+  - Uses 64-bit arithmetic throughout
+  - Implements constant-time operations
+  - Overflow checking disabled only where mathematically safe
+  
+  WARNING: This procedure assumes valid input block size (1024 bits) }
 class procedure TSHA2.SHA512Transform(var State: TSHA2_512State; const Block: TSHA2_512Block);
 var
   W: array[0..79] of QWord;
@@ -311,7 +363,16 @@ begin
   {$Q+}  // Re-enable overflow checking
 end;
 
-{ Public hash functions }
+{ SHA256: Computes SHA-256 hash of input string
+  SECURITY NOTES:
+  - Input is processed byte-by-byte, making it suitable for any string data
+  - Padding is performed according to FIPS 180-4 specification
+  - Length is properly handled up to 2^64-1 bits
+  
+  WARNINGS:
+  - Not suitable for password storage - use dedicated password hash instead
+  - Ensure input data is validated before calling this function
+  - For digital signatures, consider using SHA-512 instead }
 class function TSHA2.SHA256(const Data: string): string;
 var
   State: TSHA2_256State;
@@ -361,6 +422,16 @@ begin
     Result := Result + IntToHex(State[I], 8);
 end;
 
+{ SHA512: Computes SHA-512 hash of input string
+  SECURITY NOTES:
+  - Provides 512-bit output (stronger than SHA-256)
+  - Suitable for digital signatures and general cryptographic use
+  - Uses 64-bit arithmetic for improved security on 64-bit platforms
+  
+  WARNINGS:
+  - Not suitable for password storage
+  - Ensure input data is validated
+  - Performance impact on 32-bit platforms }
 class function TSHA2.SHA512(const Data: string): string;
 var
   State: TSHA2_512State;
@@ -413,6 +484,15 @@ begin
     Result := Result + IntToHex(State[I], 16);
 end;
 
+{ SHA512_256: Computes SHA-512/256 hash of input string
+  SECURITY NOTES:
+  - Uses SHA-512 internal structure but produces 256-bit output
+  - More secure than SHA-256 on 64-bit platforms
+  - Different initialization vectors than SHA-512
+  
+  IMPLEMENTATION NOTE:
+  - This is NOT truncated SHA-512, but a distinct hash function
+  - Uses unique initialization values defined in FIPS 180-4 }
 class function TSHA2.SHA512_256(const Data: string): string;
 var
   State: TSHA2_512State;

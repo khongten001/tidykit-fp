@@ -13,6 +13,7 @@ type
     Defines the operation mode for Blowfish encryption/decryption }
   TBlowfishMode = (bmEncrypt, bmDecrypt);
 
+type
   { TCryptoKit
     ----------
     A comprehensive toolkit for cryptographic operations.

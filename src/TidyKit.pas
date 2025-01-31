@@ -25,6 +25,10 @@ type
   TSearchResult = TidyKit.FS.TSearchResult;
   TFilePathArray = TidyKit.FS.TFilePathArray;
 
+  { Re-export the crypto types }
+  TCryptoKit = TidyKit.Crypto.TCryptoKit;
+  TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+
 const
   { Re-export filesystem constants }
   fsNone = TidyKit.FS.fsNone;
@@ -51,6 +55,10 @@ const
   dskPeriod = TidyKit.DateTime.dskPeriod;
   dskDuration = TidyKit.DateTime.dskDuration;
 
+  { Re-export crypto constants }
+  bmEncrypt = TidyKit.Crypto.bmEncrypt;
+  bmDecrypt = TidyKit.Crypto.bmDecrypt;
+
 type
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
@@ -64,9 +72,6 @@ type
   TDateUnit = TidyKit.DateTime.TDateUnit;
   TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
   ETimeZoneError = TidyKit.DateTime.ETimeZoneError;
-
-  { Re-export the crypto types }
-  TCryptoKit = TidyKit.Crypto.TCryptoKit;
 
 implementation
 
