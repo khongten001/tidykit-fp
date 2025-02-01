@@ -331,11 +331,11 @@ begin
   
   // Generate hash
   FillChar(HashValue, SizeOf(HashValue), 0);
-  Squeeze(State, HashValue, 28);
+  Squeeze(State, HashValue, 28);  // 224 bits = 28 bytes
   
   // Convert to hex string
   Result := '';
-  for I := 0 to 27 do
+  for I := 0 to 27 do  // Only iterate over 28 bytes
     Result := Result + IntToHex(HashValue[I], 2);
   {$Q+}
 end;
