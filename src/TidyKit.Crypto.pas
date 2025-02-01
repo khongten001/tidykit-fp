@@ -5,7 +5,7 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3;
 
 type
   { TBlowfishMode
@@ -70,6 +70,42 @@ type
       Returns:
         SHA512/256 hash as a hexadecimal string. }
     class function SHA512_256Hash(const Text: string): string; static;
+
+    { Computes SHA3-224 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA3-224 hash as a hexadecimal string. }
+    class function SHA3_224Hash(const Text: string): string; static;
+    
+    { Computes SHA3-256 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA3-256 hash as a hexadecimal string. }
+    class function SHA3_256Hash(const Text: string): string; static;
+    
+    { Computes SHA3-384 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA3-384 hash as a hexadecimal string. }
+    class function SHA3_384Hash(const Text: string): string; static;
+    
+    { Computes SHA3-512 hash of a string.
+      
+      Parameters:
+        Text - The string to hash.
+        
+      Returns:
+        SHA3-512 hash as a hexadecimal string. }
+    class function SHA3_512Hash(const Text: string): string; static;
     
     { Encodes a string to Base64.
       
@@ -159,6 +195,26 @@ end;
 class function TCryptoKit.SHA512_256Hash(const Text: string): string;
 begin
   Result := TSHA2.SHA512_256(Text);
+end;
+
+class function TCryptoKit.SHA3_224Hash(const Text: string): string;
+begin
+  Result := TSHA3.SHA3_224(Text);
+end;
+
+class function TCryptoKit.SHA3_256Hash(const Text: string): string;
+begin
+  Result := TSHA3.SHA3_256(Text);
+end;
+
+class function TCryptoKit.SHA3_384Hash(const Text: string): string;
+begin
+  Result := TSHA3.SHA3_384(Text);
+end;
+
+class function TCryptoKit.SHA3_512Hash(const Text: string): string;
+begin
+  Result := TSHA3.SHA3_512(Text);
 end;
 
 class function TCryptoKit.Base64Encode(const Text: string): string;
