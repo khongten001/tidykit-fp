@@ -682,7 +682,7 @@ end;
 procedure TTestCaseCrypto.Test80_SHA3_224EmptyString;
 begin
   AssertEquals('SHA3-224 of empty string',
-    'F71837502BA8E10837BDD8D365ADB85591895602FC552B48B7390ABD',
+    '6B4E03423667DBB73B6E15454F0EB1ABD4597F9A1B078E3F5B5A6BC7',
     UpperCase(TCryptoKit.SHA3_224Hash('')));
 end;
 
@@ -711,8 +711,8 @@ procedure TTestCaseCrypto.Test84_SHA3_224KnownAnswer;
 begin
   WriteLn('Test84_SHA3_224KnownAnswer: Starting');
   AssertEquals('SHA3-224 known answer test',
-    '310AEE6B30C47350576AC2873FA89FD190CDC488442F3EF654CF23FE',
-    UpperCase(TCryptoKit.SHA3_224Hash('The quick brown fox jumps over the lazy dog')));
+    'E642824C3F8CF24AD09234EE7D3C766FC9A3A5168D0C94AD73B46FDF',
+    UpperCase(TCryptoKit.SHA3_224Hash('abc')));
   WriteLn('Test84_SHA3_224KnownAnswer: Finished');
 end;
 
@@ -720,23 +720,23 @@ procedure TTestCaseCrypto.Test85_SHA3_256KnownAnswer;
 begin
   WriteLn('Test85_SHA3_256KnownAnswer: Starting');
   AssertEquals('SHA3-256 known answer test',
-    '69070DDA01975C8C120C3AADA1B282394E7F032FA9CF32F4CB2259A0897DFC04',
-    UpperCase(TCryptoKit.SHA3_256Hash('The quick brown fox jumps over the lazy dog')));
+    '3A985DA74FE225B2045C172D6BD390BD855F086E3E9D525B46BFE24511431532',
+    UpperCase(TCryptoKit.SHA3_256Hash('abc')));
   WriteLn('Test85_SHA3_256KnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test86_SHA3_384KnownAnswer;
 begin
   AssertEquals('SHA3-384 known answer test',
-    '7063465E08A93BCE31CD89D2E3CA8F602498696E253592ED26F07BF7E703CF328581E1471A7BA7AB119B1A9EBDF8BE41',
-    UpperCase(TCryptoKit.SHA3_384Hash('The quick brown fox jumps over the lazy dog')));
+    'EC01498288516FC926459F58E2C6AD8DF9B473CB0FC08C2596DA7CF0E49BE4B298D88CEA927AC7F539F1EDF228376D25',
+    UpperCase(TCryptoKit.SHA3_384Hash('abc')));
 end;
 
 procedure TTestCaseCrypto.Test87_SHA3_512KnownAnswer;
 begin
   AssertEquals('SHA3-512 known answer test',
-    '01DEDD5DE4EF14642445BA5F5B97C15E47B9AD931326E4B0727CD94CEFC44FFF23F07BF543139939B49128CAF436DC1BDEE54FCB24023A08D9403F9B4BF0D450',
-    UpperCase(TCryptoKit.SHA3_512Hash('The quick brown fox jumps over the lazy dog')));
+    'B751850B1A57168A5693CD924B6B096E08F621827444F70D884F5D0240D2712E10E116E9192AF3C91A7EC57647E3934057340B4CF408D5A56592F8274EEC53F0',
+    UpperCase(TCryptoKit.SHA3_512Hash('abc')));
 end;
 
 procedure TTestCaseCrypto.Test88_SHA3_224LongString;

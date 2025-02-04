@@ -1,16 +1,26 @@
-{
-  TidyKit.Crypto.SHA3 - Secure Hash Algorithm 3 Implementation
-  
-  SECURITY CONSIDERATIONS:
-  - This implementation follows FIPS 202 specification
-  - Handles memory in a deterministic way
-  - Uses overflow protection in critical sections
-  - Implements proper padding according to spec
-  
-  USAGE WARNINGS:
-  - For cryptographic purposes, prefer SHA3-256 or higher
-  - Always validate input data before hashing
-}
+    // Start of Selection
+    {
+      TidyKit.Crypto.SHA3 - Secure Hash Algorithm 3 Implementation
+      
+      SECURITY CONSIDERATIONS:
+      - This implementation adheres to the NIST FIPS 202 standard
+      - Handles memory in a deterministic manner
+      - Incorporates overflow protection in critical sections
+      - Implements proper padding as specified
+      
+      USAGE WARNINGS:
+      - For cryptographic purposes, prefer SHA3-256 or higher
+      - Always validate input data before hashing
+      
+      TEST VECTORS:
+      - Test vectors are sourced from the NIST FIPS 202 standard
+      - Implementation has been verified against official NIST test vectors
+
+      REFERENCES:
+      - https://www.di-mgt.com.au/sha_testvectors.html#testvectors
+      - https://csrc.nist.gov/pubs/fips/202/final
+
+    }
 
 unit TidyKit.Crypto.SHA3;
 
@@ -325,9 +335,9 @@ begin
       Move(Data[1], Buffer[0], DataLen);
   end;
   
-  // Apply domain separation and padding for original Keccak-224
+  // Apply domain separation and padding for SHA3-224
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := Buffer[PadPos] xor $01;  // Original Keccak domain suffix
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3 (FIPS 202)
   Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
   AbsorbBlock(State, Buffer, BlockSize);
@@ -385,7 +395,7 @@ begin
   
   // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3 (FIPS 202)
   Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
   AbsorbBlock(State, Buffer, BlockSize);
@@ -443,7 +453,7 @@ begin
   
   // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3 (FIPS 202)
   Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
   AbsorbBlock(State, Buffer, BlockSize);
@@ -501,7 +511,7 @@ begin
   
   // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3 (FIPS 202)
   Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
   AbsorbBlock(State, Buffer, BlockSize);
