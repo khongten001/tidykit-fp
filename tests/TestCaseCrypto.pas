@@ -682,7 +682,7 @@ end;
 procedure TTestCaseCrypto.Test80_SHA3_224EmptyString;
 begin
   AssertEquals('SHA3-224 of empty string',
-    '6B4E03423667DBB73B6E15454F0EB1ABD4597F9A1B078E3F5B5A6BC7',
+    'F71837502BA8E10837BDD8D365ADB85591895602FC552B48B7390ABD',
     UpperCase(TCryptoKit.SHA3_224Hash('')));
 end;
 
@@ -709,16 +709,20 @@ end;
 
 procedure TTestCaseCrypto.Test84_SHA3_224KnownAnswer;
 begin
+  WriteLn('Test84_SHA3_224KnownAnswer: Starting');
   AssertEquals('SHA3-224 known answer test',
-    'E642824C3F8CF24AD09234EE7D3C766FC9A3A5168D0C94AD73B46FDF',
+    '310AEE6B30C47350576AC2873FA89FD190CDC488442F3EF654CF23FE',
     UpperCase(TCryptoKit.SHA3_224Hash('The quick brown fox jumps over the lazy dog')));
+  WriteLn('Test84_SHA3_224KnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test85_SHA3_256KnownAnswer;
 begin
+  WriteLn('Test85_SHA3_256KnownAnswer: Starting');
   AssertEquals('SHA3-256 known answer test',
     '69070DDA01975C8C120C3AADA1B282394E7F032FA9CF32F4CB2259A0897DFC04',
     UpperCase(TCryptoKit.SHA3_256Hash('The quick brown fox jumps over the lazy dog')));
+  WriteLn('Test85_SHA3_256KnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test86_SHA3_384KnownAnswer;

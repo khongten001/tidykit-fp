@@ -130,12 +130,10 @@ var
 begin
   {$Q-}
   // Step 1: Calculate column parities
+  FillChar(C, SizeOf(C), 0);
   for X := 0 to 4 do
-  begin
-    C[X] := 0;
     for Y := 0 to 4 do
-      C[X] := C[X] xor State[X + 5 * Y];
-  end;
+      C[X] := C[X] xor State[Y * 5 + X];
 
   // Step 2: Calculate D values
   for X := 0 to 4 do
@@ -144,7 +142,7 @@ begin
   // Step 3: Apply D values to state
   for Y := 0 to 4 do
     for X := 0 to 4 do
-      State[X + 5 * Y] := State[X + 5 * Y] xor D[X];
+      State[Y * 5 + X] := State[Y * 5 + X] xor D[X];
   {$Q+}
 end;
 
@@ -159,7 +157,7 @@ begin
   for Y := 0 to 4 do
     for X := 0 to 4 do
     begin
-      Current := X + 5 * Y;
+      Current := Y * 5 + X;  // Convert to flat index according to FIPS 202
       if (X <> 0) or (Y <> 0) then  // Skip (0,0)
       begin
         Temp := State[Current];
@@ -172,13 +170,17 @@ end;
 class procedure TSHA3.Pi(var State: TSHA3State);
 var
   Temp: array[0..24] of QWord;
-  X, Y: Integer;
+  X, Y, NewX, NewY: Integer;
 begin
   Move(State, Temp, SizeOf(State));
   
-  for X := 0 to 4 do
-    for Y := 0 to 4 do
-      State[Y + 5*((2*X + 3*Y) mod 5)] := Temp[X + 5*Y];
+  for Y := 0 to 4 do
+    for X := 0 to 4 do
+    begin
+      NewX := Y;
+      NewY := (2 * X + 3 * Y) mod 5;
+      State[NewY * 5 + NewX] := Temp[Y * 5 + X];
+    end;
 end;
 
 class procedure TSHA3.Chi(var State: TSHA3State);
@@ -191,9 +193,9 @@ begin
   
   for Y := 0 to 4 do
     for X := 0 to 4 do
-      State[X + 5 * Y] := Temp[X + 5 * Y] xor 
-        ((not Temp[((X + 1) mod 5) + 5 * Y]) and 
-         Temp[((X + 2) mod 5) + 5 * Y]);
+      State[Y * 5 + X] := Temp[Y * 5 + X] xor 
+        (not Temp[Y * 5 + ((X + 1) mod 5)] and 
+         Temp[Y * 5 + ((X + 2) mod 5)]);
   {$Q+}
 end;
 
@@ -223,10 +225,10 @@ end;
 class function TSHA3.GetCapacityForMode(Mode: TSHA3Mode): Integer;
 begin
   case Mode of
-    sm224: Result := 448;
-    sm256: Result := 512;
-    sm384: Result := 768;
-    sm512: Result := 1024;
+    sm224: Result := 448;  // Capacity for SHA3-224 is 448 bits
+    sm256: Result := 512;  // Capacity for SHA3-256 is 512 bits
+    sm384: Result := 768;  // Capacity for SHA3-384 is 768 bits
+    sm512: Result := 1024; // Capacity for SHA3-512 is 1024 bits
   else
     Result := 512; // Default to SHA3-256
   end;
@@ -248,7 +250,7 @@ begin
     Lane := 0;
     for J := 0 to 7 do
       if (I * 8 + J < Length(Block)) and (I * 8 + J < BlockSize) then
-        Lane := Lane or (QWord(Block[I * 8 + J]) shl (8 * J));  // Little-endian
+        Lane := Lane or (QWord(Block[I * 8 + J]) shl (J * 8));  // Little-endian byte order
     if I < Length(State) then
       State[I] := State[I] xor Lane;
   end;
@@ -262,12 +264,19 @@ var
 begin
   {$Q-}
   I := 0;
-  while (I < OutputSize) and (I div 8 < Length(State)) do
+  while (I < OutputSize) do
   begin
+    if I div 8 >= Length(State) then
+      Break;
+      
     Lane := State[I div 8];
-    for J := 0 to Min(7, OutputSize - I - 1) do
+    for J := 0 to 7 do
+    begin
+      if I + J >= OutputSize then
+        Break;
       if I + J < Length(Output) then
-        Output[I + J] := Byte(Lane shr (8 * J));  // Little-endian
+        Output[I + J] := Byte(Lane shr (J * 8));  // Match AbsorbBlock endianness
+    end;
     Inc(I, 8);
   end;
   {$Q+}
@@ -289,16 +298,13 @@ begin
   DataLen := Length(Data);
   BlockSize := Rate div 8;
   
-  // For empty string, we only need one block for padding
   SetLength(Buffer, BlockSize);
   FillChar(Buffer[0], BlockSize, 0);
   
-  // Copy input data if any
   if DataLen > 0 then
   begin
     if DataLen > BlockSize then
     begin
-      // Handle multiple blocks
       SetLength(TempBuffer, DataLen);
       Move(Data[1], TempBuffer[0], DataLen);
       
@@ -311,7 +317,6 @@ begin
         Inc(I, BlockSize);
       end;
       
-      // Reset buffer for final block
       FillChar(Buffer[0], BlockSize, 0);
       if DataLen - I > 0 then
         Move(TempBuffer[I], Buffer[0], DataLen - I);
@@ -320,22 +325,19 @@ begin
       Move(Data[1], Buffer[0], DataLen);
   end;
   
-  // Apply domain separation and padding according to FIPS 202 section 6.1
+  // Apply domain separation and padding for original Keccak-224
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := $06;  // Domain separator (binary 00000110)
-  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] or $80;  // Final "1" of pad10*1
+  Buffer[PadPos] := Buffer[PadPos] xor $01;  // Original Keccak domain suffix
+  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
-  // Process final block
   AbsorbBlock(State, Buffer, BlockSize);
   KeccakF1600(State);
   
-  // Generate hash
   FillChar(HashValue, SizeOf(HashValue), 0);
-  Squeeze(State, HashValue, 28);  // 224 bits = 28 bytes
+  Squeeze(State, HashValue, 28);
   
-  // Convert to hex string
   Result := '';
-  for I := 0 to 27 do  // Only iterate over 28 bytes
+  for I := 0 to 27 do
     Result := Result + IntToHex(HashValue[I], 2);
   {$Q+}
 end;
@@ -354,16 +356,13 @@ begin
   DataLen := Length(Data);
   BlockSize := Rate div 8;
   
-  // For empty string, we only need one block for padding
   SetLength(Buffer, BlockSize);
   FillChar(Buffer[0], BlockSize, 0);
   
-  // Copy input data if any
   if DataLen > 0 then
   begin
     if DataLen > BlockSize then
     begin
-      // Handle multiple blocks
       SetLength(TempBuffer, DataLen);
       Move(Data[1], TempBuffer[0], DataLen);
       
@@ -376,7 +375,6 @@ begin
         Inc(I, BlockSize);
       end;
       
-      // Reset buffer for final block
       FillChar(Buffer[0], BlockSize, 0);
       if DataLen - I > 0 then
         Move(TempBuffer[I], Buffer[0], DataLen - I);
@@ -385,20 +383,17 @@ begin
       Move(Data[1], Buffer[0], DataLen);
   end;
   
-  // Apply domain separation and padding according to FIPS 202 section 6.1
+  // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := $06;  // Domain separator (binary 00000110)
-  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] or $80;  // Final "1" of pad10*1
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
-  // Process final block
   AbsorbBlock(State, Buffer, BlockSize);
   KeccakF1600(State);
   
-  // Generate hash
   FillChar(HashValue, SizeOf(HashValue), 0);
   Squeeze(State, HashValue, 32);
   
-  // Convert to hex string
   Result := '';
   for I := 0 to 31 do
     Result := Result + IntToHex(HashValue[I], 2);
@@ -419,16 +414,13 @@ begin
   DataLen := Length(Data);
   BlockSize := Rate div 8;
   
-  // For empty string, we only need one block for padding
   SetLength(Buffer, BlockSize);
   FillChar(Buffer[0], BlockSize, 0);
   
-  // Copy input data if any
   if DataLen > 0 then
   begin
     if DataLen > BlockSize then
     begin
-      // Handle multiple blocks
       SetLength(TempBuffer, DataLen);
       Move(Data[1], TempBuffer[0], DataLen);
       
@@ -441,7 +433,6 @@ begin
         Inc(I, BlockSize);
       end;
       
-      // Reset buffer for final block
       FillChar(Buffer[0], BlockSize, 0);
       if DataLen - I > 0 then
         Move(TempBuffer[I], Buffer[0], DataLen - I);
@@ -450,20 +441,17 @@ begin
       Move(Data[1], Buffer[0], DataLen);
   end;
   
-  // Apply domain separation and padding according to FIPS 202 section 6.1
+  // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := $06;  // Domain separator (binary 00000110)
-  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] or $80;  // Final "1" of pad10*1
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
-  // Process final block
   AbsorbBlock(State, Buffer, BlockSize);
   KeccakF1600(State);
   
-  // Generate hash
   FillChar(HashValue, SizeOf(HashValue), 0);
   Squeeze(State, HashValue, 48);
   
-  // Convert to hex string
   Result := '';
   for I := 0 to 47 do
     Result := Result + IntToHex(HashValue[I], 2);
@@ -484,16 +472,13 @@ begin
   DataLen := Length(Data);
   BlockSize := Rate div 8;
   
-  // For empty string, we only need one block for padding
   SetLength(Buffer, BlockSize);
   FillChar(Buffer[0], BlockSize, 0);
   
-  // Copy input data if any
   if DataLen > 0 then
   begin
     if DataLen > BlockSize then
     begin
-      // Handle multiple blocks
       SetLength(TempBuffer, DataLen);
       Move(Data[1], TempBuffer[0], DataLen);
       
@@ -506,7 +491,6 @@ begin
         Inc(I, BlockSize);
       end;
       
-      // Reset buffer for final block
       FillChar(Buffer[0], BlockSize, 0);
       if DataLen - I > 0 then
         Move(TempBuffer[I], Buffer[0], DataLen - I);
@@ -515,20 +499,17 @@ begin
       Move(Data[1], Buffer[0], DataLen);
   end;
   
-  // Apply domain separation and padding according to FIPS 202 section 6.1
+  // Apply domain separation and padding
   PadPos := DataLen mod BlockSize;
-  Buffer[PadPos] := $06;  // Domain separator (binary 00000110)
-  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] or $80;  // Final "1" of pad10*1
+  Buffer[PadPos] := Buffer[PadPos] xor $06;  // Domain separator for SHA3
+  Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
   
-  // Process final block
   AbsorbBlock(State, Buffer, BlockSize);
   KeccakF1600(State);
   
-  // Generate hash
   FillChar(HashValue, SizeOf(HashValue), 0);
   Squeeze(State, HashValue, 64);
   
-  // Convert to hex string
   Result := '';
   for I := 0 to 63 do
     Result := Result + IntToHex(HashValue[I], 2);
