@@ -26,7 +26,7 @@ TidyKit is a Free Pascal library that helps you tackle common tasks faster, with
 ## 📚 Available Modules
 
 - 🔒 **Cryptographic Operations** (TidyKit.Crypto)
-  - Hash functions (MD5, SHA1, SHA2 family)
+  - Hash functions (MD5, SHA1, SHA2 family, SHA3 family)
   - Encryption (Blowfish, XOR)
   - Base64 encoding/decoding
 
@@ -128,8 +128,9 @@ uses
 var
   EncryptedText: string;
 begin
-  // Hash
-  WriteLn(TCryptoKit.SHA256Hash('test'));
+  // Hash functions
+  WriteLn(TCryptoKit.SHA256Hash('test'));    // SHA2 family
+  WriteLn(TCryptoKit.SHA3_224Hash('test'));  // SHA3 family
   
   // Encryption
   EncryptedText := TCryptoKit.BlowfishCrypt('Secret text', 'key', bmEncrypt);
@@ -174,6 +175,7 @@ See our [cheat-sheet.md](docs/cheat-sheet.md) for a comprehensive reference of a
 
 ### Technical Notes
 
+- [SHA3_Implementation_Notes](docs/SHA3_Implementation_Notes.md)
 - [SHA512_Implementation](docs/SHA512_Implementation.md)
 - [SHA512_256_Implementation](docs/SHA512_256_Implementation.md)
 - [Tar_tutorial_using_libtar](docs/Tar_tutorial_using_libtar.md)
