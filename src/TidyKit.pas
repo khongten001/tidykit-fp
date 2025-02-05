@@ -28,6 +28,9 @@ type
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+  TAESMode = TidyKit.Crypto.TAESMode;
+  TAESGCMResult = TidyKit.Crypto.TAESGCMResult;
+  ETidyKitAESException = TidyKit.Crypto.ETidyKitAESException;
 
 const
   { Re-export filesystem constants }

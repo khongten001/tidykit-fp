@@ -5,13 +5,19 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, 
+  TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES;
 
 type
   { TBlowfishMode
     -------------
     Defines the operation mode for Blowfish encryption/decryption }
   TBlowfishMode = (bmEncrypt, bmDecrypt);
+
+  { Re-export AES types }
+  TAESMode = TidyKit.Crypto.AES.TAESMode;
+  TAESGCMResult = TidyKit.Crypto.AES.TAESGCMResult;
+  ETidyKitAESException = TidyKit.Crypto.AES.ETidyKitAESException;
 
 type
   { TCryptoKit
@@ -145,6 +151,60 @@ type
       Returns:
         Encrypted/decrypted string in Base64 format. }
     class function BlowfishCrypt(const Text, Key: string; Mode: TBlowfishMode): string; static;
+
+    { AES-256-GCM encryption.
+      
+      Parameters:
+        PlainText - The data to encrypt.
+        Key - The 32-byte encryption key.
+        IV - The 12-byte initialization vector.
+        AAD - Optional additional authenticated data.
+        
+      Returns:
+        A record containing the ciphertext and authentication tag. }
+    class function AES256GCMEncrypt(const PlainText: TBytes; const Key: TBytes; 
+      const IV: TBytes; const AAD: TBytes = nil): TAESGCMResult; static;
+    
+    { AES-256-GCM decryption.
+      
+      Parameters:
+        CipherText - The data to decrypt.
+        Key - The 32-byte encryption key.
+        IV - The 12-byte initialization vector.
+        Tag - The 16-byte authentication tag.
+        AAD - Optional additional authenticated data.
+        
+      Returns:
+        The decrypted data.
+        
+      Raises:
+        ETidyKitAESException if authentication fails. }
+    class function AES256GCMDecrypt(const CipherText: TBytes; const Key: TBytes;
+      const IV: TBytes; const Tag: TBytes; const AAD: TBytes = nil): TBytes; static;
+    
+    { AES-256-CTR encryption.
+      
+      Parameters:
+        PlainText - The data to encrypt.
+        Key - The 32-byte encryption key.
+        IV - The 16-byte initialization vector/nonce.
+        
+      Returns:
+        The encrypted data. }
+    class function AES256CTREncrypt(const PlainText: TBytes; const Key: TBytes;
+      const IV: TBytes): TBytes; static;
+    
+    { AES-256-CTR decryption.
+      
+      Parameters:
+        CipherText - The data to decrypt.
+        Key - The 32-byte encryption key.
+        IV - The 16-byte initialization vector/nonce.
+        
+      Returns:
+        The decrypted data. }
+    class function AES256CTRDecrypt(const CipherText: TBytes; const Key: TBytes;
+      const IV: TBytes): TBytes; static;
   end;
 
 implementation
@@ -323,6 +383,32 @@ begin
   finally
     Context.Free;
   end;
+end;
+
+{ AES-256 methods }
+
+class function TCryptoKit.AES256GCMEncrypt(const PlainText: TBytes; const Key: TBytes;
+  const IV: TBytes; const AAD: TBytes = nil): TAESGCMResult;
+begin
+  Result := TAES256.EncryptGCM(PlainText, Key, IV, AAD);
+end;
+
+class function TCryptoKit.AES256GCMDecrypt(const CipherText: TBytes; const Key: TBytes;
+  const IV: TBytes; const Tag: TBytes; const AAD: TBytes = nil): TBytes;
+begin
+  Result := TAES256.DecryptGCM(CipherText, Key, IV, Tag, AAD);
+end;
+
+class function TCryptoKit.AES256CTREncrypt(const PlainText: TBytes; const Key: TBytes;
+  const IV: TBytes): TBytes;
+begin
+  Result := TAES256.EncryptCTR(PlainText, Key, IV);
+end;
+
+class function TCryptoKit.AES256CTRDecrypt(const CipherText: TBytes; const Key: TBytes;
+  const IV: TBytes): TBytes;
+begin
+  Result := TAES256.DecryptCTR(CipherText, Key, IV);
 end;
 
 end. 

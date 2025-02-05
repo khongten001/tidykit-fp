@@ -108,6 +108,23 @@ type
     procedure Test93_SHA3_256UnicodeString;
     procedure Test94_SHA3_384UnicodeString;
     procedure Test95_SHA3_512UnicodeString;
+
+    // AES-256 tests (100-119)
+    procedure Test100_AES256GCMBasic;
+    procedure Test101_AES256GCMWithAAD;
+    procedure Test102_AES256GCMLongData;
+    procedure Test103_AES256GCMEmptyData;
+    procedure Test104_AES256GCMAuthFail;
+    procedure Test105_AES256GCMInvalidKey;
+    procedure Test106_AES256GCMInvalidIV;
+    procedure Test107_AES256GCMInvalidTag;
+    procedure Test108_AES256CTRBasic;
+    procedure Test109_AES256CTRLongData;
+    procedure Test110_AES256CTREmptyData;
+    procedure Test111_AES256CTRInvalidKey;
+    procedure Test112_AES256CTRInvalidIV;
+    procedure Test113_AES256GCMKnownAnswer;
+    procedure Test114_AES256CTRKnownAnswer;
   end;
 
 implementation
@@ -821,6 +838,349 @@ begin
     TCryptoKit.SHA3_512Hash(UnicodeText) <> '');
   AssertEquals('SHA3-512 hash length', 128,
     Length(TCryptoKit.SHA3_512Hash(UnicodeText)));
+end;
+
+// AES-256 tests (100-119)
+procedure TTestCaseCrypto.Test100_AES256GCMBasic;
+var
+  PlainText, Key, IV, AAD, DecryptedText: TBytes;
+  Result: TAESGCMResult;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  FillChar(PlainText[0], 32, $AA);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 12, $CC);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Result.Tag);
+  
+  AssertEquals('Decrypted text length should match original', Length(PlainText), Length(DecryptedText));
+  AssertTrue('Decrypted text should match original', CompareMem(@PlainText[0], @DecryptedText[0], Length(PlainText)));
+end;
+
+procedure TTestCaseCrypto.Test101_AES256GCMWithAAD;
+var
+  PlainText, Key, IV, AAD, DecryptedText: TBytes;
+  Result: TAESGCMResult;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  SetLength(AAD, 16);
+  FillChar(PlainText[0], 32, $AA);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 12, $CC);
+  FillChar(AAD[0], 16, $DD);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV, AAD);
+  DecryptedText := TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Result.Tag, AAD);
+  
+  AssertEquals('Decrypted text length should match original', Length(PlainText), Length(DecryptedText));
+  AssertTrue('Decrypted text should match original', CompareMem(@PlainText[0], @DecryptedText[0], Length(PlainText)));
+end;
+
+procedure TTestCaseCrypto.Test102_AES256GCMLongData;
+var
+  PlainText, Key, IV, DecryptedText: TBytes;
+  Result: TAESGCMResult;
+  I: Integer;
+begin
+  SetLength(PlainText, 1024 * 1024); // 1MB
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  
+  for I := 0 to Length(PlainText) - 1 do
+    PlainText[I] := Byte(I and $FF);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 12, $CC);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Result.Tag);
+  
+  AssertEquals('Decrypted text length should match original', Length(PlainText), Length(DecryptedText));
+  AssertTrue('Decrypted text should match original', CompareMem(@PlainText[0], @DecryptedText[0], Length(PlainText)));
+end;
+
+procedure TTestCaseCrypto.Test103_AES256GCMEmptyData;
+var
+  PlainText, Key, IV, DecryptedText: TBytes;
+  Result: TAESGCMResult;
+begin
+  SetLength(PlainText, 0);
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 12, $CC);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Result.Tag);
+  
+  AssertEquals('Decrypted text length should be zero', 0, Length(DecryptedText));
+end;
+
+procedure TTestCaseCrypto.Test104_AES256GCMAuthFail;
+var
+  PlainText, Key, IV, Tag: TBytes;
+  Result: TAESGCMResult;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  FillChar(PlainText[0], 32, $AA);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 12, $CC);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  SetLength(Tag, 16);
+  Move(Result.Tag[0], Tag[0], 16);
+  Tag[0] := Tag[0] xor $FF; // Corrupt tag
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Tag);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Authentication should fail with corrupted tag', Failed);
+end;
+
+procedure TTestCaseCrypto.Test105_AES256GCMInvalidKey;
+var
+  PlainText, Key, IV: TBytes;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 16); // Invalid key size
+  SetLength(IV, 12);
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Should fail with invalid key size', Failed);
+end;
+
+procedure TTestCaseCrypto.Test106_AES256GCMInvalidIV;
+var
+  PlainText, Key, IV: TBytes;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 16); // Invalid IV size for GCM
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Should fail with invalid IV size', Failed);
+end;
+
+procedure TTestCaseCrypto.Test107_AES256GCMInvalidTag;
+var
+  PlainText, Key, IV, Tag: TBytes;
+  Result: TAESGCMResult;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 12);
+  SetLength(Tag, 8); // Invalid tag size
+  
+  Result := TCryptoKit.AES256GCMEncrypt(PlainText, Key, IV);
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256GCMDecrypt(Result.CipherText, Key, IV, Tag);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Should fail with invalid tag size', Failed);
+end;
+
+procedure TTestCaseCrypto.Test108_AES256CTRBasic;
+var
+  PlainText, Key, IV, CipherText, DecryptedText: TBytes;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 16);
+  FillChar(PlainText[0], 32, $AA);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 16, $CC);
+
+  CipherText := TCryptoKit.AES256CTREncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256CTRDecrypt(CipherText, Key, IV);
+  
+  AssertEquals('Decrypted text length should match original', Length(PlainText), Length(DecryptedText));
+  AssertTrue('Decrypted text should match original', CompareMem(@PlainText[0], @DecryptedText[0], Length(PlainText)));
+end;
+
+procedure TTestCaseCrypto.Test109_AES256CTRLongData;
+var
+  PlainText, Key, IV, CipherText, DecryptedText: TBytes;
+  I: Integer;
+begin
+  SetLength(PlainText, 1024 * 1024); // 1MB
+  SetLength(Key, 32);
+  SetLength(IV, 16);
+  
+  for I := 0 to Length(PlainText) - 1 do
+    PlainText[I] := Byte(I and $FF);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 16, $CC);
+
+  CipherText := TCryptoKit.AES256CTREncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256CTRDecrypt(CipherText, Key, IV);
+  
+  AssertEquals('Decrypted text length should match original', Length(PlainText), Length(DecryptedText));
+  AssertTrue('Decrypted text should match original', CompareMem(@PlainText[0], @DecryptedText[0], Length(PlainText)));
+end;
+
+procedure TTestCaseCrypto.Test110_AES256CTREmptyData;
+var
+  PlainText, Key, IV, CipherText, DecryptedText: TBytes;
+begin
+  SetLength(PlainText, 0);
+  SetLength(Key, 32);
+  SetLength(IV, 16);
+  FillChar(Key[0], 32, $BB);
+  FillChar(IV[0], 16, $CC);
+
+  CipherText := TCryptoKit.AES256CTREncrypt(PlainText, Key, IV);
+  DecryptedText := TCryptoKit.AES256CTRDecrypt(CipherText, Key, IV);
+  
+  AssertEquals('Decrypted text length should be zero', 0, Length(DecryptedText));
+end;
+
+procedure TTestCaseCrypto.Test111_AES256CTRInvalidKey;
+var
+  PlainText, Key, IV: TBytes;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 16); // Invalid key size
+  SetLength(IV, 16);
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256CTREncrypt(PlainText, Key, IV);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Should fail with invalid key size', Failed);
+end;
+
+procedure TTestCaseCrypto.Test112_AES256CTRInvalidIV;
+var
+  PlainText, Key, IV: TBytes;
+  Failed: Boolean;
+begin
+  SetLength(PlainText, 32);
+  SetLength(Key, 32);
+  SetLength(IV, 12); // Invalid IV size for CTR
+  
+  Failed := False;
+  try
+    TCryptoKit.AES256CTREncrypt(PlainText, Key, IV);
+  except
+    on E: ETidyKitAESException do
+      Failed := True;
+  end;
+  
+  AssertTrue('Should fail with invalid IV size', Failed);
+end;
+
+procedure TTestCaseCrypto.Test113_AES256GCMKnownAnswer;
+const
+  // NIST Test Vector
+  Key: array[0..31] of Byte = (
+    $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F,
+    $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+  );
+  IV: array[0..11] of Byte = (
+    $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B
+  );
+  AAD: array[0..15] of Byte = (
+    $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+  );
+  PlainText: array[0..15] of Byte = (
+    $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F
+  );
+  ExpectedCipherText: array[0..15] of Byte = (
+    $E2, $01, $D6, $9E, $2D, $54, $0F, $49, $E4, $B1, $41, $16, $C0, $9F, $E6, $42
+  );
+  ExpectedTag: array[0..15] of Byte = (
+    $2C, $F2, $73, $80, $95, $2D, $1C, $5D, $C8, $7F, $C7, $76, $7A, $B6, $9F, $6D
+  );
+var
+  KeyBytes, IVBytes, AADBytes, PlainTextBytes: TBytes;
+  Result: TAESGCMResult;
+begin
+  SetLength(KeyBytes, 32);
+  SetLength(IVBytes, 12);
+  SetLength(AADBytes, 16);
+  SetLength(PlainTextBytes, 16);
+  Move(Key, KeyBytes[0], 32);
+  Move(IV, IVBytes[0], 12);
+  Move(AAD, AADBytes[0], 16);
+  Move(PlainText, PlainTextBytes[0], 16);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainTextBytes, KeyBytes, IVBytes, AADBytes);
+  
+  AssertEquals('Ciphertext length should match expected', 16, Length(Result.CipherText));
+  AssertEquals('Tag length should match expected', 16, Length(Result.Tag));
+  AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @Result.CipherText[0], 16));
+  AssertTrue('Tag should match expected', CompareMem(@ExpectedTag[0], @Result.Tag[0], 16));
+end;
+
+procedure TTestCaseCrypto.Test114_AES256CTRKnownAnswer;
+const
+  // NIST Test Vector
+  Key: array[0..31] of Byte = (
+    $00, $01, $02, $03, $04, $05, $06, $07, $08, $09, $0A, $0B, $0C, $0D, $0E, $0F,
+    $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $1A, $1B, $1C, $1D, $1E, $1F
+  );
+  IV: array[0..15] of Byte = (
+    $F0, $F1, $F2, $F3, $F4, $F5, $F6, $F7, $F8, $F9, $FA, $FB, $FC, $FD, $FE, $FF
+  );
+  PlainText: array[0..15] of Byte = (
+    $00, $11, $22, $33, $44, $55, $66, $77, $88, $99, $AA, $BB, $CC, $DD, $EE, $FF
+  );
+  ExpectedCipherText: array[0..15] of Byte = (
+    $6B, $C1, $BE, $E2, $2E, $40, $9F, $96, $E9, $3D, $7E, $11, $73, $93, $17, $2A
+  );
+var
+  KeyBytes, IVBytes, PlainTextBytes, CipherText: TBytes;
+begin
+  SetLength(KeyBytes, 32);
+  SetLength(IVBytes, 16);
+  SetLength(PlainTextBytes, 16);
+  Move(Key, KeyBytes[0], 32);
+  Move(IV, IVBytes[0], 16);
+  Move(PlainText, PlainTextBytes[0], 16);
+
+  CipherText := TCryptoKit.AES256CTREncrypt(PlainTextBytes, KeyBytes, IVBytes);
+  
+  AssertEquals('Ciphertext length should match expected', 16, Length(CipherText));
+  AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @CipherText[0], 16));
 end;
 
 initialization
