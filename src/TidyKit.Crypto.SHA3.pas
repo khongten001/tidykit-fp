@@ -1,4 +1,3 @@
-    // Start of Selection
     {
       TidyKit.Crypto.SHA3 - Secure Hash Algorithm 3 Implementation
       
@@ -7,18 +6,23 @@
       - Handles memory in a deterministic manner
       - Incorporates overflow protection in critical sections
       - Implements proper padding as specified
+      - Uses 0x06 domain separator as required by FIPS 202
       
       USAGE WARNINGS:
       - For cryptographic purposes, prefer SHA3-256 or higher
       - Always validate input data before hashing
       
       TEST VECTORS:
-      - Test vectors are sourced from the NIST FIPS 202 standard
-      - Implementation has been verified against official NIST test vectors
+      - Test vectors are sourced from di-mgt.com.au and XKCP
+      - Implementation has been verified against these test vectors
+      - Validated with both empty string and "abc" test vectors
+      - Produces correct output with 0x06 domain separator
+      - Test vectors match XKCP reference implementation
 
       REFERENCES:
-      - https://www.di-mgt.com.au/sha_testvectors.html#testvectors
+      - https://www.di-mgt.com.au/sha_testvectors.html#testvectors 
       - https://csrc.nist.gov/pubs/fips/202/final
+      - https://github.com/XKCP/XKCP (Keccak Code Package)
 
     }
 

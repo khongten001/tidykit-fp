@@ -26,13 +26,13 @@ Buffer[BlockSize - 1] := Buffer[BlockSize - 1] xor $80;  // Final bit
 ```
 
 This choice is based on:
-1. FIPS 202 standard requirements
-2. Reference implementation from the Keccak Team (XKCP)
-3. Successful validation against official test vectors
+1. Reference implementation from the Keccak Team (XKCP)
+2. Successful validation against test vectors from di-mgt.com.au
+3. Matching behavior with other verified implementations
 
 ## Test Vectors
 
-Our implementation with `0x06` domain separator produces the correct FIPS 202 SHA3 outputs:
+Our implementation with `0x06` domain separator produces the correct outputs matching both XKCP reference implementation and di-mgt.com.au test vectors:
 
 ### Empty String Test Vectors
 - SHA3-224: `6B4E03423667DBB73B6E15454F0EB1ABD4597F9A1B078E3F5B5A6BC7`
