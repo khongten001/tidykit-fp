@@ -90,6 +90,24 @@ type
     procedure Test69B_BlowfishKey128;
     procedure Test69C_BlowfishKey448;
     procedure Test70_BlowfishBinaryData;
+
+    // SHA3 tests (80-99)
+    procedure Test80_SHA3_224EmptyString;
+    procedure Test81_SHA3_256EmptyString;
+    procedure Test82_SHA3_384EmptyString;
+    procedure Test83_SHA3_512EmptyString;
+    procedure Test84_SHA3_224KnownAnswer;
+    procedure Test85_SHA3_256KnownAnswer;
+    procedure Test86_SHA3_384KnownAnswer;
+    procedure Test87_SHA3_512KnownAnswer;
+    procedure Test88_SHA3_224LongString;
+    procedure Test89_SHA3_256LongString;
+    procedure Test90_SHA3_384LongString;
+    procedure Test91_SHA3_512LongString;
+    procedure Test92_SHA3_224UnicodeString;
+    procedure Test93_SHA3_256UnicodeString;
+    procedure Test94_SHA3_384UnicodeString;
+    procedure Test95_SHA3_512UnicodeString;
   end;
 
 implementation
@@ -658,6 +676,151 @@ begin
   AssertEquals('Blowfish binary data length', Length(Data), Length(Decrypted));
   AssertEquals('Blowfish binary data content',
     0, CompareByte(Data[1], Decrypted[1], Length(Data)));
+end;
+
+// SHA3 tests (80-99)
+procedure TTestCaseCrypto.Test80_SHA3_224EmptyString;
+begin
+  AssertEquals('SHA3-224 of empty string',
+    '6B4E03423667DBB73B6E15454F0EB1ABD4597F9A1B078E3F5B5A6BC7',
+    UpperCase(TCryptoKit.SHA3_224Hash('')));
+end;
+
+procedure TTestCaseCrypto.Test81_SHA3_256EmptyString;
+begin
+  AssertEquals('SHA3-256 of empty string',
+    'A7FFC6F8BF1ED76651C14756A061D662F580FF4DE43B49FA82D80A4B80F8434A',
+    UpperCase(TCryptoKit.SHA3_256Hash('')));
+end;
+
+procedure TTestCaseCrypto.Test82_SHA3_384EmptyString;
+begin
+  AssertEquals('SHA3-384 of empty string',
+    '0C63A75B845E4F7D01107D852E4C2485C51A50AAAA94FC61995E71BBEE983A2AC3713831264ADB47FB6BD1E058D5F004',
+    UpperCase(TCryptoKit.SHA3_384Hash('')));
+end;
+
+procedure TTestCaseCrypto.Test83_SHA3_512EmptyString;
+begin
+  AssertEquals('SHA3-512 of empty string',
+    'A69F73CCA23A9AC5C8B567DC185A756E97C982164FE25859E0D1DCC1475C80A615B2123AF1F5F94C11E3E9402C3AC558F500199D95B6D3E301758586281DCD26',
+    UpperCase(TCryptoKit.SHA3_512Hash('')));
+end;
+
+procedure TTestCaseCrypto.Test84_SHA3_224KnownAnswer;
+begin
+  WriteLn('Test84_SHA3_224KnownAnswer: Starting');
+  AssertEquals('SHA3-224 known answer test',
+    'E642824C3F8CF24AD09234EE7D3C766FC9A3A5168D0C94AD73B46FDF',
+    UpperCase(TCryptoKit.SHA3_224Hash('abc')));
+  WriteLn('Test84_SHA3_224KnownAnswer: Finished');
+end;
+
+procedure TTestCaseCrypto.Test85_SHA3_256KnownAnswer;
+begin
+  WriteLn('Test85_SHA3_256KnownAnswer: Starting');
+  AssertEquals('SHA3-256 known answer test',
+    '3A985DA74FE225B2045C172D6BD390BD855F086E3E9D525B46BFE24511431532',
+    UpperCase(TCryptoKit.SHA3_256Hash('abc')));
+  WriteLn('Test85_SHA3_256KnownAnswer: Finished');
+end;
+
+procedure TTestCaseCrypto.Test86_SHA3_384KnownAnswer;
+begin
+  AssertEquals('SHA3-384 known answer test',
+    'EC01498288516FC926459F58E2C6AD8DF9B473CB0FC08C2596DA7CF0E49BE4B298D88CEA927AC7F539F1EDF228376D25',
+    UpperCase(TCryptoKit.SHA3_384Hash('abc')));
+end;
+
+procedure TTestCaseCrypto.Test87_SHA3_512KnownAnswer;
+begin
+  AssertEquals('SHA3-512 known answer test',
+    'B751850B1A57168A5693CD924B6B096E08F621827444F70D884F5D0240D2712E10E116E9192AF3C91A7EC57647E3934057340B4CF408D5A56592F8274EEC53F0',
+    UpperCase(TCryptoKit.SHA3_512Hash('abc')));
+end;
+
+procedure TTestCaseCrypto.Test88_SHA3_224LongString;
+var
+  LongStr: string;
+begin
+  LongStr := GenerateLongString(10000);
+  AssertTrue('SHA3-224 of long string should not be empty',
+    TCryptoKit.SHA3_224Hash(LongStr) <> '');
+  AssertEquals('SHA3-224 hash length', 56,
+    Length(TCryptoKit.SHA3_224Hash(LongStr)));
+end;
+
+procedure TTestCaseCrypto.Test89_SHA3_256LongString;
+var
+  LongStr: string;
+begin
+  LongStr := GenerateLongString(10000);
+  AssertTrue('SHA3-256 of long string should not be empty',
+    TCryptoKit.SHA3_256Hash(LongStr) <> '');
+  AssertEquals('SHA3-256 hash length', 64,
+    Length(TCryptoKit.SHA3_256Hash(LongStr)));
+end;
+
+procedure TTestCaseCrypto.Test90_SHA3_384LongString;
+var
+  LongStr: string;
+begin
+  LongStr := GenerateLongString(10000);
+  AssertTrue('SHA3-384 of long string should not be empty',
+    TCryptoKit.SHA3_384Hash(LongStr) <> '');
+  AssertEquals('SHA3-384 hash length', 96,
+    Length(TCryptoKit.SHA3_384Hash(LongStr)));
+end;
+
+procedure TTestCaseCrypto.Test91_SHA3_512LongString;
+var
+  LongStr: string;
+begin
+  LongStr := GenerateLongString(10000);
+  AssertTrue('SHA3-512 of long string should not be empty',
+    TCryptoKit.SHA3_512Hash(LongStr) <> '');
+  AssertEquals('SHA3-512 hash length', 128,
+    Length(TCryptoKit.SHA3_512Hash(LongStr)));
+end;
+
+procedure TTestCaseCrypto.Test92_SHA3_224UnicodeString;
+const
+  UnicodeText = '你好，世界！';
+begin
+  AssertTrue('SHA3-224 of Unicode string should not be empty',
+    TCryptoKit.SHA3_224Hash(UnicodeText) <> '');
+  AssertEquals('SHA3-224 hash length', 56,
+    Length(TCryptoKit.SHA3_224Hash(UnicodeText)));
+end;
+
+procedure TTestCaseCrypto.Test93_SHA3_256UnicodeString;
+const
+  UnicodeText = '你好，世界！';
+begin
+  AssertTrue('SHA3-256 of Unicode string should not be empty',
+    TCryptoKit.SHA3_256Hash(UnicodeText) <> '');
+  AssertEquals('SHA3-256 hash length', 64,
+    Length(TCryptoKit.SHA3_256Hash(UnicodeText)));
+end;
+
+procedure TTestCaseCrypto.Test94_SHA3_384UnicodeString;
+const
+  UnicodeText = '你好，世界！';
+begin
+  AssertTrue('SHA3-384 of Unicode string should not be empty',
+    TCryptoKit.SHA3_384Hash(UnicodeText) <> '');
+  AssertEquals('SHA3-384 hash length', 96,
+    Length(TCryptoKit.SHA3_384Hash(UnicodeText)));
+end;
+
+procedure TTestCaseCrypto.Test95_SHA3_512UnicodeString;
+const
+  UnicodeText = '你好，世界！';
+begin
+  AssertTrue('SHA3-512 of Unicode string should not be empty',
+    TCryptoKit.SHA3_512Hash(UnicodeText) <> '');
+  AssertEquals('SHA3-512 hash length', 128,
+    Length(TCryptoKit.SHA3_512Hash(UnicodeText)));
 end;
 
 initialization

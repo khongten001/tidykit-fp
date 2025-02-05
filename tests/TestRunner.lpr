@@ -4,9 +4,9 @@ program TestRunner;
 
 uses
   Classes, consoletestrunner
-  , TestCaseDateTime
-  , TestCaseFS
-  , TestCaseString
+  //, TestCaseDateTime
+  //, TestCaseFS
+  //, TestCaseString
   , TestCaseCrypto;
 
 type

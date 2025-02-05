@@ -369,6 +369,18 @@ hash := TCryptoKit.SHA512Hash('text'); // 512-bit output
 
 // SHA-512/256 (FIPS 180-4 compliant, recommended for 64-bit systems)
 hash := TCryptoKit.SHA512_256Hash('text'); // 256-bit output
+
+// SHA3-224 (FIPS 202 compliant)
+hash := TCryptoKit.SHA3_224Hash('text'); // 224-bit output
+
+// SHA3-256 (FIPS 202 compliant)
+hash := TCryptoKit.SHA3_256Hash('text'); // 256-bit output
+
+// SHA3-384 (FIPS 202 compliant)
+hash := TCryptoKit.SHA3_384Hash('text'); // 384-bit output
+
+// SHA3-512 (FIPS 202 compliant)
+hash := TCryptoKit.SHA3_512Hash('text'); // 512-bit output
 ```
 
 ### Base64 Encoding/Decoding
@@ -496,10 +508,12 @@ decoded := TCryptoKit.Base64Decode(encoded);
    - MD5: Known collisions, avoid for security
    - SHA-1: Theoretically broken, avoid for security
    - SHA-256/SHA-512: No known practical collisions
+   - SHA3 family: No known collisions, NIST standard
 
 2. **Performance**:
    - SHA-512/256: Better on 64-bit systems
    - SHA-256: Better on 32-bit systems
+   - SHA3: Consistent performance across platforms
    - Base64: Minimal overhead
    - Blowfish: Moderate CPU usage
 
@@ -509,3 +523,12 @@ decoded := TCryptoKit.Base64Decode(encoded);
    - SHA-256: 64 hex chars (256 bits)
    - SHA-512: 128 hex chars (512 bits)
    - SHA-512/256: 64 hex chars (256 bits)
+   - SHA3-224: 56 hex chars (224 bits)
+   - SHA3-256: 64 hex chars (256 bits)
+   - SHA3-384: 96 hex chars (384 bits)
+   - SHA3-512: 128 hex chars (512 bits)
+
+4. **Standards Compliance**:
+   - SHA2 family: FIPS 180-4 compliant
+   - SHA3 family: FIPS 202 compliant
+   - All implementations tested against official NIST test vectors
