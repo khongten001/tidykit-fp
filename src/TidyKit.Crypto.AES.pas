@@ -38,6 +38,10 @@ type
   { TAES256 }
   TAES256 = class
   private
+    const
+      NK = 8;  // Number of 32-bit words in the key (8 for AES-256)
+      NR = 14; // Number of rounds (14 for AES-256)
+    
     class var FSBox: array[0..255] of Byte;
     class var FInvSBox: array[0..255] of Byte;
     class var FRoundConst: array[0..9] of Byte;
@@ -49,7 +53,7 @@ type
     class procedure InitRoundConst;
     
     { Core AES operations }
-    class procedure AddRoundKey(var State: TAESState; const RoundKey: TAESExpandedKey; Round: Integer);
+    class procedure AddRoundKey(var State: TAESState; const ExpandedKey: TAESExpandedKey; Round: Integer);
     class procedure SubBytes(var State: TAESState);
     class procedure InvSubBytes(var State: TAESState);
     class procedure ShiftRows(var State: TAESState);
@@ -232,13 +236,13 @@ end;
 
 { Core AES transformations }
 
-class procedure TAES256.AddRoundKey(var State: TAESState; const RoundKey: TAESExpandedKey; Round: Integer);
+class procedure TAES256.AddRoundKey(var State: TAESState; const ExpandedKey: TAESExpandedKey; Round: Integer);
 var
   I, J: Integer;
 begin
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[I, J] := State[I, J] xor RoundKey[Round, I, J];
+      State[J, I] := State[J, I] xor ExpandedKey[Round, I, J];
 end;
 
 class procedure TAES256.SubBytes(var State: TAESState);
@@ -386,42 +390,49 @@ end;
 
 class procedure TAES256.ExpandKey(const Key: TBytes; var ExpandedKey: TAESExpandedKey);
 var
-  I, J: Integer;
+  I, J, K: Integer;
   Temp: TByteShortArray;
-  TempWord: TByteShortArray;
+  RoundConstant: Byte;
+  TempKey: array[0..239] of Byte; // 60 words * 4 bytes
 begin
-  // First round key is the key itself
-  for I := 0 to 7 do
-    for J := 0 to 3 do
-      ExpandedKey[I div 4, I mod 4, J] := Key[4*I + J];
-
-  // Generate the remaining round keys
-  for I := 8 to 59 do
+  // First NK words are the key itself
+  Move(Key[0], TempKey[0], 32);
+  
+  // Generate the remaining words
+  RoundConstant := 1;
+  I := 8; // Start from word 8 (after the initial key)
+  while I < 60 do
   begin
-    // Save the previous word
-    for J := 0 to 3 do
-      Temp[J] := ExpandedKey[(I-1) div 4, (I-1) mod 4, J];
-
+    // Copy previous word
+    Move(TempKey[4*(I-1)], Temp[0], 4);
+    
     if (I mod 8 = 0) then
     begin
-      // RotWord, SubWord and XOR with round constant
-      Move(Temp, TempWord, 4);
-      RotWord(TempWord);
-      SubWord(TempWord);
-      TempWord[0] := TempWord[0] xor FRoundConst[I div 8 - 1];
-      Move(TempWord, Temp, 4);
+      // RotWord
+      RotWord(Temp);
+      // SubWord
+      SubWord(Temp);
+      // XOR with round constant
+      Temp[0] := Temp[0] xor RoundConstant;
+      RoundConstant := GaloisMultiply(RoundConstant, 2);
     end
     else if (I mod 8 = 4) then
     begin
-      // SubWord only
       SubWord(Temp);
     end;
-
-    // XOR with word 8 positions earlier
+    
+    // XOR with word NK positions earlier
     for J := 0 to 3 do
-      ExpandedKey[I div 4, I mod 4, J] := 
-        ExpandedKey[(I-8) div 4, (I-8) mod 4, J] xor Temp[J];
+      TempKey[4*I + J] := TempKey[4*(I-8) + J] xor Temp[J];
+    
+    Inc(I);
   end;
+  
+  // Convert linear array to 3D expanded key format
+  for I := 0 to 14 do // 15 rounds (0-14)
+    for J := 0 to 3 do // 4 words per round
+      for K := 0 to 3 do // 4 bytes per word
+        ExpandedKey[I, J, K] := TempKey[16*I + 4*J + K];
 end;
 
 { Block encryption/decryption }
@@ -433,15 +444,15 @@ var
   Round: Integer;
   I, J: Integer;
 begin
-  // Convert input block to state array
+  // Convert input block to state array (column-major order for NIST)
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[J, I] := InBlock[4*I + J];
+      State[J, I] := InBlock[4 * I + J];
 
   // Initial round
   AddRoundKey(State, ExpandedKey, 0);
 
-  // Main rounds
+  // Main rounds (AES-256 has 14 rounds total)
   for Round := 1 to 13 do
   begin
     SubBytes(State);
@@ -455,10 +466,10 @@ begin
   ShiftRows(State);
   AddRoundKey(State, ExpandedKey, 14);
 
-  // Convert state array to output block
+  // Convert state array back to output block (column-major order for NIST)
   for I := 0 to 3 do
     for J := 0 to 3 do
-      OutBlock[4*I + J] := State[J, I];
+      OutBlock[4 * I + J] := State[J, I];
 end;
 
 class procedure TAES256.DecryptBlock(const InBlock: TAESBlock; const ExpandedKey: TAESExpandedKey; 
@@ -468,15 +479,15 @@ var
   Round: Integer;
   I, J: Integer;
 begin
-  // Convert input block to state array
+  // Convert input block to state array (column-major order for NIST)
   for I := 0 to 3 do
     for J := 0 to 3 do
-      State[J, I] := InBlock[4*I + J];
+      State[J, I] := InBlock[4 * I + J];
 
   // Initial round
   AddRoundKey(State, ExpandedKey, 14);
 
-  // Main rounds
+  // Main rounds (AES-256 has 14 rounds total)
   for Round := 13 downto 1 do
   begin
     InvShiftRows(State);
@@ -490,10 +501,10 @@ begin
   InvSubBytes(State);
   AddRoundKey(State, ExpandedKey, 0);
 
-  // Convert state array to output block
+  // Convert state array back to output block (column-major order for NIST)
   for I := 0 to 3 do
     for J := 0 to 3 do
-      OutBlock[4*I + J] := State[J, I];
+      OutBlock[4 * I + J] := State[J, I];
 end;
 
 { GCM mode operations }
@@ -501,7 +512,7 @@ end;
 {$R-} // Disable range checking for GCM operations
 class procedure TAES256.GCMInit(const H: TGCMHashKey; var Table: TGCMHashTable);
 var
-  I, J, K: Integer;
+  I, J, L, K: Integer;
   V: QWord;
   HRev: array[0..15] of Byte;
   Z: array[0..15] of Byte;
@@ -522,16 +533,16 @@ begin
       begin
         if (X and $80) <> 0 then
         begin
-          Z[0] := Z[0] xor HRev[(I * 8 + K) mod 16];
-          Z[1] := Z[1] xor HRev[(I * 8 + K + 1) mod 16];
-          Z[2] := Z[2] xor HRev[(I * 8 + K + 2) mod 16];
-          Z[3] := Z[3] xor HRev[(I * 8 + K + 3) mod 16];
-          Z[4] := Z[4] xor HRev[(I * 8 + K + 4) mod 16];
-          Z[5] := Z[5] xor HRev[(I * 8 + K + 5) mod 16];
-          Z[6] := Z[6] xor HRev[(I * 8 + K + 6) mod 16];
-          Z[7] := Z[7] xor HRev[(I * 8 + K + 7) mod 16];
+          for L := 0 to 15 do
+            Z[L] := Z[L] xor HRev[L];
         end;
         X := X shl 1;
+        if K < 7 then  // Only rotate for first 7 iterations
+        begin
+          // Rotate HRev right by one byte
+          Move(HRev[1], HRev[0], 15);
+          HRev[15] := HRev[0];
+        end;
       end;
       V := (QWord(Z[0]) shl 56) or (QWord(Z[1]) shl 48) or
            (QWord(Z[2]) shl 40) or (QWord(Z[3]) shl 32) or
@@ -548,11 +559,15 @@ var
   Z: array[0..15] of Byte;
   V: QWord;
 begin
+  if Length(X) < 16 then
+    Exit;
+    
   FillChar(Z, SizeOf(Z), 0);
   
-  for I := 0 to 15 do
+  // Process bytes in big-endian order
+  for I := 0 to 7 do
   begin
-    V := Table[I, X[15-I]];
+    V := Table[I, X[15-I]];  // Process bytes in reverse order for big-endian
     Z[0] := Z[0] xor Byte(V shr 56);
     Z[1] := Z[1] xor Byte(V shr 48);
     Z[2] := Z[2] xor Byte(V shr 40);
@@ -563,60 +578,58 @@ begin
     Z[7] := Z[7] xor Byte(V);
   end;
   
+  for I := 8 to 15 do
+  begin
+    V := Table[I, X[15-I]];
+    Z[8] := Z[8] xor Byte(V shr 56);
+    Z[9] := Z[9] xor Byte(V shr 48);
+    Z[10] := Z[10] xor Byte(V shr 40);
+    Z[11] := Z[11] xor Byte(V shr 32);
+    Z[12] := Z[12] xor Byte(V shr 24);
+    Z[13] := Z[13] xor Byte(V shr 16);
+    Z[14] := Z[14] xor Byte(V shr 8);
+    Z[15] := Z[15] xor Byte(V);
+  end;
+  
   Move(Z, X[0], 16);
 end;
 
 class procedure TAES256.GCMGHash(const Data: TBytes; var X: TBytes; const Table: TGCMHashTable);
 var
-  I, NumBlocks, RemBytes: Integer;
+  I, J, NumBlocks, RemBytes: Integer;
   Block: array[0..15] of Byte;
 begin
+  if Length(X) < 16 then
+    SetLength(X, 16);
+  FillChar(X[0], 16, 0);
+    
+  if (Data = nil) or (Length(Data) = 0) then
+    Exit;
+    
   NumBlocks := Length(Data) div 16;
   RemBytes := Length(Data) mod 16;
   
   for I := 0 to NumBlocks - 1 do
   begin
-    Move(Data[I * 16], Block, 16);
-    X[0] := X[0] xor Block[0];
-    X[1] := X[1] xor Block[1];
-    X[2] := X[2] xor Block[2];
-    X[3] := X[3] xor Block[3];
-    X[4] := X[4] xor Block[4];
-    X[5] := X[5] xor Block[5];
-    X[6] := X[6] xor Block[6];
-    X[7] := X[7] xor Block[7];
-    X[8] := X[8] xor Block[8];
-    X[9] := X[9] xor Block[9];
-    X[10] := X[10] xor Block[10];
-    X[11] := X[11] xor Block[11];
-    X[12] := X[12] xor Block[12];
-    X[13] := X[13] xor Block[13];
-    X[14] := X[14] xor Block[14];
-    X[15] := X[15] xor Block[15];
-    GCMMultiply(X, Table);
+    if (I * 16 + 15) < Length(Data) then
+    begin
+      Move(Data[I * 16], Block, 16);
+      for J := 0 to 15 do
+        X[J] := X[J] xor Block[J];
+      GCMMultiply(X, Table);
+    end;
   end;
   
   if RemBytes > 0 then
   begin
     FillChar(Block, 16, 0);
-    Move(Data[NumBlocks * 16], Block, RemBytes);
-    X[0] := X[0] xor Block[0];
-    X[1] := X[1] xor Block[1];
-    X[2] := X[2] xor Block[2];
-    X[3] := X[3] xor Block[3];
-    X[4] := X[4] xor Block[4];
-    X[5] := X[5] xor Block[5];
-    X[6] := X[6] xor Block[6];
-    X[7] := X[7] xor Block[7];
-    X[8] := X[8] xor Block[8];
-    X[9] := X[9] xor Block[9];
-    X[10] := X[10] xor Block[10];
-    X[11] := X[11] xor Block[11];
-    X[12] := X[12] xor Block[12];
-    X[13] := X[13] xor Block[13];
-    X[14] := X[14] xor Block[14];
-    X[15] := X[15] xor Block[15];
-    GCMMultiply(X, Table);
+    if (NumBlocks * 16 + RemBytes - 1) < Length(Data) then
+    begin
+      Move(Data[NumBlocks * 16], Block, RemBytes);
+      for J := 0 to 15 do
+        X[J] := X[J] xor Block[J];
+      GCMMultiply(X, Table);
+    end;
   end;
 end;
 
@@ -625,60 +638,46 @@ class function TAES256.GCMGenerateTag(const AAD, CipherText: TBytes; const Table
 var
   X: TBytes;
   LenBlock: array[0..15] of Byte;
-  ExpandedKey: TAESExpandedKey;
-  InBlock, OutBlock: TAESBlock;
+  I: Integer;
 begin
   SetLength(X, 16);
   FillChar(X[0], 16, 0);
+  FillChar(LenBlock, 16, 0);
   
-  if AADLen > 0 then
+  if (AADLen > 0) and (AAD <> nil) then
     GCMGHash(AAD, X, Table);
   
-  if CipherLen > 0 then
+  if (CipherLen > 0) and (CipherText <> nil) then
     GCMGHash(CipherText, X, Table);
   
-  // Length block
-  FillChar(LenBlock, 16, 0);
-  PQWord(@LenBlock[8])^ := AADLen * 8;
-  PQWord(@LenBlock[0])^ := CipherLen * 8;
+  // Length block - AAD length goes in first 8 bytes, CipherText length in last 8 bytes
+  // Convert to big-endian
+  LenBlock[0] := Byte(AADLen shr 61);
+  LenBlock[1] := Byte(AADLen shr 53);
+  LenBlock[2] := Byte(AADLen shr 45);
+  LenBlock[3] := Byte(AADLen shr 37);
+  LenBlock[4] := Byte(AADLen shr 29);
+  LenBlock[5] := Byte(AADLen shr 21);
+  LenBlock[6] := Byte(AADLen shr 13);
+  LenBlock[7] := Byte(AADLen shr 5);
   
-  X[0] := X[0] xor LenBlock[0];
-  X[1] := X[1] xor LenBlock[1];
-  X[2] := X[2] xor LenBlock[2];
-  X[3] := X[3] xor LenBlock[3];
-  X[4] := X[4] xor LenBlock[4];
-  X[5] := X[5] xor LenBlock[5];
-  X[6] := X[6] xor LenBlock[6];
-  X[7] := X[7] xor LenBlock[7];
-  X[8] := X[8] xor LenBlock[8];
-  X[9] := X[9] xor LenBlock[9];
-  X[10] := X[10] xor LenBlock[10];
-  X[11] := X[11] xor LenBlock[11];
-  X[12] := X[12] xor LenBlock[12];
-  X[13] := X[13] xor LenBlock[13];
-  X[14] := X[14] xor LenBlock[14];
-  X[15] := X[15] xor LenBlock[15];
+  LenBlock[8] := Byte(CipherLen shr 61);
+  LenBlock[9] := Byte(CipherLen shr 53);
+  LenBlock[10] := Byte(CipherLen shr 45);
+  LenBlock[11] := Byte(CipherLen shr 37);
+  LenBlock[12] := Byte(CipherLen shr 29);
+  LenBlock[13] := Byte(CipherLen shr 21);
+  LenBlock[14] := Byte(CipherLen shr 13);
+  LenBlock[15] := Byte(CipherLen shr 5);
+  
+  for I := 0 to 15 do
+    X[I] := X[I] xor LenBlock[I];
   GCMMultiply(X, Table);
   
   // XOR with encrypted J0
-  Move(J0[0], InBlock, 16);
-  EncryptBlock(InBlock, ExpandedKey, OutBlock);
-  X[0] := X[0] xor OutBlock[0];
-  X[1] := X[1] xor OutBlock[1];
-  X[2] := X[2] xor OutBlock[2];
-  X[3] := X[3] xor OutBlock[3];
-  X[4] := X[4] xor OutBlock[4];
-  X[5] := X[5] xor OutBlock[5];
-  X[6] := X[6] xor OutBlock[6];
-  X[7] := X[7] xor OutBlock[7];
-  X[8] := X[8] xor OutBlock[8];
-  X[9] := X[9] xor OutBlock[9];
-  X[10] := X[10] xor OutBlock[10];
-  X[11] := X[11] xor OutBlock[11];
-  X[12] := X[12] xor OutBlock[12];
-  X[13] := X[13] xor OutBlock[13];
-  X[14] := X[14] xor OutBlock[14];
-  X[15] := X[15] xor OutBlock[15];
+  if (J0 <> nil) and (Length(J0) = 16) then
+    for I := 0 to 15 do
+      X[I] := X[I] xor J0[I];
   
   Result := X;
 end;
@@ -690,13 +689,22 @@ end;
 class procedure TAES256.CTRIncrement(var Counter: TBytes);
 var
   I: Integer;
+  Value: UInt32;
 begin
-  for I := Length(Counter) - 1 downto 0 do
-  begin
-    Inc(Counter[I]);
-    if Counter[I] <> 0 then
-      Break;
-  end;
+  // Extract counter value in big-endian format (last 4 bytes)
+  Value := (UInt32(Counter[12]) shl 24) or
+           (UInt32(Counter[13]) shl 16) or
+           (UInt32(Counter[14]) shl 8) or
+           UInt32(Counter[15]);
+           
+  // Increment and handle overflow
+  Value := Value + 1;
+  
+  // Store back in big-endian format
+  Counter[12] := Byte(Value shr 24);
+  Counter[13] := Byte(Value shr 16);
+  Counter[14] := Byte(Value shr 8);
+  Counter[15] := Byte(Value);
 end;
 {$R+} // Re-enable range checking
 
@@ -712,6 +720,7 @@ var
   InBlock, OutBlock: TAESBlock;
   AADLen, CipherLen: QWord;
   TempHashKey: TGCMHashKey;
+  J0Block: TAESBlock;
 begin
   // Validate inputs
   if not ValidateKey(Key) then
@@ -736,6 +745,11 @@ begin
   FillChar(J0[12], 3, 0);
   J0[15] := 1;
 
+  // Encrypt J0 for tag generation
+  Move(J0[0], InBlock, 16);
+  EncryptBlock(InBlock, ExpandedKey, OutBlock);
+  Move(OutBlock, J0Block, 16);
+
   // Initialize counter for encryption = IV || 0^31 || 2
   SetLength(Counter, 16);
   Move(IV[0], Counter[0], 12);
@@ -756,12 +770,14 @@ begin
     // Generate counter block
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
-    CTRIncrement(Counter);
 
     // XOR with plaintext
     Move(PlainText[I * 16], InBlock, 16);
     XORBlock(OutBlock, InBlock);
     Move(OutBlock, Result.CipherText[I * 16], 16);
+    
+    // Increment counter after using it
+    CTRIncrement(Counter);
   end;
 
   // Process remaining bytes
@@ -776,8 +792,8 @@ begin
     Move(OutBlock, Result.CipherText[NumBlocks * 16], RemBytes);
   end;
 
-  // Generate authentication tag
-  Result.Tag := GCMGenerateTag(AAD, Result.CipherText, HashTable, J0, AADLen, CipherLen);
+  // Generate authentication tag using encrypted J0
+  Result.Tag := GCMGenerateTag(AAD, Result.CipherText, HashTable, J0Block, AADLen, CipherLen);
 end;
 
 class function TAES256.DecryptGCM(const CipherText: TBytes; const Key: TBytes; const IV: TBytes;
@@ -787,9 +803,10 @@ var
   Counter, J0, H, ComputedTag: TBytes;
   HashTable: TGCMHashTable;
   I, NumBlocks, RemBytes: Integer;
-  InBlock, OutBlock, TempBlock: TAESBlock;
+  InBlock, OutBlock: TAESBlock;
   AADLen, CipherLen: QWord;
   TempHashKey: TGCMHashKey;
+  J0Block: TAESBlock;
 begin
   // Validate inputs
   if not ValidateKey(Key) then
@@ -802,24 +819,29 @@ begin
   // Expand the key
   ExpandKey(Key, ExpandedKey);
 
-  // Initialize GCM
+  // Initialize GCM - compute H = E(K, 0^128)
   SetLength(H, 16);
   FillChar(H[0], 16, 0);
-  Move(H[0], TempBlock, 16);
-  EncryptBlock(TempBlock, ExpandedKey, OutBlock);
-  Move(OutBlock, H[0], 16);
-  Move(H[0], TempHashKey, 16);
+  Move(H[0], InBlock, 16);
+  EncryptBlock(InBlock, ExpandedKey, OutBlock);
+  Move(OutBlock, TempHashKey, 16);
   GCMInit(TempHashKey, HashTable);
 
-  // Create J0 (initial counter)
+  // Create J0 (initial counter) = IV || 0^31 || 1
   SetLength(J0, 16);
   Move(IV[0], J0[0], 12);
+  FillChar(J0[12], 3, 0);
   J0[15] := 1;
+
+  // Encrypt J0 for tag generation
+  Move(J0[0], InBlock, 16);
+  EncryptBlock(InBlock, ExpandedKey, OutBlock);
+  Move(OutBlock, J0Block, 16);
 
   // Verify tag
   AADLen := Length(AAD);
   CipherLen := Length(CipherText);
-  ComputedTag := GCMGenerateTag(AAD, CipherText, HashTable, J0, AADLen, CipherLen);
+  ComputedTag := GCMGenerateTag(AAD, CipherText, HashTable, J0Block, AADLen, CipherLen);
   for I := 0 to 15 do
     if ComputedTag[I] <> Tag[I] then
       raise ETidyKitAESException.Create('Authentication failed. Tag mismatch.');
@@ -827,6 +849,7 @@ begin
   // Initialize counter for decryption
   SetLength(Counter, 16);
   Move(IV[0], Counter[0], 12);
+  FillChar(Counter[12], 3, 0);
   Counter[15] := 2;
 
   // Prepare output
@@ -841,12 +864,14 @@ begin
     // Generate counter block
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
-    CTRIncrement(Counter);
 
     // XOR with ciphertext
     Move(CipherText[I * 16], InBlock, 16);
     XORBlock(OutBlock, InBlock);
     Move(OutBlock, Result[I * 16], 16);
+    
+    // Increment counter after using it
+    CTRIncrement(Counter);
   end;
 
   // Process remaining bytes
@@ -866,7 +891,7 @@ class function TAES256.EncryptCTR(const PlainText: TBytes; const Key: TBytes; co
 var
   ExpandedKey: TAESExpandedKey;
   Counter: TBytes;
-  I, NumBlocks, RemBytes: Integer;
+  I, J, NumBlocks, RemBytes: Integer;
   InBlock, OutBlock: TAESBlock;
 begin
   // Validate inputs
@@ -884,6 +909,8 @@ begin
 
   // Prepare output
   SetLength(Result, Length(PlainText));
+  if Length(PlainText) = 0 then
+    Exit;
 
   // Process full blocks
   NumBlocks := Length(PlainText) div 16;
@@ -894,12 +921,13 @@ begin
     // Generate counter block
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
-    CTRIncrement(Counter);
 
     // XOR with plaintext
-    Move(PlainText[I * 16], InBlock, 16);
-    XORBlock(OutBlock, InBlock);
-    Move(OutBlock, Result[I * 16], 16);
+    for J := 0 to 15 do
+      Result[I * 16 + J] := PlainText[I * 16 + J] xor OutBlock[J];
+    
+    // Increment counter
+    CTRIncrement(Counter);
   end;
 
   // Process remaining bytes
@@ -908,10 +936,8 @@ begin
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
     
-    Move(PlainText[NumBlocks * 16], InBlock, RemBytes);
-    for I := 0 to RemBytes - 1 do
-      OutBlock[I] := OutBlock[I] xor InBlock[I];
-    Move(OutBlock, Result[NumBlocks * 16], RemBytes);
+    for J := 0 to RemBytes - 1 do
+      Result[NumBlocks * 16 + J] := PlainText[NumBlocks * 16 + J] xor OutBlock[J];
   end;
 end;
 
