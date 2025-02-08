@@ -726,20 +726,16 @@ end;
 
 procedure TTestCaseCrypto.Test84_SHA3_224KnownAnswer;
 begin
-  WriteLn('Test84_SHA3_224KnownAnswer: Starting');
   AssertEquals('SHA3-224 known answer test',
     'E642824C3F8CF24AD09234EE7D3C766FC9A3A5168D0C94AD73B46FDF',
     UpperCase(TCryptoKit.SHA3_224Hash('abc')));
-  WriteLn('Test84_SHA3_224KnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test85_SHA3_256KnownAnswer;
 begin
-  WriteLn('Test85_SHA3_256KnownAnswer: Starting');
   AssertEquals('SHA3-256 known answer test',
     '3A985DA74FE225B2045C172D6BD390BD855F086E3E9D525B46BFE24511431532',
     UpperCase(TCryptoKit.SHA3_256Hash('abc')));
-  WriteLn('Test85_SHA3_256KnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test86_SHA3_384KnownAnswer;
