@@ -71,34 +71,54 @@ procedure TRequestSimpleTests.Test03_SimplePut;
 var
   Response: TResponse;
 begin
-  Response := Http.Put('https://httpbin.org/put', 'test=updated');
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('Response should be valid JSON', Response.JSON <> nil);
+  Response.Initialize;
+  try
+    Response := Http.Put('https://httpbin.org/put', 'test=updated');
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+  finally
+    Response.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test04_SimpleDelete;
 var
   Response: TResponse;
 begin
-  Response := Http.Delete('https://httpbin.org/delete');
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('Response should be valid JSON', Response.JSON <> nil);
+  Response.Initialize;
+  try
+    Response := Http.Delete('https://httpbin.org/delete');
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+  finally
+    Response.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test05_BuilderWithHeaders;
 var
   Response: TResponse;
+  Builder: TRequestBuilder;
 begin
-  Response := Http.NewRequest
-    .Get
-    .URL('https://httpbin.org/headers')
-    .AddHeader('X-Custom-Header', 'test')
-    .AddHeader('User-Agent', 'TidyKit-Test')
-    .Send;
+  Response.Initialize;
+  Builder.Initialize;
+  try
+    Builder := Http.NewRequest
+      .Get
+      .URL('https://httpbin.org/headers')
+      .AddHeader('X-Custom-Header', 'test')
+      .AddHeader('User-Agent', 'TidyKit-Test');
+      
+    Response := Builder.Send;
     
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('Custom header should be echoed back',
-    Response.JSON.FindPath('headers.X-Custom-Header').AsString = 'test');
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+    AssertTrue('Custom header should be echoed back',
+      Response.JSON.FindPath('headers.X-Custom-Header').AsString = 'test');
+  finally
+    Response.Cleanup;
+    Builder.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test06_BuilderWithParams;
@@ -133,65 +153,100 @@ end;
 procedure TRequestSimpleTests.Test07_BuilderWithTimeout;
 var
   Response: TResponse;
+  Builder: TRequestBuilder;
 begin
+  Response.Initialize;
+  Builder.Initialize;
   try
-    Response := Http.NewRequest
+    Builder := Http.NewRequest
       .Get
       .URL('https://httpbin.org/delay/2')
-      .WithTimeout(1)
-      .Send;
-    Fail('Timeout should raise exception');
-  except
-    on E: ETidyKitException do
-      AssertTrue('Timeout exception should be raised', True);
+      .WithTimeout(1);
+      
+    try
+      Response := Builder.Send;
+      Fail('Timeout should raise exception');
+    except
+      on E: ETidyKitException do
+        AssertTrue('Timeout exception should be raised', True);
+    end;
+  finally
+    Response.Cleanup;
+    Builder.Cleanup;
   end;
 end;
 
 procedure TRequestSimpleTests.Test08_BuilderWithAuth;
 var
   Response: TResponse;
+  Builder: TRequestBuilder;
 begin
-  Response := Http.NewRequest
-    .Get
-    .URL('https://httpbin.org/headers')
-    .BasicAuth('username', 'password')
-    .Send;
+  Response.Initialize;
+  Builder.Initialize;
+  try
+    Builder := Http.NewRequest
+      .Get
+      .URL('https://httpbin.org/headers')
+      .BasicAuth('username', 'password');
+      
+    Response := Builder.Send;
     
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('Authorization header should exist',
-    Response.JSON.FindPath('headers.Authorization') <> nil);
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+    AssertTrue('Authorization header should exist',
+      Assigned(Response.JSON.FindPath('headers.Authorization')));
+  finally
+    Response.Cleanup;
+    Builder.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test09_JSONRequest;
 var
   Response: TResponse;
 begin
-  Response := Http.PostJSON('https://httpbin.org/post',
-    '{"name": "John", "age": 30}');
-    
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('JSON data should exist in response',
-    Response.JSON.FindPath('json.name').AsString = 'John');
-  AssertTrue('JSON data should exist in response',
-    Response.JSON.FindPath('json.age').AsInteger = 30);
+  Response.Initialize;
+  try
+    Response := Http.PostJSON('https://httpbin.org/post',
+      '{"name": "John", "age": 30}');
+      
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+    AssertTrue('JSON data should exist in response',
+      Response.JSON.FindPath('json.name').AsString = 'John');
+    AssertTrue('JSON data should exist in response',
+      Response.JSON.FindPath('json.age').AsInteger = 30);
+  finally
+    Response.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test10_FormDataRequest;
 var
   Response: TResponse;
+  Builder: TRequestBuilder;
 begin
-  Response := Http.NewRequest
-    .Post
-    .URL('https://httpbin.org/post')
-    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
-    .WithData('field1=value1&field2=value2')
-    .Send;
+  Response.Initialize;
+  Builder.Initialize;
+  try
+    Builder := Http.NewRequest
+      .Post
+      .URL('https://httpbin.org/post')
+      .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
+      .WithData('field1=value1&field2=value2');
+      
+    Response := Builder.Send;
     
-  AssertEquals('Status code should be 200', 200, Response.StatusCode);
-  AssertTrue('Form field1 should be present',
-    Response.JSON.FindPath('form.field1').AsString = 'value1');
-  AssertTrue('Form field2 should be present',
-    Response.JSON.FindPath('form.field2').AsString = 'value2');
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+    AssertTrue('Form field1 should be present',
+      Response.JSON.FindPath('form.field1').AsString = 'value1');
+    AssertTrue('Form field2 should be present',
+      Response.JSON.FindPath('form.field2').AsString = 'value2');
+  finally
+    Response.Cleanup;
+    Builder.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test11_TryGetSuccess;
@@ -199,9 +254,13 @@ var
   Result: TRequestResult;
 begin
   Result := Http.TryGet('https://httpbin.org/get');
-  AssertTrue('Request should succeed', Result.Success);
-  AssertEquals('Status code should be 200', 200, Result.Response.StatusCode);
-  AssertEquals('Error should be empty', '', Result.Error);
+  try
+    AssertTrue('Request should succeed', Result.Success);
+    AssertEquals('Status code should be 200', 200, Result.Response.StatusCode);
+    AssertEquals('Error should be empty', '', Result.Error);
+  finally
+    Result.Response.Cleanup;
+  end;
 end;
 
 procedure TRequestSimpleTests.Test12_TryGetFailure;

@@ -208,8 +208,6 @@ end;
 
 function TRequestBuilder.AddParam(const Name, Value: string): TRequestBuilder;
 begin
-  if FParams.Count > 0 then
-    FParams.Add('&');
   FParams.Add(Format('%s=%s', [Name, Value]));
   Result := Self;
 end;
@@ -251,6 +249,7 @@ var
   AuthStr: string;
   I: Integer;
   FinalURL: string;
+  ParamStr: string;
 begin
   Result.Initialize;
   Client := TFPHTTPClient.Create(nil);
@@ -279,17 +278,19 @@ begin
     end
     else if FData <> '' then
     begin
+      Client.RequestHeaders.Add('Content-Type: application/x-www-form-urlencoded');
       RequestStream := TStringStream.Create(FData);
     end;
     
     // Build URL with params
     FinalURL := FURL;
-    if (FParams.Count > 0) and (FParams.Text <> '') then
+    if FParams.Count > 0 then
     begin
+      ParamStr := StringReplace(FParams.Text, #13#10, '&', [rfReplaceAll]);
       if Pos('?', FinalURL) > 0 then
-        FinalURL := FinalURL + '&' + FParams.Text
+        FinalURL := FinalURL + '&' + ParamStr
       else
-        FinalURL := FinalURL + '?' + FParams.Text;
+        FinalURL := FinalURL + '?' + ParamStr;
     end;
     
     // Execute request
@@ -325,28 +326,63 @@ begin
 end;
 
 class function THttp.Get(const URL: string): TResponse;
+var
+  Builder: TRequestBuilder;
 begin
-  Result := NewRequest.Get.URL(URL).Send;
+  Builder.Initialize;
+  try
+    Result := Builder.Get.URL(URL).Send;
+  finally
+    Builder.Cleanup;
+  end;
 end;
 
 class function THttp.Post(const URL: string; const Data: string): TResponse;
+var
+  Builder: TRequestBuilder;
 begin
-  Result := NewRequest.Post.URL(URL).WithData(Data).Send;
+  Builder.Initialize;
+  try
+    Result := Builder.Post.URL(URL).WithData(Data).Send;
+  finally
+    Builder.Cleanup;
+  end;
 end;
 
 class function THttp.Put(const URL: string; const Data: string): TResponse;
+var
+  Builder: TRequestBuilder;
 begin
-  Result := NewRequest.Put.URL(URL).WithData(Data).Send;
+  Builder.Initialize;
+  try
+    Result := Builder.Put.URL(URL).WithData(Data).Send;
+  finally
+    Builder.Cleanup;
+  end;
 end;
 
 class function THttp.Delete(const URL: string): TResponse;
+var
+  Builder: TRequestBuilder;
 begin
-  Result := NewRequest.Delete.URL(URL).Send;
+  Builder.Initialize;
+  try
+    Result := Builder.Delete.URL(URL).Send;
+  finally
+    Builder.Cleanup;
+  end;
 end;
 
 class function THttp.PostJSON(const URL: string; const JSON: string): TResponse;
+var
+  Builder: TRequestBuilder;
 begin
-  Result := NewRequest.Post.URL(URL).WithJSON(JSON).Send;
+  Builder.Initialize;
+  try
+    Result := Builder.Post.URL(URL).WithJSON(JSON).Send;
+  finally
+    Builder.Cleanup;
+  end;
 end;
 
 class function THttp.TryGet(const URL: string): TRequestResult;
