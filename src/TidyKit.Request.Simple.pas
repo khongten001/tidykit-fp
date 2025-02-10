@@ -94,15 +94,14 @@ type
   
   { Global HTTP functions }
   THttp = record
-  public
-    class function NewRequest: TRequestBuilder; static;
+    { Simple one-line request methods }
     class function Get(const URL: string): TResponse; static;
     class function Post(const URL: string; const Data: string = ''): TResponse; static;
     class function Put(const URL: string; const Data: string = ''): TResponse; static;
     class function Delete(const URL: string): TResponse; static;
     class function PostJSON(const URL: string; const JSON: string): TResponse; static;
     
-    // Result pattern versions
+    { Error handling variants }
     class function TryGet(const URL: string): TRequestResult; static;
     class function TryPost(const URL: string; const Data: string = ''): TRequestResult; static;
   end;
@@ -353,11 +352,6 @@ begin
 end;
 
 { THttp }
-
-class function THttp.NewRequest: TRequestBuilder;
-begin
-  // Initialize is called automatically
-end;
 
 class function THttp.Get(const URL: string): TResponse;
 var

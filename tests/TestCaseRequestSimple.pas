@@ -78,15 +78,14 @@ end;
 procedure TRequestSimpleTests.Test05_BuilderWithHeaders;
 var
   Response: TResponse;
-  Builder: TRequestBuilder;
+  Request: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder := Http.NewRequest
+  Response := Request
     .Get
     .URL('https://httpbin.org/headers')
     .AddHeader('X-Custom-Header', 'test')
-    .AddHeader('User-Agent', 'TidyKit-Test');
-    
-  Response := Builder.Send;
+    .AddHeader('User-Agent', 'TidyKit-Test')
+    .Send;
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
@@ -97,15 +96,14 @@ end;
 procedure TRequestSimpleTests.Test06_BuilderWithParams;
 var
   Response: TResponse;
-  Builder: TRequestBuilder;
+  Request: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder := Http.NewRequest
+  Response := Request
     .Get
     .URL('https://httpbin.org/get')
     .AddParam('page', '1')
-    .AddParam('limit', '10');
-    
-  Response := Builder.Send;
+    .AddParam('limit', '10')
+    .Send;
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
@@ -119,17 +117,17 @@ end;
 procedure TRequestSimpleTests.Test07_BuilderWithTimeout;
 var
   Response: TResponse;
-  Builder: TRequestBuilder;
+  Request: TRequestBuilder;  // Initialize is called automatically
   ExceptionRaised: Boolean;
 begin
   ExceptionRaised := False;
-  Builder := Http.NewRequest
-    .Get
-    .URL('https://httpbin.org/delay/2')
-    .WithTimeout(1);
-    
+  
   try
-    Response := Builder.Send;
+    Response := Request
+      .Get
+      .URL('https://httpbin.org/delay/2')
+      .WithTimeout(1)
+      .Send;
   except
     on E: ETidyKitException do
       ExceptionRaised := True;
@@ -141,14 +139,13 @@ end;
 procedure TRequestSimpleTests.Test08_BuilderWithAuth;
 var
   Response: TResponse;
-  Builder: TRequestBuilder;
+  Request: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder := Http.NewRequest
+  Response := Request
     .Get
     .URL('https://httpbin.org/headers')
-    .BasicAuth('username', 'password');
-    
-  Response := Builder.Send;
+    .BasicAuth('username', 'password')
+    .Send;
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
@@ -174,15 +171,14 @@ end;
 procedure TRequestSimpleTests.Test10_FormDataRequest;
 var
   Response: TResponse;
-  Builder: TRequestBuilder;
+  Request: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder := Http.NewRequest
+  Response := Request
     .Post
     .URL('https://httpbin.org/post')
     .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
-    .WithData('field1=value1&field2=value2');
-    
-  Response := Builder.Send;
+    .WithData('field1=value1&field2=value2')
+    .Send;
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
