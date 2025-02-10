@@ -4,11 +4,11 @@ program TestRunner;
 
 uses
   Classes, consoletestrunner
-  //, TestCaseDateTime
-  //, TestCaseFS
-  //, TestCaseString
-  //, TestCaseCrypto
-  , TestCaseRequestSimple;
+  , TestCaseDateTime
+  , TestCaseFS
+  , TestCaseString
+  , TestCaseCrypto
+  , TestCaseRequest;
 
 type
 
