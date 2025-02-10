@@ -18,24 +18,28 @@ A lightweight, memory-safe HTTP client for Free Pascal that uses advanced record
 ### Fluent Interface Pattern
 This module implements a fluent interface pattern, which is a specific form of the builder pattern that emphasizes:
 
-1. **Method Chaining**: Each method returns the builder itself, allowing for a chain of method calls:
+1. **Method Chaining**: Each method returns the request itself, allowing for a chain of method calls:
 ```pascal
-var Response := Http.NewRequest
-  .Post                                // Chain HTTP method
-  .URL('https://api.example.com')      // Chain URL
-  .AddHeader('X-API-Key', 'your-key')  // Chain headers
-  .WithJSON('{"name": "John"}')        // Chain body
-  .Send;                               // Execute
+var
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request
+    .Post                                // Chain HTTP method
+    .URL('https://api.example.com')      // Chain URL
+    .AddHeader('X-API-Key', 'your-key')  // Chain headers
+    .WithJSON('{"name": "John"}')        // Chain body
+    .Send;                               // Execute
 ```
 
 2. **Readable, SQL-like Syntax**: The API reads almost like English:
 ```pascal
-Response := Http.NewRequest
-  .Get
-  .URL('https://api.example.com/secure')
-  .BasicAuth('username', 'password')
-  .WithTimeout(5000)
-  .Send;
+var
+  Request: TRequestBuilder;
+  Response := Request
+    .Get
+    .URL('https://api.example.com/secure')
+    .BasicAuth('username', 'password')
+    .WithTimeout(5000)
+    .Send;
 ```
 
 3. **Context Preservation**: Each method call preserves and adds to the context, with the final state resolved only when `Send` is called.
@@ -75,8 +79,8 @@ if Response.StatusCode = 200 then
 ### Using the Fluent Interface
 ```pascal
 var
-  Builder: TRequestBuilder;  // Automatically initialized
-  Response := Builder       // Start building the request
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request       // Start building the request
     .Post
     .URL('https://api.example.com/data')
     .AddHeader('X-API-Key', 'your-key')
@@ -86,11 +90,11 @@ var
     
 if Response.StatusCode = 200 then
   WriteLn(Response.Text);
-// Both Response and Builder are automatically cleaned up
+// Both Response and Request are automatically cleaned up
 ```
 
 The fluent interface above makes the request construction both readable and maintainable:
-- The builder is automatically initialized when declared
+- The request is automatically initialized when declared
 - Each method call is chained to the next
 - The code reads like a natural language description
 - The state is built up step by step
@@ -118,7 +122,7 @@ TResponse = record
   property Text: string;              // Response body as text
   property JSON: TJSONData;           // Response parsed as JSON
   
-  // These are called automatically:
+  // Memory management (called automatically)
   class operator Initialize(var Response: TResponse);  // Called when variable is created
   class operator Finalize(var Response: TResponse);    // Called when variable goes out of scope
 end;
@@ -147,8 +151,8 @@ TRequestBuilder = record
   function Send: TResponse;
   
   // Memory management (called automatically)
-  class operator Initialize(var Builder: TRequestBuilder);
-  class operator Finalize(var Builder: TRequestBuilder);
+  class operator Initialize(var Request: TRequestBuilder);
+  class operator Finalize(var Request: TRequestBuilder);
 end;
 ```
 
@@ -175,8 +179,8 @@ The global `Http` constant of type `THttp` provides convenient one-liner methods
 ### Complex Request with Multiple Headers and Parameters
 ```pascal
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Post
     .URL('https://api.example.com/users')
     .AddHeader('X-API-Key', 'your-key')
@@ -194,8 +198,8 @@ if Response.StatusCode = 201 then
 ### Authenticated Request with Error Handling
 ```pascal
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Get
     .URL('https://api.example.com/secure')
     .BasicAuth('username', 'password')
@@ -213,8 +217,8 @@ end;
 ### Form Data Submission
 ```pascal
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Post
     .URL('https://api.example.com/submit')
     .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
@@ -231,5 +235,5 @@ if Response.StatusCode = 200 then
 2. Always check StatusCode before accessing response data
 3. Use TryGet/TryPost for better error handling
 4. Set appropriate timeouts for your use case
-5. Use the builder pattern for complex requests
-6. Take advantage of the fluent interface for better readability 
+5. Take advantage of the fluent interface for complex requests
+6. Let the code read like natural language descriptions 
