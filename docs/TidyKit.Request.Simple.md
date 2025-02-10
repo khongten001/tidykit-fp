@@ -5,13 +5,42 @@ A lightweight, memory-safe HTTP client for Free Pascal that uses advanced record
 ## Features
 
 - Zero-setup memory management using advanced records
-- Fluent builder interface for requests
+- Fluent interface for expressive request building
 - Support for common HTTP methods (GET, POST, PUT, DELETE, PATCH)
 - JSON and form data handling
 - Query parameters and custom headers
 - Basic authentication
 - Timeout configuration
 - Error handling with result pattern
+
+## Design Philosophy
+
+### Fluent Interface Pattern
+This module implements a fluent interface pattern, which is a specific form of the builder pattern that emphasizes:
+
+1. **Method Chaining**: Each method returns the builder itself, allowing for a chain of method calls:
+```pascal
+var Response := Http.NewRequest
+  .Post                                // Chain HTTP method
+  .URL('https://api.example.com')      // Chain URL
+  .AddHeader('X-API-Key', 'your-key')  // Chain headers
+  .WithJSON('{"name": "John"}')        // Chain body
+  .Send;                               // Execute
+```
+
+2. **Readable, SQL-like Syntax**: The API reads almost like English:
+```pascal
+Response := Http.NewRequest
+  .Get
+  .URL('https://api.example.com/secure')
+  .BasicAuth('username', 'password')
+  .WithTimeout(5000)
+  .Send;
+```
+
+3. **Context Preservation**: Each method call preserves and adds to the context, with the final state resolved only when `Send` is called.
+
+4. **Self-Documenting Code**: The fluent interface makes the intent clear and reduces the need for additional documentation.
 
 ## Memory Safety
 
@@ -43,21 +72,29 @@ if Response.StatusCode = 200 then
 // Response is automatically cleaned up
 ```
 
-### Using the Builder Pattern
+### Using the Fluent Interface
 ```pascal
 var
-  Response := Http.NewRequest  // Builder is automatically initialized
+  Builder: TRequestBuilder;  // Automatically initialized
+  Response := Builder       // Start building the request
     .Post
     .URL('https://api.example.com/data')
     .AddHeader('X-API-Key', 'your-key')
     .AddParam('version', '1.0')
     .WithJSON('{"data": "value"}')
-    .Send;  // Builder is automatically cleaned up
+    .Send;                 // Execute the request
     
 if Response.StatusCode = 200 then
   WriteLn(Response.Text);
-// Response is automatically cleaned up
+// Both Response and Builder are automatically cleaned up
 ```
+
+The fluent interface above makes the request construction both readable and maintainable:
+- The builder is automatically initialized when declared
+- Each method call is chained to the next
+- The code reads like a natural language description
+- The state is built up step by step
+- All cleanup is handled automatically by Free Pascal's advanced records feature
 
 ## Error Handling
 
@@ -90,14 +127,14 @@ end;
 ### TRequestBuilder Record
 ```pascal
 TRequestBuilder = record
-  // HTTP Methods
+  // HTTP Methods (each returns Self for chaining)
   function Get: TRequestBuilder;
   function Post: TRequestBuilder;
   function Put: TRequestBuilder;
   function Delete: TRequestBuilder;
   function Patch: TRequestBuilder;
   
-  // Request Configuration
+  // Request Configuration (each returns Self for chaining)
   function URL(const AUrl: string): TRequestBuilder;
   function AddHeader(const Name, Value: string): TRequestBuilder;
   function AddParam(const Name, Value: string): TRequestBuilder;
@@ -106,9 +143,10 @@ TRequestBuilder = record
   function WithJSON(const JsonStr: string): TRequestBuilder;
   function WithData(const Data: string): TRequestBuilder;
   
+  // Execute the request
   function Send: TResponse;
   
-  // These are called automatically:
+  // Memory management (called automatically)
   class operator Initialize(var Builder: TRequestBuilder);
   class operator Finalize(var Builder: TRequestBuilder);
 end;
@@ -117,24 +155,28 @@ end;
 ### Global HTTP Functions
 ```pascal
 THttp = record
-  class function NewRequest: TRequestBuilder;
+  // Simple one-line request methods
   class function Get(const URL: string): TResponse;
   class function Post(const URL: string; const Data: string = ''): TResponse;
   class function Put(const URL: string; const Data: string = ''): TResponse;
   class function Delete(const URL: string): TResponse;
   class function PostJSON(const URL: string; const JSON: string): TResponse;
   
+  // Error handling variants
   class function TryGet(const URL: string): TRequestResult;
   class function TryPost(const URL: string; const Data: string = ''): TRequestResult;
 end;
 ```
+
+The global `Http` constant of type `THttp` provides convenient one-liner methods for simple requests. For more complex requests, declare a `TRequestBuilder` variable and use the fluent interface.
 
 ## Advanced Usage Examples
 
 ### Complex Request with Multiple Headers and Parameters
 ```pascal
 var
-  Response := Http.NewRequest
+  Builder: TRequestBuilder;
+  Response := Builder
     .Post
     .URL('https://api.example.com/users')
     .AddHeader('X-API-Key', 'your-key')
@@ -152,25 +194,27 @@ if Response.StatusCode = 201 then
 ### Authenticated Request with Error Handling
 ```pascal
 var
-  Result := Http.NewRequest
+  Builder: TRequestBuilder;
+  Response := Builder
     .Get
     .URL('https://api.example.com/secure')
     .BasicAuth('username', 'password')
     .WithTimeout(3000)
     .Send;
 
-case Result.StatusCode of
-  200: WriteLn('Success: ', Result.Text);
+case Response.StatusCode of
+  200: WriteLn('Success: ', Response.Text);
   401: WriteLn('Authentication failed');
   403: WriteLn('Access denied');
-  else WriteLn('Error: ', Result.StatusCode);
+  else WriteLn('Error: ', Response.StatusCode);
 end;
 ```
 
 ### Form Data Submission
 ```pascal
 var
-  Response := Http.NewRequest
+  Builder: TRequestBuilder;
+  Response := Builder
     .Post
     .URL('https://api.example.com/submit')
     .AddHeader('Content-Type', 'application/x-www-form-urlencoded')

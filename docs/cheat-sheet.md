@@ -27,9 +27,10 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Use Cases](#common-use-cases)
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
-    - [Builder Pattern for Complex Requests](#builder-pattern-for-complex-requests)
+    - [Using the Fluent Interface](#using-the-fluent-interface)
     - [Error Handling](#error-handling)
     - [Working with JSON](#working-with-json)
+    - [Memory Management](#memory-management)
 
 ## 📁File System Operations
 
@@ -561,33 +562,39 @@ Response := Http.Put('https://api.example.com/users/1', 'status=active');
 Response := Http.Delete('https://api.example.com/users/1');
 ```
 
-### Builder Pattern for Complex Requests
+### Using the Fluent Interface
 ```pascal
 // Request with headers, params, and JSON
-var Response := Http.NewRequest
-  .Post
-  .URL('https://api.example.com/users')
-  .AddHeader('X-API-Key', 'your-key')
-  .AddHeader('Accept', 'application/json')
-  .AddParam('version', '2.0')
-  .WithJSON('{"name": "John"}')
-  .Send;
+var
+  Builder: TRequestBuilder;  // Automatically initialized
+  Response := Builder
+    .Post
+    .URL('https://api.example.com/users')
+    .AddHeader('X-API-Key', 'your-key')
+    .AddHeader('Accept', 'application/json')
+    .AddParam('version', '2.0')
+    .WithJSON('{"name": "John"}')
+    .Send;
 
 // Authenticated request with timeout
-Response := Http.NewRequest
-  .Get
-  .URL('https://api.example.com/secure')
-  .BasicAuth('username', 'password')
-  .WithTimeout(5000)  // 5 seconds
-  .Send;
+var
+  Builder: TRequestBuilder;
+  Response := Builder
+    .Get
+    .URL('https://api.example.com/secure')
+    .BasicAuth('username', 'password')
+    .WithTimeout(5000)  // 5 seconds
+    .Send;
 
 // Form data with custom headers
-Response := Http.NewRequest
-  .Post
-  .URL('https://api.example.com/submit')
-  .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
-  .WithData('name=John&age=30')
-  .Send;
+var
+  Builder: TRequestBuilder;
+  Response := Builder
+    .Post
+    .URL('https://api.example.com/submit')
+    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
+    .WithData('name=John&age=30')
+    .Send;
 ```
 
 ### Error Handling
@@ -612,7 +619,13 @@ else
 
 ### Working with JSON
 ```pascal
-var Response := Http.Get('https://api.example.com/users');
+var
+  Builder: TRequestBuilder;
+  Response := Builder
+    .Get
+    .URL('https://api.example.com/users')
+    .Send;
+
 if Response.StatusCode = 200 then
 begin
   // Access JSON data
@@ -625,3 +638,9 @@ begin
     WriteLn(Items[I].AsString);
 end;
 ```
+
+### Memory Management
+- All objects are automatically initialized when declared
+- All cleanup is handled by Free Pascal's advanced records feature
+- No manual Initialize/Cleanup calls needed
+- Safe to use in try-except blocks
