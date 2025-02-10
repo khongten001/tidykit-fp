@@ -30,7 +30,6 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Using the Fluent Interface](#using-the-fluent-interface)
     - [Error Handling](#error-handling)
     - [Working with JSON](#working-with-json)
-    - [Memory Management](#memory-management)
 
 ## 📁File System Operations
 
@@ -566,8 +565,8 @@ Response := Http.Delete('https://api.example.com/users/1');
 ```pascal
 // Request with headers, params, and JSON
 var
-  Builder: TRequestBuilder;  // Automatically initialized
-  Response := Builder
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request
     .Post
     .URL('https://api.example.com/users')
     .AddHeader('X-API-Key', 'your-key')
@@ -578,8 +577,8 @@ var
 
 // Authenticated request with timeout
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Get
     .URL('https://api.example.com/secure')
     .BasicAuth('username', 'password')
@@ -588,8 +587,8 @@ var
 
 // Form data with custom headers
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Post
     .URL('https://api.example.com/submit')
     .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
@@ -620,8 +619,8 @@ else
 ### Working with JSON
 ```pascal
 var
-  Builder: TRequestBuilder;
-  Response := Builder
+  Request: TRequestBuilder;
+  Response := Request
     .Get
     .URL('https://api.example.com/users')
     .Send;
@@ -638,9 +637,3 @@ begin
     WriteLn(Items[I].AsString);
 end;
 ```
-
-### Memory Management
-- All objects are automatically initialized when declared
-- All cleanup is handled by Free Pascal's advanced records feature
-- No manual Initialize/Cleanup calls needed
-- Safe to use in try-except blocks
