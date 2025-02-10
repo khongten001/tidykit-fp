@@ -31,10 +31,9 @@ type
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
 
   { Re-export the request types }
-  TRequestKit = TidyKit.Request.TRequestKit;
-  TRequestMethod = TidyKit.Request.TRequestMethod;
   TResponse = TidyKit.Request.TResponse;
-  TRequestOptions = TidyKit.Request.TRequestOptions;
+  TRequestBuilder = TidyKit.Request.TRequestBuilder;
+  TRequestResult = TidyKit.Request.TRequestResult;
 
 const
   { Re-export filesystem constants }

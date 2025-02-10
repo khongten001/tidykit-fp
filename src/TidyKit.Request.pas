@@ -1,6 +1,7 @@
 unit TidyKit.Request;
 
 {$mode objfpc}{$H+}{$J-}
+{$ModeSwitch advancedrecords}
 
 interface
 
@@ -9,298 +10,412 @@ uses
   fpjson, jsonparser, URIParser, HTTPDefs, TidyKit.Core;
 
 type
-  { HTTP Methods }
-  TRequestMethod = (rmGet, rmPost, rmPut, rmDelete, rmPatch, rmHead, rmOptions);
+  { Response record with automatic memory management }
+  TResponse = record
+  private
+    FContent: string;
+    FHeaders: string;
+    FJSON: TJSONData;  // This needs proper cleanup
+    
+    function GetText: string;
+    function GetJSON: TJSONData;
+  public
+    StatusCode: Integer;
+    
+    property Text: string read GetText;
+    property JSON: TJSONData read GetJSON;
+    
+    { Management operators for automatic initialization/cleanup }
+    
+    { Initialize is called automatically when:
+      - A variable of this type is declared
+      - Memory for this type is allocated
+      - This type is used as a field in another record
+      No need to call this manually }
+    class operator Initialize(var Response: TResponse);
+    
+    { Finalize is called automatically when:
+      - A variable goes out of scope
+      - Memory for this type is freed
+      - The containing record is finalized
+      This ensures FJSON is properly freed }
+    class operator Finalize(var Response: TResponse);
+  end;
   
-  { HTTP Response }
-  TResponse = class(TObject)
+  { Result pattern for error handling }
+  TRequestResult = record
+    Success: Boolean;
+    Response: TResponse;  // Will be automatically initialized and finalized
+    Error: string;
+  end;
+  
+  { Request builder for fluent interface with automatic memory management }
+  TRequestBuilder = record
   private
-    FStatusCode: Integer;
-    FHeaders: TStringList;
-    FContent: TMemoryStream;
-    FContentText: string;
-    FContentJSON: TJSONData;
-    function GetContentText: string;
-    function GetContentJSON: TJSONData;
-  public
-    constructor Create;
-    destructor Destroy; override;
-    property StatusCode: Integer read FStatusCode write FStatusCode;
-    property Headers: TStringList read FHeaders;
-    property Content: TMemoryStream read FContent;
-    property Text: string read GetContentText;
-    property JSON: TJSONData read GetContentJSON;
-  end;
-
-  { Request Options }
-  TRequestOptions = record
-    Headers: array of string;
-    ParamString: string;  // Format: 'param1=value1&param2=value2'
-    Data: string;
-    JSON: string;
-    Auth: array[0..1] of string;
-    Timeout: Integer;
-    VerifySSL: Boolean;
-  end;
-
-  { Main Request Class }
-  TRequestKit = class(TKitBase)
-  private
-    FClient: TFPHTTPClient;
-    procedure InitializeClient;
-    procedure SetRequestOptions(const Options: TRequestOptions);
-    function BuildURL(const BaseURL: string; const ParamString: string): string;
-    function ExecuteRequest(const Method: TRequestMethod; const URL: string; 
-      const Options: TRequestOptions): TResponse;
-    function StringToStream(const AString: string): TStream;
-  public
-    constructor Create;
-    destructor Destroy; override;
+    FURL: string;
+    FMethod: string;
+    FHeaders: string;
+    FParams: string;
+    FTimeout: Integer;
+    FUsername: string;
+    FPassword: string;
+    FJSON: string;
+    FData: string;
     
-    { Main HTTP Methods }
-    function Get(const URL: string; const Options: TRequestOptions): TResponse;
-    function Post(const URL: string; const Options: TRequestOptions): TResponse;
-    function Put(const URL: string; const Options: TRequestOptions): TResponse;
-    function Delete(const URL: string; const Options: TRequestOptions): TResponse;
-    function Patch(const URL: string; const Options: TRequestOptions): TResponse;
-    function Head(const URL: string; const Options: TRequestOptions): TResponse;
-    function SendOptions(const URL: string; const Options: TRequestOptions): TResponse;
+    function Execute: TResponse;
+  public
+    { Management operators for automatic initialization/cleanup }
     
-    { Helper Methods }
-    class function CreateDefaultOptions: TRequestOptions;
+    { Initialize is called automatically when a builder is created.
+      Sets all fields to their default empty state.
+      This happens automatically for local variables and fields }
+    class operator Initialize(var Builder: TRequestBuilder);
+    
+    { Finalize is called automatically when a builder goes out of scope.
+      Currently empty as all fields are managed types }
+    class operator Finalize(var Builder: TRequestBuilder);
+    
+    function Get: TRequestBuilder;
+    function Post: TRequestBuilder;
+    function Put: TRequestBuilder;
+    function Delete: TRequestBuilder;
+    function Patch: TRequestBuilder;
+    
+    function URL(const AUrl: string): TRequestBuilder;
+    function AddHeader(const Name, Value: string): TRequestBuilder;
+    function AddParam(const Name, Value: string): TRequestBuilder;
+    function WithTimeout(const Milliseconds: Integer): TRequestBuilder;
+    function BasicAuth(const Username, Password: string): TRequestBuilder;
+    function WithJSON(const JsonStr: string): TRequestBuilder;
+    function WithData(const Data: string): TRequestBuilder;
+    
+    function Send: TResponse;
+  end;
+  
+  { Global HTTP functions }
+  THttp = record
+    { Simple one-line request methods }
+    class function Get(const URL: string): TResponse; static;
+    class function Post(const URL: string; const Data: string = ''): TResponse; static;
+    class function Put(const URL: string; const Data: string = ''): TResponse; static;
+    class function Delete(const URL: string): TResponse; static;
+    class function PostJSON(const URL: string; const JSON: string): TResponse; static;
+    
+    { Error handling variants }
+    class function TryGet(const URL: string): TRequestResult; static;
+    class function TryPost(const URL: string; const Data: string = ''): TRequestResult; static;
   end;
 
+const
+  Http: THttp = ();
+  
 implementation
 
 { TResponse }
 
-constructor TResponse.Create;
+class operator TResponse.Initialize(var Response: TResponse);
 begin
-  inherited Create;
-  FHeaders := TStringList.Create;
-  FContent := TMemoryStream.Create;
-  FContentJSON := nil;
+  // Called automatically when a TResponse is created
+  Response.FContent := '';
+  Response.FHeaders := '';
+  Response.FJSON := nil;  // Will be created on-demand in GetJSON
+  Response.StatusCode := 0;
 end;
 
-destructor TResponse.Destroy;
+class operator TResponse.Finalize(var Response: TResponse);
 begin
-  FHeaders.Free;
-  FContent.Free;
-  if Assigned(FContentJSON) then
-    FContentJSON.Free;
-  inherited Destroy;
+  // Called automatically when a TResponse goes out of scope
+  if Assigned(Response.FJSON) then
+    Response.FJSON.Free;
+  Response.FJSON := nil;
 end;
 
-function TResponse.GetContentText: string;
-var
-  Stream: TStringStream;
+function TResponse.GetText: string;
 begin
-  if FContentText = '' then
-  begin
-    Stream := TStringStream.Create('');
-    try
-      FContent.Position := 0;
-      Stream.LoadFromStream(FContent);
-      FContentText := Stream.DataString;
-    finally
-      Stream.Free;
-    end;
-  end;
-  Result := FContentText;
+  Result := FContent;
 end;
 
-function TResponse.GetContentJSON: TJSONData;
+function TResponse.GetJSON: TJSONData;
 var
   Parser: TJSONParser;
 begin
-  if not Assigned(FContentJSON) then
+  // Lazy initialization of JSON - only parse when needed
+  if not Assigned(FJSON) and (FContent <> '') then
   begin
-    Parser := TJSONParser.Create(GetContentText);
+    Parser := TJSONParser.Create(FContent);
     try
-      FContentJSON := Parser.Parse;
+      FJSON := Parser.Parse;  // Will be freed automatically in Finalize
     finally
       Parser.Free;
     end;
   end;
-  Result := FContentJSON;
+  Result := FJSON;
 end;
 
-{ TRequestKit }
+{ TRequestBuilder }
 
-constructor TRequestKit.Create;
+class operator TRequestBuilder.Initialize(var Builder: TRequestBuilder);
 begin
-  inherited Create;
-  InitializeClient;
+  // Called automatically when a TRequestBuilder is created
+  Builder.FHeaders := '';
+  Builder.FParams := '';
+  Builder.FTimeout := 0;
+  Builder.FJSON := '';
+  Builder.FData := '';
 end;
 
-destructor TRequestKit.Destroy;
+class operator TRequestBuilder.Finalize(var Builder: TRequestBuilder);
 begin
-  FClient.Free;
-  inherited Destroy;
+  // Called automatically when a TRequestBuilder goes out of scope
+  // All fields are managed types (string), so no manual cleanup needed
 end;
 
-procedure TRequestKit.InitializeClient;
+function TRequestBuilder.Get: TRequestBuilder;
 begin
-  FClient := TFPHTTPClient.Create(nil);
-  FClient.AllowRedirect := True;
+  FMethod := 'GET';
+  Result := Self;
 end;
 
-class function TRequestKit.CreateDefaultOptions: TRequestOptions;
+function TRequestBuilder.Post: TRequestBuilder;
 begin
-  Result.Headers := [];
-  Result.ParamString := '';
-  Result.Data := '';
-  Result.JSON := '';
-  Result.Auth[0] := '';
-  Result.Auth[1] := '';
-  Result.Timeout := 0;
-  Result.VerifySSL := True;
+  FMethod := 'POST';
+  Result := Self;
 end;
 
-function TRequestKit.BuildURL(const BaseURL: string; const ParamString: string): string;
+function TRequestBuilder.Put: TRequestBuilder;
+begin
+  FMethod := 'PUT';
+  Result := Self;
+end;
+
+function TRequestBuilder.Delete: TRequestBuilder;
+begin
+  FMethod := 'DELETE';
+  Result := Self;
+end;
+
+function TRequestBuilder.Patch: TRequestBuilder;
+begin
+  FMethod := 'PATCH';
+  Result := Self;
+end;
+
+function TRequestBuilder.URL(const AUrl: string): TRequestBuilder;
+begin
+  FURL := AUrl;
+  Result := Self;
+end;
+
+function TRequestBuilder.AddHeader(const Name, Value: string): TRequestBuilder;
+begin
+  if FHeaders <> '' then
+    FHeaders := FHeaders + #13#10;
+  FHeaders := FHeaders + Format('%s: %s', [Name, Value]);
+  Result := Self;
+end;
+
+function TRequestBuilder.AddParam(const Name, Value: string): TRequestBuilder;
+begin
+  if FParams <> '' then
+    FParams := FParams + '&';
+  FParams := FParams + Format('%s=%s', [Name, Value]);
+  Result := Self;
+end;
+
+function TRequestBuilder.WithTimeout(const Milliseconds: Integer): TRequestBuilder;
+begin
+  FTimeout := Milliseconds;
+  Result := Self;
+end;
+
+function TRequestBuilder.BasicAuth(const Username, Password: string): TRequestBuilder;
+begin
+  FUsername := Username;
+  FPassword := Password;
+  Result := Self;
+end;
+
+function TRequestBuilder.WithJSON(const JsonStr: string): TRequestBuilder;
+begin
+  FJSON := JsonStr;
+  Result := Self;
+end;
+
+function TRequestBuilder.WithData(const Data: string): TRequestBuilder;
+begin
+  FData := Data;
+  Result := Self;
+end;
+
+function TRequestBuilder.Send: TResponse;
+begin
+  Result := Execute;
+end;
+
+function TRequestBuilder.Execute: TResponse;
 var
-  URI: TURI;
-begin
-  URI := ParseURI(BaseURL);
-  Result := BaseURL;
-  
-  if ParamString <> '' then
-  begin
-    if Pos('?', Result) > 0 then
-      Result := Result + '&' + ParamString
-    else
-      Result := Result + '?' + ParamString;
-  end;
-end;
-
-function TRequestKit.StringToStream(const AString: string): TStream;
-begin
-  Result := TStringStream.Create(AString);
-end;
-
-procedure TRequestKit.SetRequestOptions(const Options: TRequestOptions);
-var
-  I: Integer;
-  AuthStr: string;
-begin
-  // Set headers
-  FClient.RequestHeaders.Clear;
-  for I := 0 to Length(Options.Headers) - 1 do
-    FClient.RequestHeaders.Add(Options.Headers[I]);
-    
-  // Set timeout
-  if Options.Timeout > 0 then
-    FClient.ConnectTimeout := Options.Timeout;
-    
-  // Set basic auth if provided
-  if (Options.Auth[0] <> '') then
-  begin
-    AuthStr := EncodeStringBase64(Options.Auth[0] + ':' + Options.Auth[1]);
-    FClient.RequestHeaders.Add('Authorization: Basic ' + AuthStr);
-  end;
-end;
-
-function TRequestKit.ExecuteRequest(const Method: TRequestMethod; const URL: string;
-  const Options: TRequestOptions): TResponse;
-var
+  Client: TFPHTTPClient;
+  RequestStream: TStringStream;
   ResponseStream: TMemoryStream;
-  MethodStr: string;
-  RequestBodyStream: TStream;
-  Parser: TJSONParser;
-  TempJSON: TJSONData;
+  ContentStream: TStringStream;
+  AuthStr: string;
+  HeaderLines: TStringList;
+  I: Integer;
+  FinalURL: string;
 begin
-  Result := TResponse.Create;
+  // Result is automatically initialized by the class operator
+  Client := TFPHTTPClient.Create(nil);
+  RequestStream := nil;
   ResponseStream := TMemoryStream.Create;
-  RequestBodyStream := nil;
+  HeaderLines := TStringList.Create;
   try
-    SetRequestOptions(Options);
-    
-    case Method of
-      rmGet: MethodStr := 'GET';
-      rmPost: MethodStr := 'POST';
-      rmPut: MethodStr := 'PUT';
-      rmDelete: MethodStr := 'DELETE';
-      rmPatch: MethodStr := 'PATCH';
-      rmHead: MethodStr := 'HEAD';
-      rmOptions: MethodStr := 'OPTIONS';
+    // Set headers
+    if FHeaders <> '' then
+    begin
+      HeaderLines.Text := FHeaders;
+      for I := 0 to HeaderLines.Count - 1 do
+        Client.RequestHeaders.Add(HeaderLines[I]);
+    end;
+      
+    // Set timeout
+    if FTimeout > 0 then
+      Client.ConnectTimeout := FTimeout;
+      
+    // Set auth
+    if (FUsername <> '') then
+    begin
+      AuthStr := EncodeStringBase64(FUsername + ':' + FPassword);
+      Client.RequestHeaders.Add('Authorization: Basic ' + AuthStr);
     end;
     
+    // Set content type for JSON
+    if FJSON <> '' then
+    begin
+      Client.RequestHeaders.Add('Content-Type: application/json');
+      RequestStream := TStringStream.Create(FJSON);
+    end
+    else if FData <> '' then
+    begin
+      Client.RequestHeaders.Add('Content-Type: application/x-www-form-urlencoded');
+      RequestStream := TStringStream.Create(FData);
+    end;
+    
+    // Build URL with params
+    FinalURL := FURL;
+    if FParams <> '' then
+    begin
+      if Pos('?', FinalURL) > 0 then
+        FinalURL := FinalURL + '&' + FParams
+      else
+        FinalURL := FinalURL + '?' + FParams;
+    end;
+    
+    // Execute request
     try
-      if Options.JSON <> '' then
-      begin
-        // Validate JSON before sending
-        Parser := TJSONParser.Create(Options.JSON);
-        try
-          TempJSON := Parser.Parse;
-          TempJSON.Free;
-        finally
-          Parser.Free;
-        end;
+      if Assigned(RequestStream) then
+        Client.RequestBody := RequestStream;
         
-        RequestBodyStream := StringToStream(Options.JSON);
-        FClient.AddHeader('Content-Type', 'application/json');
-      end
-      else if Options.Data <> '' then
-      begin
-        RequestBodyStream := StringToStream(Options.Data);
+      Client.HTTPMethod(FMethod, FinalURL, ResponseStream, []);
+      
+      Result.StatusCode := Client.ResponseStatusCode;
+      Result.FHeaders := Client.ResponseHeaders.Text;
+      
+      // Convert response to string
+      ContentStream := TStringStream.Create('');
+      try
+        ResponseStream.Position := 0;
+        ContentStream.LoadFromStream(ResponseStream);
+        Result.FContent := ContentStream.DataString;
+      finally
+        ContentStream.Free;
       end;
-      
-      if Assigned(RequestBodyStream) then
-        FClient.RequestBody := RequestBodyStream;
-      
-      FClient.HTTPMethod(MethodStr, BuildURL(URL, Options.ParamString), ResponseStream, []);
-      
-      Result.StatusCode := FClient.ResponseStatusCode;
-      Result.Headers.Assign(FClient.ResponseHeaders);
-      Result.Content.LoadFromStream(ResponseStream);
       
     except
       on E: Exception do
       begin
-        FreeAndNil(Result);
+        // Result is already initialized, just clear it
+        Result.FContent := '';
+        Result.FHeaders := '';
+        Result.FJSON := nil;
+        Result.StatusCode := 0;
         raise ETidyKitException.Create('HTTP Request Error: ' + E.Message);
       end;
     end;
+    
   finally
+    HeaderLines.Free;
     ResponseStream.Free;
-    if Assigned(RequestBodyStream) then
-      RequestBodyStream.Free;
+    Client.Free;
+    if Assigned(RequestStream) then
+      RequestStream.Free;
   end;
 end;
 
-function TRequestKit.Get(const URL: string; const Options: TRequestOptions): TResponse;
+{ THttp }
+
+class function THttp.Get(const URL: string): TResponse;
+var
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Result := ExecuteRequest(rmGet, URL, Options);
+  Result := Builder.Get.URL(URL).Send;
 end;
 
-function TRequestKit.Post(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.Post(const URL: string; const Data: string): TResponse;
+var
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Result := ExecuteRequest(rmPost, URL, Options);
+  Result := Builder.Post.URL(URL).WithData(Data).Send;
 end;
 
-function TRequestKit.Put(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.Put(const URL: string; const Data: string): TResponse;
+var
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Result := ExecuteRequest(rmPut, URL, Options);
+  Result := Builder.Put.URL(URL).WithData(Data).Send;
 end;
 
-function TRequestKit.Delete(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.Delete(const URL: string): TResponse;
+var
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Result := ExecuteRequest(rmDelete, URL, Options);
+  Result := Builder.Delete.URL(URL).Send;
 end;
 
-function TRequestKit.Patch(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.PostJSON(const URL: string; const JSON: string): TResponse;
+var
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Result := ExecuteRequest(rmPatch, URL, Options);
+  Result := Builder.Post.URL(URL).WithJSON(JSON).Send;
 end;
 
-function TRequestKit.Head(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.TryGet(const URL: string): TRequestResult;
 begin
-  Result := ExecuteRequest(rmHead, URL, Options);
+  try
+    Result.Response := Get(URL);
+    Result.Success := True;
+    Result.Error := '';
+  except
+    on E: Exception do
+    begin
+      Result.Success := False;
+      Result.Error := E.Message;
+    end;
+  end;
 end;
 
-function TRequestKit.SendOptions(const URL: string; const Options: TRequestOptions): TResponse;
+class function THttp.TryPost(const URL: string; const Data: string): TRequestResult;
 begin
-  Result := ExecuteRequest(rmOptions, URL, Options);
+  try
+    Result.Response := Post(URL, Data);
+    Result.Success := True;
+    Result.Error := '';
+  except
+    on E: Exception do
+    begin
+      Result.Success := False;
+      Result.Error := E.Message;
+    end;
+  end;
 end;
 
 end. 

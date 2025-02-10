@@ -1,4 +1,4 @@
-unit TestCaseRequestSimple;
+unit TestCaseRequest;
 
 {$mode objfpc}{$H+}{$J-}
 {$ModeSwitch advancedrecords}
@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry, fpjson,
-  TidyKit.Core, TidyKit.Request.Simple;
+  TidyKit.Core, TidyKit.Request;
 
 type
   { TRequestSimpleTests }

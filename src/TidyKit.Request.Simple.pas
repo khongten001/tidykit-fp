@@ -1,4 +1,4 @@
-unit TidyKit.Request.Simple;
+unit TidyKit.Request;
 
 {$mode objfpc}{$H+}{$J-}
 {$ModeSwitch advancedrecords}
