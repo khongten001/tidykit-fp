@@ -13,18 +13,15 @@ type
   { Response record with automatic cleanup }
   TResponse = record
   private
-    FContent: TMemoryStream;
-    FHeaders: TStringList;
+    FContent: string;
+    FHeaders: string;
     FJSON: TJSONData;
-    FText: string;
     
     function GetText: string;
     function GetJSON: TJSONData;
   public
     StatusCode: Integer;
     
-    property Headers: TStringList read FHeaders;
-    property Content: TMemoryStream read FContent;
     property Text: string read GetText;
     property JSON: TJSONData read GetJSON;
     
@@ -44,8 +41,8 @@ type
   private
     FURL: string;
     FMethod: string;
-    FHeaders: TStringList;
-    FParams: TStringList;
+    FHeaders: string;
+    FParams: string;
     FTimeout: Integer;
     FUsername: string;
     FPassword: string;
@@ -98,46 +95,31 @@ implementation
 
 procedure TResponse.Initialize;
 begin
-  FContent := TMemoryStream.Create;
-  FHeaders := TStringList.Create;
+  FContent := '';
+  FHeaders := '';
   FJSON := nil;
-  FText := '';
   StatusCode := 0;
 end;
 
 procedure TResponse.Cleanup;
 begin
-  FContent.Free;
-  FHeaders.Free;
   if Assigned(FJSON) then
     FJSON.Free;
+  FJSON := nil;
 end;
 
 function TResponse.GetText: string;
-var
-  Stream: TStringStream;
 begin
-  if FText = '' then
-  begin
-    Stream := TStringStream.Create('');
-    try
-      FContent.Position := 0;
-      Stream.LoadFromStream(FContent);
-      FText := Stream.DataString;
-    finally
-      Stream.Free;
-    end;
-  end;
-  Result := FText;
+  Result := FContent;
 end;
 
 function TResponse.GetJSON: TJSONData;
 var
   Parser: TJSONParser;
 begin
-  if not Assigned(FJSON) then
+  if not Assigned(FJSON) and (FContent <> '') then
   begin
-    Parser := TJSONParser.Create(GetText);
+    Parser := TJSONParser.Create(FContent);
     try
       FJSON := Parser.Parse;
     finally
@@ -151,8 +133,8 @@ end;
 
 procedure TRequestBuilder.Initialize;
 begin
-  FHeaders := TStringList.Create;
-  FParams := TStringList.Create;
+  FHeaders := '';
+  FParams := '';
   FTimeout := 0;
   FJSON := '';
   FData := '';
@@ -160,8 +142,7 @@ end;
 
 procedure TRequestBuilder.Cleanup;
 begin
-  FHeaders.Free;
-  FParams.Free;
+  // Nothing to clean up anymore
 end;
 
 function TRequestBuilder.Get: TRequestBuilder;
@@ -202,13 +183,17 @@ end;
 
 function TRequestBuilder.AddHeader(const Name, Value: string): TRequestBuilder;
 begin
-  FHeaders.Add(Format('%s: %s', [Name, Value]));
+  if FHeaders <> '' then
+    FHeaders := FHeaders + #13#10;
+  FHeaders := FHeaders + Format('%s: %s', [Name, Value]);
   Result := Self;
 end;
 
 function TRequestBuilder.AddParam(const Name, Value: string): TRequestBuilder;
 begin
-  FParams.Add(Format('%s=%s', [Name, Value]));
+  if FParams <> '' then
+    FParams := FParams + '&';
+  FParams := FParams + Format('%s=%s', [Name, Value]);
   Result := Self;
 end;
 
@@ -246,18 +231,26 @@ function TRequestBuilder.Execute: TResponse;
 var
   Client: TFPHTTPClient;
   RequestStream: TStringStream;
+  ResponseStream: TMemoryStream;
+  ContentStream: TStringStream;
   AuthStr: string;
+  HeaderLines: TStringList;
   I: Integer;
   FinalURL: string;
-  ParamStr: string;
 begin
   Result.Initialize;
   Client := TFPHTTPClient.Create(nil);
   RequestStream := nil;
+  ResponseStream := TMemoryStream.Create;
+  HeaderLines := TStringList.Create;
   try
     // Set headers
-    for I := 0 to FHeaders.Count - 1 do
-      Client.RequestHeaders.Add(FHeaders[I]);
+    if FHeaders <> '' then
+    begin
+      HeaderLines.Text := FHeaders;
+      for I := 0 to HeaderLines.Count - 1 do
+        Client.RequestHeaders.Add(HeaderLines[I]);
+    end;
       
     // Set timeout
     if FTimeout > 0 then
@@ -284,13 +277,12 @@ begin
     
     // Build URL with params
     FinalURL := FURL;
-    if FParams.Count > 0 then
+    if FParams <> '' then
     begin
-      ParamStr := StringReplace(FParams.Text, #13#10, '&', [rfReplaceAll]);
       if Pos('?', FinalURL) > 0 then
-        FinalURL := FinalURL + '&' + ParamStr
+        FinalURL := FinalURL + '&' + FParams
       else
-        FinalURL := FinalURL + '?' + ParamStr;
+        FinalURL := FinalURL + '?' + FParams;
     end;
     
     // Execute request
@@ -298,20 +290,33 @@ begin
       if Assigned(RequestStream) then
         Client.RequestBody := RequestStream;
         
-      Client.HTTPMethod(FMethod, FinalURL, Result.Content, []);
+      Client.HTTPMethod(FMethod, FinalURL, ResponseStream, []);
       
       Result.StatusCode := Client.ResponseStatusCode;
-      Result.Headers.Assign(Client.ResponseHeaders);
+      Result.FHeaders := Client.ResponseHeaders.Text;
+      
+      // Convert response to string
+      ContentStream := TStringStream.Create('');
+      try
+        ResponseStream.Position := 0;
+        ContentStream.LoadFromStream(ResponseStream);
+        Result.FContent := ContentStream.DataString;
+      finally
+        ContentStream.Free;
+      end;
       
     except
       on E: Exception do
       begin
         Result.Cleanup;
+        Result.Initialize;
         raise ETidyKitException.Create('HTTP Request Error: ' + E.Message);
       end;
     end;
     
   finally
+    HeaderLines.Free;
+    ResponseStream.Free;
     Client.Free;
     if Assigned(RequestStream) then
       RequestStream.Free;
