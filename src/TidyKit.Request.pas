@@ -174,11 +174,8 @@ begin
 end;
 
 function TRequestKit.StringToStream(const AString: string): TStream;
-var
-  StringStream: TStringStream;
 begin
-  StringStream := TStringStream.Create(AString);
-  Result := StringStream;
+  Result := TStringStream.Create(AString);
 end;
 
 procedure TRequestKit.SetRequestOptions(const Options: TRequestOptions);
@@ -248,9 +245,11 @@ begin
       
     except
       on E: Exception do
+      begin
+        FreeAndNil(Result);
         raise ETidyKitException.Create('HTTP Request Error: ' + E.Message);
+      end;
     end;
-    
   finally
     ResponseStream.Free;
     if Assigned(RequestBodyStream) then
