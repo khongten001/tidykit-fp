@@ -30,6 +30,7 @@ type
     // Content handling
     procedure Test08_JSONRequest;
     procedure Test09_FormDataRequest;
+    procedure Test12_PostWithAuthAndJSON;
     
     // Error handling
     procedure Test10_InvalidURL;
@@ -260,6 +261,42 @@ begin
   Response := FRequestKit.Get('https://httpbin.org/status/404', Options);
   try
     AssertEquals('Status code should be 404', 404, Response.StatusCode);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test12_PostWithAuthAndJSON;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+  JsonData: TJSONData;
+begin
+  Options := Default(TRequestOptions);
+  
+  // Set auth credentials
+  Options.Auth[0] := 'username';
+  Options.Auth[1] := 'password';
+  
+  // Set JSON body
+  Options.JSON := '{"name": "John Doe", "age": 30}';
+  
+  Response := FRequestKit.Post('https://httpbin.org/post', Options);
+  try
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Response.JSON <> nil);
+    
+    // Verify auth header was sent
+    JsonData := Response.JSON.FindPath('headers');
+    AssertTrue('Headers should exist in response', JsonData <> nil);
+    AssertTrue('Authorization header should exist', 
+      JsonData.FindPath('Authorization') <> nil);
+    
+    // Verify JSON body was sent correctly
+    JsonData := Response.JSON.FindPath('json');
+    AssertTrue('JSON data should exist in response', JsonData <> nil);
+    AssertEquals('Name should match', 'John Doe', JsonData.FindPath('name').AsString);
+    AssertEquals('Age should match', 30, JsonData.FindPath('age').AsInteger);
   finally
     Response.Free;
   end;
