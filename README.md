@@ -4,7 +4,7 @@ A collection of utility libraries for Free Pascal, designed for simplicity, safe
 
 ## Features
 
-- **HTTP Client**: Memory-safe HTTP client with fluent interface ([docs](docs/TidyKit.Request.Simple.md))
+- **HTTP Client**: Memory-safe HTTP client with fluent interface ([docs](docs/TidyKit.Request.md))
 - **File System**: File and directory operations
 - **String Utilities**: String manipulation and pattern matching
 - **Date/Time**: Date and time handling with timezone support
@@ -85,7 +85,7 @@ end;
 
 ## Documentation
 
-- [HTTP Client](docs/TidyKit.Request.Simple.md)
+- [HTTP Client](docs/TidyKit.Request.md)
 - [File System](docs/TidyKit.FS.md)
 - [String Utilities](docs/TidyKit.Strings.md)
 - [Date/Time](docs/TidyKit.DateTime.md)

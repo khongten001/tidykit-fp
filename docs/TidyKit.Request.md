@@ -1,250 +1,239 @@
-# TidyKit.Request Documentation
+# TidyKit.Request.Simple Documentation
 
-TidyKit.Request is a simple yet powerful HTTP client for Free Pascal. It provides an easy-to-use interface for making HTTP requests with support for various HTTP methods, request options, and response handling.
+A lightweight, memory-safe HTTP client for Free Pascal that uses advanced records for automatic cleanup. This module provides a fluent interface for making HTTP requests with built-in memory management.
 
-## Table of Contents
-- [Basic Usage](#basic-usage)
-- [HTTP Methods](#http-methods)
-- [Request Options](#request-options)
-- [Response Handling](#response-handling)
-- [Examples](#examples)
+## Features
+
+- Zero-setup memory management using advanced records
+- Fluent interface for expressive request building
+- Support for common HTTP methods (GET, POST, PUT, DELETE, PATCH)
+- JSON and form data handling
+- Query parameters and custom headers
+- Basic authentication
+- Timeout configuration
+- Error handling with result pattern
+
+## Design Philosophy
+
+### Fluent Interface Pattern
+This module implements a fluent interface pattern, which is a specific form of the builder pattern that emphasizes:
+
+1. **Method Chaining**: Each method returns the request itself, allowing for a chain of method calls:
+```pascal
+var
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request
+    .Post                                // Chain HTTP method
+    .URL('https://api.example.com')      // Chain URL
+    .AddHeader('X-API-Key', 'your-key')  // Chain headers
+    .WithJSON('{"name": "John"}')        // Chain body
+    .Send;                               // Execute
+```
+
+2. **Readable, SQL-like Syntax**: The API reads almost like English:
+```pascal
+var
+  Request: TRequestBuilder;
+  Response := Request
+    .Get
+    .URL('https://api.example.com/secure')
+    .BasicAuth('username', 'password')
+    .WithTimeout(5000)
+    .Send;
+```
+
+3. **Context Preservation**: Each method call preserves and adds to the context, with the final state resolved only when `Send` is called.
+
+4. **Self-Documenting Code**: The fluent interface makes the intent clear and reduces the need for additional documentation.
+
+## Memory Safety
+
+This module uses Free Pascal's advanced records feature to provide automatic memory management:
+
+- No manual initialization or cleanup needed
+- Objects are automatically initialized when declared
+- Memory is automatically freed when variables go out of scope
+- Safe to use in try-except blocks - cleanup still happens if an exception occurs
 
 ## Basic Usage
 
-```pascal
-uses
-  TidyKit;
-
-var
-  RequestKit: TRequestKit;
-  Response: TResponse;
-  Options: TRequestOptions;
-begin
-  RequestKit := TRequestKit.Create;
-  try
-    Options := Default(TRequestOptions);
-    Response := RequestKit.Get('https://api.example.com/data', Options);
-    try
-      WriteLn('Status Code: ', Response.StatusCode);
-      WriteLn('Response Body: ', Response.Text);
-    finally
-      Response.Free;
-    end;
-  finally
-    RequestKit.Free;
-  end;
-end;
-```
-
-## HTTP Methods
-
-TidyKit.Request supports the following HTTP methods:
-- `Get` - HTTP GET request
-- `Post` - HTTP POST request
-- `Put` - HTTP PUT request
-- `Delete` - HTTP DELETE request
-- `Patch` - HTTP PATCH request
-- `Head` - HTTP HEAD request
-- `SendOptions` - HTTP OPTIONS request
-
-## Request Options
-
-The `TRequestOptions` record provides various options to customize your HTTP requests:
-
-```pascal
-TRequestOptions = record
-  Headers: array of string;      // Custom headers
-  ParamString: string;          // Query parameters
-  Data: string;                 // Request body for form data
-  JSON: string;                 // Request body for JSON data
-  Auth: array[0..1] of string;  // Basic auth credentials [username, password]
-  Timeout: Integer;             // Request timeout in milliseconds
-  VerifySSL: Boolean;          // SSL verification flag
-end;
-```
-
-### Setting Headers
-```pascal
-Options := Default(TRequestOptions);
-SetLength(Options.Headers, 2);
-Options.Headers[0] := 'X-API-Key: your-api-key';
-Options.Headers[1] := 'User-Agent: TidyKit-Client';
-```
-
-### Query Parameters
-```pascal
-Options := Default(TRequestOptions);
-Options.ParamString := 'page=1&limit=10';  // Will be appended to URL
-```
-
-### Form Data
-```pascal
-Options := Default(TRequestOptions);
-SetLength(Options.Headers, 1);
-Options.Headers[0] := 'Content-Type: application/x-www-form-urlencoded';
-Options.Data := 'name=John&age=30';
-```
-
-### JSON Data
-```pascal
-Options := Default(TRequestOptions);
-Options.JSON := '{"name": "John", "age": 30}';  // Content-Type is set automatically
-```
-
-### Basic Authentication
-```pascal
-Options := Default(TRequestOptions);
-Options.Auth[0] := 'username';
-Options.Auth[1] := 'password';
-```
-
-### Timeout
-```pascal
-Options := Default(TRequestOptions);
-Options.Timeout := 5000;  // 5 seconds timeout
-```
-
-## Response Handling
-
-The `TResponse` class provides access to the HTTP response:
-
-- `StatusCode: Integer` - HTTP status code
-- `Headers: TStringList` - Response headers
-- `Text: string` - Response body as text
-- `JSON: TJSONData` - Response body parsed as JSON
-- `Content: TMemoryStream` - Raw response body
-
-```pascal
-Response := RequestKit.Get(URL, Options);
-try
-  if Response.StatusCode = 200 then
-  begin
-    // Access response as text
-    WriteLn(Response.Text);
-    
-    // Access response as JSON
-    if Response.JSON <> nil then
-      WriteLn(Response.JSON.FormatJSON);
-      
-    // Access specific header
-    WriteLn(Response.Headers.Values['Content-Type']);
-  end;
-finally
-  Response.Free;
-end;
-```
-
-## Examples
-
-### GET Request with Query Parameters
+### Simple GET Request
 ```pascal
 var
-  RequestKit: TRequestKit;
-  Response: TResponse;
-  Options: TRequestOptions;
-begin
-  RequestKit := TRequestKit.Create;
-  try
-    Options := Default(TRequestOptions);
-    Options.ParamString := 'page=1&limit=10';
-    
-    Response := RequestKit.Get('https://api.example.com/users', Options);
-    try
-      if Response.StatusCode = 200 then
-        WriteLn(Response.JSON.FormatJSON);
-    finally
-      Response.Free;
-    end;
-  finally
-    RequestKit.Free;
-  end;
-end;
+  Response := Http.Get('https://api.example.com/data');
+if Response.StatusCode = 200 then
+  WriteLn(Response.Text);
+// Response is automatically cleaned up when it goes out of scope
 ```
 
-### POST Request with JSON Body
+### POST with JSON
 ```pascal
 var
-  RequestKit: TRequestKit;
-  Response: TResponse;
-  Options: TRequestOptions;
-begin
-  RequestKit := TRequestKit.Create;
-  try
-    Options := Default(TRequestOptions);
-    Options.JSON := '{"name": "John Doe", "email": "john@example.com"}';
-    
-    Response := RequestKit.Post('https://api.example.com/users', Options);
-    try
-      if Response.StatusCode = 201 then
-        WriteLn('User created successfully');
-    finally
-      Response.Free;
-    end;
-  finally
-    RequestKit.Free;
-  end;
-end;
+  Response := Http.PostJSON('https://api.example.com/users',
+    '{"name": "John", "age": 30}');
+if Response.StatusCode = 200 then
+  WriteLn(Response.JSON.FormatJSON);
+// Response is automatically cleaned up
 ```
 
-### Authenticated Request
+### Using the Fluent Interface
 ```pascal
 var
-  RequestKit: TRequestKit;
-  Response: TResponse;
-  Options: TRequestOptions;
-begin
-  RequestKit := TRequestKit.Create;
-  try
-    Options := Default(TRequestOptions);
-    Options.Auth[0] := 'username';
-    Options.Auth[1] := 'password';
-    SetLength(Options.Headers, 1);
-    Options.Headers[0] := 'X-API-Key: your-api-key';
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request       // Start building the request
+    .Post
+    .URL('https://api.example.com/data')
+    .AddHeader('X-API-Key', 'your-key')
+    .AddParam('version', '1.0')
+    .WithJSON('{"data": "value"}')
+    .Send;                 // Execute the request
     
-    Response := RequestKit.Get('https://api.example.com/secure', Options);
-    try
-      if Response.StatusCode = 200 then
-        WriteLn(Response.Text);
-    finally
-      Response.Free;
-    end;
-  finally
-    RequestKit.Free;
-  end;
-end;
+if Response.StatusCode = 200 then
+  WriteLn(Response.Text);
+// Both Response and Request are automatically cleaned up
 ```
 
-### Error Handling
+The fluent interface above makes the request construction both readable and maintainable:
+- The request is automatically initialized when declared
+- Each method call is chained to the next
+- The code reads like a natural language description
+- The state is built up step by step
+- All cleanup is handled automatically by Free Pascal's advanced records feature
+
+## Error Handling
+
+### Using Try-Pattern
 ```pascal
 var
-  RequestKit: TRequestKit;
-  Response: TResponse;
-  Options: TRequestOptions;
-begin
-  RequestKit := TRequestKit.Create;
-  try
-    Options := Default(TRequestOptions);
-    Response := nil;
-    
-    try
-      Response := RequestKit.Get('https://api.example.com/data', Options);
-      case Response.StatusCode of
-        200..299: WriteLn('Success: ', Response.Text);
-        401: WriteLn('Unauthorized');
-        404: WriteLn('Not Found');
-        500..599: WriteLn('Server Error');
-      else
-        WriteLn('Unexpected Status: ', Response.StatusCode);
-      end;
-    except
-      on E: ETidyKitException do
-        WriteLn('Request Error: ', E.Message);
-    end;
-  finally
-    Response.Free;
-    RequestKit.Free;
-  end;
+  Result := Http.TryGet('https://api.example.com/data');
+if Result.Success then
+  WriteLn(Result.Response.Text)
+else
+  WriteLn('Error: ', Result.Error);
+// Both Result and Response are automatically cleaned up
+```
+
+## API Reference
+
+### TResponse Record
+```pascal
+TResponse = record
+  StatusCode: Integer;
+  property Text: string;              // Response body as text
+  property JSON: TJSONData;           // Response parsed as JSON
+  
+  // Memory management (called automatically)
+  class operator Initialize(var Response: TResponse);  // Called when variable is created
+  class operator Finalize(var Response: TResponse);    // Called when variable goes out of scope
 end;
 ```
 
-Remember to always free your `TRequestKit` and `TResponse` objects to prevent memory leaks. Using a try-finally block is recommended. 
+### TRequestBuilder Record
+```pascal
+TRequestBuilder = record
+  // HTTP Methods (each returns Self for chaining)
+  function Get: TRequestBuilder;
+  function Post: TRequestBuilder;
+  function Put: TRequestBuilder;
+  function Delete: TRequestBuilder;
+  function Patch: TRequestBuilder;
+  
+  // Request Configuration (each returns Self for chaining)
+  function URL(const AUrl: string): TRequestBuilder;
+  function AddHeader(const Name, Value: string): TRequestBuilder;
+  function AddParam(const Name, Value: string): TRequestBuilder;
+  function WithTimeout(const Milliseconds: Integer): TRequestBuilder;
+  function BasicAuth(const Username, Password: string): TRequestBuilder;
+  function WithJSON(const JsonStr: string): TRequestBuilder;
+  function WithData(const Data: string): TRequestBuilder;
+  
+  // Execute the request
+  function Send: TResponse;
+  
+  // Memory management (called automatically)
+  class operator Initialize(var Request: TRequestBuilder);
+  class operator Finalize(var Request: TRequestBuilder);
+end;
+```
+
+### Global HTTP Functions
+```pascal
+THttp = record
+  // Simple one-line request methods
+  class function Get(const URL: string): TResponse;
+  class function Post(const URL: string; const Data: string = ''): TResponse;
+  class function Put(const URL: string; const Data: string = ''): TResponse;
+  class function Delete(const URL: string): TResponse;
+  class function PostJSON(const URL: string; const JSON: string): TResponse;
+  
+  // Error handling variants
+  class function TryGet(const URL: string): TRequestResult;
+  class function TryPost(const URL: string; const Data: string = ''): TRequestResult;
+end;
+```
+
+The global `Http` constant of type `THttp` provides convenient one-liner methods for simple requests. For more complex requests, declare a `TRequestBuilder` variable and use the fluent interface.
+
+## Advanced Usage Examples
+
+### Complex Request with Multiple Headers and Parameters
+```pascal
+var
+  Request: TRequestBuilder;
+  Response := Request
+    .Post
+    .URL('https://api.example.com/users')
+    .AddHeader('X-API-Key', 'your-key')
+    .AddHeader('Accept', 'application/json')
+    .AddParam('version', '2.0')
+    .AddParam('format', 'detailed')
+    .WithJSON('{"name": "John", "email": "john@example.com"}')
+    .WithTimeout(5000)
+    .Send;
+
+if Response.StatusCode = 201 then
+  WriteLn('User created: ', Response.JSON.FindPath('id').AsString);
+```
+
+### Authenticated Request with Error Handling
+```pascal
+var
+  Request: TRequestBuilder;
+  Response := Request
+    .Get
+    .URL('https://api.example.com/secure')
+    .BasicAuth('username', 'password')
+    .WithTimeout(3000)
+    .Send;
+
+case Response.StatusCode of
+  200: WriteLn('Success: ', Response.Text);
+  401: WriteLn('Authentication failed');
+  403: WriteLn('Access denied');
+  else WriteLn('Error: ', Response.StatusCode);
+end;
+```
+
+### Form Data Submission
+```pascal
+var
+  Request: TRequestBuilder;
+  Response := Request
+    .Post
+    .URL('https://api.example.com/submit')
+    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
+    .WithData('name=John&age=30&email=john@example.com')
+    .Send;
+
+if Response.StatusCode = 200 then
+  WriteLn('Form submitted successfully');
+```
+
+## Best Practices
+
+1. Let the automatic memory management work for you - don't try to manually manage memory
+2. Always check StatusCode before accessing response data
+3. Use TryGet/TryPost for better error handling
+4. Set appropriate timeouts for your use case
+5. Take advantage of the fluent interface for complex requests
+6. Let the code read like natural language descriptions 
