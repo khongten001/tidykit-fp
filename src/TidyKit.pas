@@ -10,7 +10,8 @@ uses
   TidyKit.FS,
   TidyKit.Strings,
   TidyKit.DateTime,
-  TidyKit.Crypto;
+  TidyKit.Crypto,
+  TidyKit.Request;
 
 type
   { Re-export the core types }
@@ -28,6 +29,12 @@ type
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+
+  { Re-export the request types }
+  TRequestKit = TidyKit.Request.TRequestKit;
+  TRequestMethod = TidyKit.Request.TRequestMethod;
+  TResponse = TidyKit.Request.TResponse;
+  TRequestOptions = TidyKit.Request.TRequestOptions;
 
 const
   { Re-export filesystem constants }
