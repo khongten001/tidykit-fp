@@ -27,7 +27,10 @@ type
   
   { GCM types }
   TGCMHashKey = array[0..15] of Byte;
-  TGCMHashTable = array[0..15, 0..255] of QWord;
+  TGCMHashValue = record
+    High, Low: QWord;
+  end;
+  TGCMHashTable = array[0..15, 0..255] of TGCMHashValue;
 
   { Result record for authenticated encryption }
   TAESGCMResult = record
@@ -76,7 +79,7 @@ type
     class procedure GCMMultiply(var X: TBytes; const Table: TGCMHashTable);
     class procedure GCMGHash(const Data: TBytes; var X: TBytes; const Table: TGCMHashTable);
     class function GCMGenerateTag(const AAD, CipherText: TBytes; const Table: TGCMHashTable; 
-      const J0: TBytes; AADLen, CipherLen: QWord): TBytes;
+      const J0: TBytes; AADLen, CipherLen: QWord; TagLength: Integer = 16): TBytes;
     {$R+} // Re-enable range checking
     
     { CTR operations }
@@ -100,7 +103,8 @@ type
       const PlainText: TBytes;     // Data to encrypt
       const Key: TBytes;           // 32 bytes (256-bit) key
       const IV: TBytes;            // 12 bytes (96-bit) IV
-      const AAD: TBytes = nil      // Optional additional authenticated data
+      const AAD: TBytes = nil;     // Optional additional authenticated data
+      TagLength: Integer = 16      // Tag length in bytes (default 16)
     ): TAESGCMResult;
     
     { GCM mode decryption }
@@ -512,43 +516,46 @@ end;
 {$R-} // Disable range checking for GCM operations
 class procedure TAES256.GCMInit(const H: TGCMHashKey; var Table: TGCMHashTable);
 var
-  I, J, L, K: Integer;
-  V: QWord;
-  HRev: array[0..15] of Byte;
-  Z: array[0..15] of Byte;
+  I, J, K, L: Integer;  // Added L for inner loop
+  Z, HTemp: array[0..15] of Byte;
   X: Byte;
+  HiBitSet: Boolean;
 begin
-  // Reverse H for bit operations
-  for I := 0 to 15 do
-    HRev[I] := H[15 - I];
-
   // Initialize lookup table
   for I := 0 to 15 do
   begin
     for J := 0 to 255 do
     begin
       FillChar(Z, 16, 0);
+      Move(H[0], HTemp[0], 16);
       X := J;
-      for K := 0 to 7 do
+      
+      // Process each bit from MSB to LSB
+      for K := 7 downto 0 do
       begin
-        if (X and $80) <> 0 then
+        if (X and (1 shl K)) <> 0 then
         begin
-          for L := 0 to 15 do
-            Z[L] := Z[L] xor HRev[L];
+          for L := 0 to 15 do  // Changed K to L here
+            Z[L] := Z[L] xor HTemp[L];
         end;
-        X := X shl 1;
-        if K < 7 then  // Only rotate for first 7 iterations
-        begin
-          // Rotate HRev right by one byte
-          Move(HRev[1], HRev[0], 15);
-          HRev[15] := HRev[0];
-        end;
+        
+        // Right shift HTemp with reduction
+        HiBitSet := (HTemp[15] and 1) <> 0;
+        for L := 15 downto 1 do  // Changed K to L here
+          HTemp[L] := (HTemp[L] shr 1) or ((HTemp[L-1] and 1) shl 7);
+        HTemp[0] := HTemp[0] shr 1;
+        if HiBitSet then
+          HTemp[0] := HTemp[0] xor $E1;  // GCM reduction polynomial
       end;
-      V := (QWord(Z[0]) shl 56) or (QWord(Z[1]) shl 48) or
-           (QWord(Z[2]) shl 40) or (QWord(Z[3]) shl 32) or
-           (QWord(Z[4]) shl 24) or (QWord(Z[5]) shl 16) or
-           (QWord(Z[6]) shl 8) or QWord(Z[7]);
-      Table[I, J] := V;
+      
+      // Store result in table as two 64-bit values
+      Table[I, J].High := 0;
+      Table[I, J].Low := 0;
+      for L := 0 to 7 do  // Changed K to L here
+      begin
+        Table[I, J].High := (Table[I, J].High shl 8) or Z[L];
+        Table[I, J].Low := (Table[I, J].Low shl 8) or Z[L + 8];
+      end;
     end;
   end;
 end;
@@ -557,7 +564,7 @@ class procedure TAES256.GCMMultiply(var X: TBytes; const Table: TGCMHashTable);
 var
   I: Integer;
   Z: array[0..15] of Byte;
-  V: QWord;
+  V: TGCMHashValue;
 begin
   if Length(X) < 16 then
     Exit;
@@ -565,30 +572,29 @@ begin
   FillChar(Z, SizeOf(Z), 0);
   
   // Process bytes in big-endian order
-  for I := 0 to 7 do
-  begin
-    V := Table[I, X[15-I]];  // Process bytes in reverse order for big-endian
-    Z[0] := Z[0] xor Byte(V shr 56);
-    Z[1] := Z[1] xor Byte(V shr 48);
-    Z[2] := Z[2] xor Byte(V shr 40);
-    Z[3] := Z[3] xor Byte(V shr 32);
-    Z[4] := Z[4] xor Byte(V shr 24);
-    Z[5] := Z[5] xor Byte(V shr 16);
-    Z[6] := Z[6] xor Byte(V shr 8);
-    Z[7] := Z[7] xor Byte(V);
-  end;
-  
-  for I := 8 to 15 do
+  for I := 0 to 15 do
   begin
     V := Table[I, X[15-I]];
-    Z[8] := Z[8] xor Byte(V shr 56);
-    Z[9] := Z[9] xor Byte(V shr 48);
-    Z[10] := Z[10] xor Byte(V shr 40);
-    Z[11] := Z[11] xor Byte(V shr 32);
-    Z[12] := Z[12] xor Byte(V shr 24);
-    Z[13] := Z[13] xor Byte(V shr 16);
-    Z[14] := Z[14] xor Byte(V shr 8);
-    Z[15] := Z[15] xor Byte(V);
+    
+    // XOR high 64 bits
+    Z[0] := Z[0] xor Byte(V.High shr 56);
+    Z[1] := Z[1] xor Byte(V.High shr 48);
+    Z[2] := Z[2] xor Byte(V.High shr 40);
+    Z[3] := Z[3] xor Byte(V.High shr 32);
+    Z[4] := Z[4] xor Byte(V.High shr 24);
+    Z[5] := Z[5] xor Byte(V.High shr 16);
+    Z[6] := Z[6] xor Byte(V.High shr 8);
+    Z[7] := Z[7] xor Byte(V.High);
+    
+    // XOR low 64 bits
+    Z[8] := Z[8] xor Byte(V.Low shr 56);
+    Z[9] := Z[9] xor Byte(V.Low shr 48);
+    Z[10] := Z[10] xor Byte(V.Low shr 40);
+    Z[11] := Z[11] xor Byte(V.Low shr 32);
+    Z[12] := Z[12] xor Byte(V.Low shr 24);
+    Z[13] := Z[13] xor Byte(V.Low shr 16);
+    Z[14] := Z[14] xor Byte(V.Low shr 8);
+    Z[15] := Z[15] xor Byte(V.Low);
   end;
   
   Move(Z, X[0], 16);
@@ -634,11 +640,13 @@ begin
 end;
 
 class function TAES256.GCMGenerateTag(const AAD, CipherText: TBytes; const Table: TGCMHashTable;
-  const J0: TBytes; AADLen, CipherLen: QWord): TBytes;
+  const J0: TBytes; AADLen, CipherLen: QWord; TagLength: Integer = 16): TBytes;
 var
   X: TBytes;
   LenBlock: array[0..15] of Byte;
   I: Integer;
+  AADBits, CipherBits: QWord;
+  FullTag: TBytes;
 begin
   SetLength(X, 16);
   FillChar(X[0], 16, 0);
@@ -650,25 +658,29 @@ begin
   if (CipherLen > 0) and (CipherText <> nil) then
     GCMGHash(CipherText, X, Table);
   
+  // Convert byte lengths to bit lengths
+  AADBits := AADLen * 8;
+  CipherBits := CipherLen * 8;
+  
   // Length block - AAD length goes in first 8 bytes, CipherText length in last 8 bytes
   // Convert to big-endian
-  LenBlock[0] := Byte(AADLen shr 61);
-  LenBlock[1] := Byte(AADLen shr 53);
-  LenBlock[2] := Byte(AADLen shr 45);
-  LenBlock[3] := Byte(AADLen shr 37);
-  LenBlock[4] := Byte(AADLen shr 29);
-  LenBlock[5] := Byte(AADLen shr 21);
-  LenBlock[6] := Byte(AADLen shr 13);
-  LenBlock[7] := Byte(AADLen shr 5);
+  LenBlock[0] := Byte(AADBits shr 56);
+  LenBlock[1] := Byte(AADBits shr 48);
+  LenBlock[2] := Byte(AADBits shr 40);
+  LenBlock[3] := Byte(AADBits shr 32);
+  LenBlock[4] := Byte(AADBits shr 24);
+  LenBlock[5] := Byte(AADBits shr 16);
+  LenBlock[6] := Byte(AADBits shr 8);
+  LenBlock[7] := Byte(AADBits);
   
-  LenBlock[8] := Byte(CipherLen shr 61);
-  LenBlock[9] := Byte(CipherLen shr 53);
-  LenBlock[10] := Byte(CipherLen shr 45);
-  LenBlock[11] := Byte(CipherLen shr 37);
-  LenBlock[12] := Byte(CipherLen shr 29);
-  LenBlock[13] := Byte(CipherLen shr 21);
-  LenBlock[14] := Byte(CipherLen shr 13);
-  LenBlock[15] := Byte(CipherLen shr 5);
+  LenBlock[8] := Byte(CipherBits shr 56);
+  LenBlock[9] := Byte(CipherBits shr 48);
+  LenBlock[10] := Byte(CipherBits shr 40);
+  LenBlock[11] := Byte(CipherBits shr 32);
+  LenBlock[12] := Byte(CipherBits shr 24);
+  LenBlock[13] := Byte(CipherBits shr 16);
+  LenBlock[14] := Byte(CipherBits shr 8);
+  LenBlock[15] := Byte(CipherBits);
   
   for I := 0 to 15 do
     X[I] := X[I] xor LenBlock[I];
@@ -679,7 +691,9 @@ begin
     for I := 0 to 15 do
       X[I] := X[I] xor J0[I];
   
-  Result := X;
+  // Return the requested number of bytes for the tag
+  SetLength(Result, TagLength);
+  Move(X[0], Result[0], TagLength);
 end;
 {$R+} // Re-enable range checking
 
@@ -689,34 +703,27 @@ end;
 class procedure TAES256.CTRIncrement(var Counter: TBytes);
 var
   I: Integer;
-  Value: UInt32;
 begin
-  // Extract counter value in big-endian format (last 4 bytes)
-  Value := (UInt32(Counter[12]) shl 24) or
-           (UInt32(Counter[13]) shl 16) or
-           (UInt32(Counter[14]) shl 8) or
-           UInt32(Counter[15]);
-           
-  // Increment and handle overflow
-  Value := Value + 1;
-  
-  // Store back in big-endian format
-  Counter[12] := Byte(Value shr 24);
-  Counter[13] := Byte(Value shr 16);
-  Counter[14] := Byte(Value shr 8);
-  Counter[15] := Byte(Value);
+  // Increment counter in big-endian format (from right to left)
+  // Only increment the last 32 bits (4 bytes) as per GCM spec
+  for I := Length(Counter) - 1 downto Length(Counter) - 4 do
+  begin
+    Inc(Counter[I]);
+    if Counter[I] <> 0 then
+      Break;
+  end;
 end;
 {$R+} // Re-enable range checking
 
 { Public encryption/decryption methods }
 
 class function TAES256.EncryptGCM(const PlainText: TBytes; const Key: TBytes; const IV: TBytes; 
-  const AAD: TBytes = nil): TAESGCMResult;
+  const AAD: TBytes = nil; TagLength: Integer = 16): TAESGCMResult;
 var
   ExpandedKey: TAESExpandedKey;
   Counter, J0, H: TBytes;
   HashTable: TGCMHashTable;
-  I, NumBlocks, RemBytes: Integer;
+  I, J, NumBlocks, RemBytes: Integer;
   InBlock, OutBlock: TAESBlock;
   AADLen, CipherLen: QWord;
   TempHashKey: TGCMHashKey;
@@ -727,6 +734,8 @@ begin
     raise ETidyKitAESException.Create('Invalid key size. AES-256 requires a 32-byte key.');
   if not ValidateIV(IV, mGCM) then
     raise ETidyKitAESException.Create('Invalid IV size. GCM mode requires a 12-byte IV.');
+  if (TagLength < 12) or (TagLength > 16) then
+    raise ETidyKitAESException.Create('Invalid tag length. GCM requires tag length between 12 and 16 bytes.');
 
   // Expand the key
   ExpandKey(Key, ExpandedKey);
@@ -741,20 +750,14 @@ begin
 
   // Create J0 (initial counter) = IV || 0^31 || 1
   SetLength(J0, 16);
+  FillChar(J0[0], 16, 0);
   Move(IV[0], J0[0], 12);
-  FillChar(J0[12], 3, 0);
   J0[15] := 1;
 
-  // Encrypt J0 for tag generation
-  Move(J0[0], InBlock, 16);
-  EncryptBlock(InBlock, ExpandedKey, OutBlock);
-  Move(OutBlock, J0Block, 16);
-
-  // Initialize counter for encryption = IV || 0^31 || 2
+  // Initialize counter for encryption = IV || 0^31 || 1
   SetLength(Counter, 16);
-  Move(IV[0], Counter[0], 12);
-  FillChar(Counter[12], 3, 0);
-  Counter[15] := 2;
+  Move(J0[0], Counter[0], 16);
+  Counter[15] := 1;  // Start with counter value 1
 
   // Prepare output
   CipherLen := Length(PlainText);
@@ -772,11 +775,13 @@ begin
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
 
     // XOR with plaintext
-    Move(PlainText[I * 16], InBlock, 16);
-    XORBlock(OutBlock, InBlock);
-    Move(OutBlock, Result.CipherText[I * 16], 16);
+    if (I * 16 + 15) < Length(PlainText) then
+    begin
+      for J := 0 to 15 do
+        Result.CipherText[I * 16 + J] := PlainText[I * 16 + J] xor OutBlock[J];
+    end;
     
-    // Increment counter after using it
+    // Increment counter
     CTRIncrement(Counter);
   end;
 
@@ -786,14 +791,17 @@ begin
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
     
-    Move(PlainText[NumBlocks * 16], InBlock, RemBytes);
     for I := 0 to RemBytes - 1 do
-      OutBlock[I] := OutBlock[I] xor InBlock[I];
-    Move(OutBlock, Result.CipherText[NumBlocks * 16], RemBytes);
+      Result.CipherText[NumBlocks * 16 + I] := PlainText[NumBlocks * 16 + I] xor OutBlock[I];
   end;
 
-  // Generate authentication tag using encrypted J0
-  Result.Tag := GCMGenerateTag(AAD, Result.CipherText, HashTable, J0Block, AADLen, CipherLen);
+  // Encrypt J0 for tag generation
+  Move(J0[0], InBlock, 16);
+  EncryptBlock(InBlock, ExpandedKey, OutBlock);
+  Move(OutBlock, J0Block, 16);
+
+  // Generate authentication tag
+  Result.Tag := GCMGenerateTag(AAD, Result.CipherText, HashTable, J0Block, AADLen, CipherLen, TagLength);
 end;
 
 class function TAES256.DecryptGCM(const CipherText: TBytes; const Key: TBytes; const IV: TBytes;
@@ -802,19 +810,21 @@ var
   ExpandedKey: TAESExpandedKey;
   Counter, J0, H, ComputedTag: TBytes;
   HashTable: TGCMHashTable;
-  I, NumBlocks, RemBytes: Integer;
+  I, J, NumBlocks, RemBytes: Integer;
   InBlock, OutBlock: TAESBlock;
   AADLen, CipherLen: QWord;
   TempHashKey: TGCMHashKey;
   J0Block: TAESBlock;
+  TagLength: Integer;
 begin
   // Validate inputs
   if not ValidateKey(Key) then
     raise ETidyKitAESException.Create('Invalid key size. AES-256 requires a 32-byte key.');
   if not ValidateIV(IV, mGCM) then
     raise ETidyKitAESException.Create('Invalid IV size. GCM mode requires a 12-byte IV.');
-  if Length(Tag) <> 16 then
-    raise ETidyKitAESException.Create('Invalid tag size. GCM requires a 16-byte tag.');
+  TagLength := Length(Tag);
+  if (TagLength < 12) or (TagLength > 16) then
+    raise ETidyKitAESException.Create('Invalid tag length. GCM requires tag length between 12 and 16 bytes.');
 
   // Expand the key
   ExpandKey(Key, ExpandedKey);
@@ -829,11 +839,16 @@ begin
 
   // Create J0 (initial counter) = IV || 0^31 || 1
   SetLength(J0, 16);
+  FillChar(J0[0], 16, 0);
   Move(IV[0], J0[0], 12);
-  FillChar(J0[12], 3, 0);
   J0[15] := 1;
 
-  // Encrypt J0 for tag generation
+  // Initialize counter for decryption = IV || 0^31 || 1
+  SetLength(Counter, 16);
+  Move(J0[0], Counter[0], 16);
+  Counter[15] := 1;  // Start with counter value 1
+
+  // Encrypt J0 for tag verification
   Move(J0[0], InBlock, 16);
   EncryptBlock(InBlock, ExpandedKey, OutBlock);
   Move(OutBlock, J0Block, 16);
@@ -841,16 +856,10 @@ begin
   // Verify tag
   AADLen := Length(AAD);
   CipherLen := Length(CipherText);
-  ComputedTag := GCMGenerateTag(AAD, CipherText, HashTable, J0Block, AADLen, CipherLen);
-  for I := 0 to 15 do
+  ComputedTag := GCMGenerateTag(AAD, CipherText, HashTable, J0Block, AADLen, CipherLen, TagLength);
+  for I := 0 to TagLength - 1 do
     if ComputedTag[I] <> Tag[I] then
       raise ETidyKitAESException.Create('Authentication failed. Tag mismatch.');
-
-  // Initialize counter for decryption
-  SetLength(Counter, 16);
-  Move(IV[0], Counter[0], 12);
-  FillChar(Counter[12], 3, 0);
-  Counter[15] := 2;
 
   // Prepare output
   SetLength(Result, CipherLen);
@@ -866,11 +875,10 @@ begin
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
 
     // XOR with ciphertext
-    Move(CipherText[I * 16], InBlock, 16);
-    XORBlock(OutBlock, InBlock);
-    Move(OutBlock, Result[I * 16], 16);
+    for J := 0 to 15 do
+      Result[I * 16 + J] := CipherText[I * 16 + J] xor OutBlock[J];
     
-    // Increment counter after using it
+    // Increment counter
     CTRIncrement(Counter);
   end;
 
@@ -880,10 +888,8 @@ begin
     Move(Counter[0], InBlock, 16);
     EncryptBlock(InBlock, ExpandedKey, OutBlock);
     
-    Move(CipherText[NumBlocks * 16], InBlock, RemBytes);
     for I := 0 to RemBytes - 1 do
-      OutBlock[I] := OutBlock[I] xor InBlock[I];
-    Move(OutBlock, Result[NumBlocks * 16], RemBytes);
+      Result[NumBlocks * 16 + I] := CipherText[NumBlocks * 16 + I] xor OutBlock[I];
   end;
 end;
 

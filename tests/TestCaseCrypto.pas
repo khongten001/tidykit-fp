@@ -125,6 +125,8 @@ type
     procedure Test112_AES256CTRInvalidIV;
     procedure Test113_AES256GCMKnownAnswer;
     procedure Test114_AES256CTRKnownAnswer;
+    procedure Test115_AES256GCMKnownAnswer2;
+    procedure Test116_AES256GCMKnownAnswer3;
   end;
 
 implementation
@@ -1106,7 +1108,7 @@ end;
 
 procedure TTestCaseCrypto.Test113_AES256GCMKnownAnswer;
 const
-  // NIST SP 800-38D, Test Case 13
+  // GCM Specification Test Case 13
   Key: array[0..31] of Byte = (
     $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,
     $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
@@ -1129,6 +1131,8 @@ const
 var
   KeyBytes, IVBytes, AADBytes, PlainTextBytes: TBytes;
   Result: TAESGCMResult;
+  I: Integer;
+  DebugStr: string;
 begin
   SetLength(KeyBytes, 32);
   SetLength(IVBytes, 12);
@@ -1141,10 +1145,36 @@ begin
 
   Result := TCryptoKit.AES256GCMEncrypt(PlainTextBytes, KeyBytes, IVBytes, AADBytes);
   
+  WriteLn('Test Test113_AES256GCMKnownAnswer: Starting');
+
+  // Debug output for ciphertext
+  WriteLn('Expected CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(ExpectedCipherText[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(Result.CipherText[I], 2), ' ');
+  WriteLn;
+  
+  // Debug output for tag
+  WriteLn('Expected Tag:');
+  for I := 0 to 15 do
+    Write(IntToHex(ExpectedTag[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual Tag:');
+  for I := 0 to 15 do
+    Write(IntToHex(Result.Tag[I], 2), ' ');
+  WriteLn;
+  
   AssertEquals('Ciphertext length should match expected', 16, Length(Result.CipherText));
   AssertEquals('Tag length should match expected', 16, Length(Result.Tag));
   AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @Result.CipherText[0], 16));
   AssertTrue('Tag should match expected', CompareMem(@ExpectedTag[0], @Result.Tag[0], 16));
+
+  WriteLn('Test Test113_AES256GCMKnownAnswer: Finished');
 end;
 
 procedure TTestCaseCrypto.Test114_AES256CTRKnownAnswer;
@@ -1166,6 +1196,7 @@ const
 var
   KeyBytes, IVBytes, PlainTextBytes, CipherText: TBytes;
 begin
+  WriteLn('Test Test114_AES256CTRKnownAnswer: Starting');
   SetLength(KeyBytes, 32);
   SetLength(IVBytes, 16);
   SetLength(PlainTextBytes, 16);
@@ -1177,6 +1208,153 @@ begin
   
   AssertEquals('Ciphertext length should match expected', 16, Length(CipherText));
   AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @CipherText[0], 16));
+  
+  WriteLn('Test Test114_AES256CTRKnownAnswer: Finished');
+end;
+
+procedure TTestCaseCrypto.Test115_AES256GCMKnownAnswer2;
+const
+  // NIST CAVP Test Vector (gcmEncryptExtIV256.rsp Count = 0)
+  Key: array[0..31] of Byte = (
+    $fc, $b2, $d0, $4c, $4f, $38, $d5, $2b, $97, $60, $85, $a2, $e3, $32, $3a, $ed,
+    $bc, $66, $61, $19, $bd, $b6, $5f, $1d, $79, $74, $53, $a7, $fb, $b9, $41, $ce
+  );
+  IV: array[0..11] of Byte = (
+    $dd, $68, $4d, $bf, $ac, $a7, $51, $9c, $15, $05, $55, $5d
+  );
+  AAD: array[0..19] of Byte = (
+    $33, $61, $d6, $02, $61, $aa, $48, $50, $42, $f5, $1a, $ce, $5f, $6b, $da, $ae,
+    $03, $9b, $57, $97
+  );
+  PlainText: array[0..15] of Byte = (
+    $d6, $57, $eb, $f6, $fd, $0e, $80, $fb, $1e, $86, $f2, $5a, $30, $78, $ec, $b2
+  );
+  ExpectedCipherText: array[0..15] of Byte = (
+    $85, $60, $1e, $d9, $10, $df, $a0, $ca, $70, $16, $7d, $ea, $1f, $f8, $2d, $92
+  );
+  ExpectedTag: array[0..12] of Byte = (
+    $9e, $84, $b9, $e9, $da, $b8, $db, $44, $14, $ca, $fa, $63, $73
+  );
+var
+  KeyBytes, IVBytes, AADBytes, PlainTextBytes: TBytes;
+  Result: TAESGCMResult;
+  I: Integer;
+begin
+  SetLength(KeyBytes, 32);
+  SetLength(IVBytes, 12);
+  SetLength(AADBytes, 20);
+  SetLength(PlainTextBytes, 16);
+  Move(Key, KeyBytes[0], 32);
+  Move(IV, IVBytes[0], 12);
+  Move(AAD, AADBytes[0], 20);
+  Move(PlainText, PlainTextBytes[0], 16);
+
+  // First encrypt with default tag length
+  Result := TCryptoKit.AES256GCMEncrypt(PlainTextBytes, KeyBytes, IVBytes, AADBytes);
+  
+  // Then truncate the tag to match the expected length
+  SetLength(Result.Tag, 13);
+  
+  WriteLn('Test Test115_AES256GCMKnownAnswer2: Starting');
+
+  // Debug output for ciphertext
+  WriteLn('Expected CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(ExpectedCipherText[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(Result.CipherText[I], 2), ' ');
+  WriteLn;
+  
+  // Debug output for tag
+  WriteLn('Expected Tag:');
+  for I := 0 to 12 do
+    Write(IntToHex(ExpectedTag[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual Tag:');
+  for I := 0 to 12 do
+    Write(IntToHex(Result.Tag[I], 2), ' ');
+  WriteLn;
+  
+  AssertEquals('Ciphertext length should match expected', 16, Length(Result.CipherText));
+  AssertEquals('Tag length should match expected', 13, Length(Result.Tag));
+  AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @Result.CipherText[0], 16));
+  AssertTrue('Tag should match expected', CompareMem(@ExpectedTag[0], @Result.Tag[0], 13));
+
+  WriteLn('Test Test115_AES256GCMKnownAnswer2: Finished');
+end;
+
+procedure TTestCaseCrypto.Test116_AES256GCMKnownAnswer3;
+const
+  // GCM Specification Test Case 14
+  Key: array[0..31] of Byte = (
+    $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00,
+    $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  );
+  IV: array[0..11] of Byte = (
+    $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  );
+  AAD: array[0..15] of Byte = (
+    $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  );
+  PlainText: array[0..15] of Byte = (
+    $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00, $00
+  );
+  ExpectedCipherText: array[0..15] of Byte = (
+    $CE, $A7, $40, $3D, $4D, $60, $6B, $6E, $07, $4E, $C5, $D3, $BA, $F3, $9D, $18
+  );
+  ExpectedTag: array[0..15] of Byte = (
+    $D0, $D1, $C8, $A7, $99, $99, $6B, $F0, $26, $5B, $98, $B5, $D4, $8A, $B9, $19
+  );
+var
+  KeyBytes, IVBytes, AADBytes, PlainTextBytes: TBytes;
+  Result: TAESGCMResult;
+  I: Integer;
+begin
+  WriteLn('Test Test116_AES256GCMKnownAnswer3: Starting');
+
+  SetLength(KeyBytes, 32);
+  SetLength(IVBytes, 12);
+  SetLength(AADBytes, 16);
+  SetLength(PlainTextBytes, 16);
+  Move(Key, KeyBytes[0], 32);
+  Move(IV, IVBytes[0], 12);
+  Move(AAD, AADBytes[0], 16);
+  Move(PlainText, PlainTextBytes[0], 16);
+
+  Result := TCryptoKit.AES256GCMEncrypt(PlainTextBytes, KeyBytes, IVBytes, AADBytes);
+  
+  // Debug output for ciphertext
+  WriteLn('Expected CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(ExpectedCipherText[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual CipherText:');
+  for I := 0 to 15 do
+    Write(IntToHex(Result.CipherText[I], 2), ' ');
+  WriteLn;
+  
+  // Debug output for tag
+  WriteLn('Expected Tag:');
+  for I := 0 to 15 do
+    Write(IntToHex(ExpectedTag[I], 2), ' ');
+  WriteLn;
+  
+  WriteLn('Actual Tag:');
+  for I := 0 to 15 do
+    Write(IntToHex(Result.Tag[I], 2), ' ');
+  WriteLn;
+  
+  AssertEquals('Ciphertext length should match expected', 16, Length(Result.CipherText));
+  AssertEquals('Tag length should match expected', 16, Length(Result.Tag));
+  AssertTrue('Ciphertext should match expected', CompareMem(@ExpectedCipherText[0], @Result.CipherText[0], 16));
+  AssertTrue('Tag should match expected', CompareMem(@ExpectedTag[0], @Result.Tag[0], 16)); 
+
+  WriteLn('Test Test116_AES256GCMKnownAnswer3: Finished');
 end;
 
 initialization
