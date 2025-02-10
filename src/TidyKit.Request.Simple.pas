@@ -10,12 +10,12 @@ uses
   fpjson, jsonparser, URIParser, HTTPDefs, TidyKit.Core;
 
 type
-  { Response record with automatic cleanup }
+  { Response record with automatic memory management }
   TResponse = record
   private
     FContent: string;
     FHeaders: string;
-    FJSON: TJSONData;
+    FJSON: TJSONData;  // This needs proper cleanup
     
     function GetText: string;
     function GetJSON: TJSONData;
@@ -25,18 +25,31 @@ type
     property Text: string read GetText;
     property JSON: TJSONData read GetJSON;
     
-    procedure Initialize;
-    procedure Cleanup;
+    { Management operators for automatic initialization/cleanup }
+    
+    { Initialize is called automatically when:
+      - A variable of this type is declared
+      - Memory for this type is allocated
+      - This type is used as a field in another record
+      No need to call this manually }
+    class operator Initialize(var Response: TResponse);
+    
+    { Finalize is called automatically when:
+      - A variable goes out of scope
+      - Memory for this type is freed
+      - The containing record is finalized
+      This ensures FJSON is properly freed }
+    class operator Finalize(var Response: TResponse);
   end;
   
   { Result pattern for error handling }
   TRequestResult = record
     Success: Boolean;
-    Response: TResponse;
+    Response: TResponse;  // Will be automatically initialized and finalized
     Error: string;
   end;
   
-  { Request builder for fluent interface }
+  { Request builder for fluent interface with automatic memory management }
   TRequestBuilder = record
   private
     FURL: string;
@@ -51,8 +64,16 @@ type
     
     function Execute: TResponse;
   public
-    procedure Initialize;
-    procedure Cleanup;
+    { Management operators for automatic initialization/cleanup }
+    
+    { Initialize is called automatically when a builder is created.
+      Sets all fields to their default empty state.
+      This happens automatically for local variables and fields }
+    class operator Initialize(var Builder: TRequestBuilder);
+    
+    { Finalize is called automatically when a builder goes out of scope.
+      Currently empty as all fields are managed types }
+    class operator Finalize(var Builder: TRequestBuilder);
     
     function Get: TRequestBuilder;
     function Post: TRequestBuilder;
@@ -93,19 +114,21 @@ implementation
 
 { TResponse }
 
-procedure TResponse.Initialize;
+class operator TResponse.Initialize(var Response: TResponse);
 begin
-  FContent := '';
-  FHeaders := '';
-  FJSON := nil;
-  StatusCode := 0;
+  // Called automatically when a TResponse is created
+  Response.FContent := '';
+  Response.FHeaders := '';
+  Response.FJSON := nil;  // Will be created on-demand in GetJSON
+  Response.StatusCode := 0;
 end;
 
-procedure TResponse.Cleanup;
+class operator TResponse.Finalize(var Response: TResponse);
 begin
-  if Assigned(FJSON) then
-    FJSON.Free;
-  FJSON := nil;
+  // Called automatically when a TResponse goes out of scope
+  if Assigned(Response.FJSON) then
+    Response.FJSON.Free;
+  Response.FJSON := nil;
 end;
 
 function TResponse.GetText: string;
@@ -117,11 +140,12 @@ function TResponse.GetJSON: TJSONData;
 var
   Parser: TJSONParser;
 begin
+  // Lazy initialization of JSON - only parse when needed
   if not Assigned(FJSON) and (FContent <> '') then
   begin
     Parser := TJSONParser.Create(FContent);
     try
-      FJSON := Parser.Parse;
+      FJSON := Parser.Parse;  // Will be freed automatically in Finalize
     finally
       Parser.Free;
     end;
@@ -131,18 +155,20 @@ end;
 
 { TRequestBuilder }
 
-procedure TRequestBuilder.Initialize;
+class operator TRequestBuilder.Initialize(var Builder: TRequestBuilder);
 begin
-  FHeaders := '';
-  FParams := '';
-  FTimeout := 0;
-  FJSON := '';
-  FData := '';
+  // Called automatically when a TRequestBuilder is created
+  Builder.FHeaders := '';
+  Builder.FParams := '';
+  Builder.FTimeout := 0;
+  Builder.FJSON := '';
+  Builder.FData := '';
 end;
 
-procedure TRequestBuilder.Cleanup;
+class operator TRequestBuilder.Finalize(var Builder: TRequestBuilder);
 begin
-  // Nothing to clean up anymore
+  // Called automatically when a TRequestBuilder goes out of scope
+  // All fields are managed types (string), so no manual cleanup needed
 end;
 
 function TRequestBuilder.Get: TRequestBuilder;
@@ -238,7 +264,7 @@ var
   I: Integer;
   FinalURL: string;
 begin
-  Result.Initialize;
+  // Result is automatically initialized by the class operator
   Client := TFPHTTPClient.Create(nil);
   RequestStream := nil;
   ResponseStream := TMemoryStream.Create;
@@ -308,8 +334,11 @@ begin
     except
       on E: Exception do
       begin
-        Result.Cleanup;
-        Result.Initialize;
+        // Result is already initialized, just clear it
+        Result.FContent := '';
+        Result.FHeaders := '';
+        Result.FJSON := nil;
+        Result.StatusCode := 0;
         raise ETidyKitException.Create('HTTP Request Error: ' + E.Message);
       end;
     end;
@@ -327,67 +356,42 @@ end;
 
 class function THttp.NewRequest: TRequestBuilder;
 begin
-  Result.Initialize;
+  // Initialize is called automatically
 end;
 
 class function THttp.Get(const URL: string): TResponse;
 var
-  Builder: TRequestBuilder;
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder.Initialize;
-  try
-    Result := Builder.Get.URL(URL).Send;
-  finally
-    Builder.Cleanup;
-  end;
+  Result := Builder.Get.URL(URL).Send;
 end;
 
 class function THttp.Post(const URL: string; const Data: string): TResponse;
 var
-  Builder: TRequestBuilder;
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder.Initialize;
-  try
-    Result := Builder.Post.URL(URL).WithData(Data).Send;
-  finally
-    Builder.Cleanup;
-  end;
+  Result := Builder.Post.URL(URL).WithData(Data).Send;
 end;
 
 class function THttp.Put(const URL: string; const Data: string): TResponse;
 var
-  Builder: TRequestBuilder;
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder.Initialize;
-  try
-    Result := Builder.Put.URL(URL).WithData(Data).Send;
-  finally
-    Builder.Cleanup;
-  end;
+  Result := Builder.Put.URL(URL).WithData(Data).Send;
 end;
 
 class function THttp.Delete(const URL: string): TResponse;
 var
-  Builder: TRequestBuilder;
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder.Initialize;
-  try
-    Result := Builder.Delete.URL(URL).Send;
-  finally
-    Builder.Cleanup;
-  end;
+  Result := Builder.Delete.URL(URL).Send;
 end;
 
 class function THttp.PostJSON(const URL: string; const JSON: string): TResponse;
 var
-  Builder: TRequestBuilder;
+  Builder: TRequestBuilder;  // Initialize is called automatically
 begin
-  Builder.Initialize;
-  try
-    Result := Builder.Post.URL(URL).WithJSON(JSON).Send;
-  finally
-    Builder.Cleanup;
-  end;
+  Result := Builder.Post.URL(URL).WithJSON(JSON).Send;
 end;
 
 class function THttp.TryGet(const URL: string): TRequestResult;
