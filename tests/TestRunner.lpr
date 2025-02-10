@@ -8,7 +8,8 @@ uses
   //, TestCaseFS
   //, TestCaseString
   //, TestCaseCrypto
-  , TestCaseRequest;
+  // , TestCaseRequest;
+  , TestCaseRequestSimple;
 
 type
 
