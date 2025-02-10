@@ -206,6 +206,8 @@ var
   ResponseStream: TMemoryStream;
   MethodStr: string;
   RequestBodyStream: TStream;
+  Parser: TJSONParser;
+  TempJSON: TJSONData;
 begin
   Result := TResponse.Create;
   ResponseStream := TMemoryStream.Create;
@@ -226,6 +228,15 @@ begin
     try
       if Options.JSON <> '' then
       begin
+        // Validate JSON before sending
+        Parser := TJSONParser.Create(Options.JSON);
+        try
+          TempJSON := Parser.Parse;
+          TempJSON.Free;
+        finally
+          Parser.Free;
+        end;
+        
         RequestBodyStream := StringToStream(Options.JSON);
         FClient.AddHeader('Content-Type', 'application/json');
       end

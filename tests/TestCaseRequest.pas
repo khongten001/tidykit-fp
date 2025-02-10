@@ -35,6 +35,16 @@ type
     // Error handling
     procedure Test10_InvalidURL;
     procedure Test11_NotFound;
+    
+    // Additional tests for robustness
+    procedure Test13_QueryParamsAndJSONBody;
+    procedure Test14_CustomHeadersAndAuth;
+    procedure Test15_InvalidJSONBody;
+    procedure Test16_RedirectHandling;
+    procedure Test17_LargeJSONResponse;
+    procedure Test18_EmptyResponse;
+    procedure Test19_InvalidContentType;
+    procedure Test20_ServerError;
   end;
 
 implementation
@@ -297,6 +307,181 @@ begin
     AssertTrue('JSON data should exist in response', JsonData <> nil);
     AssertEquals('Name should match', 'John Doe', JsonData.FindPath('name').AsString);
     AssertEquals('Age should match', 30, JsonData.FindPath('age').AsInteger);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test13_QueryParamsAndJSONBody;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+  JsonData: TJSONData;
+begin
+  Options := Default(TRequestOptions);
+  Options.ParamString := 'version=1&format=json';
+  Options.JSON := '{"action": "test", "data": 123}';
+  
+  Response := FRequestKit.Post('https://httpbin.org/post', Options);
+  try
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    
+    // Verify query params
+    JsonData := Response.JSON.FindPath('args');
+    AssertTrue('Args should exist in response', JsonData <> nil);
+    AssertEquals('Version param should match', '1', JsonData.FindPath('version').AsString);
+    AssertEquals('Format param should match', 'json', JsonData.FindPath('format').AsString);
+    
+    // Verify JSON body
+    JsonData := Response.JSON.FindPath('json');
+    AssertTrue('JSON body should exist', JsonData <> nil);
+    AssertEquals('Action should match', 'test', JsonData.FindPath('action').AsString);
+    AssertEquals('Data should match', 123, JsonData.FindPath('data').AsInteger);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test14_CustomHeadersAndAuth;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+  JsonData: TJSONData;
+begin
+  Options := Default(TRequestOptions);
+  SetLength(Options.Headers, 2);
+  Options.Headers[0] := 'X-API-Version: 2.0';
+  Options.Headers[1] := 'X-Custom-Token: abc123';
+  Options.Auth[0] := 'apiuser';
+  Options.Auth[1] := 'apipass';
+  
+  Response := FRequestKit.Get('https://httpbin.org/headers', Options);
+  try
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    JsonData := Response.JSON.FindPath('headers');
+    AssertTrue('Headers should exist in response', JsonData <> nil);
+    
+    // Verify custom headers
+    AssertEquals('API version header should match',
+      '2.0', JsonData.FindPath('X-Api-Version').AsString);
+    AssertEquals('Custom token header should match',
+      'abc123', JsonData.FindPath('X-Custom-Token').AsString);
+    
+    // Verify auth header exists
+    AssertTrue('Authorization header should exist',
+      JsonData.FindPath('Authorization') <> nil);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test15_InvalidJSONBody;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+begin
+  Options := Default(TRequestOptions);
+  Options.JSON := '{"invalid": json}';  // Invalid JSON syntax
+  Response := nil;
+  
+  try
+    try
+      Response := FRequestKit.Post('https://httpbin.org/post', Options);
+      Fail('Invalid JSON should raise exception');
+    except
+      on E: ETidyKitException do
+        AssertTrue('Exception should be raised for invalid JSON', True);
+    end;
+  finally
+    if Assigned(Response) then
+      Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test16_RedirectHandling;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+begin
+  Options := Default(TRequestOptions);
+  Response := FRequestKit.Get('https://httpbin.org/redirect/1', Options);
+  try
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response should be valid JSON', Response.JSON <> nil);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test17_LargeJSONResponse;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+  JsonData: TJSONData;
+  I: Integer;
+begin
+  Options := Default(TRequestOptions);
+  Response := FRequestKit.Get('https://httpbin.org/bytes/5000', Options);
+  try
+    AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    AssertTrue('Response content should not be empty', Response.Content.Size > 0);
+    AssertTrue('Response size should be around 5000 bytes', 
+      (Response.Content.Size >= 4900) and (Response.Content.Size <= 5100));
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test18_EmptyResponse;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+begin
+  Options := Default(TRequestOptions);
+  Response := FRequestKit.Get('https://httpbin.org/status/204', Options);
+  try
+    AssertEquals('Status code should be 204', 204, Response.StatusCode);
+    AssertEquals('Content should be empty', 0, Response.Content.Size);
+  finally
+    Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test19_InvalidContentType;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+begin
+  Options := Default(TRequestOptions);
+  SetLength(Options.Headers, 1);
+  Options.Headers[0] := 'Content-Type: invalid/content-type';
+  Options.Data := 'test data';
+  Response := nil;
+  
+  try
+    try
+      Response := FRequestKit.Post('https://httpbin.org/post', Options);
+      // Should still work, just with unexpected content type
+      AssertEquals('Status code should be 200', 200, Response.StatusCode);
+    except
+      on E: Exception do
+        Fail('Should handle invalid content type gracefully');
+    end;
+  finally
+    if Assigned(Response) then
+      Response.Free;
+  end;
+end;
+
+procedure TRequestTests.Test20_ServerError;
+var
+  Response: TResponse;
+  Options: TRequestOptions;
+begin
+  Options := Default(TRequestOptions);
+  Response := FRequestKit.Get('https://httpbin.org/status/500', Options);
+  try
+    AssertEquals('Status code should be 500', 500, Response.StatusCode);
   finally
     Response.Free;
   end;
