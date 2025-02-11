@@ -2,6 +2,10 @@
 
 A collection of utility libraries for Free Pascal, designed for simplicity, safety, and ease of use.
 
+> [!WARNING]
+> 
+> This library is in active development. The API is not stable and breaking changes may occur until version 1.0.0 is released.
+
 ## Features
 
 - **HTTP Client**: Memory-safe HTTP client with fluent interface ([docs](docs/TidyKit.Request.md))
