@@ -565,7 +565,9 @@ Response := Http.Delete('https://api.example.com/users/1');
 ```pascal
 // Request with headers, params, and JSON
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Post
     .URL('https://api.example.com/users')
@@ -574,66 +576,88 @@ var
     .AddParam('version', '2.0')
     .WithJSON('{"name": "John"}')
     .Send;
+end;
 
 // Authenticated request with timeout
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Get
     .URL('https://api.example.com/secure')
     .BasicAuth('username', 'password')
     .WithTimeout(5000)  // 5 seconds
     .Send;
+end;
 
 // Form data with custom headers
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Post
     .URL('https://api.example.com/submit')
     .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
     .WithData('name=John&age=30')
     .Send;
+end;
 ```
 
 ### Error Handling
 ```pascal
 // Using try-except
-try
-  var Response := Http.Get('https://api.example.com/data');
-  if Response.StatusCode = 200 then
-    WriteLn(Response.Text);
-except
-  on E: ETidyKitException do
-    WriteLn('Error: ', E.Message);
+var
+  Response: TResponse;
+begin
+  try
+    Response := Http.Get('https://api.example.com/data');
+    if Response.StatusCode = 200 then
+      WriteLn(Response.Text);
+  except
+    on E: ETidyKitException do
+      WriteLn('Error: ', E.Message);
+  end;
 end;
 
 // Using result pattern
-var Result := Http.TryGet('https://api.example.com/data');
-if Result.Success then
-  WriteLn(Result.Response.Text)
-else
-  WriteLn('Error: ', Result.Error);
+var
+  Result: TRequestResult;
+begin
+  Result := Http.TryGet('https://api.example.com/data');
+  if Result.Success then
+    WriteLn(Result.Response.Text)
+  else
+    WriteLn('Error: ', Result.Error);
+end;
 ```
 
 ### Working with JSON
 ```pascal
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;
+  Response: TResponse;
+  UserName: string;
+  UserAge: Integer;
+  Items: TJSONArray;
+  I: Integer;
+begin
   Response := Request
     .Get
     .URL('https://api.example.com/users')
     .Send;
 
-if Response.StatusCode = 200 then
-begin
-  // Access JSON data
-  var UserName := Response.JSON.FindPath('user.name').AsString;
-  var UserAge := Response.JSON.FindPath('user.age').AsInteger;
-  
-  // Array iteration
-  var Items := Response.JSON.FindPath('items').AsArray;
-  for var I := 0 to Items.Count - 1 do
-    WriteLn(Items[I].AsString);
+  if Response.StatusCode = 200 then
+  begin
+    // Access JSON data
+    UserName := Response.JSON.FindPath('user.name').AsString;
+    UserAge := Response.JSON.FindPath('user.age').AsInteger;
+    
+    // Array iteration
+    Items := Response.JSON.FindPath('items').AsArray;
+    for I := 0 to Items.Count - 1 do
+      WriteLn(Items[I].AsString);
+  end;
 end;
 ```

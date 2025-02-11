@@ -60,34 +60,43 @@ This module uses Free Pascal's advanced records feature to provide automatic mem
 ### Simple GET Request
 ```pascal
 var
+  Response: TResponse;
+begin
   Response := Http.Get('https://api.example.com/data');
-if Response.StatusCode = 200 then
-  WriteLn(Response.Text);
+  if Response.StatusCode = 200 then
+    WriteLn(Response.Text);
+end;
 ```
 
 ### POST with JSON
 ```pascal
 var
+  Response: TResponse;
+begin
   Response := Http.PostJSON('https://api.example.com/users',
     '{"name": "John", "age": 30}');
-if Response.StatusCode = 200 then
-  WriteLn(Response.JSON.FormatJSON);
+  if Response.StatusCode = 200 then
+    WriteLn(Response.JSON.FormatJSON);
+end;
 ```
 
 ### Using the Fluent Interface
 ```pascal
 var
-  Request: TRequestBuilder;  // Automatically initialized
-  Response := Request       // Start building the request
+  Request: TRequestBuilder;
+  Response: TResponse;
+begin
+  Response := Request
     .Post
     .URL('https://api.example.com/data')
     .AddHeader('X-API-Key', 'your-key')
     .AddParam('version', '1.0')
     .WithJSON('{"data": "value"}')
-    .Send;                 // Execute the request
+    .Send;
     
-if Response.StatusCode = 200 then
-  WriteLn(Response.Text);
+  if Response.StatusCode = 200 then
+    WriteLn(Response.Text);
+end;
 ```
 
 The fluent interface above makes the request construction both readable and maintainable:
@@ -102,11 +111,14 @@ The fluent interface above makes the request construction both readable and main
 ### Using Try-Pattern
 ```pascal
 var
+  Result: TRequestResult;
+begin
   Result := Http.TryGet('https://api.example.com/data');
-if Result.Success then
-  WriteLn(Result.Response.Text)
-else
-  WriteLn('Error: ', Result.Error);
+  if Result.Success then
+    WriteLn(Result.Response.Text)
+  else
+    WriteLn('Error: ', Result.Error);
+end;
 ```
 
 ## API Reference
@@ -176,6 +188,8 @@ The global `Http` constant of type `THttp` provides convenient one-liner methods
 ```pascal
 var
   Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Post
     .URL('https://api.example.com/users')
@@ -187,14 +201,17 @@ var
     .WithTimeout(5000)
     .Send;
 
-if Response.StatusCode = 201 then
-  WriteLn('User created: ', Response.JSON.FindPath('id').AsString);
+  if Response.StatusCode = 201 then
+    WriteLn('User created: ', Response.JSON.FindPath('id').AsString);
+end;
 ```
 
 ### Authenticated Request with Error Handling
 ```pascal
 var
   Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Get
     .URL('https://api.example.com/secure')
@@ -202,11 +219,12 @@ var
     .WithTimeout(3000)
     .Send;
 
-case Response.StatusCode of
-  200: WriteLn('Success: ', Response.Text);
-  401: WriteLn('Authentication failed');
-  403: WriteLn('Access denied');
-  else WriteLn('Error: ', Response.StatusCode);
+  case Response.StatusCode of
+    200: WriteLn('Success: ', Response.Text);
+    401: WriteLn('Authentication failed');
+    403: WriteLn('Access denied');
+    else WriteLn('Error: ', Response.StatusCode);
+  end;
 end;
 ```
 
@@ -214,6 +232,8 @@ end;
 ```pascal
 var
   Request: TRequestBuilder;
+  Response: TResponse;
+begin
   Response := Request
     .Post
     .URL('https://api.example.com/submit')
@@ -221,8 +241,9 @@ var
     .WithData('name=John&age=30&email=john@example.com')
     .Send;
 
-if Response.StatusCode = 200 then
-  WriteLn('Form submitted successfully');
+  if Response.StatusCode = 200 then
+    WriteLn('Form submitted successfully');
+end;
 ```
 
 ## Best Practices
