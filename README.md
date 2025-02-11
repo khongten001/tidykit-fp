@@ -26,15 +26,16 @@ git clone https://github.com/yourusername/TidyKit.git
 uses
   TidyKit;
 
-// Simple GET request
 var
+  Response: TResponse;
+  Request: THttpRequest;
+begin
+  // Simple GET request
   Response := Http.Get('https://api.example.com/data');
-if Response.StatusCode = 200 then
-  WriteLn(Response.Text);
+  if Response.StatusCode = 200 then
+    WriteLn(Response.Text);
 
-// POST with JSON using fluent interface
-var
-  Request: TRequestBuilder;  // Automatically initialized
+  // POST with JSON using fluent interface
   Response := Request
     .Post
     .URL('https://api.example.com/users')
@@ -42,9 +43,9 @@ var
     .WithJSON('{"name": "John"}')
     .Send;
     
-if Response.StatusCode = 200 then
-  WriteLn(Response.JSON.FormatJSON);
-```
+  if Response.StatusCode = 200 then
+    WriteLn(Response.JSON.FormatJSON);
+end;
 
 ### File System Operations
 ```pascal

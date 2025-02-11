@@ -565,7 +565,7 @@ Response := Http.Delete('https://api.example.com/users/1');
 ```pascal
 // Request with headers, params, and JSON
 var
-  Request: TRequestBuilder;
+  Request: THttpRequest;
   Response: TResponse;
 begin
   Response := Request
@@ -580,7 +580,7 @@ end;
 
 // Authenticated request with timeout
 var
-  Request: TRequestBuilder;
+  Request: THttpRequest;
   Response: TResponse;
 begin
   Response := Request
@@ -593,7 +593,7 @@ end;
 
 // Form data with custom headers
 var
-  Request: TRequestBuilder;
+  Request: THttpRequest;
   Response: TResponse;
 begin
   Response := Request
@@ -636,7 +636,7 @@ end;
 ### Working with JSON
 ```pascal
 var
-  Request: TRequestBuilder;
+  Request: THttpRequest;
   Response: TResponse;
   UserName: string;
   UserAge: Integer;

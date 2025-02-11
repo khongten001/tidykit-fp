@@ -32,7 +32,7 @@ type
 
   { Re-export the request types }
   TResponse = TidyKit.Request.TResponse;
-  TRequestBuilder = TidyKit.Request.TRequestBuilder;
+  THttpRequest = TidyKit.Request.THttpRequest;
   TRequestResult = TidyKit.Request.TRequestResult;
   THttp = TidyKit.Request.THttp;
 

@@ -49,8 +49,8 @@ type
     Error: string;
   end;
   
-  { Request builder for fluent interface with automatic memory management }
-  TRequestBuilder = record
+  { HTTP request with fluent interface and automatic memory management }
+  THttpRequest = record
   private
     FURL: string;
     FMethod: string;
@@ -66,28 +66,28 @@ type
   public
     { Management operators for automatic initialization/cleanup }
     
-    { Initialize is called automatically when a builder is created.
+    { Initialize is called automatically when a request is created.
       Sets all fields to their default empty state.
       This happens automatically for local variables and fields }
-    class operator Initialize(var Builder: TRequestBuilder);
+    class operator Initialize(var Request: THttpRequest);
     
-    { Finalize is called automatically when a builder goes out of scope.
+    { Finalize is called automatically when a request goes out of scope.
       Currently empty as all fields are managed types }
-    class operator Finalize(var Builder: TRequestBuilder);
+    class operator Finalize(var Request: THttpRequest);
     
-    function Get: TRequestBuilder;
-    function Post: TRequestBuilder;
-    function Put: TRequestBuilder;
-    function Delete: TRequestBuilder;
-    function Patch: TRequestBuilder;
+    function Get: THttpRequest;
+    function Post: THttpRequest;
+    function Put: THttpRequest;
+    function Delete: THttpRequest;
+    function Patch: THttpRequest;
     
-    function URL(const AUrl: string): TRequestBuilder;
-    function AddHeader(const Name, Value: string): TRequestBuilder;
-    function AddParam(const Name, Value: string): TRequestBuilder;
-    function WithTimeout(const Milliseconds: Integer): TRequestBuilder;
-    function BasicAuth(const Username, Password: string): TRequestBuilder;
-    function WithJSON(const JsonStr: string): TRequestBuilder;
-    function WithData(const Data: string): TRequestBuilder;
+    function URL(const AUrl: string): THttpRequest;
+    function AddHeader(const Name, Value: string): THttpRequest;
+    function AddParam(const Name, Value: string): THttpRequest;
+    function WithTimeout(const Milliseconds: Integer): THttpRequest;
+    function BasicAuth(const Username, Password: string): THttpRequest;
+    function WithJSON(const JsonStr: string): THttpRequest;
+    function WithData(const Data: string): THttpRequest;
     
     function Send: TResponse;
   end;
@@ -152,61 +152,61 @@ begin
   Result := FJSON;
 end;
 
-{ TRequestBuilder }
+{ THttpRequest }
 
-class operator TRequestBuilder.Initialize(var Builder: TRequestBuilder);
+class operator THttpRequest.Initialize(var Request: THttpRequest);
 begin
-  // Called automatically when a TRequestBuilder is created
-  Builder.FHeaders := '';
-  Builder.FParams := '';
-  Builder.FTimeout := 0;
-  Builder.FJSON := '';
-  Builder.FData := '';
+  // Called automatically when a THttpRequest is created
+  Request.FHeaders := '';
+  Request.FParams := '';
+  Request.FTimeout := 0;
+  Request.FJSON := '';
+  Request.FData := '';
 end;
 
-class operator TRequestBuilder.Finalize(var Builder: TRequestBuilder);
+class operator THttpRequest.Finalize(var Request: THttpRequest);
 begin
-  // Called automatically when a TRequestBuilder goes out of scope
+  // Called automatically when a THttpRequest goes out of scope
   // All fields are managed types (string), so no manual cleanup needed
 end;
 
-function TRequestBuilder.Get: TRequestBuilder;
+function THttpRequest.Get: THttpRequest;
 begin
   FMethod := 'GET';
   Result := Self;
 end;
 
-function TRequestBuilder.Post: TRequestBuilder;
+function THttpRequest.Post: THttpRequest;
 begin
   FMethod := 'POST';
   Result := Self;
 end;
 
-function TRequestBuilder.Put: TRequestBuilder;
+function THttpRequest.Put: THttpRequest;
 begin
   FMethod := 'PUT';
   Result := Self;
 end;
 
-function TRequestBuilder.Delete: TRequestBuilder;
+function THttpRequest.Delete: THttpRequest;
 begin
   FMethod := 'DELETE';
   Result := Self;
 end;
 
-function TRequestBuilder.Patch: TRequestBuilder;
+function THttpRequest.Patch: THttpRequest;
 begin
   FMethod := 'PATCH';
   Result := Self;
 end;
 
-function TRequestBuilder.URL(const AUrl: string): TRequestBuilder;
+function THttpRequest.URL(const AUrl: string): THttpRequest;
 begin
   FURL := AUrl;
   Result := Self;
 end;
 
-function TRequestBuilder.AddHeader(const Name, Value: string): TRequestBuilder;
+function THttpRequest.AddHeader(const Name, Value: string): THttpRequest;
 begin
   if FHeaders <> '' then
     FHeaders := FHeaders + #13#10;
@@ -214,7 +214,7 @@ begin
   Result := Self;
 end;
 
-function TRequestBuilder.AddParam(const Name, Value: string): TRequestBuilder;
+function THttpRequest.AddParam(const Name, Value: string): THttpRequest;
 begin
   if FParams <> '' then
     FParams := FParams + '&';
@@ -222,37 +222,37 @@ begin
   Result := Self;
 end;
 
-function TRequestBuilder.WithTimeout(const Milliseconds: Integer): TRequestBuilder;
+function THttpRequest.WithTimeout(const Milliseconds: Integer): THttpRequest;
 begin
   FTimeout := Milliseconds;
   Result := Self;
 end;
 
-function TRequestBuilder.BasicAuth(const Username, Password: string): TRequestBuilder;
+function THttpRequest.BasicAuth(const Username, Password: string): THttpRequest;
 begin
   FUsername := Username;
   FPassword := Password;
   Result := Self;
 end;
 
-function TRequestBuilder.WithJSON(const JsonStr: string): TRequestBuilder;
+function THttpRequest.WithJSON(const JsonStr: string): THttpRequest;
 begin
   FJSON := JsonStr;
   Result := Self;
 end;
 
-function TRequestBuilder.WithData(const Data: string): TRequestBuilder;
+function THttpRequest.WithData(const Data: string): THttpRequest;
 begin
   FData := Data;
   Result := Self;
 end;
 
-function TRequestBuilder.Send: TResponse;
+function THttpRequest.Send: TResponse;
 begin
   Result := Execute;
 end;
 
-function TRequestBuilder.Execute: TResponse;
+function THttpRequest.Execute: TResponse;
 var
   Client: TFPHTTPClient;
   RequestStream: TStringStream;
@@ -355,35 +355,35 @@ end;
 
 class function THttp.Get(const URL: string): TResponse;
 var
-  Builder: TRequestBuilder;  // Initialize is called automatically
+  Builder: THttpRequest;  // Initialize is called automatically
 begin
   Result := Builder.Get.URL(URL).Send;
 end;
 
 class function THttp.Post(const URL: string; const Data: string): TResponse;
 var
-  Builder: TRequestBuilder;  // Initialize is called automatically
+  Builder: THttpRequest;  // Initialize is called automatically
 begin
   Result := Builder.Post.URL(URL).WithData(Data).Send;
 end;
 
 class function THttp.Put(const URL: string; const Data: string): TResponse;
 var
-  Builder: TRequestBuilder;  // Initialize is called automatically
+  Builder: THttpRequest;  // Initialize is called automatically
 begin
   Result := Builder.Put.URL(URL).WithData(Data).Send;
 end;
 
 class function THttp.Delete(const URL: string): TResponse;
 var
-  Builder: TRequestBuilder;  // Initialize is called automatically
+  Builder: THttpRequest;  // Initialize is called automatically
 begin
   Result := Builder.Delete.URL(URL).Send;
 end;
 
 class function THttp.PostJSON(const URL: string; const JSON: string): TResponse;
 var
-  Builder: TRequestBuilder;  // Initialize is called automatically
+  Builder: THttpRequest;  // Initialize is called automatically
 begin
   Result := Builder.Post.URL(URL).WithJSON(JSON).Send;
 end;

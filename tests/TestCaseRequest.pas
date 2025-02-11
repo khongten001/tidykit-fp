@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry, fpjson,
-  TidyKit.Core, TidyKit;
+  TidyKit.Core, TidyKit.Request;
 
 type
   { TRequestSimpleTests }
@@ -78,7 +78,7 @@ end;
 procedure TRequestSimpleTests.Test05_BuilderWithHeaders;
 var
   Response: TResponse;
-  Request: TRequestBuilder;  // Initialize is called automatically
+  Request: THttpRequest;  // Initialize is called automatically
 begin
   Response := Request
     .Get
@@ -96,7 +96,7 @@ end;
 procedure TRequestSimpleTests.Test06_BuilderWithParams;
 var
   Response: TResponse;
-  Request: TRequestBuilder;  // Initialize is called automatically
+  Request: THttpRequest;  // Initialize is called automatically
 begin
   Response := Request
     .Get
@@ -117,7 +117,7 @@ end;
 procedure TRequestSimpleTests.Test07_BuilderWithTimeout;
 var
   Response: TResponse;
-  Request: TRequestBuilder;  // Initialize is called automatically
+  Request: THttpRequest;  // Initialize is called automatically
   ExceptionRaised: Boolean;
 begin
   ExceptionRaised := False;
@@ -139,7 +139,7 @@ end;
 procedure TRequestSimpleTests.Test08_BuilderWithAuth;
 var
   Response: TResponse;
-  Request: TRequestBuilder;  // Initialize is called automatically
+  Request: THttpRequest;  // Initialize is called automatically
 begin
   Response := Request
     .Get
@@ -171,7 +171,7 @@ end;
 procedure TRequestSimpleTests.Test10_FormDataRequest;
 var
   Response: TResponse;
-  Request: TRequestBuilder;  // Initialize is called automatically
+  Request: THttpRequest;  // Initialize is called automatically
 begin
   Response := Request
     .Post
