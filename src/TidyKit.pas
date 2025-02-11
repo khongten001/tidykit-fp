@@ -10,7 +10,8 @@ uses
   TidyKit.FS,
   TidyKit.Strings,
   TidyKit.DateTime,
-  TidyKit.Crypto;
+  TidyKit.Crypto,
+  TidyKit.Request;
 
 type
   { Re-export the core types }
@@ -28,6 +29,12 @@ type
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+
+  { Re-export the request types }
+  TResponse = TidyKit.Request.TResponse;
+  THttpRequest = TidyKit.Request.THttpRequest;
+  TRequestResult = TidyKit.Request.TRequestResult;
+  THttp = TidyKit.Request.THttp;
 
 const
   { Re-export filesystem constants }
@@ -73,6 +80,13 @@ type
   TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
   ETimeZoneError = TidyKit.DateTime.ETimeZoneError;
 
+var
+  { Re-export HTTP constants }
+  Http: THttp;
+
 implementation
+
+initialization
+  Http := Default(THttp);
 
 end. 

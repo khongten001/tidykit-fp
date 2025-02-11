@@ -27,6 +27,9 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Use Cases](#common-use-cases)
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
+    - [Using the Fluent Interface](#using-the-fluent-interface)
+    - [Error Handling](#error-handling)
+    - [Working with JSON](#working-with-json)
 
 ## 📁File System Operations
 
@@ -532,3 +535,129 @@ decoded := TCryptoKit.Base64Decode(encoded);
    - SHA2 family: FIPS 180-4 compliant
    - SHA3 family: FIPS 202 compliant
    - All implementations tested against official NIST test vectors
+```
+
+## HTTP Client (TidyKit.Request.Simple)
+
+### Simple Requests
+```pascal
+uses TidyKit;
+
+// GET request
+var Response := Http.Get('https://api.example.com/data');
+if Response.StatusCode = 200 then
+  WriteLn(Response.Text);
+
+// POST with form data
+Response := Http.Post('https://api.example.com/submit', 'name=John&age=30');
+
+// POST with JSON
+Response := Http.PostJSON('https://api.example.com/users', '{"name": "John"}');
+
+// PUT request
+Response := Http.Put('https://api.example.com/users/1', 'status=active');
+
+// DELETE request
+Response := Http.Delete('https://api.example.com/users/1');
+```
+
+### Using the Fluent Interface
+```pascal
+// Request with headers, params, and JSON
+var
+  Request: THttpRequest;
+  Response: TResponse;
+begin
+  Response := Request
+    .Post
+    .URL('https://api.example.com/users')
+    .AddHeader('X-API-Key', 'your-key')
+    .AddHeader('Accept', 'application/json')
+    .AddParam('version', '2.0')
+    .WithJSON('{"name": "John"}')
+    .Send;
+end;
+
+// Authenticated request with timeout
+var
+  Request: THttpRequest;
+  Response: TResponse;
+begin
+  Response := Request
+    .Get
+    .URL('https://api.example.com/secure')
+    .BasicAuth('username', 'password')
+    .WithTimeout(5000)  // 5 seconds
+    .Send;
+end;
+
+// Form data with custom headers
+var
+  Request: THttpRequest;
+  Response: TResponse;
+begin
+  Response := Request
+    .Post
+    .URL('https://api.example.com/submit')
+    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
+    .WithData('name=John&age=30')
+    .Send;
+end;
+```
+
+### Error Handling
+```pascal
+// Using try-except
+var
+  Response: TResponse;
+begin
+  try
+    Response := Http.Get('https://api.example.com/data');
+    if Response.StatusCode = 200 then
+      WriteLn(Response.Text);
+  except
+    on E: ETidyKitException do
+      WriteLn('Error: ', E.Message);
+  end;
+end;
+
+// Using result pattern
+var
+  Result: TRequestResult;
+begin
+  Result := Http.TryGet('https://api.example.com/data');
+  if Result.Success then
+    WriteLn(Result.Response.Text)
+  else
+    WriteLn('Error: ', Result.Error);
+end;
+```
+
+### Working with JSON
+```pascal
+var
+  Request: THttpRequest;
+  Response: TResponse;
+  UserName: string;
+  UserAge: Integer;
+  Items: TJSONArray;
+  I: Integer;
+begin
+  Response := Request
+    .Get
+    .URL('https://api.example.com/users')
+    .Send;
+
+  if Response.StatusCode = 200 then
+  begin
+    // Access JSON data
+    UserName := Response.JSON.FindPath('user.name').AsString;
+    UserAge := Response.JSON.FindPath('user.age').AsInteger;
+    
+    // Array iteration
+    Items := Response.JSON.FindPath('items').AsArray;
+    for I := 0 to Items.Count - 1 do
+      WriteLn(Items[I].AsString);
+  end;
+end;
+```
