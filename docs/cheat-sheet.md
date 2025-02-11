@@ -577,7 +577,7 @@ var
 
 // Authenticated request with timeout
 var
-  Request: TRequestBuilder;
+  Request: TRequestBuilder;  // Automatically initialized
   Response := Request
     .Get
     .URL('https://api.example.com/secure')
@@ -587,7 +587,7 @@ var
 
 // Form data with custom headers
 var
-  Request: TRequestBuilder;
+  Request: TRequestBuilder;  // Automatically initialized
   Response := Request
     .Post
     .URL('https://api.example.com/submit')
@@ -619,7 +619,7 @@ else
 ### Working with JSON
 ```pascal
 var
-  Request: TRequestBuilder;
+  Request: TRequestBuilder;  // Automatically initialized
   Response := Request
     .Get
     .URL('https://api.example.com/users')

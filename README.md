@@ -28,41 +28,22 @@ uses
 
 // Simple GET request
 var
-  Response: TResponse;
-begin
   Response := Http.Get('https://api.example.com/data');
-  try
-    if Response.StatusCode = 200 then
-      WriteLn(Response.Text);
-  finally
-    Response.Cleanup;
-  end;
-end;
+if Response.StatusCode = 200 then
+  WriteLn(Response.Text);
 
-// POST with JSON using builder pattern
+// POST with JSON using fluent interface
 var
-  Builder: TRequestBuilder;
-  Response: TResponse;
-begin
-  Builder.Initialize;
-  try
-    Builder := Http.NewRequest
-      .Post
-      .URL('https://api.example.com/users')
-      .AddHeader('X-API-Key', 'your-key')
-      .WithJSON('{"name": "John"}');
-      
-    Response := Builder.Send;
-    try
-      if Response.StatusCode = 200 then
-        WriteLn(Response.JSON.FormatJSON);
-    finally
-      Response.Cleanup;
-    end;
-  finally
-    Builder.Cleanup;
-  end;
-end;
+  Request: TRequestBuilder;  // Automatically initialized
+  Response := Request
+    .Post
+    .URL('https://api.example.com/users')
+    .AddHeader('X-API-Key', 'your-key')
+    .WithJSON('{"name": "John"}')
+    .Send;
+    
+if Response.StatusCode = 200 then
+  WriteLn(Response.JSON.FormatJSON);
 ```
 
 ### File Operations
@@ -101,9 +82,8 @@ TidyKit uses both classes and advanced records for different purposes:
 - Example: TFileKit, TCryptoKit
 
 ### Advanced Records (HTTP Client)
-- Must call Initialize before use
-- Must call Cleanup after use
-- Always use try-finally blocks
+- Automatic initialization and cleanup
+- No manual memory management needed
 - Example: TResponse, TRequestBuilder
 
 ## Contributing

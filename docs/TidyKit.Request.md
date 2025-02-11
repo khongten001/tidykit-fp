@@ -1,4 +1,4 @@
-# TidyKit.Request.Simple Documentation
+# TidyKit.Request Documentation
 
 A lightweight, memory-safe HTTP client for Free Pascal that uses advanced records for automatic cleanup. This module provides a fluent interface for making HTTP requests with built-in memory management.
 
@@ -33,7 +33,7 @@ var
 2. **Readable, SQL-like Syntax**: The API reads almost like English:
 ```pascal
 var
-  Request: TRequestBuilder;
+  Request: TRequestBuilder;  // Automatically initialized
   Response := Request
     .Get
     .URL('https://api.example.com/secure')
@@ -63,7 +63,6 @@ var
   Response := Http.Get('https://api.example.com/data');
 if Response.StatusCode = 200 then
   WriteLn(Response.Text);
-// Response is automatically cleaned up when it goes out of scope
 ```
 
 ### POST with JSON
@@ -73,7 +72,6 @@ var
     '{"name": "John", "age": 30}');
 if Response.StatusCode = 200 then
   WriteLn(Response.JSON.FormatJSON);
-// Response is automatically cleaned up
 ```
 
 ### Using the Fluent Interface
@@ -90,7 +88,6 @@ var
     
 if Response.StatusCode = 200 then
   WriteLn(Response.Text);
-// Both Response and Request are automatically cleaned up
 ```
 
 The fluent interface above makes the request construction both readable and maintainable:
@@ -110,7 +107,6 @@ if Result.Success then
   WriteLn(Result.Response.Text)
 else
   WriteLn('Error: ', Result.Error);
-// Both Result and Response are automatically cleaned up
 ```
 
 ## API Reference
