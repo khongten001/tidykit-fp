@@ -46,20 +46,107 @@ if Response.StatusCode = 200 then
   WriteLn(Response.JSON.FormatJSON);
 ```
 
-### File Operations
+### File System Operations
 ```pascal
 uses
   TidyKit;
 
+// Basic file operations
 var
   FileKit: TFileKit;
 begin
   FileKit := TFileKit.Create;
   try
+    // Write and read text files
     FileKit.WriteText('file.txt', 'Hello World');
     WriteLn(FileKit.ReadText('file.txt'));
+    
+    // Directory operations
+    FileKit.CreateDirectory('new_dir');
+    FileKit.CopyFile('source.txt', 'dest.txt');
+    
+    // File search with sorting
+    var Files := FileKit.ListFiles('.', '*.txt', False, fsDate);
+    for var File in Files do
+      WriteLn(File);
+      
+    // Path manipulation
+    WriteLn(FileKit.GetFileName('path/to/file.txt'));    // file.txt
+    WriteLn(FileKit.GetDirectory('path/to/file.txt'));   // path/to
+    WriteLn(FileKit.GetExtension('file.txt'));           // .txt
   finally
     FileKit.Free;
+  end;
+end;
+```
+
+### DateTime Operations
+```pascal
+uses
+  TidyKit;
+
+// Basic date/time operations
+var
+  DateTimeKit: TDateTimeKit;
+begin
+  DateTimeKit := TDateTimeKit.Create;
+  try
+    // Get current date/time
+    var Now := DateTimeKit.GetNow;
+    var Today := DateTimeKit.GetToday;
+    
+    // Format dates
+    WriteLn(DateTimeKit.GetAsString(Now, 'yyyy-mm-dd hh:nn:ss'));
+    
+    // Date arithmetic
+    var NextWeek := DateTimeKit.AddDays(Now, 7);
+    var LastMonth := DateTimeKit.AddMonths(Now, -1);
+    
+    // Date components
+    WriteLn('Year: ', DateTimeKit.GetYear(Now));
+    WriteLn('Month: ', DateTimeKit.GetMonth(Now));
+    WriteLn('Day: ', DateTimeKit.GetDay(Now));
+    
+    // Period calculations
+    var StartDate := DateTimeKit.FromString('2024-01-01');
+    var EndDate := DateTimeKit.FromString('2024-12-31');
+    var Period := DateTimeKit.SpanBetween(StartDate, EndDate, dskPeriod);
+  finally
+    DateTimeKit.Free;
+  end;
+end;
+```
+
+### String Operations
+```pascal
+uses
+  TidyKit;
+
+// String manipulation
+var
+  StringKit: TStringKit;
+begin
+  StringKit := TStringKit.Create;
+  try
+    // Basic operations
+    WriteLn(StringKit.Trim('  Hello World  '));
+    WriteLn(StringKit.ToUpper('hello'));
+    WriteLn(StringKit.ToLower('WORLD'));
+    
+    // Advanced operations
+    WriteLn(StringKit.PadLeft('123', 5, '0'));     // 00123
+    WriteLn(StringKit.ReverseText('Hello'));       // olleH
+    WriteLn(StringKit.CapitalizeText('hello world')); // Hello World
+    
+    // Pattern matching
+    if StringKit.MatchesPattern('test@email.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
+      WriteLn('Valid email');
+      
+    // String analysis
+    WriteLn('Words: ', StringKit.GetWords('Hello World').Count);
+    WriteLn('Contains: ', StringKit.Contains('Hello World', 'World'));
+  finally
+    StringKit.Free;
   end;
 end;
 ```
