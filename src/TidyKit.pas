@@ -34,6 +34,7 @@ type
   TResponse = TidyKit.Request.TResponse;
   TRequestBuilder = TidyKit.Request.TRequestBuilder;
   TRequestResult = TidyKit.Request.TRequestResult;
+  THttp = TidyKit.Request.THttp;
 
 const
   { Re-export filesystem constants }
@@ -79,6 +80,13 @@ type
   TTimeZoneInfo = TidyKit.DateTime.TTimeZoneInfo;
   ETimeZoneError = TidyKit.DateTime.ETimeZoneError;
 
+var
+  { Re-export HTTP constants }
+  Http: THttp;
+
 implementation
+
+initialization
+  Http := Default(THttp);
 
 end. 
