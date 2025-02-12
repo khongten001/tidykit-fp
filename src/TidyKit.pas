@@ -11,7 +11,12 @@ uses
   TidyKit.Strings,
   TidyKit.DateTime,
   TidyKit.Crypto,
-  TidyKit.Request;
+  TidyKit.Request,
+  TidyKit.Math,
+  TidyKit.Math.Matrices,
+  TidyKit.Math.Finance,
+  TidyKit.Math.Trigonometry,
+  TidyKit.Math.Stats;
 
 type
   { Re-export the core types }
@@ -35,6 +40,13 @@ type
   THttpRequest = TidyKit.Request.THttpRequest;
   TRequestResult = TidyKit.Request.TRequestResult;
   THttp = TidyKit.Request.THttp;
+
+  { Re-export math types }
+  TMatrix<T> = TidyKit.Math.TMatrix<T>;
+  TMatrixKit<T> = TidyKit.Math.Matrices.TMatrixKit<T>;
+  TFinanceKit<T> = TidyKit.Math.Finance.TFinanceKit<T>;
+  TTrigKit<T> = TidyKit.Math.Trigonometry.TTrigKit<T>;
+  TStatsKit<T> = TidyKit.Math.Stats.TStatsKit<T>;
 
 const
   { Re-export filesystem constants }

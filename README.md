@@ -13,6 +13,11 @@ A collection of utility libraries for Free Pascal, designed for simplicity, safe
 - **String Utilities**: String manipulation and pattern matching
 - **Date/Time**: Date and time handling with timezone support
 - **Cryptography**: Encryption, hashing, and encoding utilities
+- **Mathematics**: Comprehensive math operations ([docs](docs/TidyKit.Math.md))
+  - Statistics (mean, variance, correlation, etc.)
+  - Financial calculations (NPV, IRR, depreciation)
+  - Trigonometry (basic, inverse, and hyperbolic functions)
+  - Matrix operations (addition, multiplication, determinant)
 
 ## Installation
 
@@ -154,6 +159,48 @@ begin
     StringKit.Free;
   end;
 end;
+
+### Math Operations
+```pascal
+uses
+  TidyKit;
+
+// Statistical calculations
+type
+  TStats = specialize TStatsKit<Double>;
+var
+  Data: TArray<Double>;
+begin
+  Data := TArray<Double>.Create(1, 2, 3, 4, 5);
+  WriteLn('Mean: ', TStats.Mean(Data):0:2);
+  WriteLn('Std Dev: ', TStats.StandardDeviation(Data):0:2);
+  WriteLn('Median: ', TStats.Median(Data):0:2);
+end;
+
+// Financial calculations
+type
+  TFinance = specialize TFinanceKit<Double>;
+var
+  CashFlows: TArray<Double>;
+begin
+  CashFlows := TArray<Double>.Create(100, 200, 300);
+  WriteLn('NPV: ', TFinance.NetPresentValue(1000, CashFlows, 0.1):0:2);
+  WriteLn('IRR: ', TFinance.InternalRateOfReturn(1000, CashFlows):0:4);
+end;
+
+// Matrix operations
+type
+  TMatrix = specialize TMatrixKit<Double>;
+var
+  A, B, C: TMatrix.TMatrixType;
+begin
+  A := TMatrix.CreateMatrix(2, 2);
+  B := TMatrix.CreateMatrix(2, 2);
+  A[0,0] := 1; A[0,1] := 2;
+  A[1,0] := 3; A[1,1] := 4;
+  B := TMatrix.Identity(2);
+  C := TMatrix.Multiply(A, B);
+end;
 ```
 
 ## Documentation
@@ -163,6 +210,7 @@ end;
 - [String Utilities](docs/TidyKit.Strings.md)
 - [Date/Time](docs/TidyKit.DateTime.md)
 - [Cryptography](docs/TidyKit.Crypto.md)
+- [Mathematics](docs/TidyKit.Math.md)
 
 ## Memory Management
 

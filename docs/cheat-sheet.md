@@ -30,6 +30,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Using the Fluent Interface](#using-the-fluent-interface)
     - [Error Handling](#error-handling)
     - [Working with JSON](#working-with-json)
+  - [📊 Math Operations](#-math-operations)
 
 ## 📁File System Operations
 
@@ -660,4 +661,128 @@ begin
       WriteLn(Items[I].AsString);
   end;
 end;
+```
+
+## 📊 Math Operations
+
+### Statistics
+```pascal
+type
+  TStats = specialize TStatsKit<Double>;
+  
+// Basic statistics
+Mean := TStats.Mean(Data);                    // Arithmetic mean
+Median := TStats.Median(Data);                // Median value
+Mode := TStats.Mode(Data);                    // Most frequent value
+Range := TStats.Range(Data);                  // Range (max - min)
+
+// Variance and standard deviation
+Var := TStats.Variance(Data);                 // Population variance
+StdDev := TStats.StandardDeviation(Data);     // Population std dev
+SVar := TStats.SampleVariance(Data);          // Sample variance
+SStdDev := TStats.SampleStandardDeviation(Data); // Sample std dev
+
+// Distribution measures
+Skew := TStats.Skewness(Data);               // Distribution skewness
+Kurt := TStats.Kurtosis(Data);               // Distribution kurtosis
+P50 := TStats.Percentile(Data, 50);          // 50th percentile
+Q1 := TStats.Quartile1(Data);                // First quartile
+Q3 := TStats.Quartile3(Data);                // Third quartile
+IQR := TStats.InterquartileRange(Data);      // Interquartile range
+
+// Correlation and covariance
+Corr := TStats.Correlation(X, Y);            // Pearson correlation
+Cov := TStats.Covariance(X, Y);              // Sample covariance
+TStats.Standardize(Data);                    // Convert to z-scores
+Z := TStats.ZScore(Value, Mean, StdDev);     // Calculate z-score
+```
+
+### Finance
+```pascal
+type
+  TFinance = specialize TFinanceKit<Double>;
+  
+// Present value calculations
+PV := TFinance.PresentValue(FV, Rate, Periods);    // Present value
+FV := TFinance.FutureValue(PV, Rate, Periods);     // Future value
+
+// Interest and payments
+CI := TFinance.CompoundInterest(Principal, Rate, Periods);  // Compound interest
+PMT := TFinance.Payment(PV, Rate, Periods);                 // Periodic payment
+
+// Investment analysis
+NPV := TFinance.NetPresentValue(Initial, CashFlows, Rate); // Net present value
+IRR := TFinance.InternalRateOfReturn(Initial, CashFlows);  // Internal rate of return
+
+// Depreciation
+SLD := TFinance.StraightLineDepreciation(Cost, Salvage, Life);  // Straight-line
+DBD := TFinance.DecliningBalanceDepreciation(Cost, Salvage, Life, Period); // Declining
+
+// Return calculations
+ROI := TFinance.ReturnOnInvestment(Gain, Cost);            // Return on investment
+ROE := TFinance.ReturnOnEquity(NetIncome, Equity);         // Return on equity
+```
+
+### Trigonometry
+```pascal
+type
+  TTrig = specialize TTrigKit<Double>;
+  
+// Angle conversions
+Rad := TTrig.DegToRad(Degrees);              // Degrees to radians
+Deg := TTrig.RadToDeg(Radians);              // Radians to degrees
+
+// Basic trigonometric functions
+S := TTrig.Sin(X);                           // Sine
+C := TTrig.Cos(X);                           // Cosine
+T := TTrig.Tan(X);                           // Tangent
+
+// Inverse trigonometric functions
+AS := TTrig.ArcSin(X);                       // Inverse sine
+AC := TTrig.ArcCos(X);                       // Inverse cosine
+AT := TTrig.ArcTan(X);                       // Inverse tangent
+AT2 := TTrig.ArcTan2(Y, X);                  // Two-argument inverse tangent
+
+// Hyperbolic functions
+SH := TTrig.Sinh(X);                         // Hyperbolic sine
+CH := TTrig.Cosh(X);                         // Hyperbolic cosine
+TH := TTrig.Tanh(X);                         // Hyperbolic tangent
+
+// Triangle calculations
+H := TTrig.Hypotenuse(A, B);                 // Calculate hypotenuse
+Area1 := TTrig.TriangleArea(Base, Height);   // Area from base and height
+Area2 := TTrig.TriangleAreaSAS(A, Angle, B); // Area from SAS
+Area3 := TTrig.TriangleAreaSSS(A, B, C);     // Area from three sides
+
+// Vector operations
+Mag := TTrig.VectorMagnitude(X, Y);          // Vector magnitude
+Angle := TTrig.VectorAngle(X1, Y1, X2, Y2);  // Angle between vectors
+```
+
+### Matrices
+```pascal
+type
+  TMatrix = specialize TMatrixKit<Double>;
+  
+// Matrix creation
+M := TMatrix.CreateMatrix(Rows, Cols);        // Create empty matrix
+I := TMatrix.Identity(Size);                  // Create identity matrix
+Z := TMatrix.Zeros(Rows, Cols);               // Create zero matrix
+O := TMatrix.Ones(Rows, Cols);                // Create matrix of ones
+
+// Basic operations
+C := TMatrix.Add(A, B);                       // Matrix addition
+D := TMatrix.Subtract(A, B);                  // Matrix subtraction
+E := TMatrix.Multiply(A, B);                  // Matrix multiplication
+F := TMatrix.ScalarMultiply(A, 2.0);          // Scalar multiplication
+
+// Matrix properties
+T := TMatrix.Transpose(A);                    // Matrix transpose
+R := TMatrix.GetRows(A);                      // Get number of rows
+C := TMatrix.GetCols(A);                      // Get number of columns
+
+// Matrix operations
+Det := TMatrix.Determinant(A);                // Calculate determinant
+Inv := TMatrix.Inverse(A);                    // Calculate inverse
+Success := TMatrix.LUDecomposition(A, L, U);  // LU decomposition
 ```
