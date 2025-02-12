@@ -13,6 +13,9 @@ type
 
   { Statistics calculations class }
   TStatsKit = class
+  private
+    class procedure Exchange(var A, B: Double); static;
+    class procedure ExchangeInt(var A, B: Integer); static;
   public
     { Basic statistics }
     class function Mean(const Data: TDoubleArray): Double; static;
@@ -37,7 +40,8 @@ type
     class function InterquartileRange(const Data: TDoubleArray): Double; static;
     
     { Correlation and covariance }
-    class function Correlation(const X, Y: TDoubleArray): Double; static;
+    class function PearsonCorrelation(const X, Y: TDoubleArray): Double; static;
+    class function SpearmanCorrelation(const X, Y: TDoubleArray): Double; static;
     class function Covariance(const X, Y: TDoubleArray): Double; static;
     
     { Z-score and normalization }
@@ -257,7 +261,7 @@ begin
   Result := Quartile3(Data) - Quartile1(Data);
 end;
 
-class function TStatsKit.Correlation(const X, Y: TDoubleArray): Double;
+class function TStatsKit.PearsonCorrelation(const X, Y: TDoubleArray): Double;
 var
   N: Integer;
   MeanX, MeanY, SumXY, SumX2, SumY2: Double;
@@ -265,7 +269,7 @@ var
 begin
   N := Length(X);
   if N <> Length(Y) then
-    raise Exception.Create('Arrays must have equal length for correlation');
+    raise Exception.Create('Arrays must have equal length for Pearson correlation');
   if N < 2 then
     raise Exception.Create('Cannot calculate correlation with less than 2 values');
     
@@ -287,6 +291,81 @@ begin
     Result := 0
   else
     Result := SumXY / Sqrt(SumX2 * SumY2);
+end;
+
+class function TStatsKit.SpearmanCorrelation(const X, Y: TDoubleArray): Double;
+var
+  N, I: Integer;
+  RankX, RankY: TDoubleArray;
+  
+  function GetRanks(const Data: TDoubleArray): TDoubleArray;
+  var
+    I, J, TieCount: Integer;
+    SortedIndices: array of Integer;
+    SortedData: TDoubleArray;
+    TieSum: Double;
+  begin
+    SetLength(SortedIndices, Length(Data));
+    SetLength(SortedData, Length(Data));
+    SetLength(Result, Length(Data));
+    
+    // Initialize indices and copy data
+    for I := 0 to High(Data) do
+    begin
+      SortedIndices[I] := I;
+      SortedData[I] := Data[I];
+    end;
+    
+    // Sort indices based on data values
+    for I := 0 to High(Data) - 1 do
+      for J := I + 1 to High(Data) do
+        if SortedData[J] < SortedData[I] then
+        begin
+          Exchange(SortedData[I], SortedData[J]);
+          ExchangeInt(SortedIndices[I], SortedIndices[J]);
+        end;
+    
+    // Assign ranks, handling ties
+    I := 0;
+    while I <= High(Data) do
+    begin
+      TieCount := 1;
+      TieSum := I + 1;
+      
+      // Count ties
+      while (I < High(Data)) and (SortedData[I] = SortedData[I + 1]) do
+      begin
+        Inc(I);
+        Inc(TieCount);
+        TieSum := TieSum + I + 1;
+      end;
+      
+      // Assign average rank for ties
+      if TieCount > 1 then
+      begin
+        for J := I - TieCount + 1 to I do
+          Result[SortedIndices[J]] := TieSum / TieCount;
+      end
+      else
+        Result[SortedIndices[I]] := I + 1;
+      
+      Inc(I);
+    end;
+  end;
+  
+begin
+  N := Length(X);
+  if N <> Length(Y) then
+    raise Exception.Create('Arrays must have equal length for Spearman correlation');
+  if N < 2 then
+    raise Exception.Create('Cannot calculate correlation with less than 2 values');
+  
+  // Get ranks for both arrays
+  RankX := GetRanks(X);
+  RankY := GetRanks(Y);
+  
+  // Calculate Pearson correlation of ranks
+  Result := PearsonCorrelation(RankX, RankY);
 end;
 
 class function TStatsKit.Covariance(const X, Y: TDoubleArray): Double;
@@ -363,6 +442,24 @@ begin
         Data[I] := Data[J];
         Data[J] := Temp;
       end;
+end;
+
+class procedure TStatsKit.Exchange(var A, B: Double);
+var
+  Temp: Double;
+begin
+  Temp := A;
+  A := B;
+  B := Temp;
+end;
+
+class procedure TStatsKit.ExchangeInt(var A, B: Integer);
+var
+  Temp: Integer;
+begin
+  Temp := A;
+  A := B;
+  B := Temp;
 end;
 
 end. 

@@ -37,9 +37,21 @@ type
     procedure Test08_Kurtosis;
     procedure Test09_Percentile;
     procedure Test10_Quartiles;
-    procedure Test11_Correlation;
-    procedure Test12_Covariance;
-    procedure Test13_ZScore;
+    procedure Test11_PearsonCorrelation_Perfect_Positive;
+    procedure Test12_PearsonCorrelation_Perfect_Negative;
+    procedure Test13_PearsonCorrelation_Zero;
+    procedure Test14_PearsonCorrelation_Moderate;
+    procedure Test15_SpearmanCorrelation_Perfect_Monotonic;
+    procedure Test16_SpearmanCorrelation_Perfect_Negative_Monotonic;
+    procedure Test17_SpearmanCorrelation_Zero_Monotonic;
+    procedure Test18_SpearmanCorrelation_With_Ties;
+    procedure Test19_SpearmanCorrelation_NonLinear_Monotonic;
+    procedure Test20_Covariance_Positive;
+    procedure Test21_Covariance_Zero;
+    procedure Test22_Covariance_Negative;
+    procedure Test23_ZScore_Positive;
+    procedure Test24_ZScore_Negative;
+    procedure Test25_ZScore_Zero;
   end;
 
   { Test cases for financial operations }
@@ -189,27 +201,131 @@ begin
   AssertEquals(3.0, TStatsKit.InterquartileRange(Data), 'IQR failed');
 end;
 
-procedure TTestCaseStats.Test11_Correlation;
+procedure TTestCaseStats.Test11_PearsonCorrelation_Perfect_Positive;
 var
   X, Y: TDoubleArray;
 begin
   X := TDoubleArray.Create(1, 2, 3, 4, 5);
   Y := TDoubleArray.Create(2, 4, 6, 8, 10);
-  AssertEquals(1.0, TStatsKit.Correlation(X, Y), 'Perfect correlation failed');
+  AssertEquals(1.0, TStatsKit.PearsonCorrelation(X, Y), 'Perfect positive correlation failed');
 end;
 
-procedure TTestCaseStats.Test12_Covariance;
+procedure TTestCaseStats.Test12_PearsonCorrelation_Perfect_Negative;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(10, 8, 6, 4, 2);
+  AssertEquals(-1.0, TStatsKit.PearsonCorrelation(X, Y), 'Perfect negative correlation failed');
+end;
+
+procedure TTestCaseStats.Test13_PearsonCorrelation_Zero;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(5, 5, 5, 5, 5);
+  AssertEquals(0.0, TStatsKit.PearsonCorrelation(X, Y), 'Zero correlation failed');
+end;
+
+procedure TTestCaseStats.Test14_PearsonCorrelation_Moderate;
+var
+  X, Y: TDoubleArray;
+  Correlation: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Y := TDoubleArray.Create(1.0, 2.0, 3.0, 4.0, 5.0, 7.37789955, 7.0, 8.0, 9.0, 10.0);
+  Correlation := TStatsKit.PearsonCorrelation(X, Y);
+  WriteLn(Format('Pearson Correlation: %.10f', [Correlation]));
+  AssertTrue('Moderate correlation should be close to 0.99',
+             Abs(Correlation - 0.99) < 1E-4);
+end;
+
+procedure TTestCaseStats.Test15_SpearmanCorrelation_Perfect_Monotonic;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 4, 8, 16, 32);
+  AssertEquals(1.0, TStatsKit.SpearmanCorrelation(X, Y), 'Perfect monotonic relationship failed');
+end;
+
+procedure TTestCaseStats.Test16_SpearmanCorrelation_Perfect_Negative_Monotonic;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(32, 16, 8, 4, 2);
+  AssertEquals(-1.0, TStatsKit.SpearmanCorrelation(X, Y), 'Perfect negative monotonic relationship failed');
+end;
+
+procedure TTestCaseStats.Test17_SpearmanCorrelation_Zero_Monotonic;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(5, 5, 5, 5, 5);
+  AssertEquals(0.0, TStatsKit.SpearmanCorrelation(X, Y), 'Zero monotonic relationship failed');
+end;
+
+procedure TTestCaseStats.Test18_SpearmanCorrelation_With_Ties;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 3, 4);
+  Y := TDoubleArray.Create(1, 2, 3, 3, 4);
+  AssertEquals(1.0, TStatsKit.SpearmanCorrelation(X, Y), 'Perfect correlation with ties failed');
+end;
+
+procedure TTestCaseStats.Test19_SpearmanCorrelation_NonLinear_Monotonic;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(1, 4, 9, 16, 25);  // Squared values
+  AssertEquals(1.0, TStatsKit.SpearmanCorrelation(X, Y), 'Non-linear monotonic relationship failed');
+end;
+
+procedure TTestCaseStats.Test20_Covariance_Positive;
 var
   X, Y: TDoubleArray;
 begin
   X := TDoubleArray.Create(1, 2, 3, 4, 5);
   Y := TDoubleArray.Create(2, 4, 6, 8, 10);
-  AssertEquals(5.0, TStatsKit.Covariance(X, Y), 'Covariance calculation failed');
+  AssertEquals(5.0, TStatsKit.Covariance(X, Y), 'Positive covariance calculation failed');
 end;
 
-procedure TTestCaseStats.Test13_ZScore;
+procedure TTestCaseStats.Test21_Covariance_Zero;
+var
+  X, Y: TDoubleArray;
 begin
-  AssertEquals(1.0, TStatsKit.ZScore(12, 10, 2), 'Z-score calculation failed');
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(5, 5, 5, 5, 5);
+  AssertEquals(0.0, TStatsKit.Covariance(X, Y), 'Zero covariance failed');
+end;
+
+procedure TTestCaseStats.Test22_Covariance_Negative;
+var
+  X, Y: TDoubleArray;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(10, 8, 6, 4, 2);
+  AssertEquals(-5.0, TStatsKit.Covariance(X, Y), 'Negative covariance failed');
+end;
+
+procedure TTestCaseStats.Test23_ZScore_Positive;
+begin
+  AssertEquals(1.0, TStatsKit.ZScore(12, 10, 2), 'Positive z-score calculation failed');
+end;
+
+procedure TTestCaseStats.Test24_ZScore_Negative;
+begin
+  AssertEquals(-1.5, TStatsKit.ZScore(7, 10, 2), 'Negative z-score calculation failed');
+end;
+
+procedure TTestCaseStats.Test25_ZScore_Zero;
+begin
+  AssertEquals(0.0, TStatsKit.ZScore(10, 10, 2), 'Zero z-score calculation failed');
 end;
 
 { TTestCaseFinance }
