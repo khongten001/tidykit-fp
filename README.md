@@ -96,17 +96,19 @@ end;
 For detailed documentation, see:
 - [Cheat Sheet](docs/cheat-sheet.md)
 - [Math Documentation](docs/TidyKit.Math.md)
-- [File System Documentation](docs/TidyKit.FS.md)
-- [Crypto Documentation](docs/TidyKit.Crypto.md)
+- [File System Documentation](Coming soon)
+- [Crypto Documentation](Coming soon)
 - [Network Documentation](docs/TidyKit.Request.md)
 
 ## Testing
 
-Run the test suite:
+1. Open the TestRunner.lpi using Lazarus IDE
+2. Compile the project
+3. Run the Test Runner:
+
 ```bash
-cd tests
-fpc TestRunner.lpr
-./TestRunner
+$ cd tests
+$ ./TestRunner.exe -a --format=all
 ```
 
 ## Contributing
