@@ -752,24 +752,39 @@ end;
 ```pascal
 uses TidyKit.Math.Trigonometry;
 
-var
-  Angle, Result: Double;
-begin
-  // Angle conversions
-  Angle := TTrigKit.DegToRad(45);
-  WriteLn(TTrigKit.RadToDeg(Pi/4));
-  
-  // Basic functions
-  WriteLn(TTrigKit.Sin(Angle));
-  WriteLn(TTrigKit.Cos(Angle));
-  WriteLn(TTrigKit.Tan(Angle));
-  
-  // Inverse functions
-  WriteLn(TTrigKit.ArcSin(0.5));
-  WriteLn(TTrigKit.ArcCos(0.5));
-  
-  // Triangle calculations
-  WriteLn(TTrigKit.Hypotenuse(3, 4));
-  WriteLn(TTrigKit.TriangleArea(3, 4));
-end;
+// IMPORTANT: Angle Conventions
+// - All trigonometric functions expect input angles in RADIANS
+// - All inverse trigonometric functions return angles in RADIANS
+// - Vector angle calculations return results in RADIANS
+// - Use conversion functions when working with degrees
+
+// Angle conversions
+Rad := TTrigKit.DegToRad(45);                   // Convert 45° to radians
+Deg := TTrigKit.RadToDeg(Pi/4);                 // Convert π/4 rad to degrees
+
+// Basic trigonometric functions (input in radians)
+S := TTrigKit.Sin(Pi/6);                        // sin(π/6)
+C := TTrigKit.Cos(Pi/3);                        // cos(π/3)
+T := TTrigKit.Tan(Pi/4);                        // tan(π/4)
+
+// Inverse trigonometric functions (return radians)
+AS := TTrigKit.ArcSin(0.5);                     // Returns angle in radians
+AC := TTrigKit.ArcCos(0.5);                     // Returns angle in radians
+AT := TTrigKit.ArcTan(1.0);                     // Returns angle in radians
+AT2 := TTrigKit.ArcTan2(Y, X);                  // Returns angle in radians
+
+// Example: Working with degrees
+angle_deg := 45;
+sin_45 := TTrigKit.Sin(TTrigKit.DegToRad(45));  // sin(45°)
+
+// Triangle calculations
+H := TTrigKit.Hypotenuse(3, 4);                 // Calculate hypotenuse
+Area1 := TTrigKit.TriangleArea(5, 3);           // Area from base and height
+Area2 := TTrigKit.TriangleAreaSAS(4, Pi/3, 5);  // Area using angle in radians
+Area3 := TTrigKit.TriangleAreaSSS(3, 4, 5);     // Area from three sides
+
+// Vector operations
+Mag := TTrigKit.VectorMagnitude(3, 4);          // Vector magnitude
+// Vector angle returns result in radians
+Angle := TTrigKit.VectorAngle(1, 0, 0, 1);      // π/2 radians (90°)
 ```

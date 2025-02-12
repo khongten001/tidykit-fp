@@ -213,41 +213,98 @@ IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
 
 ## Trigonometric Operations (TTrigKit)
 
-The `TTrigKit` class provides trigonometric calculations.
+The `TTrigKit` class provides comprehensive trigonometric calculations. All angle-related functions follow these conventions:
+
+### Angle Conventions
+- All trigonometric functions (Sin, Cos, Tan) expect input angles in **radians**
+- All inverse trigonometric functions (ArcSin, ArcCos, ArcTan, ArcTan2) return angles in **radians**
+- Vector angle calculations return results in **radians**
+- Use `DegToRad` and `RadToDeg` functions for angle conversions when working with degrees
+
+### Basic Usage
 
 ```pascal
 uses TidyKit.Math.Trigonometry;
 
-// Angle conversions
-Rad := TTrigKit.DegToRad(Degrees);              // Degrees to radians
-Deg := TTrigKit.RadToDeg(Radians);              // Radians to degrees
+// Converting between degrees and radians
+Rad := TTrigKit.DegToRad(45);                   // Convert 45° to radians
+Deg := TTrigKit.RadToDeg(Pi/4);                 // Convert π/4 rad to degrees
 
-// Basic trigonometric functions
-S := TTrigKit.Sin(X);                           // Sine
-C := TTrigKit.Cos(X);                           // Cosine
-T := TTrigKit.Tan(X);                           // Tangent
+// Basic trigonometric functions (input in radians)
+S := TTrigKit.Sin(Pi/6);                        // sin(π/6)
+C := TTrigKit.Cos(Pi/3);                        // cos(π/3)
+T := TTrigKit.Tan(Pi/4);                        // tan(π/4)
 
-// Inverse trigonometric functions
-AS := TTrigKit.ArcSin(X);                       // Inverse sine
-AC := TTrigKit.ArcCos(X);                       // Inverse cosine
-AT := TTrigKit.ArcTan(X);                       // Inverse tangent
-AT2 := TTrigKit.ArcTan2(Y, X);                  // Two-argument inverse tangent
+// Working with degrees (convert to radians first)
+angle_deg := 45;
+sin_45 := TTrigKit.Sin(TTrigKit.DegToRad(45));  // sin(45°)
 
-// Hyperbolic functions
-SH := TTrigKit.Sinh(X);                         // Hyperbolic sine
-CH := TTrigKit.Cosh(X);                         // Hyperbolic cosine
-TH := TTrigKit.Tanh(X);                         // Hyperbolic tangent
+// Inverse trigonometric functions (return radians)
+AS := TTrigKit.ArcSin(0.5);                     // Returns angle in radians
+AC := TTrigKit.ArcCos(0.5);                     // Returns angle in radians
+AT := TTrigKit.ArcTan(1.0);                     // Returns angle in radians
+AT2 := TTrigKit.ArcTan2(Y, X);                  // Returns angle in radians
 
-// Triangle calculations
-H := TTrigKit.Hypotenuse(A, B);                 // Calculate hypotenuse
-Area1 := TTrigKit.TriangleArea(Base, Height);   // Area from base and height
-Area2 := TTrigKit.TriangleAreaSAS(A, Angle, B); // Area from SAS
-Area3 := TTrigKit.TriangleAreaSSS(A, B, C);     // Area from three sides
-
-// Vector operations
-Mag := TTrigKit.VectorMagnitude(X, Y);          // Vector magnitude
-Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2);  // Angle between vectors
+// Convert inverse function results to degrees if needed
+angle_deg := TTrigKit.RadToDeg(AS);             // Convert result to degrees
 ```
+
+### Triangle Calculations
+
+```pascal
+// Basic triangle calculations
+H := TTrigKit.Hypotenuse(3, 4);                 // Calculate hypotenuse
+Area1 := TTrigKit.TriangleArea(Base, Height);   // Area from base and height
+
+// Note: TriangleAreaSAS expects angle in radians
+Area2 := TTrigKit.TriangleAreaSAS(4, Pi/3, 5);  // Area using angle in radians
+// If you have angle in degrees, convert it:
+Area3 := TTrigKit.TriangleAreaSAS(4, TTrigKit.DegToRad(60), 5);  // 60° angle
+
+// Area from three sides (no angles needed)
+Area4 := TTrigKit.TriangleAreaSSS(3, 4, 5);     // Area from three sides
+```
+
+### Vector Operations
+
+```pascal
+// Vector calculations
+Mag := TTrigKit.VectorMagnitude(X, Y);          // Vector magnitude
+
+// Vector angle returns result in radians
+Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2);  // Returns angle in radians
+// Convert to degrees if needed
+AngleDeg := TTrigKit.RadToDeg(Angle);           // Convert to degrees
+```
+
+### Common Pitfalls to Avoid
+
+1. **Wrong Angle Units**: Always ensure angles are in the correct units:
+   ```pascal
+   // INCORRECT - using degrees directly
+   S := TTrigKit.Sin(45);  // Wrong! 45 degrees
+   
+   // CORRECT - convert to radians first
+   S := TTrigKit.Sin(TTrigKit.DegToRad(45));  // Correct!
+   ```
+
+2. **Not Converting Inverse Function Results**: Remember that inverse functions return radians:
+   ```pascal
+   // INCORRECT - assuming result is in degrees
+   angle_deg := TTrigKit.ArcSin(0.5);  // Wrong! Result is in radians
+   
+   // CORRECT - convert to degrees if needed
+   angle_deg := TTrigKit.RadToDeg(TTrigKit.ArcSin(0.5));  // Correct!
+   ```
+
+3. **Triangle Area with Angle**: The `TriangleAreaSAS` function expects the angle in radians:
+   ```pascal
+   // INCORRECT - using degrees
+   Area := TTrigKit.TriangleAreaSAS(4, 60, 5);  // Wrong! 60 degrees
+   
+   // CORRECT - convert to radians
+   Area := TTrigKit.TriangleAreaSAS(4, TTrigKit.DegToRad(60), 5);  // Correct!
+   ```
 
 ## Error Handling
 

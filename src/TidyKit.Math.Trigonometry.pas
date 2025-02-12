@@ -8,23 +8,27 @@ uses
   Classes, SysUtils, Math, TidyKit.Math;
 
 type
-  { Trigonometry calculations class }
+  { Trigonometry calculations class.
+    All trigonometric functions (Sin, Cos, Tan) expect input angles in radians.
+    All inverse trigonometric functions (ArcSin, ArcCos, ArcTan, ArcTan2) return angles in radians.
+    Vector angle calculations return results in radians.
+    Use DegToRad and RadToDeg for angle conversions. }
   TTrigKit = class
   public
     { Angle conversions }
-    class function DegToRad(const Degrees: Double): Double; static;
-    class function RadToDeg(const Radians: Double): Double; static;
+    class function DegToRad(const Degrees: Double): Double; static;  // Converts degrees to radians
+    class function RadToDeg(const Radians: Double): Double; static;  // Converts radians to degrees
     
-    { Basic trigonometric functions }
-    class function Sin(const X: Double): Double; static;
-    class function Cos(const X: Double): Double; static;
-    class function Tan(const X: Double): Double; static;
+    { Basic trigonometric functions - all expect input in radians }
+    class function Sin(const X: Double): Double; static;  // X in radians
+    class function Cos(const X: Double): Double; static;  // X in radians
+    class function Tan(const X: Double): Double; static;  // X in radians
     
-    { Inverse trigonometric functions }
-    class function ArcSin(const X: Double): Double; static;
-    class function ArcCos(const X: Double): Double; static;
-    class function ArcTan(const X: Double): Double; static;
-    class function ArcTan2(const Y, X: Double): Double; static;
+    { Inverse trigonometric functions - all return angles in radians }
+    class function ArcSin(const X: Double): Double; static;  // Returns angle in radians
+    class function ArcCos(const X: Double): Double; static;  // Returns angle in radians
+    class function ArcTan(const X: Double): Double; static;  // Returns angle in radians
+    class function ArcTan2(const Y, X: Double): Double; static;  // Returns angle in radians
     
     { Hyperbolic functions }
     class function Sinh(const X: Double): Double; static;
@@ -34,12 +38,12 @@ type
     { Triangle calculations }
     class function Hypotenuse(const A, B: Double): Double; static;
     class function TriangleArea(const Base, Height: Double): Double; static;
-    class function TriangleAreaSAS(const SideA, Angle, SideB: Double): Double; static;
+    class function TriangleAreaSAS(const SideA, Angle, SideB: Double): Double; static;  // Angle in radians
     class function TriangleAreaSSS(const A, B, C: Double): Double; static;
     
     { Vector operations }
     class function VectorMagnitude(const X, Y: Double): Double; static;
-    class function VectorAngle(const X1, Y1, X2, Y2: Double): Double; static;
+    class function VectorAngle(const X1, Y1, X2, Y2: Double): Double; static;  // Returns angle in radians
   end;
 
 implementation
