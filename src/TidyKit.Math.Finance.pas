@@ -9,81 +9,81 @@ uses
 
 type
   { Financial calculations class }
-  generic TFinanceKit<T> = class
+  TFinanceKit = class
   public
     { Present Value calculations }
-    class function PresentValue(const FutureValue, Rate: T; const Periods: Integer): T; static;
-    class function FutureValue(const PresentValue, Rate: T; const Periods: Integer): T; static;
+    class function PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer): Double; static;
+    class function FutureValue(const APresentValue, ARate: Double; const APeriods: Integer): Double; static;
     
     { Interest and payments }
-    class function CompoundInterest(const Principal, Rate: T; const Periods: Integer): T; static;
-    class function Payment(const PresentValue, Rate: T; const Periods: Integer): T; static;
+    class function CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer): Double; static;
+    class function Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double; static;
     
     { Investment analysis }
-    class function NetPresentValue(const InitialInvestment: T; const CashFlows: TArray<T>; const Rate: T): T; static;
-    class function InternalRateOfReturn(const InitialInvestment: T; const CashFlows: TArray<T>): T; static;
+    class function NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double; static;
+    class function InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double; static;
     
     { Depreciation }
-    class function StraightLineDepreciation(const Cost, Salvage: T; const Life: Integer): T; static;
-    class function DecliningBalanceDepreciation(const Cost, Salvage: T; const Life: Integer; const Period: Integer): T; static;
+    class function StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer): Double; static;
+    class function DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer): Double; static;
     
     { Return calculations }
-    class function ReturnOnInvestment(const Gain, Cost: T): T; static;
-    class function ReturnOnEquity(const NetIncome, ShareholdersEquity: T): T; static;
+    class function ReturnOnInvestment(const AGain, ACost: Double): Double; static;
+    class function ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double): Double; static;
   end;
 
 implementation
 
 { TFinanceKit }
 
-class function TFinanceKit.PresentValue(const FutureValue, Rate: T; const Periods: Integer): T;
+class function TFinanceKit.PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := FutureValue / Power(1 + Rate, Periods);
+  Result := AFutureValue / Power(1 + ARate, APeriods);
 end;
 
-class function TFinanceKit.FutureValue(const PresentValue, Rate: T; const Periods: Integer): T;
+class function TFinanceKit.FutureValue(const APresentValue, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := PresentValue * Power(1 + Rate, Periods);
+  Result := APresentValue * Power(1 + ARate, APeriods);
 end;
 
-class function TFinanceKit.CompoundInterest(const Principal, Rate: T; const Periods: Integer): T;
+class function TFinanceKit.CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := Principal * (Power(1 + Rate, Periods) - 1);
+  Result := APrincipal * (Power(1 + ARate, APeriods) - 1);
 end;
 
-class function TFinanceKit.Payment(const PresentValue, Rate: T; const Periods: Integer): T;
+class function TFinanceKit.Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := (PresentValue * Rate * Power(1 + Rate, Periods)) / (Power(1 + Rate, Periods) - 1);
+  Result := (APresentValue * ARate * Power(1 + ARate, APeriods)) / (Power(1 + ARate, APeriods) - 1);
 end;
 
-class function TFinanceKit.NetPresentValue(const InitialInvestment: T; const CashFlows: TArray<T>; const Rate: T): T;
+class function TFinanceKit.NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double;
 var
   I: Integer;
 begin
-  Result := -InitialInvestment;
-  for I := 0 to High(CashFlows) do
-    Result := Result + CashFlows[I] / Power(1 + Rate, I + 1);
+  Result := -AInitialInvestment;
+  for I := 0 to High(ACashFlows) do
+    Result := Result + ACashFlows[I] / Power(1 + Rate, I + 1);
 end;
 
-class function TFinanceKit.InternalRateOfReturn(const InitialInvestment: T; const CashFlows: TArray<T>): T;
+class function TFinanceKit.InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double;
 const
   TOLERANCE = 0.0001;
   MAX_ITERATIONS = 100;
 var
-  Rate, NPV, DerivedNPV: T;
+  Rate, NPV, DerivedNPV: Double;
   I, Iteration: Integer;
 begin
   Rate := 0.1; // Initial guess
   Iteration := 0;
   
   repeat
-    NPV := -InitialInvestment;
+    NPV := -AInitialInvestment;
     DerivedNPV := 0;
     
-    for I := 0 to High(CashFlows) do
+    for I := 0 to High(ACashFlows) do
     begin
-      NPV := NPV + CashFlows[I] / Power(1 + Rate, I + 1);
-      DerivedNPV := DerivedNPV - (I + 1) * CashFlows[I] / Power(1 + Rate, I + 2);
+      NPV := NPV + ACashFlows[I] / Power(1 + Rate, I + 1);
+      DerivedNPV := DerivedNPV - (I + 1) * ACashFlows[I] / Power(1 + Rate, I + 2);
     end;
     
     Rate := Rate - NPV / DerivedNPV;
@@ -94,27 +94,27 @@ begin
   Result := Rate;
 end;
 
-class function TFinanceKit.StraightLineDepreciation(const Cost, Salvage: T; const Life: Integer): T;
+class function TFinanceKit.StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer): Double;
 begin
-  Result := (Cost - Salvage) / Life;
+  Result := (ACost - ASalvage) / ALife;
 end;
 
-class function TFinanceKit.DecliningBalanceDepreciation(const Cost, Salvage: T; const Life: Integer; const Period: Integer): T;
+class function TFinanceKit.DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer): Double;
 var
-  Rate: T;
+  Rate: Double;
 begin
-  Rate := 1 - Power(Salvage / Cost, 1 / Life);
-  Result := Cost * Power(1 - Rate, Period - 1) * Rate;
+  Rate := 1 - Power(ASalvage / ACost, 1 / ALife);
+  Result := ACost * Power(1 - Rate, APeriod - 1) * Rate;
 end;
 
-class function TFinanceKit.ReturnOnInvestment(const Gain, Cost: T): T;
+class function TFinanceKit.ReturnOnInvestment(const AGain, ACost: Double): Double;
 begin
-  Result := (Gain - Cost) / Cost;
+  Result := (AGain - ACost) / ACost;
 end;
 
-class function TFinanceKit.ReturnOnEquity(const NetIncome, ShareholdersEquity: T): T;
+class function TFinanceKit.ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double): Double;
 begin
-  Result := NetIncome / ShareholdersEquity;
+  Result := ANetIncome / AShareholdersEquity;
 end;
 
 end. 

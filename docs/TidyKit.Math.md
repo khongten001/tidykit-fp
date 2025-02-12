@@ -1,180 +1,223 @@
-# TidyKit Math Modules
+# TidyKit Math Library Documentation
 
-The TidyKit Math modules provide comprehensive mathematical operations through specialized generic classes.
+The TidyKit Math library provides comprehensive mathematical operations using Double precision floating-point numbers. The library is divided into several specialized modules for different mathematical domains.
 
-## Statistics (TStatsKit)
-
-```pascal
-type
-  generic TStatsKit<T> = class
-```
-
-### Basic Statistics
-- `Mean(const Data: TArray<T>)`: Calculate arithmetic mean
-- `Median(const Data: TArray<T>)`: Calculate median value
-- `Mode(const Data: TArray<T>)`: Find most frequent value
-- `Range(const Data: TArray<T>)`: Calculate range (max - min)
-
-### Variance and Standard Deviation
-- `Variance(const Data: TArray<T>)`: Population variance
-- `StandardDeviation(const Data: TArray<T>)`: Population standard deviation
-- `SampleVariance(const Data: TArray<T>)`: Sample variance
-- `SampleStandardDeviation(const Data: TArray<T>)`: Sample standard deviation
-
-### Distribution Measures
-- `Skewness(const Data: TArray<T>)`: Calculate distribution skewness
-- `Kurtosis(const Data: TArray<T>)`: Calculate distribution kurtosis
-- `Percentile(const Data: TArray<T>; const P: T)`: Calculate P-th percentile
-- `Quartile1(const Data: TArray<T>)`: First quartile (25th percentile)
-- `Quartile3(const Data: TArray<T>)`: Third quartile (75th percentile)
-- `InterquartileRange(const Data: TArray<T>)`: IQR (Q3 - Q1)
-
-### Correlation and Covariance
-- `Correlation(const X, Y: TArray<T>)`: Pearson correlation coefficient
-- `Covariance(const X, Y: TArray<T>)`: Sample covariance
-- `Standardize(var Data: TArray<T>)`: Convert to z-scores
-- `ZScore(const Value, Mean, StdDev: T)`: Calculate z-score
-
-## Finance (TFinanceKit)
+## Base Types
 
 ```pascal
+uses TidyKit.Math;
+
 type
-  generic TFinanceKit<T> = class
+  TDoubleArray = array of Double;
+  TMatrix = array of array of Double;
 ```
 
-### Present Value Calculations
-- `PresentValue(const FutureValue, Rate: T; const Periods: Integer)`: Calculate present value
-- `FutureValue(const PresentValue, Rate: T; const Periods: Integer)`: Calculate future value
+## Statistical Operations (TStatsKit)
 
-### Interest and Payments
-- `CompoundInterest(const Principal, Rate: T; const Periods: Integer)`: Calculate compound interest
-- `Payment(const PresentValue, Rate: T; const Periods: Integer)`: Calculate periodic payment
-
-### Investment Analysis
-- `NetPresentValue(const InitialInvestment: T; const CashFlows: TArray<T>; const Rate: T)`: Calculate NPV
-- `InternalRateOfReturn(const InitialInvestment: T; const CashFlows: TArray<T>)`: Calculate IRR
-
-### Depreciation
-- `StraightLineDepreciation(const Cost, Salvage: T; const Life: Integer)`: Straight-line depreciation
-- `DecliningBalanceDepreciation(const Cost, Salvage: T; const Life, Period: Integer)`: Declining balance depreciation
-
-### Return Calculations
-- `ReturnOnInvestment(const Gain, Cost: T)`: Calculate ROI
-- `ReturnOnEquity(const NetIncome, ShareholdersEquity: T)`: Calculate ROE
-
-## Trigonometry (TTrigKit)
+The `TStatsKit` class provides comprehensive statistical calculations.
 
 ```pascal
-type
-  generic TTrigKit<T> = class
+uses TidyKit.Math.Stats;
+
+// Basic statistics
+Mean := TStatsKit.Mean(Data);                    // Arithmetic mean
+Median := TStatsKit.Median(Data);                // Median value
+Mode := TStatsKit.Mode(Data);                    // Most frequent value
+Range := TStatsKit.Range(Data);                  // Range (max - min)
+
+// Variance and standard deviation
+Var := TStatsKit.Variance(Data);                 // Population variance
+StdDev := TStatsKit.StandardDeviation(Data);     // Population std dev
+SVar := TStatsKit.SampleVariance(Data);          // Sample variance
+SStdDev := TStatsKit.SampleStandardDeviation(Data); // Sample std dev
+
+// Distribution measures
+Skew := TStatsKit.Skewness(Data);               // Distribution skewness
+Kurt := TStatsKit.Kurtosis(Data);               // Distribution kurtosis
+P50 := TStatsKit.Percentile(Data, 50);          // 50th percentile
+Q1 := TStatsKit.Quartile1(Data);                // First quartile
+Q3 := TStatsKit.Quartile3(Data);                // Third quartile
+IQR := TStatsKit.InterquartileRange(Data);      // Interquartile range
+
+// Correlation and covariance
+Corr := TStatsKit.Correlation(X, Y);            // Pearson correlation
+Cov := TStatsKit.Covariance(X, Y);              // Sample covariance
+TStatsKit.Standardize(Data);                    // Convert to z-scores
+Z := TStatsKit.ZScore(Value, Mean, StdDev);     // Calculate z-score
 ```
 
-### Angle Conversions
-- `DegToRad(const Degrees: T)`: Convert degrees to radians
-- `RadToDeg(const Radians: T)`: Convert radians to degrees
+## Financial Calculations (TFinanceKit)
 
-### Basic Trigonometric Functions
-- `Sin(const X: T)`: Sine function
-- `Cos(const X: T)`: Cosine function
-- `Tan(const X: T)`: Tangent function
-
-### Inverse Trigonometric Functions
-- `ArcSin(const X: T)`: Inverse sine
-- `ArcCos(const X: T)`: Inverse cosine
-- `ArcTan(const X: T)`: Inverse tangent
-- `ArcTan2(const Y, X: T)`: Two-argument inverse tangent
-
-### Hyperbolic Functions
-- `Sinh(const X: T)`: Hyperbolic sine
-- `Cosh(const X: T)`: Hyperbolic cosine
-- `Tanh(const X: T)`: Hyperbolic tangent
-
-### Triangle Calculations
-- `Hypotenuse(const A, B: T)`: Calculate hypotenuse
-- `TriangleArea(const Base, Height: T)`: Calculate triangle area
-- `TriangleAreaSAS(const SideA, Angle, SideB: T)`: Area using SAS
-- `TriangleAreaSSS(const A, B, C: T)`: Area using three sides
-
-### Vector Operations
-- `VectorMagnitude(const X, Y: T)`: Calculate vector magnitude
-- `VectorAngle(const X1, Y1, X2, Y2: T)`: Calculate angle between vectors
-
-## Matrices (TMatrixKit)
+The `TFinanceKit` class provides financial mathematics calculations.
 
 ```pascal
-type
-  generic TMatrixKit<T> = class
+uses TidyKit.Math.Finance;
+
+// Present value calculations
+PV := TFinanceKit.PresentValue(FV, Rate, Periods);    // Present value
+FV := TFinanceKit.FutureValue(PV, Rate, Periods);     // Future value
+
+// Interest and payments
+CI := TFinanceKit.CompoundInterest(Principal, Rate, Periods);  // Compound interest
+PMT := TFinanceKit.Payment(PV, Rate, Periods);                 // Periodic payment
+
+// Investment analysis
+NPV := TFinanceKit.NetPresentValue(Initial, CashFlows, Rate); // Net present value
+IRR := TFinanceKit.InternalRateOfReturn(Initial, CashFlows);  // Internal rate of return
+
+// Depreciation
+SLD := TFinanceKit.StraightLineDepreciation(Cost, Salvage, Life);  // Straight-line
+DBD := TFinanceKit.DecliningBalanceDepreciation(Cost, Salvage, Life, Period); // Declining
+
+// Return calculations
+ROI := TFinanceKit.ReturnOnInvestment(Gain, Cost);            // Return on investment
+ROE := TFinanceKit.ReturnOnEquity(NetIncome, Equity);         // Return on equity
 ```
 
-### Matrix Creation
-- `CreateMatrix(const Rows, Cols: Integer)`: Create empty matrix
-- `Identity(const Size: Integer)`: Create identity matrix
-- `Zeros(const Rows, Cols: Integer)`: Create zero matrix
-- `Ones(const Rows, Cols: Integer)`: Create matrix of ones
+## Matrix Operations (TMatrixKit)
 
-### Basic Operations
-- `Add(const A, B: TMatrixType)`: Matrix addition
-- `Subtract(const A, B: TMatrixType)`: Matrix subtraction
-- `Multiply(const A, B: TMatrixType)`: Matrix multiplication
-- `ScalarMultiply(const A: TMatrixType; const Scalar: T)`: Scalar multiplication
+The `TMatrixKit` class provides matrix operations.
 
-### Matrix Properties
-- `Transpose(const A: TMatrixType)`: Matrix transpose
-- `GetRows(const A: TMatrixType)`: Get number of rows
-- `GetCols(const A: TMatrixType)`: Get number of columns
+```pascal
+uses TidyKit.Math.Matrices;
 
-### Matrix Operations
-- `Determinant(const A: TMatrixType)`: Calculate determinant
-- `Inverse(const A: TMatrixType)`: Calculate inverse matrix
-- `LUDecomposition(const A: TMatrixType; out L, U: TMatrixType)`: LU decomposition
+// Matrix creation
+M := TMatrixKit.CreateMatrix(Rows, Cols);        // Create empty matrix
+I := TMatrixKit.Identity(Size);                  // Create identity matrix
+Z := TMatrixKit.Zeros(Rows, Cols);               // Create zero matrix
+O := TMatrixKit.Ones(Rows, Cols);                // Create matrix of ones
+
+// Basic operations
+C := TMatrixKit.Add(A, B);                       // Matrix addition
+D := TMatrixKit.Subtract(A, B);                  // Matrix subtraction
+E := TMatrixKit.Multiply(A, B);                  // Matrix multiplication
+F := TMatrixKit.ScalarMultiply(A, 2.0);          // Scalar multiplication
+
+// Matrix transformations
+T := TMatrixKit.Transpose(A);                    // Matrix transpose
+Inv := TMatrixKit.Inverse(A);                    // Matrix inverse
+
+// Matrix properties
+Det := TMatrixKit.Determinant(A);                // Calculate determinant
+Tr := TMatrixKit.Trace(A);                       // Calculate trace
+R := TMatrixKit.Rank(A);                         // Calculate rank
+
+// Matrix decompositions
+TMatrixKit.LUDecomposition(A, L, U);             // LU decomposition
+TMatrixKit.QRDecomposition(A, Q, R);             // QR decomposition
+
+// Helper functions
+Rows := TMatrixKit.GetRows(A);                   // Get number of rows
+Cols := TMatrixKit.GetCols(A);                   // Get number of columns
+IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
+```
+
+## Trigonometric Operations (TTrigKit)
+
+The `TTrigKit` class provides trigonometric calculations.
+
+```pascal
+uses TidyKit.Math.Trigonometry;
+
+// Angle conversions
+Rad := TTrigKit.DegToRad(Degrees);              // Degrees to radians
+Deg := TTrigKit.RadToDeg(Radians);              // Radians to degrees
+
+// Basic trigonometric functions
+S := TTrigKit.Sin(X);                           // Sine
+C := TTrigKit.Cos(X);                           // Cosine
+T := TTrigKit.Tan(X);                           // Tangent
+
+// Inverse trigonometric functions
+AS := TTrigKit.ArcSin(X);                       // Inverse sine
+AC := TTrigKit.ArcCos(X);                       // Inverse cosine
+AT := TTrigKit.ArcTan(X);                       // Inverse tangent
+AT2 := TTrigKit.ArcTan2(Y, X);                  // Two-argument inverse tangent
+
+// Hyperbolic functions
+SH := TTrigKit.Sinh(X);                         // Hyperbolic sine
+CH := TTrigKit.Cosh(X);                         // Hyperbolic cosine
+TH := TTrigKit.Tanh(X);                         // Hyperbolic tangent
+
+// Triangle calculations
+H := TTrigKit.Hypotenuse(A, B);                 // Calculate hypotenuse
+Area1 := TTrigKit.TriangleArea(Base, Height);   // Area from base and height
+Area2 := TTrigKit.TriangleAreaSAS(A, Angle, B); // Area from SAS
+Area3 := TTrigKit.TriangleAreaSSS(A, B, C);     // Area from three sides
+
+// Vector operations
+Mag := TTrigKit.VectorMagnitude(X, Y);          // Vector magnitude
+Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2);  // Angle between vectors
+```
+
+## Error Handling
+
+All math operations include appropriate error checking:
+
+- Division by zero
+- Invalid matrix dimensions
+- Undefined mathematical operations
+- Out of range values
+
+Errors are raised using standard Pascal exceptions with descriptive messages.
+
+## Performance Considerations
+
+- All calculations use Double precision (64-bit) floating-point numbers
+- Matrix operations are optimized for common cases
+- Large matrix operations may be memory intensive
+- Consider using smaller data types if high precision is not required
 
 ## Examples
 
-### Statistics Example
+### Statistical Analysis
 ```pascal
-type
-  TStats = specialize TStatsKit<Double>;
 var
-  Data: TArray<Double>;
+  Data: TDoubleArray;
+  Mean, StdDev: Double;
 begin
-  Data := TArray<Double>.Create(1, 2, 3, 4, 5);
-  WriteLn('Mean: ', TStats.Mean(Data):0:2);
-  WriteLn('Std Dev: ', TStats.StandardDeviation(Data):0:2);
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Mean := TStatsKit.Mean(Data);
+  StdDev := TStatsKit.StandardDeviation(Data);
+  WriteLn('Mean: ', Mean:0:2);
+  WriteLn('Standard Deviation: ', StdDev:0:2);
 end;
 ```
 
-### Finance Example
+### Financial Calculation
 ```pascal
-type
-  TFinance = specialize TFinanceKit<Double>;
 var
-  CashFlows: TArray<Double>;
+  CashFlows: TDoubleArray;
+  NPV: Double;
 begin
-  CashFlows := TArray<Double>.Create(100, 200, 300);
-  WriteLn('NPV: ', TFinance.NetPresentValue(1000, CashFlows, 0.1):0:2);
+  CashFlows := TDoubleArray.Create(100, 200, 300);
+  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1);
+  WriteLn('Net Present Value: ', NPV:0:2);
 end;
 ```
 
-### Trigonometry Example
+### Matrix Operation
 ```pascal
-type
-  TTrig = specialize TTrigKit<Double>;
+var
+  A, B, C: TMatrix;
 begin
-  WriteLn('Sin(45°): ', TTrig.Sin(TTrig.DegToRad(45)):0:4);
-  WriteLn('Hypotenuse(3,4): ', TTrig.Hypotenuse(3, 4):0:2);
+  A := TMatrixKit.CreateMatrix(2, 2);
+  B := TMatrixKit.Identity(2);
+  A[0,0] := 1; A[0,1] := 2;
+  A[1,0] := 3; A[1,1] := 4;
+  
+  C := TMatrixKit.Multiply(A, B);
+  WriteLn('Determinant: ', TMatrixKit.Determinant(C):0:2);
 end;
 ```
 
-### Matrix Example
+### Trigonometric Calculation
 ```pascal
-type
-  TMatrix = specialize TMatrixKit<Double>;
 var
-  A, B, C: TMatrix.TMatrixType;
+  Angle, Height: Double;
 begin
-  A := TMatrix.CreateMatrix(2, 2);
-  B := TMatrix.CreateMatrix(2, 2);
-  // Fill matrices...
-  C := TMatrix.Multiply(A, B);
+  Angle := TTrigKit.DegToRad(45);
+  Height := 10 * TTrigKit.Sin(Angle);
+  WriteLn('Height: ', Height:0:2);
 end;
 ``` 

@@ -1,6 +1,7 @@
 unit TidyKit.Math.Stats;
 
 {$mode objfpc}{$H+}{$J-}
+{$modeswitch advancedrecords}
 
 interface
 
@@ -8,59 +9,61 @@ uses
   Classes, SysUtils, Math, TidyKit.Math;
 
 type
+
+
   { Statistics calculations class }
-  generic TStatsKit<T> = class
+  TStatsKit = class
   public
     { Basic statistics }
-    class function Mean(const Data: TArray<T>): T; static;
-    class function Median(const Data: TArray<T>): T; static;
-    class function Mode(const Data: TArray<T>): T; static;
-    class function Range(const Data: TArray<T>): T; static;
+    class function Mean(const Data: TDoubleArray): Double; static;
+    class function Median(const Data: TDoubleArray): Double; static;
+    class function Mode(const Data: TDoubleArray): Double; static;
+    class function Range(const Data: TDoubleArray): Double; static;
     
     { Variance and standard deviation }
-    class function Variance(const Data: TArray<T>): T; static;
-    class function StandardDeviation(const Data: TArray<T>): T; static;
-    class function SampleVariance(const Data: TArray<T>): T; static;
-    class function SampleStandardDeviation(const Data: TArray<T>): T; static;
+    class function Variance(const Data: TDoubleArray): Double; static;
+    class function StandardDeviation(const Data: TDoubleArray): Double; static;
+    class function SampleVariance(const Data: TDoubleArray): Double; static;
+    class function SampleStandardDeviation(const Data: TDoubleArray): Double; static;
     
     { Distribution measures }
-    class function Skewness(const Data: TArray<T>): T; static;
-    class function Kurtosis(const Data: TArray<T>): T; static;
+    class function Skewness(const Data: TDoubleArray): Double; static;
+    class function Kurtosis(const Data: TDoubleArray): Double; static;
     
     { Percentiles and quartiles }
-    class function Percentile(const Data: TArray<T>; const P: T): T; static;
-    class function Quartile1(const Data: TArray<T>): T; static;
-    class function Quartile3(const Data: TArray<T>): T; static;
-    class function InterquartileRange(const Data: TArray<T>): T; static;
+    class function Percentile(const Data: TDoubleArray; const P: Double): Double; static;
+    class function Quartile1(const Data: TDoubleArray): Double; static;
+    class function Quartile3(const Data: TDoubleArray): Double; static;
+    class function InterquartileRange(const Data: TDoubleArray): Double; static;
     
     { Correlation and covariance }
-    class function Correlation(const X, Y: TArray<T>): T; static;
-    class function Covariance(const X, Y: TArray<T>): T; static;
+    class function Correlation(const X, Y: TDoubleArray): Double; static;
+    class function Covariance(const X, Y: TDoubleArray): Double; static;
     
     { Z-score and normalization }
-    class function ZScore(const Value, Mean, StdDev: T): T; static;
-    class procedure Standardize(var Data: TArray<T>); static;
+    class function ZScore(const Value, AMean, StdDev: Double): Double; static;
+    class procedure Standardize(var Data: TDoubleArray); static;
     
     { Helper functions }
-    class function Sum(const Data: TArray<T>): T; static;
-    class function SumOfSquares(const Data: TArray<T>): T; static;
-    class procedure Sort(var Data: TArray<T>); static;
+    class function Sum(const Data: TDoubleArray): Double; static;
+    class function SumOfSquares(const Data: TDoubleArray): Double; static;
+    class procedure Sort(var Data: TDoubleArray); static;
   end;
 
 implementation
 
 { TStatsKit }
 
-class function TStatsKit.Mean(const Data: TArray<T>): T;
+class function TStatsKit.Mean(const Data: TDoubleArray): Double;
 begin
   if Length(Data) = 0 then
     raise Exception.Create('Cannot calculate mean of empty array');
   Result := Sum(Data) / Length(Data);
 end;
 
-class function TStatsKit.Median(const Data: TArray<T>): T;
+class function TStatsKit.Median(const Data: TDoubleArray): Double;
 var
-  SortedData: TArray<T>;
+  SortedData: TDoubleArray;
   Mid: Integer;
 begin
   if Length(Data) = 0 then
@@ -76,11 +79,11 @@ begin
     Result := SortedData[Mid];
 end;
 
-class function TStatsKit.Mode(const Data: TArray<T>): T;
+class function TStatsKit.Mode(const Data: TDoubleArray): Double;
 var
-  SortedData: TArray<T>;
+  SortedData: TDoubleArray;
   I, MaxCount, CurrentCount: Integer;
-  CurrentValue: T;
+  CurrentValue: Double;
 begin
   if Length(Data) = 0 then
     raise Exception.Create('Cannot calculate mode of empty array');
@@ -113,9 +116,9 @@ begin
     Result := CurrentValue;
 end;
 
-class function TStatsKit.Range(const Data: TArray<T>): T;
+class function TStatsKit.Range(const Data: TDoubleArray): Double;
 var
-  SortedData: TArray<T>;
+  SortedData: TDoubleArray;
 begin
   if Length(Data) = 0 then
     raise Exception.Create('Cannot calculate range of empty array');
@@ -125,9 +128,9 @@ begin
   Result := SortedData[High(SortedData)] - SortedData[0];
 end;
 
-class function TStatsKit.Variance(const Data: TArray<T>): T;
+class function TStatsKit.Variance(const Data: TDoubleArray): Double;
 var
-  M: T;
+  M: Double;
 begin
   if Length(Data) = 0 then
     raise Exception.Create('Cannot calculate variance of empty array');
@@ -136,14 +139,14 @@ begin
   Result := SumOfSquares(Data) / Length(Data) - Sqr(M);
 end;
 
-class function TStatsKit.StandardDeviation(const Data: TArray<T>): T;
+class function TStatsKit.StandardDeviation(const Data: TDoubleArray): Double;
 begin
   Result := Sqrt(Variance(Data));
 end;
 
-class function TStatsKit.SampleVariance(const Data: TArray<T>): T;
+class function TStatsKit.SampleVariance(const Data: TDoubleArray): Double;
 var
-  M: T;
+  M: Double;
   N: Integer;
 begin
   N := Length(Data);
@@ -154,17 +157,17 @@ begin
   Result := (SumOfSquares(Data) - N * Sqr(M)) / (N - 1);
 end;
 
-class function TStatsKit.SampleStandardDeviation(const Data: TArray<T>): T;
+class function TStatsKit.SampleStandardDeviation(const Data: TDoubleArray): Double;
 begin
   Result := Sqrt(SampleVariance(Data));
 end;
 
-class function TStatsKit.Skewness(const Data: TArray<T>): T;
+class function TStatsKit.Skewness(const Data: TDoubleArray): Double;
 var
-  M, S: T;
+  M, S: Double;
   I: Integer;
   N: Integer;
-  Sum: T;
+  Total: Double;
 begin
   N := Length(Data);
   if N < 3 then
@@ -173,19 +176,19 @@ begin
   M := Mean(Data);
   S := StandardDeviation(Data);
   
-  Sum := 0;
+  Total := 0;
   for I := 0 to High(Data) do
-    Sum := Sum + Power((Data[I] - M) / S, 3);
+    Total := Total + Power((Data[I] - M) / S, 3);
     
-  Result := Sum / N;
+  Result := Total / N;
 end;
 
-class function TStatsKit.Kurtosis(const Data: TArray<T>): T;
+class function TStatsKit.Kurtosis(const Data: TDoubleArray): Double;
 var
-  M, S: T;
+  M, S: Double;
   I: Integer;
   N: Integer;
-  Sum: T;
+  Total: Double;
 begin
   N := Length(Data);
   if N < 4 then
@@ -194,20 +197,20 @@ begin
   M := Mean(Data);
   S := StandardDeviation(Data);
   
-  Sum := 0;
+  Total := 0;
   for I := 0 to High(Data) do
-    Sum := Sum + Power((Data[I] - M) / S, 4);
+    Total := Total + Power((Data[I] - M) / S, 4);
     
-  Result := Sum / N - 3;  // Excess kurtosis (normal distribution = 0)
+  Result := Total / N - 3;  // Excess kurtosis (normal distribution = 0)
 end;
 
-class function TStatsKit.Percentile(const Data: TArray<T>; const P: T): T;
+class function TStatsKit.Percentile(const Data: TDoubleArray; const P: Double): Double;
 var
-  SortedData: TArray<T>;
+  SortedData: TDoubleArray;
   N: Integer;
-  Position: T;
+  Position: Double;
   Index: Integer;
-  Fraction: T;
+  Fraction: Double;
 begin
   if (P < 0) or (P > 100) then
     raise Exception.Create('Percentile must be between 0 and 100');
@@ -229,27 +232,27 @@ begin
     Result := SortedData[Index] + Fraction * (SortedData[Index + 1] - SortedData[Index]);
 end;
 
-class function TStatsKit.Quartile1(const Data: TArray<T>): T;
+class function TStatsKit.Quartile1(const Data: TDoubleArray): Double;
 begin
   Result := Percentile(Data, 25);
 end;
 
-class function TStatsKit.Quartile3(const Data: TArray<T>): T;
+class function TStatsKit.Quartile3(const Data: TDoubleArray): Double;
 begin
   Result := Percentile(Data, 75);
 end;
 
-class function TStatsKit.InterquartileRange(const Data: TArray<T>): T;
+class function TStatsKit.InterquartileRange(const Data: TDoubleArray): Double;
 begin
   Result := Quartile3(Data) - Quartile1(Data);
 end;
 
-class function TStatsKit.Correlation(const X, Y: TArray<T>): T;
+class function TStatsKit.Correlation(const X, Y: TDoubleArray): Double;
 var
   N: Integer;
-  MeanX, MeanY, StdDevX, StdDevY: T;
+  MeanX, MeanY, StdDevX, StdDevY: Double;
   I: Integer;
-  Sum: T;
+  Total: Double;
 begin
   N := Length(X);
   if (N <> Length(Y)) or (N < 2) then
@@ -260,19 +263,19 @@ begin
   StdDevX := StandardDeviation(X);
   StdDevY := StandardDeviation(Y);
   
-  Sum := 0;
+  Total := 0;
   for I := 0 to High(X) do
-    Sum := Sum + ((X[I] - MeanX) / StdDevX) * ((Y[I] - MeanY) / StdDevY);
+    Total := Total + ((X[I] - MeanX) / StdDevX) * ((Y[I] - MeanY) / StdDevY);
     
-  Result := Sum / (N - 1);
+  Result := Total / (N - 1);
 end;
 
-class function TStatsKit.Covariance(const X, Y: TArray<T>): T;
+class function TStatsKit.Covariance(const X, Y: TDoubleArray): Double;
 var
   N: Integer;
-  MeanX, MeanY: T;
+  MeanX, MeanY: Double;
   I: Integer;
-  Sum: T;
+  Total: Double;
 begin
   N := Length(X);
   if (N <> Length(Y)) or (N < 2) then
@@ -281,23 +284,23 @@ begin
   MeanX := Mean(X);
   MeanY := Mean(Y);
   
-  Sum := 0;
+  Total := 0;
   for I := 0 to High(X) do
-    Sum := Sum + (X[I] - MeanX) * (Y[I] - MeanY);
+    Total := Total + (X[I] - MeanX) * (Y[I] - MeanY);
     
-  Result := Sum / (N - 1);
+  Result := Total / (N - 1);
 end;
 
-class function TStatsKit.ZScore(const Value, Mean, StdDev: T): T;
+class function TStatsKit.ZScore(const Value, AMean, StdDev: Double): Double;
 begin
   if StdDev = 0 then
     raise Exception.Create('Standard deviation cannot be zero');
-  Result := (Value - Mean) / StdDev;
+  Result := (Value - AMean) / StdDev;
 end;
 
-class procedure TStatsKit.Standardize(var Data: TArray<T>);
+class procedure TStatsKit.Standardize(var Data: TDoubleArray);
 var
-  M, S: T;
+  M, S: Double;
   I: Integer;
 begin
   M := Mean(Data);
@@ -310,7 +313,7 @@ begin
     Data[I] := ZScore(Data[I], M, S);
 end;
 
-class function TStatsKit.Sum(const Data: TArray<T>): T;
+class function TStatsKit.Sum(const Data: TDoubleArray): Double;
 var
   I: Integer;
 begin
@@ -319,7 +322,7 @@ begin
     Result := Result + Data[I];
 end;
 
-class function TStatsKit.SumOfSquares(const Data: TArray<T>): T;
+class function TStatsKit.SumOfSquares(const Data: TDoubleArray): Double;
 var
   I: Integer;
 begin
@@ -328,10 +331,10 @@ begin
     Result := Result + Sqr(Data[I]);
 end;
 
-class procedure TStatsKit.Sort(var Data: TArray<T>);
+class procedure TStatsKit.Sort(var Data: TDoubleArray);
 var
   I, J: Integer;
-  Temp: T;
+  Temp: Double;
 begin
   for I := 0 to High(Data) - 1 do
     for J := I + 1 to High(Data) do

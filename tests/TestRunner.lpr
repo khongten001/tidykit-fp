@@ -3,12 +3,14 @@ program TestRunner;
 {$mode objfpc}{$H+}{$J-}
 
 uses
-  Classes, consoletestrunner
-  , TestCaseDateTime
-  , TestCaseFS
-  , TestCaseString
-  , TestCaseCrypto
-  , TestCaseRequest;
+  Classes
+  , consoletestrunner
+  //, TestCaseDateTime
+  //, TestCaseFS
+  //, TestCaseString
+  //, TestCaseCrypto
+  //, TestCaseRequest
+  , TestCaseMath;
 
 type
 
