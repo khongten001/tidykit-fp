@@ -168,6 +168,8 @@ begin
 end;
 
 class function TFinanceKit.Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double;
+var
+  Numerator, Denominator, PowerTerm: Double;
 begin
   if APeriods <= 0 then
     raise Exception.Create('Number of periods must be positive');
@@ -175,24 +177,35 @@ begin
   if Abs(ARate) < 1E-10 then
     Result := SimpleRoundTo(APresentValue / APeriods, -4)  // Round to 4 decimals
   else
+  begin
     // PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
-    Result := SimpleRoundTo(APresentValue * ARate * Power(1 + ARate, APeriods) / (Power(1 + ARate, APeriods) - 1), -4);
+    // Calculate each part separately to maintain precision
+    PowerTerm := Math.Power(1 + ARate, APeriods);
+    Numerator := APresentValue * ARate * PowerTerm;
+    Denominator := PowerTerm - 1;
+    Result := SimpleRoundTo(Numerator / Denominator, -4);
+  end;
 end;
 
 class function TFinanceKit.NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double;
 var
   I: Integer;
-  NPV: Double;
+  NPV, Divisor: Double;
 begin
   if Length(ACashFlows) = 0 then
     raise Exception.Create('Cash flows array cannot be empty');
     
-  // NPV = -Initial + CF1/(1+r)^1 + CF2/(1+r)^2 + ... + CFn/(1+r)^n
+  // NPV = -Initial + Σ(CFt / (1+r)^t)
   NPV := -AInitialInvestment;
+  
+  // Calculate each cash flow's present value
   for I := 0 to High(ACashFlows) do
-    NPV := NPV + SimpleRoundTo(ACashFlows[I] / Power(1 + Rate, I + 1), -4);
-    
-  Result := SimpleRoundTo(NPV, -4);  // Round to 4 decimals
+  begin
+    Divisor := Power(1 + Rate, I + 1);
+    NPV := NPV + SimpleRoundTo(ACashFlows[I] / Divisor, -4);
+  end;
+  
+  Result := SimpleRoundTo(NPV, -4);
 end;
 
 class function TFinanceKit.InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double;

@@ -242,8 +242,8 @@ begin
   WriteLn('Test #2: Payment Test');
   WriteLn('Input: PV=10000, Rate=0.05, Periods=10');
   Result := TFinanceKit.Payment(10000, 0.05, 10);
-  WriteLn(Format('Expected: %.10f, Got: %.10f', [1075.6841, Result]));
-  AssertFinanceEquals(1075.6841, Result, 'Payment calculation failed');
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [1295.0457, Result]));
+  AssertFinanceEquals(1295.0457, Result, 'Payment calculation failed');
 end;
 
 procedure TTestCaseFinance.Test05_NetPresentValue;
@@ -255,8 +255,8 @@ begin
   WriteLn('Input: Initial=100, CashFlows=[100,200,300], Rate=0.1');
   CashFlows := TDoubleArray.Create(100, 200, 300);
   Result := TFinanceKit.NetPresentValue(100, CashFlows, 0.1);
-  WriteLn(Format('Expected: %.10f, Got: %.10f', [498.6858, Result]));
-  AssertFinanceEquals(498.6858, Result, 'NPV calculation failed');
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [381.5928, Result]));
+  AssertFinanceEquals(381.5928, Result, 'NPV calculation failed');
 end;
 
 procedure TTestCaseFinance.Test06_InternalRateOfReturn;
