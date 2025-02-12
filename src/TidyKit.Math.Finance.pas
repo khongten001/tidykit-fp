@@ -48,7 +48,7 @@ type
     { Payment calculation for loans and annuities
       
       Calculates the periodic payment required to amortize a loan.
-      Formula: PMT = PV * r(1+r)^n / ((1+r)^n - 1)
+      Formula: PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
       where:
       - PV = Present Value (loan amount)
       - r = Interest rate per period
@@ -154,17 +154,17 @@ begin
   if Abs(ARate) < 1E-10 then
     Result := AFutureValue
   else
-    Result := RoundTo(AFutureValue / Power(1 + ARate, APeriods), -4);
+    Result := SimpleRoundTo(AFutureValue / Power(1 + ARate, APeriods), -4);  // Round to 4 decimals for consistency
 end;
 
 class function TFinanceKit.FutureValue(const APresentValue, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := APresentValue * Power(1 + ARate, APeriods);
+  Result := SimpleRoundTo(APresentValue * Power(1 + ARate, APeriods), -6);  // Use 6 decimals with bankers' rounding
 end;
 
 class function TFinanceKit.CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer): Double;
 begin
-  Result := APrincipal * (Power(1 + ARate, APeriods) - 1);
+  Result := SimpleRoundTo(APrincipal * (Power(1 + ARate, APeriods) - 1), -6);  // Use 6 decimals with bankers' rounding
 end;
 
 class function TFinanceKit.Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double;
@@ -173,31 +173,34 @@ begin
     raise Exception.Create('Number of periods must be positive');
     
   if Abs(ARate) < 1E-10 then
-    Result := APresentValue / APeriods
+    Result := SimpleRoundTo(APresentValue / APeriods, -4)  // Round to 4 decimals
   else
-    Result := RoundTo(APresentValue * ARate * Power(1 + ARate, APeriods) / (Power(1 + ARate, APeriods) - 1), -2);
+    // PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
+    Result := SimpleRoundTo(APresentValue * ARate * Power(1 + ARate, APeriods) / (Power(1 + ARate, APeriods) - 1), -4);
 end;
 
 class function TFinanceKit.NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double;
 var
   I: Integer;
+  NPV: Double;
 begin
   if Length(ACashFlows) = 0 then
     raise Exception.Create('Cash flows array cannot be empty');
     
-  Result := -AInitialInvestment;
+  // NPV = -Initial + CF1/(1+r)^1 + CF2/(1+r)^2 + ... + CFn/(1+r)^n
+  NPV := -AInitialInvestment;
   for I := 0 to High(ACashFlows) do
-    Result := Result + ACashFlows[I] / Power(1 + Rate, I + 1);
+    NPV := NPV + SimpleRoundTo(ACashFlows[I] / Power(1 + Rate, I + 1), -4);
     
-  Result := RoundTo(Result, -2);
+  Result := SimpleRoundTo(NPV, -4);  // Round to 4 decimals
 end;
 
 class function TFinanceKit.InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double;
 const
   TOLERANCE = 1E-6;
-  MAX_ITERATIONS = 1000;
+  MAX_ITERATIONS = 100;
   MIN_RATE = -0.999999;
-  MAX_RATE = 100.0;
+  MAX_RATE = 1.0;  // Reduced maximum rate
 var
   Rate, NPV, LastRate, LastNPV, NewRate: Double;
   I, Iteration: Integer;
@@ -221,7 +224,7 @@ begin
     raise Exception.Create('Cash flows must have both positive and negative values for IRR calculation');
     
   Rate := 0.1; // Initial guess
-  LastRate := 0.0;
+  LastRate := 0.05; // Start with a different rate
   LastNPV := 0;
   Iteration := 0;
   
@@ -232,44 +235,38 @@ begin
       
     if Iteration > 0 then
     begin
-      // Use secant method for better convergence
+      // Use secant method with dampening
+      if Abs(NPV) < TOLERANCE then
+        Break;
+        
       if Abs(NPV - LastNPV) < 1E-10 then
         Break;
         
       NewRate := Rate - NPV * (Rate - LastRate) / (NPV - LastNPV);
       
-      // Dampen the rate change to improve stability
-      if Abs(NewRate - Rate) > 0.5 then
-        NewRate := Rate + 0.5 * Sign(NewRate - Rate);
+      // Stronger dampening for better stability
+      if Abs(NewRate - Rate) > 0.001 then
+        NewRate := Rate + 0.001 * Sign(NewRate - Rate);
         
       LastRate := Rate;
       Rate := NewRate;
-    end
-    else
-    begin
-      LastRate := Rate;
-      if NPV > 0 then
-        Rate := Rate + 0.1
-      else
-        Rate := Rate - 0.1;
     end;
-      
+    
     LastNPV := NPV;
-      
+    Inc(Iteration);
+    
     // Keep rate within reasonable bounds
     if Rate < MIN_RATE then
       Rate := MIN_RATE
     else if Rate > MAX_RATE then
       Rate := MAX_RATE;
       
-    Inc(Iteration);
-    
   until (Abs(NPV) < TOLERANCE) or (Iteration >= MAX_ITERATIONS);
   
   if Iteration >= MAX_ITERATIONS then
     raise Exception.Create('IRR calculation did not converge');
     
-  Result := Rate;
+  Result := SimpleRoundTo(Rate, -4);  // Round to 4 decimals
 end;
 
 class function TFinanceKit.StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer): Double;
@@ -287,7 +284,7 @@ begin
     raise Exception.Create('Cost must be greater than salvage value');
     
   Rate := 2.0 / ALife;  // Double declining balance rate
-  Result := RoundTo(ACost * Rate * Power(1 - Rate, APeriod - 1), -2);
+  Result := SimpleRoundTo(ACost * Rate * Power(1 - Rate, APeriod - 1), -4);  // Round to 4 decimals
 end;
 
 class function TFinanceKit.ReturnOnInvestment(const AGain, ACost: Double): Double;

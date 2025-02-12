@@ -17,62 +17,64 @@ type
   TTestCaseMathBase = class(TTestCase)
   protected
     const
-      EPSILON = 1E-6;  // Tolerance for floating-point comparisons
+      EPSILON = 1E-6;  // General tolerance for floating-point comparisons
+      FINANCE_EPSILON = 1E-6;  // Tolerance for financial calculations (6 decimals)
     
     procedure AssertEquals(const Expected, Actual: Double; const Msg: String = ''); overload;
+    procedure AssertFinanceEquals(const Expected, Actual: Double; const Msg: String = ''); overload;
   end;
 
   { Test cases for statistical operations }
   TTestCaseStats = class(TTestCaseMathBase)
   published
-    procedure TestMean;
-    procedure TestMedian;
-    procedure TestMode;
-    procedure TestRange;
-    procedure TestVariance;
-    procedure TestStandardDeviation;
-    procedure TestSkewness;
-    procedure TestKurtosis;
-    procedure TestPercentile;
-    procedure TestQuartiles;
-    procedure TestCorrelation;
-    procedure TestCovariance;
-    procedure TestZScore;
+    procedure Test01_Mean;
+    procedure Test02_Median;
+    procedure Test03_Mode;
+    procedure Test04_Range;
+    procedure Test05_Variance;
+    procedure Test06_StandardDeviation;
+    procedure Test07_Skewness;
+    procedure Test08_Kurtosis;
+    procedure Test09_Percentile;
+    procedure Test10_Quartiles;
+    procedure Test11_Correlation;
+    procedure Test12_Covariance;
+    procedure Test13_ZScore;
   end;
 
   { Test cases for financial operations }
   TTestCaseFinance = class(TTestCaseMathBase)
   published
-    procedure TestPresentValue;
-    procedure TestFutureValue;
-    procedure TestCompoundInterest;
-    procedure TestPayment;
-    procedure TestNetPresentValue;
-    procedure TestInternalRateOfReturn;
-    procedure TestDepreciation;
-    procedure TestROI;
+    procedure Test01_PresentValue;
+    procedure Test02_FutureValue;
+    procedure Test03_CompoundInterest;
+    procedure Test04_Payment;
+    procedure Test05_NetPresentValue;
+    procedure Test06_InternalRateOfReturn;
+    procedure Test07_Depreciation;
+    procedure Test08_ROI;
   end;
 
   { Test cases for trigonometric operations }
   TTestCaseTrig = class(TTestCaseMathBase)
   published
-    procedure TestAngleConversions;
-    procedure TestBasicTrig;
-    procedure TestInverseTrig;
-    procedure TestHyperbolic;
-    procedure TestTriangleCalculations;
-    procedure TestVectorOperations;
+    procedure Test01_AngleConversions;
+    procedure Test02_BasicTrig;
+    procedure Test03_InverseTrig;
+    procedure Test04_Hyperbolic;
+    procedure Test05_TriangleCalculations;
+    procedure Test06_VectorOperations;
   end;
 
   { Test cases for matrix operations }
   TTestCaseMatrix = class(TTestCaseMathBase)
   published
-    procedure TestMatrixCreation;
-    procedure TestMatrixAddition;
-    procedure TestMatrixSubtraction;
-    procedure TestMatrixMultiplication;
-    procedure TestMatrixTranspose;
-    procedure TestMatrixDeterminant;
+    procedure Test01_MatrixCreation;
+    procedure Test02_MatrixAddition;
+    procedure Test03_MatrixSubtraction;
+    procedure Test04_MatrixMultiplication;
+    procedure Test05_MatrixTranspose;
+    procedure Test06_MatrixDeterminant;
   end;
 
 implementation
@@ -84,9 +86,16 @@ begin
   AssertTrue(Msg, Abs(Expected - Actual) < EPSILON);
 end;
 
+procedure TTestCaseMathBase.AssertFinanceEquals(const Expected, Actual: Double; const Msg: String);
+begin
+  if Abs(Expected - Actual) >= FINANCE_EPSILON then
+    WriteLn(Format('Expected: %.10f, Actual: %.10f, Diff: %.10f', [Expected, Actual, Abs(Expected - Actual)]));
+  AssertTrue(Msg, Abs(Expected - Actual) < FINANCE_EPSILON);
+end;
+
 { TTestCaseStats }
 
-procedure TTestCaseStats.TestMean;
+procedure TTestCaseStats.Test01_Mean;
 var
   Data: TDoubleArray;
 begin
@@ -97,7 +106,7 @@ begin
   AssertEquals(3.5, TStatsKit.Mean(Data), 'Mean with decimals failed');
 end;
 
-procedure TTestCaseStats.TestMedian;
+procedure TTestCaseStats.Test02_Median;
 var
   Data: TDoubleArray;
 begin
@@ -108,7 +117,7 @@ begin
   AssertEquals(2.5, TStatsKit.Median(Data), 'Median even count failed');
 end;
 
-procedure TTestCaseStats.TestMode;
+procedure TTestCaseStats.Test03_Mode;
 var
   Data: TDoubleArray;
 begin
@@ -116,7 +125,7 @@ begin
   AssertEquals(2.0, TStatsKit.Mode(Data), 'Mode calculation failed');
 end;
 
-procedure TTestCaseStats.TestRange;
+procedure TTestCaseStats.Test04_Range;
 var
   Data: TDoubleArray;
 begin
@@ -124,7 +133,7 @@ begin
   AssertEquals(4.0, TStatsKit.Range(Data), 'Range calculation failed');
 end;
 
-procedure TTestCaseStats.TestVariance;
+procedure TTestCaseStats.Test05_Variance;
 var
   Data: TDoubleArray;
 begin
@@ -132,7 +141,7 @@ begin
   AssertEquals(2.0, TStatsKit.Variance(Data), 'Variance calculation failed');
 end;
 
-procedure TTestCaseStats.TestStandardDeviation;
+procedure TTestCaseStats.Test06_StandardDeviation;
 var
   Data: TDoubleArray;
 begin
@@ -140,7 +149,7 @@ begin
   AssertEquals(Sqrt(2.0), TStatsKit.StandardDeviation(Data), 'Standard deviation failed');
 end;
 
-procedure TTestCaseStats.TestSkewness;
+procedure TTestCaseStats.Test07_Skewness;
 var
   Data: TDoubleArray;
 begin
@@ -150,7 +159,7 @@ begin
              Abs(TStatsKit.Skewness(Data)) < 0.5);
 end;
 
-procedure TTestCaseStats.TestKurtosis;
+procedure TTestCaseStats.Test08_Kurtosis;
 var
   Data: TDoubleArray;
 begin
@@ -160,7 +169,7 @@ begin
              Abs(TStatsKit.Kurtosis(Data)) < 1.0);
 end;
 
-procedure TTestCaseStats.TestPercentile;
+procedure TTestCaseStats.Test09_Percentile;
 var
   Data: TDoubleArray;
 begin
@@ -170,7 +179,7 @@ begin
   AssertEquals(5.0, TStatsKit.Percentile(Data, 100), '100th percentile failed');
 end;
 
-procedure TTestCaseStats.TestQuartiles;
+procedure TTestCaseStats.Test10_Quartiles;
 var
   Data: TDoubleArray;
 begin
@@ -180,7 +189,7 @@ begin
   AssertEquals(3.0, TStatsKit.InterquartileRange(Data), 'IQR failed');
 end;
 
-procedure TTestCaseStats.TestCorrelation;
+procedure TTestCaseStats.Test11_Correlation;
 var
   X, Y: TDoubleArray;
 begin
@@ -189,7 +198,7 @@ begin
   AssertEquals(1.0, TStatsKit.Correlation(X, Y), 'Perfect correlation failed');
 end;
 
-procedure TTestCaseStats.TestCovariance;
+procedure TTestCaseStats.Test12_Covariance;
 var
   X, Y: TDoubleArray;
 begin
@@ -198,57 +207,88 @@ begin
   AssertEquals(5.0, TStatsKit.Covariance(X, Y), 'Covariance calculation failed');
 end;
 
-procedure TTestCaseStats.TestZScore;
+procedure TTestCaseStats.Test13_ZScore;
 begin
   AssertEquals(1.0, TStatsKit.ZScore(12, 10, 2), 'Z-score calculation failed');
 end;
 
 { TTestCaseFinance }
 
-procedure TTestCaseFinance.TestPresentValue;
+procedure TTestCaseFinance.Test01_PresentValue;
+var
+  Result: Double;
 begin
-  AssertEquals(90.9091, TFinanceKit.PresentValue(100, 0.1, 1), 'Present value calculation failed');
+  WriteLn('Test #1: Present Value Test');
+  WriteLn('Input: FV=100, Rate=0.1, Periods=1');
+  Result := TFinanceKit.PresentValue(100, 0.1, 1);
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [90.9091, Result]));
+  AssertFinanceEquals(90.9091, Result, 'Present value calculation failed');
 end;
 
-procedure TTestCaseFinance.TestFutureValue;
+procedure TTestCaseFinance.Test02_FutureValue;
 begin
-  AssertEquals(110.0, TFinanceKit.FutureValue(100, 0.1, 1), 'Future value calculation failed');
+  AssertFinanceEquals(110.0, TFinanceKit.FutureValue(100, 0.1, 1), 'Future value calculation failed');
 end;
 
-procedure TTestCaseFinance.TestCompoundInterest;
+procedure TTestCaseFinance.Test03_CompoundInterest;
 begin
-  AssertEquals(10.0, TFinanceKit.CompoundInterest(100, 0.1, 1), 'Compound interest calculation failed');
+  AssertFinanceEquals(10.0, TFinanceKit.CompoundInterest(100, 0.1, 1), 'Compound interest calculation failed');
 end;
 
-procedure TTestCaseFinance.TestPayment;
+procedure TTestCaseFinance.Test04_Payment;
+var
+  Result: Double;
 begin
-  AssertEquals(1075.68, TFinanceKit.Payment(10000, 0.05, 10), 'Payment calculation failed');
+  WriteLn('Test #2: Payment Test');
+  WriteLn('Input: PV=10000, Rate=0.05, Periods=10');
+  Result := TFinanceKit.Payment(10000, 0.05, 10);
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [1075.6841, Result]));
+  AssertFinanceEquals(1075.6841, Result, 'Payment calculation failed');
 end;
 
-procedure TTestCaseFinance.TestNetPresentValue;
+procedure TTestCaseFinance.Test05_NetPresentValue;
 var
   CashFlows: TDoubleArray;
+  Result: Double;
 begin
+  WriteLn('Test #3: NPV Test');
+  WriteLn('Input: Initial=100, CashFlows=[100,200,300], Rate=0.1');
   CashFlows := TDoubleArray.Create(100, 200, 300);
-  AssertEquals(498.69, TFinanceKit.NetPresentValue(100, CashFlows, 0.1), 'NPV calculation failed');
+  Result := TFinanceKit.NetPresentValue(100, CashFlows, 0.1);
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [498.6858, Result]));
+  AssertFinanceEquals(498.6858, Result, 'NPV calculation failed');
 end;
 
-procedure TTestCaseFinance.TestInternalRateOfReturn;
+procedure TTestCaseFinance.Test06_InternalRateOfReturn;
 var
   CashFlows: TDoubleArray;
+  Result: Double;
 begin
+  WriteLn('Test #4: IRR Test');
+  WriteLn('Input: Initial=100, CashFlows=[110,121,133.1]');
   CashFlows := TDoubleArray.Create(110, 121, 133.1);
-  AssertTrue('IRR calculation failed',
-             Abs(TFinanceKit.InternalRateOfReturn(100, CashFlows) - 0.1) < 0.01);
+  Result := TFinanceKit.InternalRateOfReturn(100, CashFlows);
+  WriteLn(Format('Expected: %.10f, Got: %.10f', [0.1, Result]));
+  if Abs(Result - 0.1) >= FINANCE_EPSILON then
+    WriteLn(Format('Expected: %.10f, Actual: %.10f, Diff: %.10f', [0.1, Result, Abs(0.1 - Result)]));
+  AssertTrue('IRR calculation failed', Abs(Result - 0.1) < FINANCE_EPSILON);
 end;
 
-procedure TTestCaseFinance.TestDepreciation;
+procedure TTestCaseFinance.Test07_Depreciation;
+var
+  SLResult, DBResult: Double;
 begin
-  AssertEquals(180.0, TFinanceKit.StraightLineDepreciation(1000, 100, 5), 'Straight-line depreciation failed');
-  AssertEquals(200.0, TFinanceKit.DecliningBalanceDepreciation(1000, 100, 5, 1), 'Declining balance depreciation failed');
+  WriteLn('Test #5: Depreciation Test');
+  WriteLn('Input: Cost=1000, Salvage=100, Life=5, Period=1');
+  SLResult := TFinanceKit.StraightLineDepreciation(1000, 100, 5);
+  DBResult := TFinanceKit.DecliningBalanceDepreciation(1000, 100, 5, 1);
+  WriteLn(Format('Expected SL: %.10f, Got: %.10f', [180.0, SLResult]));
+  WriteLn(Format('Expected DB: %.10f, Got: %.10f', [400.0, DBResult]));
+  AssertFinanceEquals(180.0, SLResult, 'Straight-line depreciation failed');
+  AssertFinanceEquals(400.0, DBResult, 'Declining balance depreciation failed');
 end;
 
-procedure TTestCaseFinance.TestROI;
+procedure TTestCaseFinance.Test08_ROI;
 begin
   AssertEquals(0.25, TFinanceKit.ReturnOnInvestment(125, 100), 'ROI calculation failed');
   AssertEquals(0.15, TFinanceKit.ReturnOnEquity(15, 100), 'ROE calculation failed');
@@ -256,20 +296,20 @@ end;
 
 { TTestCaseTrig }
 
-procedure TTestCaseTrig.TestAngleConversions;
+procedure TTestCaseTrig.Test01_AngleConversions;
 begin
   AssertEquals(Pi/2, TTrigKit.DegToRad(90), 'Degrees to radians failed');
   AssertEquals(90.0, TTrigKit.RadToDeg(Pi/2), 'Radians to degrees failed');
 end;
 
-procedure TTestCaseTrig.TestBasicTrig;
+procedure TTestCaseTrig.Test02_BasicTrig;
 begin
   AssertEquals(0.0, TTrigKit.Sin(0), 'Sin(0) failed');
   AssertEquals(1.0, TTrigKit.Cos(0), 'Cos(0) failed');
   AssertEquals(0.0, TTrigKit.Tan(0), 'Tan(0) failed');
 end;
 
-procedure TTestCaseTrig.TestInverseTrig;
+procedure TTestCaseTrig.Test03_InverseTrig;
 begin
   AssertEquals(0.0, TTrigKit.ArcSin(0), 'ArcSin(0) failed');
   AssertEquals(Pi/2, TTrigKit.ArcCos(0), 'ArcCos(0) failed');
@@ -277,14 +317,14 @@ begin
   AssertEquals(Pi/4, TTrigKit.ArcTan2(1, 1), 'ArcTan2(1,1) failed');
 end;
 
-procedure TTestCaseTrig.TestHyperbolic;
+procedure TTestCaseTrig.Test04_Hyperbolic;
 begin
   AssertEquals(0.0, TTrigKit.Sinh(0), 'Sinh(0) failed');
   AssertEquals(1.0, TTrigKit.Cosh(0), 'Cosh(0) failed');
   AssertEquals(0.0, TTrigKit.Tanh(0), 'Tanh(0) failed');
 end;
 
-procedure TTestCaseTrig.TestTriangleCalculations;
+procedure TTestCaseTrig.Test05_TriangleCalculations;
 begin
   AssertEquals(5.0, TTrigKit.Hypotenuse(3, 4), 'Hypotenuse calculation failed');
   AssertEquals(6.0, TTrigKit.TriangleArea(3, 4), 'Triangle area failed');
@@ -292,7 +332,7 @@ begin
   AssertEquals(6.0, TTrigKit.TriangleAreaSSS(3, 4, 5), 'Triangle area SSS failed');
 end;
 
-procedure TTestCaseTrig.TestVectorOperations;
+procedure TTestCaseTrig.Test06_VectorOperations;
 begin
   AssertEquals(5.0, TTrigKit.VectorMagnitude(3, 4), 'Vector magnitude failed');
   AssertEquals(Pi/4, TTrigKit.VectorAngle(0, 0, 1, 1), 'Vector angle failed');
@@ -300,7 +340,7 @@ end;
 
 { TTestCaseMatrix }
 
-procedure TTestCaseMatrix.TestMatrixCreation;
+procedure TTestCaseMatrix.Test01_MatrixCreation;
 var
   M: TMatrix;
 begin
@@ -315,7 +355,7 @@ begin
   AssertEquals(1.0, M[0,0], 'Ones matrix creation failed');
 end;
 
-procedure TTestCaseMatrix.TestMatrixAddition;
+procedure TTestCaseMatrix.Test02_MatrixAddition;
 var
   A, B, C: TMatrix;
 begin
@@ -329,7 +369,7 @@ begin
   AssertEquals(8.0, C[1,1], 'Matrix addition failed');
 end;
 
-procedure TTestCaseMatrix.TestMatrixSubtraction;
+procedure TTestCaseMatrix.Test03_MatrixSubtraction;
 var
   A, B, C: TMatrix;
 begin
@@ -343,7 +383,7 @@ begin
   AssertEquals(1.0, C[1,1], 'Matrix subtraction failed');
 end;
 
-procedure TTestCaseMatrix.TestMatrixMultiplication;
+procedure TTestCaseMatrix.Test04_MatrixMultiplication;
 var
   A, B, C: TMatrix;
 begin
@@ -359,7 +399,7 @@ begin
   AssertEquals(8.0, C[1,1], 'Matrix multiplication failed');
 end;
 
-procedure TTestCaseMatrix.TestMatrixTranspose;
+procedure TTestCaseMatrix.Test05_MatrixTranspose;
 var
   A, T: TMatrix;
 begin
@@ -373,7 +413,7 @@ begin
   AssertEquals(4.0, T[1,1], 'Matrix transpose failed');
 end;
 
-procedure TTestCaseMatrix.TestMatrixDeterminant;
+procedure TTestCaseMatrix.Test06_MatrixDeterminant;
 var
   A: TMatrix;
 begin

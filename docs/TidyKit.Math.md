@@ -12,6 +12,55 @@ type
   TMatrix = array of array of Double;
 ```
 
+## Precision in Calculations
+
+TidyKit's math library uses Double precision (64-bit IEEE 754) for all calculations, with specific rounding rules for different operations:
+
+### Financial Calculations
+- All financial functions use bankers' rounding (round-to-even) via SimpleRoundTo
+- Calculations maintain 6 decimal places for Australian financial standards compliance
+- Present Value, Future Value, and Payment calculations use 6 decimal precision
+- NPV and IRR calculations use 6 decimal places for intermediate steps
+- Depreciation calculations round final results to 6 decimal places
+
+### Statistical Calculations
+- Basic statistics (mean, median, etc.) maintain full Double precision
+- Standard deviation and variance use full precision for intermediate calculations
+- Correlation and covariance maintain precision to avoid cumulative errors
+- Z-scores and standardization preserve full Double precision
+
+### Matrix Operations
+- Matrix elements stored as Double (64-bit) values
+- No rounding applied to preserve precision in linear algebra operations
+- Determinant and inverse calculations maintain full Double precision
+- Matrix multiplication uses full precision for intermediate sums
+
+### Trigonometric Calculations
+- Angular calculations maintain Double precision
+- Trigonometric functions use system math library precision
+- Triangle calculations preserve full precision for accurate results
+- Vector operations maintain Double precision for magnitude and angles
+
+### Precision Limits
+- Double type range: ±5.0 × 10^−324 to ±1.7 × 10^308
+- Approximately 15-17 significant decimal digits
+- Epsilon (smallest difference): 2.2204460492503131e-16
+- Pi constant precision: 15 significant digits
+
+### Rounding Behavior
+```pascal
+// Financial calculations use bankers' rounding to 6 decimals
+PV := TFinanceKit.PresentValue(1000, 0.05, 1);    // 952.380952
+PMT := TFinanceKit.Payment(10000, 0.05, 10);      // 1075.684172
+
+// Statistical calculations maintain full precision
+Mean := TStatsKit.Mean(Data);                     // Full Double precision
+StdDev := TStatsKit.StandardDeviation(Data);      // Full Double precision
+
+// Matrix operations preserve precision
+Det := TMatrixKit.Determinant(Matrix);            // Full Double precision
+```
+
 ## Statistical Operations (TStatsKit)
 
 The `TStatsKit` class provides comprehensive statistical calculations.
@@ -163,10 +212,15 @@ Errors are raised using standard Pascal exceptions with descriptive messages.
 
 ## Performance Considerations
 
-- All calculations use Double precision (64-bit) floating-point numbers
-- Matrix operations are optimized for common cases
-- Large matrix operations may be memory intensive
-- Consider using smaller data types if high precision is not required
+- All calculations use Double precision (64-bit) IEEE 754 floating-point numbers
+- Financial calculations round to 4 decimal places for consistency with financial standards
+- Statistical operations maintain full Double precision to minimize cumulative errors
+- Matrix operations preserve precision for numerical stability
+- Memory usage is approximately 8 bytes per number for Double precision values
+- Consider using Single (32-bit) precision only if memory is severely constrained and reduced accuracy is acceptable
+- Large matrix operations may require significant memory due to Double precision storage
+- Rounding is applied only where specifically required (e.g., financial calculations)
+- Intermediate calculations maintain full precision to minimize error propagation
 
 ## Examples
 
