@@ -21,7 +21,7 @@ type
       - n = Number of periods
       
       Source: CFA Institute's Financial Mathematics }
-    class function PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer): Double; static;
+    class function PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Future Value represents the value of a present sum at a future date.
       Formula: FV = PV * (1 + r)^n
@@ -31,7 +31,7 @@ type
       - n = Number of periods
       
       Source: CFA Institute's Financial Mathematics }
-    class function FutureValue(const APresentValue, ARate: Double; const APeriods: Integer): Double; static;
+    class function FutureValue(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Compound Interest calculations
       
@@ -43,7 +43,7 @@ type
       - n = Number of periods
       
       Source: Financial Mathematics for Actuaries }
-    class function CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer): Double; static;
+    class function CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Payment calculation for loans and annuities
       
@@ -60,7 +60,7 @@ type
       - All payments are equal
       
       Source: Financial Mathematics for Actuaries }
-    class function Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double; static;
+    class function Payment(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Net Present Value (NPV) calculation
       
@@ -75,7 +75,7 @@ type
       A positive NPV indicates a profitable investment.
       
       Source: Corporate Finance Institute }
-    class function NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double; static;
+    class function NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double; const ADecimals: Integer = 4): Double; static;
     
     { Internal Rate of Return (IRR) calculation
       
@@ -89,7 +89,7 @@ type
       4. Repeat until |NPV| < tolerance
       
       Source: Financial Mathematics for Actuaries }
-    class function InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double; static;
+    class function InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const ADecimals: Integer = 4): Double; static;
     
     { Depreciation calculations
       
@@ -97,7 +97,7 @@ type
       Annual depreciation = (Cost - Salvage) / Life
       
       Source: IFRS IAS 16 }
-    class function StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer): Double; static;
+    class function StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Double Declining Balance Depreciation
       
@@ -109,7 +109,7 @@ type
       - Period = Current period
       
       Source: IFRS IAS 16 }
-    class function DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer): Double; static;
+    class function DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer; const ADecimals: Integer = 4): Double; static;
     
     { Return calculations
       
@@ -117,7 +117,7 @@ type
       Measures the profitability of an investment.
       
       Source: Corporate Finance Institute }
-    class function ReturnOnInvestment(const AGain, ACost: Double): Double; static;
+    class function ReturnOnInvestment(const AGain, ACost: Double; const ADecimals: Integer = 4): Double; static;
     
     { Return on Equity (ROE)
       
@@ -125,7 +125,7 @@ type
       Measures a company's profitability in relation to shareholders' equity.
       
       Source: Corporate Finance Institute }
-    class function ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double): Double; static;
+    class function ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double; const ADecimals: Integer = 4): Double; static;
   end;
 
 implementation
@@ -147,27 +147,27 @@ implementation
 
 { TFinanceKit }
 
-class function TFinanceKit.PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer): Double;
+class function TFinanceKit.PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
 begin
   if APeriods < 0 then
     raise Exception.Create('Number of periods must be non-negative');
   if Abs(ARate) < 1E-10 then
     Result := AFutureValue
   else
-    Result := SimpleRoundTo(AFutureValue / Power(1 + ARate, APeriods), -4);  // Round to 4 decimals for consistency
+    Result := SimpleRoundTo(AFutureValue / Power(1 + ARate, APeriods), -ADecimals);  // Round to ADecimals decimals for consistency
 end;
 
-class function TFinanceKit.FutureValue(const APresentValue, ARate: Double; const APeriods: Integer): Double;
+class function TFinanceKit.FutureValue(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
 begin
-  Result := SimpleRoundTo(APresentValue * Power(1 + ARate, APeriods), -6);  // Use 6 decimals with bankers' rounding
+  Result := SimpleRoundTo(APresentValue * Power(1 + ARate, APeriods), -ADecimals);  // Use ADecimals decimals with bankers' rounding
 end;
 
-class function TFinanceKit.CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer): Double;
+class function TFinanceKit.CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
 begin
-  Result := SimpleRoundTo(APrincipal * (Power(1 + ARate, APeriods) - 1), -6);  // Use 6 decimals with bankers' rounding
+  Result := SimpleRoundTo(APrincipal * (Power(1 + ARate, APeriods) - 1), -ADecimals);  // Use ADecimals decimals with bankers' rounding
 end;
 
-class function TFinanceKit.Payment(const APresentValue, ARate: Double; const APeriods: Integer): Double;
+class function TFinanceKit.Payment(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
 var
   Numerator, Denominator, PowerTerm: Double;
 begin
@@ -175,7 +175,7 @@ begin
     raise Exception.Create('Number of periods must be positive');
     
   if Abs(ARate) < 1E-10 then
-    Result := SimpleRoundTo(APresentValue / APeriods, -4)  // Round to 4 decimals
+    Result := SimpleRoundTo(APresentValue / APeriods, -ADecimals)  // Round to ADecimals decimals
   else
   begin
     // PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
@@ -183,11 +183,11 @@ begin
     PowerTerm := Math.Power(1 + ARate, APeriods);
     Numerator := APresentValue * ARate * PowerTerm;
     Denominator := PowerTerm - 1;
-    Result := SimpleRoundTo(Numerator / Denominator, -4);
+    Result := SimpleRoundTo(Numerator / Denominator, -ADecimals);
   end;
 end;
 
-class function TFinanceKit.NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double): Double;
+class function TFinanceKit.NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double; const ADecimals: Integer = 4): Double;
 var
   I: Integer;
   NPV, Divisor: Double;
@@ -202,13 +202,13 @@ begin
   for I := 0 to High(ACashFlows) do
   begin
     Divisor := Power(1 + Rate, I + 1);
-    NPV := NPV + SimpleRoundTo(ACashFlows[I] / Divisor, -4);
+    NPV := NPV + SimpleRoundTo(ACashFlows[I] / Divisor, -ADecimals);
   end;
   
-  Result := SimpleRoundTo(NPV, -4);
+  Result := SimpleRoundTo(NPV, -ADecimals);
 end;
 
-class function TFinanceKit.InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray): Double;
+class function TFinanceKit.InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const ADecimals: Integer = 4): Double;
 const
   TOLERANCE = 1E-6;
   MAX_ITERATIONS = 100;
@@ -279,15 +279,15 @@ begin
   if Iteration >= MAX_ITERATIONS then
     raise Exception.Create('IRR calculation did not converge');
     
-  Result := SimpleRoundTo(Rate, -4);  // Round to 4 decimals
+  Result := SimpleRoundTo(Rate, -ADecimals);  // Round to ADecimals decimals
 end;
 
-class function TFinanceKit.StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer): Double;
+class function TFinanceKit.StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const ADecimals: Integer = 4): Double;
 begin
   Result := (ACost - ASalvage) / ALife;
 end;
 
-class function TFinanceKit.DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer): Double;
+class function TFinanceKit.DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer; const ADecimals: Integer = 4): Double;
 var
   Rate: Double;
 begin
@@ -297,15 +297,15 @@ begin
     raise Exception.Create('Cost must be greater than salvage value');
     
   Rate := 2.0 / ALife;  // Double declining balance rate
-  Result := SimpleRoundTo(ACost * Rate * Power(1 - Rate, APeriod - 1), -4);  // Round to 4 decimals
+  Result := SimpleRoundTo(ACost * Rate * Power(1 - Rate, APeriod - 1), -ADecimals);  // Round to ADecimals decimals
 end;
 
-class function TFinanceKit.ReturnOnInvestment(const AGain, ACost: Double): Double;
+class function TFinanceKit.ReturnOnInvestment(const AGain, ACost: Double; const ADecimals: Integer = 4): Double;
 begin
   Result := (AGain - ACost) / ACost;
 end;
 
-class function TFinanceKit.ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double): Double;
+class function TFinanceKit.ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double; const ADecimals: Integer = 4): Double;
 begin
   Result := ANetIncome / AShareholdersEquity;
 end;

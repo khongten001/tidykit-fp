@@ -97,31 +97,81 @@ Z := TStatsKit.ZScore(Value, Mean, StdDev);     // Calculate z-score
 
 ## Financial Calculations (TFinanceKit)
 
-The `TFinanceKit` class provides financial mathematics calculations.
+The `TFinanceKit` class provides comprehensive financial calculations with configurable precision. All financial functions support an optional `ADecimals` parameter to control the number of decimal places in the result (default is 4 decimal places).
 
+### Time Value of Money
 ```pascal
-uses TidyKit.Math.Finance;
+// Present Value with default 4 decimals
+PV := TFinanceKit.PresentValue(FutureValue, Rate, Periods);
 
-// Present value calculations
-PV := TFinanceKit.PresentValue(FV, Rate, Periods);    // Present value
-FV := TFinanceKit.FutureValue(PV, Rate, Periods);     // Future value
+// Present Value with 6 decimal precision
+PV := TFinanceKit.PresentValue(FutureValue, Rate, Periods, 6);
 
-// Interest and payments
-CI := TFinanceKit.CompoundInterest(Principal, Rate, Periods);  // Compound interest
-PMT := TFinanceKit.Payment(PV, Rate, Periods);                 // Periodic payment
-
-// Investment analysis
-NPV := TFinanceKit.NetPresentValue(Initial, CashFlows, Rate); // Net present value
-IRR := TFinanceKit.InternalRateOfReturn(Initial, CashFlows);  // Internal rate of return
-
-// Depreciation
-SLD := TFinanceKit.StraightLineDepreciation(Cost, Salvage, Life);  // Straight-line
-DBD := TFinanceKit.DecliningBalanceDepreciation(Cost, Salvage, Life, Period); // Declining
-
-// Return calculations
-ROI := TFinanceKit.ReturnOnInvestment(Gain, Cost);            // Return on investment
-ROE := TFinanceKit.ReturnOnEquity(NetIncome, Equity);         // Return on equity
+// Future Value with custom precision
+FV := TFinanceKit.FutureValue(PresentValue, Rate, Periods, 3);
 ```
+
+### Investment Analysis
+```pascal
+var
+  CashFlows: TDoubleArray;
+begin
+  CashFlows := TDoubleArray.Create(100, 200, 300);
+  
+  // NPV with default precision (4 decimals)
+  NPV := TFinanceKit.NetPresentValue(InitialInvestment, CashFlows, Rate);
+  
+  // NPV with 6 decimal precision
+  NPV := TFinanceKit.NetPresentValue(InitialInvestment, CashFlows, Rate, 6);
+  
+  // IRR with custom precision
+  IRR := TFinanceKit.InternalRateOfReturn(InitialInvestment, CashFlows, 3);
+end;
+```
+
+### Depreciation
+```pascal
+// Straight-line depreciation with default precision
+SLD := TFinanceKit.StraightLineDepreciation(Cost, Salvage, Life);
+
+// Declining balance depreciation with 3 decimal precision
+DDB := TFinanceKit.DecliningBalanceDepreciation(Cost, Salvage, Life, Period, 3);
+```
+
+### Return Metrics
+```pascal
+// ROI with default precision
+ROI := TFinanceKit.ReturnOnInvestment(Gain, Cost);
+
+// ROE with 5 decimal precision
+ROE := TFinanceKit.ReturnOnEquity(NetIncome, ShareholdersEquity, 5);
+```
+
+## Precision in Calculations
+
+### Default Precision
+- All financial calculations default to 4 decimal places for consistency
+- This provides sufficient precision for most financial calculations while avoiding floating-point comparison issues
+
+### Custom Precision
+- Each financial function accepts an optional `ADecimals` parameter
+- Range: typically 0 to 10 decimal places
+- Examples:
+  - `ADecimals = 2`: For monetary values (e.g., $123.45)
+  - `ADecimals = 4`: Default, suitable for most calculations
+  - `ADecimals = 6`: For high-precision requirements
+
+### Rounding Behavior
+- Uses banker's rounding (symmetric arithmetic rounding)
+- Implemented via `SimpleRoundTo` function
+- Ensures consistent results across calculations
+
+### Best Practices
+1. Use default precision (4 decimals) unless specific requirements exist
+2. For monetary display, round to 2 decimals
+3. For rate calculations, consider using 4-6 decimals
+4. For internal calculations, use higher precision (6+ decimals)
+5. Always use the same precision when comparing values
 
 ## Matrix Operations (TMatrixKit)
 

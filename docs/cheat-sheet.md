@@ -31,6 +31,10 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Error Handling](#error-handling)
     - [Working with JSON](#working-with-json)
   - [📊 Math Operations](#-math-operations)
+    - [Statistics (TStatsKit)](#statistics-tstatskit)
+    - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
+    - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
+    - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
 
 ## 📁File System Operations
 
@@ -697,16 +701,24 @@ var
 begin
   CashFlows := TDoubleArray.Create(100, 200, 300);
   
-  // Investment analysis
+  // Investment analysis with default 4 decimal places
   NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1);
   IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
   
-  // Time value of money
-  WriteLn(TFinanceKit.PresentValue(1000, 0.05, 5));
-  WriteLn(TFinanceKit.FutureValue(1000, 0.05, 5));
+  // Investment analysis with custom decimal places
+  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);  // 6 decimals
+  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows, 2);  // 2 decimals
   
-  // Depreciation
-  WriteLn(TFinanceKit.StraightLineDepreciation(10000, 1000, 5));
+  // Time value of money with default precision
+  WriteLn(TFinanceKit.PresentValue(1000, 0.05, 5));        // 4 decimals
+  WriteLn(TFinanceKit.FutureValue(1000, 0.05, 5));         // 4 decimals
+  
+  // Time value of money with custom precision
+  WriteLn(TFinanceKit.PresentValue(1000, 0.05, 5, 6));     // 6 decimals
+  WriteLn(TFinanceKit.FutureValue(1000, 0.05, 5, 2));      // 2 decimals
+  
+  // Depreciation with custom precision
+  WriteLn(TFinanceKit.StraightLineDepreciation(10000, 1000, 5, 3));  // 3 decimals
 end;
 ```
 

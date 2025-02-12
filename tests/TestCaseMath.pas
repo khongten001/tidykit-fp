@@ -220,19 +220,19 @@ var
 begin
   WriteLn('Test #1: Present Value Test');
   WriteLn('Input: FV=100, Rate=0.1, Periods=1');
-  Result := TFinanceKit.PresentValue(100, 0.1, 1);
+  Result := TFinanceKit.PresentValue(100, 0.1, 1, 4);
   WriteLn(Format('Expected: %.10f, Got: %.10f', [90.9091, Result]));
   AssertFinanceEquals(90.9091, Result, 'Present value calculation failed');
 end;
 
 procedure TTestCaseFinance.Test02_FutureValue;
 begin
-  AssertFinanceEquals(110.0, TFinanceKit.FutureValue(100, 0.1, 1), 'Future value calculation failed');
+  AssertFinanceEquals(110.0, TFinanceKit.FutureValue(100, 0.1, 1, 4), 'Future value calculation failed');
 end;
 
 procedure TTestCaseFinance.Test03_CompoundInterest;
 begin
-  AssertFinanceEquals(10.0, TFinanceKit.CompoundInterest(100, 0.1, 1), 'Compound interest calculation failed');
+  AssertFinanceEquals(10.0, TFinanceKit.CompoundInterest(100, 0.1, 1, 4), 'Compound interest calculation failed');
 end;
 
 procedure TTestCaseFinance.Test04_Payment;
@@ -241,7 +241,7 @@ var
 begin
   WriteLn('Test #2: Payment Test');
   WriteLn('Input: PV=10000, Rate=0.05, Periods=10');
-  Result := TFinanceKit.Payment(10000, 0.05, 10);
+  Result := TFinanceKit.Payment(10000, 0.05, 10, 4);
   WriteLn(Format('Expected: %.10f, Got: %.10f', [1295.0457, Result]));
   AssertFinanceEquals(1295.0457, Result, 'Payment calculation failed');
 end;
@@ -254,7 +254,7 @@ begin
   WriteLn('Test #3: NPV Test');
   WriteLn('Input: Initial=100, CashFlows=[100,200,300], Rate=0.1');
   CashFlows := TDoubleArray.Create(100, 200, 300);
-  Result := TFinanceKit.NetPresentValue(100, CashFlows, 0.1);
+  Result := TFinanceKit.NetPresentValue(100, CashFlows, 0.1, 4);
   WriteLn(Format('Expected: %.10f, Got: %.10f', [381.5928, Result]));
   AssertFinanceEquals(381.5928, Result, 'NPV calculation failed');
 end;
@@ -267,7 +267,7 @@ begin
   WriteLn('Test #4: IRR Test');
   WriteLn('Input: Initial=100, CashFlows=[110,121,133.1]');
   CashFlows := TDoubleArray.Create(110, 121, 133.1);
-  Result := TFinanceKit.InternalRateOfReturn(100, CashFlows);
+  Result := TFinanceKit.InternalRateOfReturn(100, CashFlows, 4);
   WriteLn(Format('Expected: %.10f, Got: %.10f', [0.1, Result]));
   if Abs(Result - 0.1) >= FINANCE_EPSILON then
     WriteLn(Format('Expected: %.10f, Actual: %.10f, Diff: %.10f', [0.1, Result, Abs(0.1 - Result)]));
@@ -280,8 +280,8 @@ var
 begin
   WriteLn('Test #5: Depreciation Test');
   WriteLn('Input: Cost=1000, Salvage=100, Life=5, Period=1');
-  SLResult := TFinanceKit.StraightLineDepreciation(1000, 100, 5);
-  DBResult := TFinanceKit.DecliningBalanceDepreciation(1000, 100, 5, 1);
+  SLResult := TFinanceKit.StraightLineDepreciation(1000, 100, 5, 4);
+  DBResult := TFinanceKit.DecliningBalanceDepreciation(1000, 100, 5, 1, 4);
   WriteLn(Format('Expected SL: %.10f, Got: %.10f', [180.0, SLResult]));
   WriteLn(Format('Expected DB: %.10f, Got: %.10f', [400.0, DBResult]));
   AssertFinanceEquals(180.0, SLResult, 'Straight-line depreciation failed');
@@ -290,8 +290,8 @@ end;
 
 procedure TTestCaseFinance.Test08_ROI;
 begin
-  AssertEquals(0.25, TFinanceKit.ReturnOnInvestment(125, 100), 'ROI calculation failed');
-  AssertEquals(0.15, TFinanceKit.ReturnOnEquity(15, 100), 'ROE calculation failed');
+  AssertEquals(0.25, TFinanceKit.ReturnOnInvestment(125, 100, 4), 'ROI calculation failed');
+  AssertEquals(0.15, TFinanceKit.ReturnOnEquity(15, 100, 4), 'ROE calculation failed');
 end;
 
 { TTestCaseTrig }
