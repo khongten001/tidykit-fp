@@ -130,31 +130,40 @@ end;
 
 class function TStatsKit.Variance(const Data: TDoubleArray): Double;
 var
-  M: Double;
+  M, SumSq: Double;
+  I, N: Integer;
 begin
-  if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate variance of empty array');
+  N := Length(Data);
+  if N < 2 then
+    raise Exception.Create('Cannot calculate variance with less than 2 values');
     
   M := Mean(Data);
-  Result := SumOfSquares(Data) / Length(Data) - Sqr(M);
+  SumSq := 0;
+  for I := 0 to High(Data) do
+    SumSq := SumSq + Sqr(Data[I] - M);
+    
+  Result := SumSq / (N - 1);  // Sample variance (n-1)
 end;
 
 class function TStatsKit.StandardDeviation(const Data: TDoubleArray): Double;
 begin
-  Result := Sqrt(Variance(Data));
+  Result := Sqrt(Variance(Data));  // Uses the corrected variance calculation
 end;
 
 class function TStatsKit.SampleVariance(const Data: TDoubleArray): Double;
 var
-  M: Double;
-  N: Integer;
+  M, SumSq: Double;
+  I, N: Integer;
 begin
   N := Length(Data);
   if N < 2 then
     raise Exception.Create('Cannot calculate sample variance with less than 2 values');
     
   M := Mean(Data);
-  Result := (SumOfSquares(Data) - N * Sqr(M)) / (N - 1);
+  SumSq := 0;
+  for I := 0 to High(Data) do
+    SumSq := SumSq + Sqr(Data[I] - M);
+  Result := SumSq / (N - 1);
 end;
 
 class function TStatsKit.SampleStandardDeviation(const Data: TDoubleArray): Double;
@@ -201,7 +210,8 @@ begin
   for I := 0 to High(Data) do
     Total := Total + Power((Data[I] - M) / S, 4);
     
-  Result := Total / N - 3;  // Excess kurtosis (normal distribution = 0)
+  // Adjusted formula for sample excess kurtosis
+  Result := (N * (N + 1) * Total / ((N - 1) * (N - 2) * (N - 3))) - (3 * Sqr(N - 1) / ((N - 2) * (N - 3)));
 end;
 
 class function TStatsKit.Percentile(const Data: TDoubleArray; const P: Double): Double;
@@ -250,24 +260,33 @@ end;
 class function TStatsKit.Correlation(const X, Y: TDoubleArray): Double;
 var
   N: Integer;
-  MeanX, MeanY, StdDevX, StdDevY: Double;
+  MeanX, MeanY, SumXY, SumX2, SumY2: Double;
   I: Integer;
-  Total: Double;
 begin
   N := Length(X);
-  if (N <> Length(Y)) or (N < 2) then
-    raise Exception.Create('Arrays must have equal length and at least 2 elements');
+  if N <> Length(Y) then
+    raise Exception.Create('Arrays must have equal length for correlation');
+  if N < 2 then
+    raise Exception.Create('Cannot calculate correlation with less than 2 values');
     
   MeanX := Mean(X);
   MeanY := Mean(Y);
-  StdDevX := StandardDeviation(X);
-  StdDevY := StandardDeviation(Y);
   
-  Total := 0;
-  for I := 0 to High(X) do
-    Total := Total + ((X[I] - MeanX) / StdDevX) * ((Y[I] - MeanY) / StdDevY);
-    
-  Result := Total / (N - 1);
+  SumXY := 0;
+  SumX2 := 0;
+  SumY2 := 0;
+  
+  for I := 0 to N - 1 do
+  begin
+    SumXY := SumXY + (X[I] - MeanX) * (Y[I] - MeanY);
+    SumX2 := SumX2 + Sqr(X[I] - MeanX);
+    SumY2 := SumY2 + Sqr(Y[I] - MeanY);
+  end;
+  
+  if (SumX2 = 0) or (SumY2 = 0) then
+    Result := 0
+  else
+    Result := SumXY / Sqrt(SumX2 * SumY2);
 end;
 
 class function TStatsKit.Covariance(const X, Y: TDoubleArray): Double;

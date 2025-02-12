@@ -66,9 +66,9 @@ begin
   for I := 0 to Size - 1 do
     for J := 0 to Size - 1 do
       if I = J then
-        Result[I, J] := Default(Double)
+        Result[I, J] := 1.0
       else
-        Result[I, J] := Default(Double);
+        Result[I, J] := 0.0;
 end;
 
 class function TMatrixKit.Zeros(const Rows, Cols: Integer): TMatrix;
@@ -88,7 +88,7 @@ begin
   Result := CreateMatrix(Rows, Cols);
   for I := 0 to Rows - 1 do
     for J := 0 to Cols - 1 do
-      Result[I, J] := Default(Double);  // Should be 1, needs numeric constraint
+      Result[I, J] := 1.0;
 end;
 
 class function TMatrixKit.Add(const A, B: TMatrix): TMatrix;
@@ -191,9 +191,62 @@ begin
 end;
 
 class function TMatrixKit.Determinant(const A: TMatrix): Double;
+var
+  N, I, J, K: Integer;
+  Factor: Double;
+  Temp: TMatrix;
+  
+  function MinorDeterminant(const M: TMatrix; const Size: Integer): Double;
+  var
+    I, J, K, L: Integer;
+    SubMatrix: TMatrix;
+    Sign: Double;
+  begin
+    if Size = 1 then
+      Result := M[0, 0]
+    else if Size = 2 then
+      Result := M[0, 0] * M[1, 1] - M[0, 1] * M[1, 0]
+    else
+    begin
+      Result := 0;
+      SubMatrix := CreateMatrix(Size - 1, Size - 1);
+      for K := 0 to Size - 1 do
+      begin
+        L := 0;
+        for I := 1 to Size - 1 do
+        begin
+          for J := 0 to Size - 1 do
+            if J <> K then
+            begin
+              SubMatrix[I - 1, L] := M[I, J];
+              Inc(L);
+            end;
+          L := 0;
+        end;
+        
+        if K mod 2 = 0 then
+          Sign := 1
+        else
+          Sign := -1;
+          
+        Result := Result + Sign * M[0, K] * MinorDeterminant(SubMatrix, Size - 1);
+      end;
+    end;
+  end;
+  
 begin
-  // TODO: Implement determinant calculation
-  Result := Default(Double);
+  N := GetRows(A);
+  if not IsSquare(A) then
+    raise EMatrixError.Create('Matrix must be square to calculate determinant');
+    
+  if N = 0 then
+    Result := 0
+  else if N = 1 then
+    Result := A[0, 0]
+  else if N = 2 then
+    Result := A[0, 0] * A[1, 1] - A[0, 1] * A[1, 0]
+  else
+    Result := MinorDeterminant(A, N);
 end;
 
 class function TMatrixKit.Trace(const A: TMatrix): Double;
