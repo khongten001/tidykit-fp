@@ -75,7 +75,7 @@ uses
   TidyKit.Crypto.SHA3,      // SHA3 implementation
   
   // Network units
-  TidyKit.Request,          // Simplified HTTP operations
+  TidyKit.Request;          // HTTP client with simple and advanced features
 
 ```
 
