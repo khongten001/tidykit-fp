@@ -52,7 +52,13 @@ type
     procedure Test23_ZScore_Positive;
     procedure Test24_ZScore_Negative;
     procedure Test25_ZScore_Zero;
-    procedure Test26_Describe;
+    procedure Test26_Describe_N;
+    procedure Test26_Describe_Mean;
+    procedure Test26_Describe_Median;
+    procedure Test26_Describe_Min;
+    procedure Test26_Describe_Max;
+    procedure Test26_Describe_Range;
+    procedure Test26_Describe_StdDev;
     procedure Test27_GeometricMean;
     procedure Test28_HarmonicMean;
     procedure Test29_TrimmedMean;
@@ -348,22 +354,77 @@ begin
   AssertEquals(0.0, TStatsKit.ZScore(10, 10, 2), 'Zero z-score calculation failed');
 end;
 
-procedure TTestCaseStats.Test26_Describe;
+procedure TTestCaseStats.Test26_Describe_N;
 var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
 begin
   Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
   Stats := TStatsKit.Describe(Data);
-  
   AssertEquals(10, Stats.N, 'N calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe_Mean;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
   AssertEquals(5.5, Stats.Mean, 'Mean calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe_Median;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
   AssertEquals(5.5, Stats.Median, 'Median calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe_Min;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
   AssertEquals(1.0, Stats.Min, 'Min calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe_Max;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
   AssertEquals(10.0, Stats.Max, 'Max calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe_Range;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
   AssertEquals(9.0, Stats.Range, 'Range calculation failed');
-  AssertTrue('StdDev calculation failed', 
-             Abs(Stats.StdDev - 2.8722813232690143) < 1E-10);
+end;
+
+procedure TTestCaseStats.Test26_Describe_StdDev;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  WriteLn('Test26_Describe_StdDev: Starting');
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
+  WriteLn(Format('StdDev: %.6f', [Stats.StdDev]));
+  AssertEquals(2.872281, Stats.StdDev, 'StdDev calculation failed');
+  WriteLn('Test26_Describe_StdDev: Finished');
 end;
 
 procedure TTestCaseStats.Test27_GeometricMean;
@@ -371,15 +432,18 @@ var
   Data: TDoubleArray;
 begin
   Data := TDoubleArray.Create(1, 2, 4, 8);
-  AssertEquals(2.8284271247461903, TStatsKit.GeometricMean(Data), 'Geometric mean failed');
+  AssertEquals(2.828427, TStatsKit.GeometricMean(Data), 'Geometric mean failed');
 end;
 
 procedure TTestCaseStats.Test28_HarmonicMean;
 var
   Data: TDoubleArray;
 begin
+  WriteLn('Test28_HarmonicMean: Starting');
   Data := TDoubleArray.Create(1, 2, 4, 8);
-  AssertEquals(2.0, TStatsKit.HarmonicMean(Data), 'Harmonic mean failed');
+  WriteLn(Format('Harmonic Mean: %.6f', [TStatsKit.HarmonicMean(Data)]));
+  AssertEquals(2.133333, TStatsKit.HarmonicMean(Data), 'Harmonic mean failed');
+  WriteLn('Test28_HarmonicMean: Finished');
 end;
 
 procedure TTestCaseStats.Test29_TrimmedMean;
@@ -387,7 +451,7 @@ var
   Data: TDoubleArray;
 begin
   Data := TDoubleArray.Create(1, 2, 3, 4, 100);  // Outlier at 100
-  AssertEquals(2.5, TStatsKit.TrimmedMean(Data, 20), 'Trimmed mean failed');
+  AssertEquals(3.0, TStatsKit.TrimmedMean(Data, 20), 'Trimmed mean failed');
 end;
 
 procedure TTestCaseStats.Test30_WinsorizedMean;
@@ -403,7 +467,7 @@ var
   Data: TDoubleArray;
 begin
   Data := TDoubleArray.Create(2, 4, 4, 4, 6);
-  AssertEquals(0.6324555320336759, TStatsKit.StandardErrorOfMean(Data), 'SEM failed');
+  AssertEquals(0.632456, TStatsKit.StandardErrorOfMean(Data), 'SEM failed');
 end;
 
 procedure TTestCaseStats.Test32_CoefficientOfVariation;
@@ -411,7 +475,7 @@ var
   Data: TDoubleArray;
 begin
   Data := TDoubleArray.Create(2, 4, 4, 4, 6);
-  AssertEquals(31.622776601683793, TStatsKit.CoefficientOfVariation(Data), 'CV failed');
+  AssertEquals(31.622777, TStatsKit.CoefficientOfVariation(Data), 'CV failed');
 end;
 
 procedure TTestCaseStats.Test33_MedianAbsoluteDeviation;

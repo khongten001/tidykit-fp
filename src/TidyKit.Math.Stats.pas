@@ -224,7 +224,7 @@ begin
   for I := 0 to High(Data) do
     S2 := S2 + Sqr(Data[I] - M);
     
-  Result := Sqrt(S2 / (Length(Data) - 1));  // Sample standard deviation
+  Result := Sqrt(S2 / Length(Data));  // Population standard deviation (using n)
 end;
 
 class function TStatsKit.SampleVariance(const Data: TDoubleArray): Double;
@@ -597,13 +597,13 @@ begin
   begin
     if Data[I] <= 0 then
       raise Exception.Create('Harmonic mean requires positive values');
-    ReciprocalSum := ReciprocalSum + (1.0 / Data[I]);
+    ReciprocalSum := ReciprocalSum + 1 / Data[I];  // Simple division
   end;
   
   if ReciprocalSum = 0 then
     raise Exception.Create('Cannot calculate harmonic mean when sum of reciprocals is zero');
     
-  Result := Length(Data) / ReciprocalSum;
+  Result := Length(Data) / ReciprocalSum;  // Simple division
 end;
 
 class function TStatsKit.TrimmedMean(const Data: TDoubleArray; const Percent: Double): Double;
@@ -622,7 +622,7 @@ begin
   SortedData := Copy(Data);
   Sort(SortedData);
   
-  TrimCount := Floor((Length(Data) * Percent) / 100);
+  TrimCount := Floor(Length(Data) * (Percent / 100));  // Calculate number to trim from each end
   StartIdx := TrimCount;
   EndIdx := Length(Data) - TrimCount - 1;
   
@@ -685,7 +685,7 @@ begin
     raise Exception.Create('Cannot calculate CV when mean is zero');
     
   S := StandardDeviation(Data);
-  Result := (S / Abs(M)) * 100;  // Return as percentage
+  Result := (S / Abs(M)) * 100;  // Simple percentage calculation
 end;
 
 class function TStatsKit.MedianAbsoluteDeviation(const Data: TDoubleArray): Double;
