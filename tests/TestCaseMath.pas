@@ -184,7 +184,7 @@ var
   Data: TDoubleArray;
 begin
   Data := TDoubleArray.Create(2, 4, 4, 4, 6);
-  AssertEquals(Sqrt(2.0), TStatsKit.StandardDeviation(Data), 'Standard deviation failed');
+  AssertEquals(Sqrt(2.0), TStatsKit.SampleStandardDeviation(Data), 'Standard deviation failed');
 end;
 
 procedure TTestCaseStats.Test07_Skewness;

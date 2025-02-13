@@ -281,7 +281,7 @@ begin
     raise Exception.Create('Cannot calculate kurtosis with less than 4 values');
     
   M := Mean(Data);
-  S := StandardDeviation(Data);
+  S := SampleStandardDeviation(Data);
   
   Total := 0;
   for I := 0 to High(Data) do
@@ -670,7 +670,7 @@ begin
   if Length(Data) < 2 then
     raise Exception.Create('Cannot calculate SEM with less than 2 values');
     
-  Result := StandardDeviation(Data) / Sqrt(Length(Data));
+  Result := SampleStandardDeviation(Data) / Sqrt(Length(Data));
 end;
 
 class function TStatsKit.CoefficientOfVariation(const Data: TDoubleArray): Double;
