@@ -1225,20 +1225,20 @@ begin
   Result := 'Descriptive Statistics' + LineEnding +
             '======================' + LineEnding +
             Format('N: %d', [N]) + LineEnding +
-            Format('Central Tendency:') + LineEnding +
+            'Central Tendency:' + LineEnding +
             Format('  Mean: %.6f', [Mean]) + LineEnding +
             Format('  Median: %.6f', [Median]) + LineEnding +
             Format('  Mode: %.6f', [Mode]) + LineEnding +
-            Format('Dispersion:') + LineEnding +
+            'Dispersion:' + LineEnding +
             Format('  Range: %.6f', [Range]) + LineEnding +
             Format('  Variance: %.6f', [Variance]) + LineEnding +
             Format('  StdDev: %.6f', [StdDev]) + LineEnding +
             Format('  SEM: %.6f', [SEM]) + LineEnding +
             Format('  CV: %.2f%%', [CV]) + LineEnding +
-            Format('Distribution Shape:') + LineEnding +
+            'Distribution Shape:' + LineEnding +
             Format('  Skewness: %.6f', [Skewness]) + LineEnding +
             Format('  Kurtosis: %.6f', [Kurtosis]) + LineEnding +
-            Format('Quartiles:') + LineEnding +
+            'Quartiles:' + LineEnding +
             Format('  Min (0%%): %.6f', [Min]) + LineEnding +
             Format('  Q1 (25%%): %.6f', [Q1]) + LineEnding +
             Format('  Q2 (50%%): %.6f', [Median]) + LineEnding +
@@ -1281,7 +1281,7 @@ begin
             PadCenter('SEM', COL_WIDTH) + '|' +
             PadCenter('CV(%)', COL_WIDTH) + LineEnding +
             StringOfChar('-', 6 * COL_WIDTH + 5) + LineEnding +
-            PadCenter(IntToStr(N), COL_WIDTH) + '|' +
+            PadCenter(Format('%d', [N]), COL_WIDTH) + '|' +
             FormatValue(Mean) + '|' +
             FormatValue(Median) + '|' +
             FormatValue(StdDev) + '|' +
