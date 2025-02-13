@@ -29,11 +29,32 @@ A comprehensive Pascal toolkit providing essential utilities for modern Pascal d
   - Response parsing
 
 - **Math Operations**
-  - Statistics (mean, median, variance, etc.)
-  - Financial calculations (NPV, IRR, depreciation)
-  - Matrix operations (addition, multiplication, determinant)
-  - Trigonometric functions and calculations
-  - All math operations use Double precision for accuracy
+  - Statistical Analysis
+    - Basic statistics (mean, median, mode, range)
+    - Variance and standard deviation (population and sample)
+    - Distribution measures (skewness, kurtosis)
+    - Correlation (Pearson, Spearman)
+    - Advanced means (geometric, harmonic, trimmed)
+    - Robust statistics (MAD, Huber M-estimator)
+    - Hypothesis testing (t-test, Mann-Whitney U)
+    - Effect size measures (Cohen's d, Hedges' g)
+    - Bootstrap confidence intervals
+  - Financial Mathematics
+    - Time value of money (PV, FV)
+    - Investment analysis (NPV, IRR)
+    - Depreciation calculations
+    - Return metrics (ROI, ROE)
+  - Matrix Operations
+    - Basic operations (add, subtract, multiply)
+    - Matrix transformations
+    - Determinant and trace
+    - Matrix decompositions (LU, QR)
+  - Trigonometry
+    - Basic functions (sin, cos, tan)
+    - Inverse functions
+    - Triangle calculations
+    - Vector operations
+  - All calculations use Double precision (64-bit) for accuracy
 
 ## Installation
 
@@ -95,21 +116,46 @@ Note: Some units may have interdependencies. The compiler will inform you if add
 ```pascal
 var
   Data: TDoubleArray;
-  Mean: Double;
+  Stats: TDescriptiveStats;
+  IsNormal: Boolean;
+  WPValue: Double;
 begin
-  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
-  Mean := TStatsKit.Mean(Data);  // Returns 3.0
+  // Create sample data
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  
+  // Get comprehensive descriptive statistics
+  Stats := TStatsKit.Describe(Data);
+  WriteLn(Format('N: %d', [Stats.N]));
+  WriteLn(Format('Mean: %.4f', [Stats.Mean]));
+  WriteLn(Format('StdDev: %.4f', [Stats.StdDev]));
+  WriteLn(Format('SEM: %.4f', [Stats.SEM]));
+  
+  // Test for normality
+  TStatsKit.ShapiroWilkTest(Data, WPValue);
+  IsNormal := WPValue >= 0.05;  // Using 5% significance level
+  
+  // Use robust statistics if not normal
+  if not IsNormal then
+    WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
 end;
 ```
 
 ### Financial Calculations
 ```pascal
 var
-  NPV: Double;
   CashFlows: TDoubleArray;
+  NPV, IRR: Double;
 begin
   CashFlows := TDoubleArray.Create(100, 200, 300);
-  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1);
+  
+  // Calculate NPV with 6 decimal precision
+  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);
+  
+  // Calculate IRR with default precision
+  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
+  
+  // Calculate depreciation
+  WriteLn(TFinanceKit.StraightLineDepreciation(10000, 1000, 5));
 end;
 ```
 
@@ -118,20 +164,35 @@ end;
 var
   A, B, C: TMatrix;
 begin
+  // Create and initialize matrices
   A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.CreateMatrix(2, 2);
-  // Set values...
+  B := TMatrixKit.Identity(2);
+  A[0,0] := 1; A[0,1] := 2;
+  A[1,0] := 3; A[1,1] := 4;
+  
+  // Perform operations
   C := TMatrixKit.Multiply(A, B);
+  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
+  WriteLn(Format('Trace: %.4f', [TMatrixKit.Trace(C)]));
 end;
 ```
 
 ### Trigonometric Calculations
 ```pascal
 var
-  Angle: Double;
+  Angle, Height: Double;
 begin
-  Angle := TTrigKit.DegToRad(45);  // Convert 45 degrees to radians
-  WriteLn(TTrigKit.Sin(Angle));    // Calculate sine
+  // Convert 45 degrees to radians
+  Angle := TTrigKit.DegToRad(45);
+  
+  // Calculate height using sine
+  Height := 10 * TTrigKit.Sin(Angle);
+  
+  // Calculate triangle area
+  WriteLn(Format('Area: %.4f', [TTrigKit.TriangleAreaSAS(4, Angle, 5)]));
+  
+  // Calculate vector magnitude
+  WriteLn(Format('Magnitude: %.4f', [TTrigKit.VectorMagnitude(3, 4)]));
 end;
 ```
 
