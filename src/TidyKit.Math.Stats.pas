@@ -27,6 +27,9 @@ type
     Kurtosis: Double;
     SEM: Double;  // Standard Error of Mean
     CV: Double;   // Coefficient of Variation
+    
+    function ToString: string;
+    function ToStringWide: string;  // Horizontal format
   end;
 
   { Statistics calculations class }
@@ -1213,6 +1216,103 @@ begin
     Result := SortedData[Index]
   else
     Result := SortedData[Index] + Fraction * (SortedData[Index + 1] - SortedData[Index]);
+end;
+
+{ TDescriptiveStats }
+
+function TDescriptiveStats.ToString: string;
+begin
+  Result := 'Descriptive Statistics' + LineEnding +
+            '======================' + LineEnding +
+            Format('N: %d', [N]) + LineEnding +
+            Format('Central Tendency:') + LineEnding +
+            Format('  Mean: %.6f', [Mean]) + LineEnding +
+            Format('  Median: %.6f', [Median]) + LineEnding +
+            Format('  Mode: %.6f', [Mode]) + LineEnding +
+            Format('Dispersion:') + LineEnding +
+            Format('  Range: %.6f', [Range]) + LineEnding +
+            Format('  Variance: %.6f', [Variance]) + LineEnding +
+            Format('  StdDev: %.6f', [StdDev]) + LineEnding +
+            Format('  SEM: %.6f', [SEM]) + LineEnding +
+            Format('  CV: %.2f%%', [CV]) + LineEnding +
+            Format('Distribution Shape:') + LineEnding +
+            Format('  Skewness: %.6f', [Skewness]) + LineEnding +
+            Format('  Kurtosis: %.6f', [Kurtosis]) + LineEnding +
+            Format('Quartiles:') + LineEnding +
+            Format('  Min (0%%): %.6f', [Min]) + LineEnding +
+            Format('  Q1 (25%%): %.6f', [Q1]) + LineEnding +
+            Format('  Q2 (50%%): %.6f', [Median]) + LineEnding +
+            Format('  Q3 (75%%): %.6f', [Q3]) + LineEnding +
+            Format('  Max (100%%): %.6f', [Max]) + LineEnding +
+            Format('  IQR: %.6f', [IQR]);
+end;
+
+function TDescriptiveStats.ToStringWide: string;
+const
+  // Column widths for alignment
+  COL_WIDTH = 12;
+  
+  function PadCenter(const S: string; Width: Integer): string;
+  var
+    PadLeft, PadRight: Integer;
+  begin
+    if Length(S) >= Width then
+      Result := S
+    else
+    begin
+      PadLeft := (Width - Length(S)) div 2;
+      PadRight := Width - Length(S) - PadLeft;
+      Result := StringOfChar(' ', PadLeft) + S + StringOfChar(' ', PadRight);
+    end;
+  end;
+  
+  function FormatValue(const Value: Double): string;
+  begin
+    Result := PadCenter(Format('%.4f', [Value]), COL_WIDTH);
+  end;
+  
+begin
+  Result := 'Descriptive Statistics' + LineEnding +
+            '===================' + LineEnding +
+            'N' + StringOfChar(' ', COL_WIDTH - 1) + '|' +
+            PadCenter('Mean', COL_WIDTH) + '|' +
+            PadCenter('Median', COL_WIDTH) + '|' +
+            PadCenter('StdDev', COL_WIDTH) + '|' +
+            PadCenter('SEM', COL_WIDTH) + '|' +
+            PadCenter('CV(%)', COL_WIDTH) + LineEnding +
+            StringOfChar('-', 6 * COL_WIDTH + 5) + LineEnding +
+            PadCenter(IntToStr(N), COL_WIDTH) + '|' +
+            FormatValue(Mean) + '|' +
+            FormatValue(Median) + '|' +
+            FormatValue(StdDev) + '|' +
+            FormatValue(SEM) + '|' +
+            FormatValue(CV) + LineEnding + LineEnding +
+            
+            'Shape' + StringOfChar(' ', COL_WIDTH - 5) + '|' +
+            PadCenter('Skewness', COL_WIDTH) + '|' +
+            PadCenter('Kurtosis', COL_WIDTH) + '|' +
+            PadCenter('Range', COL_WIDTH) + '|' +
+            PadCenter('IQR', COL_WIDTH) + LineEnding +
+            StringOfChar('-', 5 * COL_WIDTH + 4) + LineEnding +
+            StringOfChar(' ', COL_WIDTH) + '|' +
+            FormatValue(Skewness) + '|' +
+            FormatValue(Kurtosis) + '|' +
+            FormatValue(Range) + '|' +
+            FormatValue(IQR) + LineEnding + LineEnding +
+            
+            'Quantiles' + StringOfChar(' ', COL_WIDTH - 9) + '|' +
+            PadCenter('Min', COL_WIDTH) + '|' +
+            PadCenter('Q1', COL_WIDTH) + '|' +
+            PadCenter('Q2', COL_WIDTH) + '|' +
+            PadCenter('Q3', COL_WIDTH) + '|' +
+            PadCenter('Max', COL_WIDTH) + LineEnding +
+            StringOfChar('-', 6 * COL_WIDTH + 5) + LineEnding +
+            StringOfChar(' ', COL_WIDTH) + '|' +
+            FormatValue(Min) + '|' +
+            FormatValue(Q1) + '|' +
+            FormatValue(Median) + '|' +
+            FormatValue(Q3) + '|' +
+            FormatValue(Max);
 end;
 
 end. 

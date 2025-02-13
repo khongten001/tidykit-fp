@@ -125,10 +125,14 @@ begin
   
   // Get comprehensive descriptive statistics
   Stats := TStatsKit.Describe(Data);
-  WriteLn(Format('N: %d', [Stats.N]));
-  WriteLn(Format('Mean: %.4f', [Stats.Mean]));
-  WriteLn(Format('StdDev: %.4f', [Stats.StdDev]));
-  WriteLn(Format('SEM: %.4f', [Stats.SEM]));
+  
+  // Pretty print all statistics (vertical format)
+  WriteLn('Vertical Format:');
+  WriteLn(Stats.ToString);
+  
+  WriteLn;
+  WriteLn('Horizontal Format:');
+  WriteLn(Stats.ToStringWide);
   
   // Test for normality
   TStatsKit.ShapiroWilkTest(Data, WPValue);
@@ -138,6 +142,49 @@ begin
   if not IsNormal then
     WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
 end;
+
+Example output (vertical format):
+```
+Descriptive Statistics
+======================
+N: 10
+Central Tendency:
+  Mean: 5.500000
+  Median: 5.500000
+  Mode: 1.000000
+Dispersion:
+  Range: 9.000000
+  Variance: 8.250000
+  StdDev: 2.872281
+  SEM: 0.908295
+  CV: 52.22%
+Distribution Shape:
+  Skewness: 0.000000
+  Kurtosis: -1.200000
+Quartiles:
+  Min (0%): 1.000000
+  Q1 (25%): 3.250000
+  Q2 (50%): 5.500000
+  Q3 (75%): 7.750000
+  Max (100%): 10.000000
+  IQR: 4.500000
+```
+
+Example output (horizontal format):
+```
+Descriptive Statistics
+===================
+N           |    Mean     |   Median    |   StdDev    |    SEM      |    CV(%)    
+-----------------------------------------------------------------------------
+    10      |   5.5000    |   5.5000    |   2.8723    |   0.9083    |   52.2200   
+
+Shape       |  Skewness   |  Kurtosis   |   Range     |    IQR      
+------------------------------------------------------------------------
+            |   0.0000    |  -1.2000    |   9.0000    |   4.5000    
+
+Quantiles   |    Min      |     Q1      |     Q2      |     Q3      |    Max      
+-----------------------------------------------------------------------------
+            |   1.0000    |   3.2500    |   5.5000    |   7.7500    |  10.0000    
 ```
 
 ### Financial Calculations

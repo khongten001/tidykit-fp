@@ -359,9 +359,18 @@ var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
 begin
+  WriteLn('Test26_Describe_N: Starting');
   Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
   Stats := TStatsKit.Describe(Data);
+
+  WriteLn(Stats.ToString);
+
+  WriteLn('--------------------------------');
+
+  WriteLn(Stats.ToStringWide);
+
   AssertEquals(10, Stats.N, 'N calculation failed');
+  WriteLn('Test26_Describe_N: Finished');
 end;
 
 procedure TTestCaseStats.Test26_Describe_Mean;
