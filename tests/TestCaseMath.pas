@@ -52,6 +52,26 @@ type
     procedure Test23_ZScore_Positive;
     procedure Test24_ZScore_Negative;
     procedure Test25_ZScore_Zero;
+    procedure Test26_Describe;
+    procedure Test27_GeometricMean;
+    procedure Test28_HarmonicMean;
+    procedure Test29_TrimmedMean;
+    procedure Test30_WinsorizedMean;
+    procedure Test31_StandardErrorOfMean;
+    procedure Test32_CoefficientOfVariation;
+    procedure Test33_MedianAbsoluteDeviation;
+    procedure Test34_RobustStandardDeviation;
+    procedure Test35_HuberM;
+    procedure Test36_BootstrapConfidenceInterval;
+    procedure Test37_TTest;
+    procedure Test38_MannWhitneyU;
+    procedure Test39_KolmogorovSmirnov;
+    procedure Test40_ShapiroWilk;
+    procedure Test41_CohensD;
+    procedure Test42_HedgesG;
+    procedure Test43_SignTest;
+    procedure Test44_WilcoxonSignedRank;
+    procedure Test45_KendallTau;
   end;
 
   { Test cases for financial operations }
@@ -326,6 +346,237 @@ end;
 procedure TTestCaseStats.Test25_ZScore_Zero;
 begin
   AssertEquals(0.0, TStatsKit.ZScore(10, 10, 2), 'Zero z-score calculation failed');
+end;
+
+procedure TTestCaseStats.Test26_Describe;
+var
+  Data: TDoubleArray;
+  Stats: TDescriptiveStats;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  Stats := TStatsKit.Describe(Data);
+  
+  AssertEquals(10, Stats.N, 'N calculation failed');
+  AssertEquals(5.5, Stats.Mean, 'Mean calculation failed');
+  AssertEquals(5.5, Stats.Median, 'Median calculation failed');
+  AssertEquals(1.0, Stats.Min, 'Min calculation failed');
+  AssertEquals(10.0, Stats.Max, 'Max calculation failed');
+  AssertEquals(9.0, Stats.Range, 'Range calculation failed');
+  AssertTrue('StdDev calculation failed', 
+             Abs(Stats.StdDev - 2.8722813232690143) < 1E-10);
+end;
+
+procedure TTestCaseStats.Test27_GeometricMean;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 4, 8);
+  AssertEquals(2.8284271247461903, TStatsKit.GeometricMean(Data), 'Geometric mean failed');
+end;
+
+procedure TTestCaseStats.Test28_HarmonicMean;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 4, 8);
+  AssertEquals(2.0, TStatsKit.HarmonicMean(Data), 'Harmonic mean failed');
+end;
+
+procedure TTestCaseStats.Test29_TrimmedMean;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 100);  // Outlier at 100
+  AssertEquals(2.5, TStatsKit.TrimmedMean(Data, 20), 'Trimmed mean failed');
+end;
+
+procedure TTestCaseStats.Test30_WinsorizedMean;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 100);  // Outlier at 100
+  AssertEquals(3.0, TStatsKit.WinsorizedMean(Data, 20), 'Winsorized mean failed');
+end;
+
+procedure TTestCaseStats.Test31_StandardErrorOfMean;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(2, 4, 4, 4, 6);
+  AssertEquals(0.6324555320336759, TStatsKit.StandardErrorOfMean(Data), 'SEM failed');
+end;
+
+procedure TTestCaseStats.Test32_CoefficientOfVariation;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(2, 4, 4, 4, 6);
+  AssertEquals(31.622776601683793, TStatsKit.CoefficientOfVariation(Data), 'CV failed');
+end;
+
+procedure TTestCaseStats.Test33_MedianAbsoluteDeviation;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
+  AssertEquals(1.0, TStatsKit.MedianAbsoluteDeviation(Data), 'MAD failed');
+end;
+
+procedure TTestCaseStats.Test34_RobustStandardDeviation;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
+  AssertEquals(1.4826, TStatsKit.RobustStandardDeviation(Data), 'Robust StdDev failed');
+end;
+
+procedure TTestCaseStats.Test35_HuberM;
+var
+  Data: TDoubleArray;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 100);  // Outlier at 100
+  AssertTrue('Huber M-estimator should be closer to median than mean',
+             Abs(TStatsKit.HuberM(Data) - 3) < Abs(TStatsKit.Mean(Data) - 3));
+end;
+
+procedure TTestCaseStats.Test36_BootstrapConfidenceInterval;
+var
+  Data: TDoubleArray;
+  CI: TDoublePair;
+begin
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
+  CI := TStatsKit.BootstrapConfidenceInterval(Data);
+  
+  AssertTrue('Lower bound should be less than mean', CI.Lower < TStatsKit.Mean(Data));
+  AssertTrue('Upper bound should be greater than mean', CI.Upper > TStatsKit.Mean(Data));
+  AssertTrue('CI width should be positive', CI.Upper - CI.Lower > 0);
+end;
+
+procedure TTestCaseStats.Test37_TTest;
+var
+  X, Y: TDoubleArray;
+  TPValue: Double;
+  TStat: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  TStat := TStatsKit.TTest(X, Y, TPValue);
+  
+  AssertTrue('T-statistic should be negative', TStat < 0);
+  AssertTrue('P-value should be between 0 and 1', (TPValue >= 0) and (TPValue <= 1));
+end;
+
+procedure TTestCaseStats.Test38_MannWhitneyU;
+var
+  X, Y: TDoubleArray;
+  UPValue: Double;
+  UStat: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  UStat := TStatsKit.MannWhitneyU(X, Y, UPValue);
+  
+  AssertTrue('U statistic should be non-negative', UStat >= 0);
+  AssertTrue('P-value should be between 0 and 1', (UPValue >= 0) and (UPValue <= 1));
+end;
+
+procedure TTestCaseStats.Test39_KolmogorovSmirnov;
+var
+  Data: TDoubleArray;
+  KSPValue: Double;
+  KSStat: Double;
+begin
+  // Normal-like data
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  KSStat := TStatsKit.KolmogorovSmirnovTest(Data, KSPValue);
+  
+  AssertTrue('KS statistic should be between 0 and 1', (KSStat >= 0) and (KSStat <= 1));
+  AssertTrue('KS test should indicate normality for normal-like data', KSPValue < 0.886 / Sqrt(Length(Data)));
+end;
+
+procedure TTestCaseStats.Test40_ShapiroWilk;
+var
+  Data: TDoubleArray;
+  WPValue: Double;
+  WStat: Double;
+begin
+  // Normal-like data
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  WStat := TStatsKit.ShapiroWilkTest(Data, WPValue);
+  
+  AssertTrue('W statistic should be between 0 and 1', (WStat >= 0) and (WStat <= 1));
+  AssertTrue('P-value should be between 0 and 1', (WPValue >= 0) and (WPValue <= 1));
+end;
+
+procedure TTestCaseStats.Test41_CohensD;
+var
+  X, Y: TDoubleArray;
+  D: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  D := TStatsKit.CohensD(X, Y);
+  
+  AssertTrue('Cohen''s d should be negative for Y > X', D < 0);
+  AssertTrue('Cohen''s d magnitude should be reasonable', Abs(D) < 2);
+end;
+
+procedure TTestCaseStats.Test42_HedgesG;
+var
+  X, Y: TDoubleArray;
+  G: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  G := TStatsKit.HedgesG(X, Y);
+  
+  AssertTrue('Hedges'' g should be negative for Y > X', G < 0);
+  AssertTrue('Hedges'' g magnitude should be reasonable', Abs(G) < 2);
+  AssertTrue('Hedges'' g should be slightly smaller than Cohen''s d', 
+             Abs(G) < Abs(TStatsKit.CohensD(X, Y)));
+end;
+
+procedure TTestCaseStats.Test43_SignTest;
+var
+  X, Y: TDoubleArray;
+  Prop: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  Prop := TStatsKit.SignTest(X, Y);
+  
+  AssertEquals(0.0, Prop, 'Sign test should be 0 for Y consistently greater than X');
+end;
+
+procedure TTestCaseStats.Test44_WilcoxonSignedRank;
+var
+  X, Y: TDoubleArray;
+  W: Double;
+begin
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  W := TStatsKit.WilcoxonSignedRank(X, Y);
+  
+  AssertTrue('Wilcoxon W should be non-negative', W >= 0);
+end;
+
+procedure TTestCaseStats.Test45_KendallTau;
+var
+  X, Y: TDoubleArray;
+  Tau: Double;
+begin
+  // Perfect positive correlation
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 3, 4, 5, 6);
+  Tau := TStatsKit.KendallTau(X, Y);
+  
+  AssertEquals(1.0, Tau, 'Kendall''s tau should be 1 for perfect positive correlation');
+  
+  // Perfect negative correlation
+  Y := TDoubleArray.Create(6, 5, 4, 3, 2);
+  Tau := TStatsKit.KendallTau(X, Y);
+  
+  AssertEquals(-1.0, Tau, 'Kendall''s tau should be -1 for perfect negative correlation');
 end;
 
 { TTestCaseFinance }
