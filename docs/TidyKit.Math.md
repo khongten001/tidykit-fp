@@ -8,8 +8,15 @@ The TidyKit Math library provides comprehensive mathematical operations using Do
 uses TidyKit.Math;
 
 type
+  TIntegerArray = array of Integer;
   TDoubleArray = array of Double;
+  TSingleArray = array of Single;
+  TExtendedArray = array of Extended;
   TMatrix = array of array of Double;
+  TDoublePair = record
+    Lower: Double;
+    Upper: Double;
+  end;
 ```
 
 ## Precision in Calculations
@@ -75,10 +82,10 @@ Mode := TStatsKit.Mode(Data);                    // Most frequent value
 Range := TStatsKit.Range(Data);                  // Range (max - min)
 
 // Variance and standard deviation
-Var := TStatsKit.Variance(Data);                 // Population variance
-StdDev := TStatsKit.StandardDeviation(Data);     // Population std dev
-SVar := TStatsKit.SampleVariance(Data);          // Sample variance
-SStdDev := TStatsKit.SampleStandardDeviation(Data); // Sample std dev
+Variance := TStatsKit.Variance(Data);                 // Sample variance (n-1)
+StdDev := TStatsKit.StandardDeviation(Data);     // Population std dev (n)
+SVar := TStatsKit.SampleVariance(Data);          // Sample variance (n-1)
+SStdDev := TStatsKit.SampleStandardDeviation(Data); // Sample std dev (n-1)
 
 // Distribution measures
 Skew := TStatsKit.Skewness(Data);               // Distribution skewness
@@ -89,10 +96,47 @@ Q3 := TStatsKit.Quartile3(Data);                // Third quartile
 IQR := TStatsKit.InterquartileRange(Data);      // Interquartile range
 
 // Correlation and covariance
-Corr := TStatsKit.Correlation(X, Y);            // Pearson correlation
+PCorr := TStatsKit.PearsonCorrelation(X, Y);    // Pearson correlation
+SCorr := TStatsKit.SpearmanCorrelation(X, Y);   // Spearman correlation
 Cov := TStatsKit.Covariance(X, Y);              // Sample covariance
+
+// Z-scores and standardization
 TStatsKit.Standardize(Data);                    // Convert to z-scores
 Z := TStatsKit.ZScore(Value, Mean, StdDev);     // Calculate z-score
+
+// Additional means
+GMean := TStatsKit.GeometricMean(Data);         // Geometric mean
+HMean := TStatsKit.HarmonicMean(Data);          // Harmonic mean
+TMean := TStatsKit.TrimmedMean(Data, 20);       // 20% trimmed mean
+WMean := TStatsKit.WinsorizedMean(Data, 20);    // 20% winsorized mean
+
+// Descriptive statistics
+Stats := TStatsKit.Describe(Data);              // Get all descriptive stats
+SEM := TStatsKit.StandardErrorOfMean(Data);     // Standard error of mean
+CV := TStatsKit.CoefficientOfVariation(Data);   // Coefficient of variation
+
+// Robust statistics
+MAD := TStatsKit.MedianAbsoluteDeviation(Data); // Median absolute deviation
+RSD := TStatsKit.RobustStandardDeviation(Data); // Robust standard deviation
+HM := TStatsKit.HuberM(Data, 1.5);             // Huber M-estimator
+
+// Hypothesis testing
+TTest := TStatsKit.TTest(X, Y, TPValue);        // Independent t-test
+UTest := TStatsKit.MannWhitneyU(X, Y, UPValue); // Mann-Whitney U test
+KS := TStatsKit.KolmogorovSmirnovTest(Data, KSPValue); // K-S test
+SW := TStatsKit.ShapiroWilkTest(Data, WPValue); // Shapiro-Wilk test
+
+// Effect size measures
+D := TStatsKit.CohensD(X, Y);                   // Cohen's d
+G := TStatsKit.HedgesG(X, Y);                   // Hedges' g
+
+// Non-parametric tests
+Sign := TStatsKit.SignTest(X, Y);               // Sign test
+W := TStatsKit.WilcoxonSignedRank(X, Y);        // Wilcoxon signed-rank
+Tau := TStatsKit.KendallTau(X, Y);              // Kendall's tau
+
+// Bootstrap methods
+CI := TStatsKit.BootstrapConfidenceInterval(Data); // Bootstrap CI
 ```
 
 ## Financial Calculations (TFinanceKit)
@@ -381,4 +425,52 @@ begin
   Height := 10 * TTrigKit.Sin(Angle);
   WriteLn('Height: ', Height:0:2);
 end;
-``` 
+```
+
+## Distribution Functions
+
+The library provides several statistical distribution functions:
+
+```pascal
+uses TidyKit.Math;
+
+// Distribution functions
+P := StudentT(DF, X);        // Student's t-distribution CDF
+P := BetaInc(A, B, X);       // Incomplete beta function
+B := Beta(Z, W);             // Beta function
+G := GammaLn(X);             // Natural log of gamma function
+P := NormalCDF(X);           // Standard normal CDF
+E := Erf(X);                 // Error function
+```
+
+## Array Conversion Functions
+
+```pascal
+uses TidyKit.Math;
+
+// Convert arrays to TDoubleArray
+DArr := ToDoubleArray(IntArray);    // From TIntegerArray
+DArr := ToDoubleArray(SngArray);    // From TSingleArray
+DArr := ToDoubleArray(ExtArray);    // From TExtendedArray
+```
+
+## Precision Notes
+
+### Statistical Calculations
+- Basic statistics (mean, median, etc.) maintain full Double precision
+- Standard deviation and variance use full precision for intermediate calculations
+- Correlation and covariance maintain precision to avoid cumulative errors
+- Z-scores and standardization preserve full Double precision
+
+### Distribution Functions
+- All distribution functions maintain full Double precision
+- Error function (Erf) uses polynomial approximation with high precision
+- Beta and Gamma functions use accurate series expansions
+- Normal CDF uses error function for high precision
+
+### Best Practices
+1. Use population statistics (StandardDeviation, Variance) when working with complete populations
+2. Use sample statistics (SampleStandardDeviation, SampleVariance) when working with samples
+3. For robust statistics, consider using MedianAbsoluteDeviation or RobustStandardDeviation
+4. Use bootstrap methods for non-parametric confidence intervals
+5. Check distribution normality with ShapiroWilkTest before using parametric tests 

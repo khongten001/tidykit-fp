@@ -674,20 +674,59 @@ end;
 uses TidyKit.Math.Stats;
 
 var
-  Data: TDoubleArray;
-  Mean, Median, StdDev: Double;
+  Data, X, Y: TDoubleArray;
+  Stats: TDescriptiveStats;
+  IsNormal: Boolean;
+  WPValue: Double;
+  CI: TDoublePair;
 begin
-  Data := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
+  X := TDoubleArray.Create(1, 2, 3, 4, 5);
+  Y := TDoubleArray.Create(2, 4, 6, 8, 10);
   
-  Mean := TStatsKit.Mean(Data);
-  Median := TStatsKit.Median(Data);
-  StdDev := TStatsKit.StandardDeviation(Data);
+  // Basic statistics
+  WriteLn(Format('Mean: %.4f', [TStatsKit.Mean(Data)]));
+  WriteLn(Format('Median: %.4f', [TStatsKit.Median(Data)]));
+  WriteLn(Format('StdDev: %.4f', [TStatsKit.StandardDeviation(Data)]));  // Population
+  WriteLn(Format('Sample StdDev: %.4f', [TStatsKit.SampleStandardDeviation(Data)]));
   
-  // Advanced statistics
-  WriteLn(TStatsKit.Variance(Data));
-  WriteLn(TStatsKit.Skewness(Data));
-  WriteLn(TStatsKit.Kurtosis(Data));
-  WriteLn(TStatsKit.Percentile(Data, 75));  // 75th percentile
+  // Distribution measures
+  WriteLn(Format('Skewness: %.4f', [TStatsKit.Skewness(Data)]));
+  WriteLn(Format('Kurtosis: %.4f', [TStatsKit.Kurtosis(Data)]));
+  WriteLn(Format('75th Percentile: %.4f', [TStatsKit.Percentile(Data, 75)]));
+  
+  // Additional means
+  WriteLn(Format('Geometric Mean: %.4f', [TStatsKit.GeometricMean(Data)]));
+  WriteLn(Format('Harmonic Mean: %.4f', [TStatsKit.HarmonicMean(Data)]));
+  WriteLn(Format('20%% Trimmed Mean: %.4f', [TStatsKit.TrimmedMean(Data, 20)]));
+  
+  // Correlation and covariance
+  WriteLn(Format('Pearson Correlation: %.4f', [TStatsKit.PearsonCorrelation(X, Y)]));
+  WriteLn(Format('Spearman Correlation: %.4f', [TStatsKit.SpearmanCorrelation(X, Y)]));
+  
+  // Get all descriptive statistics at once
+  Stats := TStatsKit.Describe(Data);
+  WriteLn(Format('N: %d', [Stats.N]));
+  WriteLn(Format('Mean: %.4f', [Stats.Mean]));
+  WriteLn(Format('StdDev: %.4f', [Stats.StdDev]));
+  WriteLn(Format('SEM: %.4f', [Stats.SEM]));
+  WriteLn(Format('CV: %.4f%%', [Stats.CV]));
+  
+  // Test for normality
+  TStatsKit.ShapiroWilkTest(Data, WPValue);
+  IsNormal := WPValue >= 0.05;  // Using 5% significance level
+  
+  // Calculate robust statistics if not normal
+  if not IsNormal then
+  begin
+    WriteLn(Format('MAD: %.4f', [TStatsKit.MedianAbsoluteDeviation(Data)]));
+    WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
+    WriteLn(Format('Huber M: %.4f', [TStatsKit.HuberM(Data)]));
+  end;
+  
+  // Get confidence interval using bootstrap
+  CI := TStatsKit.BootstrapConfidenceInterval(Data);
+  WriteLn(Format('95%% CI: [%.4f, %.4f]', [CI.Lower, CI.Upper]));
 end;
 ```
 
