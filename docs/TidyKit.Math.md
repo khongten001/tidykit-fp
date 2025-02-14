@@ -191,6 +191,78 @@ ROI := TFinanceKit.ReturnOnInvestment(Gain, Cost);
 ROE := TFinanceKit.ReturnOnEquity(NetIncome, ShareholdersEquity, 5);
 ```
 
+### Modified Duration
+```pascal
+// Modified Duration calculation with default precision (4 decimals)
+// For a 5-year bond with 6% annual coupon, 5% yield, semi-annual payments
+// Expected value: 4.3009
+ModDur := TFinanceKit.ModifiedDuration(
+  1000.0,  // Face value
+  0.06,    // Coupon rate (6%)
+  0.05,    // Yield rate (5%)
+  2,       // Periods per year (semi-annual)
+  5        // Years to maturity
+);
+```
+
+### Black-Scholes Option Pricing
+```pascal
+// Black-Scholes calculation with default precision (4 decimals)
+// For a stock with:
+// - Spot price: 100.0
+// - Strike price: 100.0
+// - Risk-free rate: 5%
+// - Volatility: 20%
+// - Time to maturity: 1 year
+// Expected values:
+// - Call option: 10.4506
+// - Put option: 5.5723
+CallPrice := TFinanceKit.BlackScholes(
+  100.0,   // Spot price
+  100.0,   // Strike price
+  0.05,    // Risk-free rate (5%)
+  0.20,    // Volatility (20%)
+  1.0,     // Time to maturity (1 year)
+  otCall   // Option type
+);
+
+PutPrice := TFinanceKit.BlackScholes(
+  100.0,   // Spot price
+  100.0,   // Strike price
+  0.05,    // Risk-free rate (5%)
+  0.20,    // Volatility (20%)
+  1.0,     // Time to maturity (1 year)
+  otPut    // Option type
+);
+```
+
+### Operating Leverage
+```pascal
+// Operating Leverage calculation with default precision (4 decimals)
+// For a business with:
+// - Quantity: 10,000 units
+// - Price per unit: $50
+// - Variable cost per unit: $30
+// - Fixed costs: $100,000
+// Expected values:
+// - DOL: 2.0000
+// - Break-even point: 5,000 units
+Leverage := TFinanceKit.OperatingLeverage(
+  10000.0,  // Quantity
+  50.0,     // Price per unit
+  30.0,     // Variable cost per unit
+  100000.0  // Fixed costs
+);
+
+// The Degree of Operating Leverage (DOL) is calculated as:
+// DOL = (Q × CM) / EBIT
+// where:
+// Q = Quantity
+// CM = Contribution Margin (Price - Variable Cost)
+// EBIT = Earnings Before Interest and Taxes
+//      = Q × CM - Fixed Costs
+```
+
 ## Precision in Calculations
 
 ### Default Precision

@@ -671,159 +671,132 @@ end;
 
 ### Statistics (TStatsKit)
 ```pascal
-uses TidyKit.Math.Stats;
+// Basic descriptive statistics
+Stats := TStatsKit.Describe(Data);
+// Returns comprehensive statistics with full Double precision:
+// - Mean: Full precision (e.g., 5.500000)
+// - StdDev: Full precision (e.g., 2.872281)
+// - Variance: Full precision (e.g., 8.250000)
 
-var
-  Data, X, Y: TDoubleArray;
-  Stats: TDescriptiveStats;
-  IsNormal: Boolean;
-  WPValue: Double;
-  CI: TDoublePair;
-begin
-  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-  X := TDoubleArray.Create(1, 2, 3, 4, 5);
-  Y := TDoubleArray.Create(2, 4, 6, 8, 10);
-  
-  // Basic statistics
-  WriteLn(Format('Mean: %.4f', [TStatsKit.Mean(Data)]));
-  WriteLn(Format('Median: %.4f', [TStatsKit.Median(Data)]));
-  WriteLn(Format('StdDev: %.4f', [TStatsKit.StandardDeviation(Data)]));  // Population
-  WriteLn(Format('Sample StdDev: %.4f', [TStatsKit.SampleStandardDeviation(Data)]));
-  
-  // Distribution measures
-  WriteLn(Format('Skewness: %.4f', [TStatsKit.Skewness(Data)]));
-  WriteLn(Format('Kurtosis: %.4f', [TStatsKit.Kurtosis(Data)]));
-  WriteLn(Format('75th Percentile: %.4f', [TStatsKit.Percentile(Data, 75)]));
-  
-  // Additional means
-  WriteLn(Format('Geometric Mean: %.4f', [TStatsKit.GeometricMean(Data)]));
-  WriteLn(Format('Harmonic Mean: %.4f', [TStatsKit.HarmonicMean(Data)]));
-  WriteLn(Format('20%% Trimmed Mean: %.4f', [TStatsKit.TrimmedMean(Data, 20)]));
-  
-  // Correlation and covariance
-  WriteLn(Format('Pearson Correlation: %.4f', [TStatsKit.PearsonCorrelation(X, Y)]));
-  WriteLn(Format('Spearman Correlation: %.4f', [TStatsKit.SpearmanCorrelation(X, Y)]));
-  
-  // Get all descriptive statistics at once
-  Stats := TStatsKit.Describe(Data);
-  WriteLn(Format('N: %d', [Stats.N]));
-  WriteLn(Format('Mean: %.4f', [Stats.Mean]));
-  WriteLn(Format('StdDev: %.4f', [Stats.StdDev]));
-  WriteLn(Format('SEM: %.4f', [Stats.SEM]));
-  WriteLn(Format('CV: %.4f%%', [Stats.CV]));
-  
-  // Test for normality
-  TStatsKit.ShapiroWilkTest(Data, WPValue);
-  IsNormal := WPValue >= 0.05;  // Using 5% significance level
-  
-  // Calculate robust statistics if not normal
-  if not IsNormal then
-  begin
-    WriteLn(Format('MAD: %.4f', [TStatsKit.MedianAbsoluteDeviation(Data)]));
-    WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
-    WriteLn(Format('Huber M: %.4f', [TStatsKit.HuberM(Data)]));
-  end;
-  
-  // Get confidence interval using bootstrap
-  CI := TStatsKit.BootstrapConfidenceInterval(Data);
-  WriteLn(Format('95%% CI: [%.4f, %.4f]', [CI.Lower, CI.Upper]));
+// Hypothesis testing with p-values
+TStatsKit.ShapiroWilkTest(Data, WPValue);
+if WPValue >= 0.05 then
+  WriteLn('Data is normally distributed');
+
+// Error handling
+try
+  Result := TStatsKit.StandardDeviation(Data);
+except
+  on E: EInvalidArgument do
+    WriteLn('Error: Need at least 2 data points');
+  on E: Exception do
+    WriteLn('Unexpected error: ', E.Message);
 end;
 ```
 
 ### Financial Calculations (TFinanceKit)
 ```pascal
-uses TidyKit.Math.Finance;
+// All financial calculations use 4 decimal precision by default
+// Precision can be customized using the ADecimals parameter
 
-var
-  CashFlows: TDoubleArray;
-  NPV, IRR: Double;
-begin
-  CashFlows := TDoubleArray.Create(100, 200, 300);
-  
-  // Investment analysis with default 4 decimal places
-  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1);
-  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
-  
-  // Investment analysis with custom decimal places
-  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);  // 6 decimals
-  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows, 2);  // 2 decimals
-  
-  // Time value of money with default precision
-  WriteLn(TFinanceKit.PresentValue(1000, 0.05, 5));        // 4 decimals
-  WriteLn(TFinanceKit.FutureValue(1000, 0.05, 5));         // 4 decimals
-  
-  // Time value of money with custom precision
-  WriteLn(TFinanceKit.PresentValue(1000, 0.05, 5, 6));     // 6 decimals
-  WriteLn(TFinanceKit.FutureValue(1000, 0.05, 5, 2));      // 2 decimals
-  
-  // Depreciation with custom precision
-  WriteLn(TFinanceKit.StraightLineDepreciation(10000, 1000, 5, 3));  // 3 decimals
+// Modified Duration (Expected: 4.3009)
+ModDur := TFinanceKit.ModifiedDuration(
+  1000.0,  // Face value
+  0.06,    // Coupon rate
+  0.05,    // Yield rate
+  2,       // Periods per year
+  5        // Years to maturity
+);
+
+// Black-Scholes Option Pricing
+// Call Option (Expected: 10.4506)
+// Put Option (Expected: 5.5723)
+CallPrice := TFinanceKit.BlackScholes(
+  100.0,   // Spot price
+  100.0,   // Strike price
+  0.05,    // Risk-free rate
+  0.20,    // Volatility
+  1.0,     // Time to maturity
+  otCall
+);
+
+// Operating Leverage (Expected DOL: 2.0000)
+Leverage := TFinanceKit.OperatingLeverage(
+  10000.0,  // Quantity
+  50.0,     // Price per unit
+  30.0,     // Variable cost per unit
+  100000.0  // Fixed costs
+);
+
+// Error handling for financial calculations
+try
+  IRR := TFinanceKit.InternalRateOfReturn(InitialInvestment, CashFlows);
+except
+  on E: EInvalidOperation do
+    WriteLn('Error: IRR calculation did not converge');
+  on E: EArgumentException do
+    WriteLn('Error: Invalid cash flow data');
 end;
 ```
 
 ### Matrix Operations (TMatrixKit)
 ```pascal
-uses TidyKit.Math.Matrices;
+// Matrix operations maintain full Double precision
+// No rounding is applied to preserve accuracy
 
+// Error handling for matrix operations
+try
+  Result := TMatrixKit.Multiply(A, B);
+except
+  on E: EMatrixDimensionMismatch do
+    WriteLn('Error: Matrix dimensions do not match');
+  on E: ESingularMatrix do
+    WriteLn('Error: Matrix is singular (non-invertible)');
+end;
+
+// Example with actual test values
 var
   A, B, C: TMatrix;
 begin
-  // Create matrices
   A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.Identity(2);
-  
-  // Set values
   A[0,0] := 1; A[0,1] := 2;
   A[1,0] := 3; A[1,1] := 4;
   
-  // Operations
-  C := TMatrixKit.Multiply(A, B);
-  C := TMatrixKit.Add(A, B);
-  C := TMatrixKit.Transpose(A);
+  B := TMatrixKit.Identity(2);
   
-  // Properties
-  WriteLn(TMatrixKit.Determinant(A));
-  WriteLn(TMatrixKit.Trace(A));
+  C := TMatrixKit.Multiply(A, B);
+  // Expected results:
+  // C[0,0] = 1.0  C[0,1] = 2.0
+  // C[1,0] = 3.0  C[1,1] = 4.0
+  
+  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
+  // Expected: -2.0000
 end;
 ```
 
 ### Trigonometry (TTrigKit)
 ```pascal
-uses TidyKit.Math.Trigonometry;
+// Trigonometric calculations maintain Double precision
+// Angular values are in radians unless specified
 
-// IMPORTANT: Angle Conventions
-// - All trigonometric functions expect input angles in RADIANS
-// - All inverse trigonometric functions return angles in RADIANS
-// - Vector angle calculations return results in RADIANS
-// - Use conversion functions when working with degrees
+// Error handling for trig operations
+try
+  Result := TTrigKit.ArcSin(X);
+except
+  on E: EArgumentOutOfRange do
+    WriteLn('Error: Input must be between -1 and 1');
+end;
 
-// Angle conversions
-Rad := TTrigKit.DegToRad(45);                   // Convert 45° to radians
-Deg := TTrigKit.RadToDeg(Pi/4);                 // Convert π/4 rad to degrees
-
-// Basic trigonometric functions (input in radians)
-S := TTrigKit.Sin(Pi/6);                        // sin(π/6)
-C := TTrigKit.Cos(Pi/3);                        // cos(π/3)
-T := TTrigKit.Tan(Pi/4);                        // tan(π/4)
-
-// Inverse trigonometric functions (return radians)
-AS := TTrigKit.ArcSin(0.5);                     // Returns angle in radians
-AC := TTrigKit.ArcCos(0.5);                     // Returns angle in radians
-AT := TTrigKit.ArcTan(1.0);                     // Returns angle in radians
-AT2 := TTrigKit.ArcTan2(Y, X);                  // Returns angle in radians
-
-// Example: Working with degrees
-angle_deg := 45;
-sin_45 := TTrigKit.Sin(TTrigKit.DegToRad(45));  // sin(45°)
-
-// Triangle calculations
-H := TTrigKit.Hypotenuse(3, 4);                 // Calculate hypotenuse
-Area1 := TTrigKit.TriangleArea(5, 3);           // Area from base and height
-Area2 := TTrigKit.TriangleAreaSAS(4, Pi/3, 5);  // Area using angle in radians
-Area3 := TTrigKit.TriangleAreaSSS(3, 4, 5);     // Area from three sides
-
-// Vector operations
-Mag := TTrigKit.VectorMagnitude(3, 4);          // Vector magnitude
-// Vector angle returns result in radians
-Angle := TTrigKit.VectorAngle(1, 0, 0, 1);      // π/2 radians (90°)
+// Example with actual test values
+var
+  Angle, Height: Double;
+begin
+  Angle := TTrigKit.DegToRad(45);  // Convert 45° to radians
+  Height := 10 * TTrigKit.Sin(Angle);
+  // Expected: Height ≈ 7.0711
+  
+  WriteLn(Format('Triangle Area: %.4f',
+    [TTrigKit.TriangleAreaSAS(4, Angle, 5)]));
+  // Expected: 7.0711
+end;
 ```

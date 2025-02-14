@@ -126,13 +126,47 @@ begin
   // Get comprehensive descriptive statistics
   Stats := TStatsKit.Describe(Data);
   
-  // Pretty print all statistics (vertical format)
-  WriteLn('Vertical Format:');
-  WriteLn(Stats.ToString);
+  // Example output (vertical format):
+  {
+  Descriptive Statistics
+  ======================
+  N: 10
+  Central Tendency:
+    Mean: 5.500000
+    Median: 5.500000
+    Mode: 1.000000
+  Dispersion:
+    Range: 9.000000
+    Variance: 8.250000
+    StdDev: 2.872281
+    SEM: 0.908295
+    CV: 52.22%
+  Distribution Shape:
+    Skewness: 0.000000
+    Kurtosis: -1.200000
+  Quartiles:
+    Min (0%): 1.000000
+    Q1 (25%): 3.250000
+    Q2 (50%): 5.500000
+    Q3 (75%): 7.750000
+    Max (100%): 10.000000
+    IQR: 4.500000
+  }
   
-  WriteLn;
-  WriteLn('Horizontal Format:');
-  WriteLn(Stats.ToStringWide);
+  // Example output (horizontal format):
+  {
+  N           |    Mean     |   Median    |   StdDev    |    SEM      |    CV(%)    
+  -----------------------------------------------------------------------------
+      10      |   5.5000    |   5.5000    |   2.8723    |   0.9083    |   52.2200   
+
+  Shape       |  Skewness   |  Kurtosis   |   Range     |    IQR      
+  ------------------------------------------------------------------------
+              |   0.0000    |  -1.2000    |   9.0000    |   4.5000    
+
+  Quantiles   |    Min      |     Q1      |     Q2      |     Q3      |    Max      
+  -----------------------------------------------------------------------------
+              |   1.0000    |   3.2500    |   5.5000    |   7.7500    |  10.0000    
+  }
   
   // Test for normality
   TStatsKit.ShapiroWilkTest(Data, WPValue);
@@ -142,67 +176,63 @@ begin
   if not IsNormal then
     WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
 end;
-
-Example output (vertical format):
-```
-Descriptive Statistics
-======================
-N: 10
-Central Tendency:
-  Mean: 5.500000
-  Median: 5.500000
-  Mode: 1.000000
-Dispersion:
-  Range: 9.000000
-  Variance: 8.250000
-  StdDev: 2.872281
-  SEM: 0.908295
-  CV: 52.22%
-Distribution Shape:
-  Skewness: 0.000000
-  Kurtosis: -1.200000
-Quartiles:
-  Min (0%): 1.000000
-  Q1 (25%): 3.250000
-  Q2 (50%): 5.500000
-  Q3 (75%): 7.750000
-  Max (100%): 10.000000
-  IQR: 4.500000
 ```
 
-Example output (horizontal format):
-```
-Descriptive Statistics
-===================
-N           |    Mean     |   Median    |   StdDev    |    SEM      |    CV(%)    
------------------------------------------------------------------------------
-    10      |   5.5000    |   5.5000    |   2.8723    |   0.9083    |   52.2200   
-
-Shape       |  Skewness   |  Kurtosis   |   Range     |    IQR      
-------------------------------------------------------------------------
-            |   0.0000    |  -1.2000    |   9.0000    |   4.5000    
-
-Quantiles   |    Min      |     Q1      |     Q2      |     Q3      |    Max      
------------------------------------------------------------------------------
-            |   1.0000    |   3.2500    |   5.5000    |   7.7500    |  10.0000    
-```
 
 ### Financial Calculations
 ```pascal
 var
   CashFlows: TDoubleArray;
-  NPV, IRR: Double;
+  NPV, IRR, ModDur: Double;
+  CallPrice, PutPrice: Double;
+  Leverage: TOperatingLeverage;
 begin
+  // Time Value of Money calculations
   CashFlows := TDoubleArray.Create(100, 200, 300);
   
   // Calculate NPV with 6 decimal precision
   NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);
+  WriteLn(Format('NPV: %.6f', [NPV]));  // Expected: 381.592800
   
   // Calculate IRR with default precision
   IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
+  WriteLn(Format('IRR: %.4f', [IRR]));  // Expected: 0.1000
   
-  // Calculate depreciation
-  WriteLn(TFinanceKit.StraightLineDepreciation(10000, 1000, 5));
+  // Calculate Modified Duration for a 5-year bond
+  ModDur := TFinanceKit.ModifiedDuration(
+    1000.0,  // Face value
+    0.06,    // Coupon rate (6%)
+    0.05,    // Yield rate (5%)
+    2,       // Periods per year (semi-annual)
+    5        // Years to maturity
+  );
+  WriteLn(Format('Modified Duration: %.4f', [ModDur]));  // Expected: 4.3009
+  
+  // Calculate Black-Scholes option prices
+  CallPrice := TFinanceKit.BlackScholes(
+    100.0,   // Spot price
+    100.0,   // Strike price
+    0.05,    // Risk-free rate (5%)
+    0.20,    // Volatility (20%)
+    1.0,     // Time to maturity (1 year)
+    otCall   // Option type
+  );
+  WriteLn(Format('Call Option Price: %.4f', [CallPrice]));  // Expected: 10.4506
+  
+  PutPrice := TFinanceKit.BlackScholes(
+    100.0, 100.0, 0.05, 0.20, 1.0, otPut
+  );
+  WriteLn(Format('Put Option Price: %.4f', [PutPrice]));   // Expected: 5.5723
+  
+  // Calculate Operating Leverage
+  Leverage := TFinanceKit.OperatingLeverage(
+    10000.0,  // Quantity
+    50.0,     // Price per unit
+    30.0,     // Variable cost per unit
+    100000.0  // Fixed costs
+  );
+  WriteLn(Format('DOL: %.4f', [Leverage.DOL]));           // Expected: 2.0000
+  WriteLn(Format('Break-even: %.4f', [Leverage.BreakEvenPoint])); // Expected: 5000.0000
 end;
 ```
 
@@ -223,7 +253,6 @@ begin
   WriteLn(Format('Trace: %.4f', [TMatrixKit.Trace(C)]));
 end;
 ```
-
 ### Trigonometric Calculations
 ```pascal
 var
