@@ -2,6 +2,31 @@
 
 A lightweight, memory-safe HTTP client for Free Pascal that uses advanced records for automatic cleanup. This module provides a fluent interface for making HTTP requests with built-in memory management.
 
+## Table of Contents
+
+- [TidyKit.Request Documentation](#tidykitrequest-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Design Philosophy](#design-philosophy)
+    - [Fluent Interface Pattern](#fluent-interface-pattern)
+  - [Memory Safety](#memory-safety)
+  - [Basic Usage](#basic-usage)
+    - [Simple GET Request](#simple-get-request)
+    - [POST with JSON](#post-with-json)
+    - [Using the Fluent Interface](#using-the-fluent-interface)
+  - [Error Handling](#error-handling)
+    - [Using Try-Pattern](#using-try-pattern)
+  - [API Reference](#api-reference)
+    - [TResponse Record](#tresponse-record)
+    - [TRequestBuilder Record](#trequestbuilder-record)
+    - [Global HTTP Functions](#global-http-functions)
+  - [Advanced Usage Examples](#advanced-usage-examples)
+    - [Complex Request with Multiple Headers and Parameters](#complex-request-with-multiple-headers-and-parameters)
+    - [Authenticated Request with Error Handling](#authenticated-request-with-error-handling)
+    - [Form Data Submission](#form-data-submission)
+  - [Best Practices](#best-practices)
+
+
 ## Features
 
 - Zero-setup memory management using advanced records

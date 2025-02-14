@@ -30,6 +30,11 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Using the Fluent Interface](#using-the-fluent-interface)
     - [Error Handling](#error-handling)
     - [Working with JSON](#working-with-json)
+  - [📊 Math Operations](#-math-operations)
+    - [Statistics (TStatsKit)](#statistics-tstatskit)
+    - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
+    - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
+    - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
 
 ## 📁File System Operations
 
@@ -660,4 +665,163 @@ begin
       WriteLn(Items[I].AsString);
   end;
 end;
+```
+
+## 📊 Math Operations
+
+### Statistics (TStatsKit)
+```pascal
+// Basic descriptive statistics
+Stats := TStatsKit.Describe(Data);
+// Returns comprehensive statistics with full Double precision:
+// - Mean: Full precision (e.g., 5.500000)
+// - StdDev: Full precision (e.g., 2.872281)
+// - Variance: Full precision (e.g., 8.250000)
+
+// Hypothesis testing with p-values
+TStatsKit.ShapiroWilkTest(Data, WPValue);
+if WPValue >= 0.05 then
+  WriteLn('Data is normally distributed');
+
+// Error handling
+try
+  Result := TStatsKit.StandardDeviation(Data);
+except
+  on E: EInvalidArgument do
+    WriteLn('Error: Need at least 2 data points');
+  on E: Exception do
+    WriteLn('Unexpected error: ', E.Message);
+end;
+```
+
+### Financial Calculations (TFinanceKit)
+```pascal
+// All financial calculations use 4 decimal precision by default
+// Precision can be customized using the ADecimals parameter
+
+// Modified Duration (Expected: 4.3009)
+ModDur := TFinanceKit.ModifiedDuration(
+  1000.0,  // Face value
+  0.06,    // Coupon rate
+  0.05,    // Yield rate
+  2,       // Periods per year
+  5        // Years to maturity
+);
+
+// Black-Scholes Option Pricing
+// Call Option (Expected: 10.4506)
+// Put Option (Expected: 5.5723)
+CallPrice := TFinanceKit.BlackScholes(
+  100.0,   // Spot price
+  100.0,   // Strike price
+  0.05,    // Risk-free rate
+  0.20,    // Volatility
+  1.0,     // Time to maturity
+  otCall
+);
+
+// Operating Leverage (Expected DOL: 2.0000)
+Leverage := TFinanceKit.OperatingLeverage(
+  10000.0,  // Quantity
+  50.0,     // Price per unit
+  30.0,     // Variable cost per unit
+  100000.0  // Fixed costs
+);
+
+// Error handling for financial calculations
+try
+  IRR := TFinanceKit.InternalRateOfReturn(InitialInvestment, CashFlows);
+except
+  on E: EInvalidOperation do
+    WriteLn('Error: IRR calculation did not converge');
+  on E: EArgumentException do
+    WriteLn('Error: Invalid cash flow data');
+end;
+```
+
+### Matrix Operations (TMatrixKit)
+```pascal
+// Matrix operations maintain full Double precision
+// No rounding is applied to preserve accuracy
+
+// Error handling for matrix operations
+try
+  Result := TMatrixKit.Multiply(A, B);
+except
+  on E: EMatrixDimensionMismatch do
+    WriteLn('Error: Matrix dimensions do not match');
+  on E: ESingularMatrix do
+    WriteLn('Error: Matrix is singular (non-invertible)');
+end;
+
+// Example with actual test values
+var
+  A, B, C: TMatrix;
+begin
+  A := TMatrixKit.CreateMatrix(2, 2);
+  A[0,0] := 1; A[0,1] := 2;
+  A[1,0] := 3; A[1,1] := 4;
+  
+  B := TMatrixKit.Identity(2);
+  
+  C := TMatrixKit.Multiply(A, B);
+  // Expected results:
+  // C[0,0] = 1.0  C[0,1] = 2.0
+  // C[1,0] = 3.0  C[1,1] = 4.0
+  
+  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
+  // Expected: -2.0000
+end;
+```
+
+### Trigonometry (TTrigKit)
+```pascal
+// Angle conversions
+Rad := TTrigKit.DegToRad(Degrees);           // Convert degrees to radians
+Deg := TTrigKit.RadToDeg(Radians);           // Convert radians to degrees
+Rad := TTrigKit.GradToRad(Grads);            // Convert grads to radians
+Grad := TTrigKit.RadToGrad(Radians);         // Convert radians to grads
+Rad := TTrigKit.NormalizeAngle(Radians);     // Normalize angle to [0, 2π]
+Deg := TTrigKit.NormalizeAngleDeg(Degrees);  // Normalize angle to [0, 360]
+
+// Basic trigonometric functions
+Sin := TTrigKit.Sin(X);                      // Sine of X (radians)
+Cos := TTrigKit.Cos(X);                      // Cosine of X (radians)
+Tan := TTrigKit.Tan(X);                      // Tangent of X (radians)
+Sec := TTrigKit.Sec(X);                      // Secant of X (radians)
+Csc := TTrigKit.Csc(X);                      // Cosecant of X (radians)
+Cot := TTrigKit.Cot(X);                      // Cotangent of X (radians)
+
+// Inverse trigonometric functions
+ASin := TTrigKit.ArcSin(X);                  // Inverse sine
+ACos := TTrigKit.ArcCos(X);                  // Inverse cosine
+ATan := TTrigKit.ArcTan(X);                  // Inverse tangent
+ATan2 := TTrigKit.ArcTan2(Y, X);            // Two-argument inverse tangent
+
+// Hyperbolic functions
+SinH := TTrigKit.Sinh(X);                    // Hyperbolic sine
+CosH := TTrigKit.Cosh(X);                    // Hyperbolic cosine
+TanH := TTrigKit.Tanh(X);                    // Hyperbolic tangent
+
+// Inverse hyperbolic functions
+ASinH := TTrigKit.ArcSinh(X);                // Inverse hyperbolic sine
+ACosH := TTrigKit.ArcCosh(X);                // Inverse hyperbolic cosine
+ATanH := TTrigKit.ArcTanh(X);                // Inverse hyperbolic tangent
+
+// Triangle calculations
+Area := TTrigKit.TriangleArea(Base, Height); // Triangle area from base and height
+Area := TTrigKit.TriangleAreaSAS(A, Angle, B); // Triangle area from SAS
+Area := TTrigKit.TriangleAreaSSS(A, B, C);   // Triangle area from three sides
+Perim := TTrigKit.TrianglePerimeter(A, B, C); // Triangle perimeter
+InRad := TTrigKit.TriangleInRadius(A, B, C);  // Radius of inscribed circle
+CircumRad := TTrigKit.TriangleCircumRadius(A, B, C); // Radius of circumscribed circle
+
+// Circle sector and segment calculations
+SectorArea := TTrigKit.CircularSectorArea(R, Angle); // Area of circular sector
+SegmentArea := TTrigKit.CircularSegmentArea(R, Angle); // Area of circular segment
+ChordLen := TTrigKit.ChordLength(R, Angle);  // Length of chord
+
+// Vector operations
+Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
+Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
 ```
