@@ -776,27 +776,52 @@ end;
 
 ### Trigonometry (TTrigKit)
 ```pascal
-// Trigonometric calculations maintain Double precision
-// Angular values are in radians unless specified
+// Angle conversions
+Rad := TTrigKit.DegToRad(Degrees);           // Convert degrees to radians
+Deg := TTrigKit.RadToDeg(Radians);           // Convert radians to degrees
+Rad := TTrigKit.GradToRad(Grads);            // Convert grads to radians
+Grad := TTrigKit.RadToGrad(Radians);         // Convert radians to grads
+Rad := TTrigKit.NormalizeAngle(Radians);     // Normalize angle to [0, 2π]
+Deg := TTrigKit.NormalizeAngleDeg(Degrees);  // Normalize angle to [0, 360]
 
-// Error handling for trig operations
-try
-  Result := TTrigKit.ArcSin(X);
-except
-  on E: EArgumentOutOfRange do
-    WriteLn('Error: Input must be between -1 and 1');
-end;
+// Basic trigonometric functions
+Sin := TTrigKit.Sin(X);                      // Sine of X (radians)
+Cos := TTrigKit.Cos(X);                      // Cosine of X (radians)
+Tan := TTrigKit.Tan(X);                      // Tangent of X (radians)
+Sec := TTrigKit.Sec(X);                      // Secant of X (radians)
+Csc := TTrigKit.Csc(X);                      // Cosecant of X (radians)
+Cot := TTrigKit.Cot(X);                      // Cotangent of X (radians)
 
-// Example with actual test values
-var
-  Angle, Height: Double;
-begin
-  Angle := TTrigKit.DegToRad(45);  // Convert 45° to radians
-  Height := 10 * TTrigKit.Sin(Angle);
-  // Expected: Height ≈ 7.0711
-  
-  WriteLn(Format('Triangle Area: %.4f',
-    [TTrigKit.TriangleAreaSAS(4, Angle, 5)]));
-  // Expected: 7.0711
-end;
+// Inverse trigonometric functions
+ASin := TTrigKit.ArcSin(X);                  // Inverse sine
+ACos := TTrigKit.ArcCos(X);                  // Inverse cosine
+ATan := TTrigKit.ArcTan(X);                  // Inverse tangent
+ATan2 := TTrigKit.ArcTan2(Y, X);            // Two-argument inverse tangent
+
+// Hyperbolic functions
+SinH := TTrigKit.Sinh(X);                    // Hyperbolic sine
+CosH := TTrigKit.Cosh(X);                    // Hyperbolic cosine
+TanH := TTrigKit.Tanh(X);                    // Hyperbolic tangent
+
+// Inverse hyperbolic functions
+ASinH := TTrigKit.ArcSinh(X);                // Inverse hyperbolic sine
+ACosH := TTrigKit.ArcCosh(X);                // Inverse hyperbolic cosine
+ATanH := TTrigKit.ArcTanh(X);                // Inverse hyperbolic tangent
+
+// Triangle calculations
+Area := TTrigKit.TriangleArea(Base, Height); // Triangle area from base and height
+Area := TTrigKit.TriangleAreaSAS(A, Angle, B); // Triangle area from SAS
+Area := TTrigKit.TriangleAreaSSS(A, B, C);   // Triangle area from three sides
+Perim := TTrigKit.TrianglePerimeter(A, B, C); // Triangle perimeter
+InRad := TTrigKit.TriangleInRadius(A, B, C);  // Radius of inscribed circle
+CircumRad := TTrigKit.TriangleCircumRadius(A, B, C); // Radius of circumscribed circle
+
+// Circle sector and segment calculations
+SectorArea := TTrigKit.CircularSectorArea(R, Angle); // Area of circular sector
+SegmentArea := TTrigKit.CircularSegmentArea(R, Angle); // Area of circular segment
+ChordLen := TTrigKit.ChordLength(R, Angle);  // Length of chord
+
+// Vector operations
+Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
+Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
 ```

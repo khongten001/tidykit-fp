@@ -2,6 +2,64 @@
 
 The TidyKit Math library provides comprehensive mathematical operations using Double precision floating-point numbers. The library is divided into several specialized modules for different mathematical domains.
 
+
+## Table of Contents
+
+- [TidyKit Math Library Documentation](#tidykit-math-library-documentation)
+  - [Table of Contents](#table-of-contents)
+  - [Base Types](#base-types)
+  - [Precision in Calculations](#precision-in-calculations)
+    - [Financial Calculations](#financial-calculations)
+    - [Statistical Calculations](#statistical-calculations)
+    - [Matrix Operations](#matrix-operations)
+    - [Trigonometric Calculations](#trigonometric-calculations)
+      - [Angle Conversions](#angle-conversions)
+      - [Basic Trigonometric Functions](#basic-trigonometric-functions)
+      - [Inverse Trigonometric Functions](#inverse-trigonometric-functions)
+      - [Hyperbolic Functions](#hyperbolic-functions)
+      - [Triangle Calculations](#triangle-calculations)
+      - [Circle Sector and Segment Calculations](#circle-sector-and-segment-calculations)
+      - [Vector Operations](#vector-operations)
+      - [Precision Notes](#precision-notes)
+    - [Precision Limits](#precision-limits)
+    - [Rounding Behavior](#rounding-behavior)
+  - [Statistical Operations (TStatsKit)](#statistical-operations-tstatskit)
+  - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
+    - [Time Value of Money](#time-value-of-money)
+    - [Investment Analysis](#investment-analysis)
+    - [Depreciation](#depreciation)
+    - [Return Metrics](#return-metrics)
+    - [Modified Duration](#modified-duration)
+    - [Black-Scholes Option Pricing](#black-scholes-option-pricing)
+    - [Operating Leverage](#operating-leverage)
+  - [Precision in Calculations](#precision-in-calculations-1)
+    - [Default Precision](#default-precision)
+    - [Custom Precision](#custom-precision)
+    - [Rounding Behavior](#rounding-behavior-1)
+    - [Best Practices](#best-practices)
+  - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
+  - [Trigonometric Operations (TTrigKit)](#trigonometric-operations-ttrigkit)
+    - [Angle Conventions](#angle-conventions)
+    - [Basic Usage](#basic-usage)
+    - [Triangle Calculations](#triangle-calculations-1)
+    - [Vector Operations](#vector-operations-1)
+    - [Common Pitfalls to Avoid](#common-pitfalls-to-avoid)
+  - [Error Handling](#error-handling)
+  - [Performance Considerations](#performance-considerations)
+  - [Examples](#examples)
+    - [Statistical Analysis](#statistical-analysis)
+    - [Financial Calculation](#financial-calculation)
+    - [Matrix Operation](#matrix-operation)
+    - [Trigonometric Calculation](#trigonometric-calculation)
+  - [Distribution Functions](#distribution-functions)
+  - [Array Conversion Functions](#array-conversion-functions)
+  - [Precision Notes](#precision-notes-1)
+    - [Statistical Calculations](#statistical-calculations-1)
+    - [Distribution Functions](#distribution-functions-1)
+    - [Best Practices](#best-practices-1)
+
+
+
 ## Base Types
 
 ```pascal
@@ -45,8 +103,91 @@ TidyKit's math library uses Double precision (64-bit IEEE 754) for all calculati
 ### Trigonometric Calculations
 - Angular calculations maintain Double precision
 - Trigonometric functions use system math library precision
-- Triangle calculations preserve full precision for accurate results
-- Vector operations maintain Double precision for magnitude and angles
+- All angles are in radians unless specified otherwise
+- Functions handle special cases (e.g., undefined values) gracefully
+
+#### Angle Conversions
+```pascal
+// Convert between degrees, radians, and grads
+Rad := TTrigKit.DegToRad(Degrees);           // Degrees to radians
+Deg := TTrigKit.RadToDeg(Radians);           // Radians to degrees
+Rad := TTrigKit.GradToRad(Grads);            // Grads to radians
+Grad := TTrigKit.RadToGrad(Radians);         // Radians to grads
+
+// Normalize angles to standard ranges
+Rad := TTrigKit.NormalizeAngle(Radians);     // To [0, 2π]
+Deg := TTrigKit.NormalizeAngleDeg(Degrees);  // To [0, 360]
+```
+
+#### Basic Trigonometric Functions
+```pascal
+// Primary functions
+Sin := TTrigKit.Sin(X);                      // Sine
+Cos := TTrigKit.Cos(X);                      // Cosine
+Tan := TTrigKit.Tan(X);                      // Tangent
+
+// Reciprocal functions
+Sec := TTrigKit.Sec(X);                      // Secant
+Csc := TTrigKit.Csc(X);                      // Cosecant
+Cot := TTrigKit.Cot(X);                      // Cotangent
+```
+
+#### Inverse Trigonometric Functions
+```pascal
+// Primary inverse functions
+ASin := TTrigKit.ArcSin(X);                  // Inverse sine
+ACos := TTrigKit.ArcCos(X);                  // Inverse cosine
+ATan := TTrigKit.ArcTan(X);                  // Inverse tangent
+ATan2 := TTrigKit.ArcTan2(Y, X);            // Two-argument inverse tangent
+```
+
+#### Hyperbolic Functions
+```pascal
+// Direct hyperbolic functions
+SinH := TTrigKit.Sinh(X);                    // Hyperbolic sine
+CosH := TTrigKit.Cosh(X);                    // Hyperbolic cosine
+TanH := TTrigKit.Tanh(X);                    // Hyperbolic tangent
+
+// Inverse hyperbolic functions
+ASinH := TTrigKit.ArcSinh(X);                // Inverse hyperbolic sine
+ACosH := TTrigKit.ArcCosh(X);                // Inverse hyperbolic cosine
+ATanH := TTrigKit.ArcTanh(X);                // Inverse hyperbolic tangent
+```
+
+#### Triangle Calculations
+```pascal
+// Area calculations
+Area := TTrigKit.TriangleArea(Base, Height); // From base and height
+Area := TTrigKit.TriangleAreaSAS(A, Angle, B); // From SAS
+Area := TTrigKit.TriangleAreaSSS(A, B, C);   // From three sides
+
+// Other triangle metrics
+Perim := TTrigKit.TrianglePerimeter(A, B, C); // Perimeter
+InRad := TTrigKit.TriangleInRadius(A, B, C);  // Inscribed circle radius
+CircumRad := TTrigKit.TriangleCircumRadius(A, B, C); // Circumscribed circle radius
+```
+
+#### Circle Sector and Segment Calculations
+```pascal
+// Circular measurements
+SectorArea := TTrigKit.CircularSectorArea(R, Angle); // Sector area
+SegmentArea := TTrigKit.CircularSegmentArea(R, Angle); // Segment area
+ChordLen := TTrigKit.ChordLength(R, Angle);  // Chord length
+```
+
+#### Vector Operations
+```pascal
+// Vector calculations
+Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
+Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
+```
+
+#### Precision Notes
+- All trigonometric functions maintain Double precision (15-17 significant digits)
+- Angle conversions are accurate to Double precision
+- Triangle calculations preserve precision for accurate geometric results
+- Special cases (undefined values, domain errors) are handled with exceptions
+- Vector operations maintain precision for both magnitude and angles
 
 ### Precision Limits
 - Double type range: ±5.0 × 10^−324 to ±1.7 × 10^308

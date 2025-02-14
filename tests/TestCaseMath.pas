@@ -111,12 +111,76 @@ type
   { Test cases for trigonometric operations }
   TTestCaseTrig = class(TTestCaseMathBase)
   published
-    procedure Test01_AngleConversions;
-    procedure Test02_BasicTrig;
-    procedure Test03_InverseTrig;
-    procedure Test04_Hyperbolic;
-    procedure Test05_TriangleCalculations;
-    procedure Test06_VectorOperations;
+    { Angle conversions }
+    procedure Test01_DegToRad;
+    procedure Test02_RadToDeg;
+    procedure Test03_GradToRad;
+    procedure Test04_RadToGrad;
+    procedure Test05_NormalizeAnglePositive;
+    procedure Test06_NormalizeAngleNegative;
+    procedure Test07_NormalizeAngleDegPositive;
+    procedure Test08_NormalizeAngleDegNegative;
+    
+    { Basic trigonometric functions }
+    procedure Test09_SinZero;
+    procedure Test10_SinPiHalf;
+    procedure Test11_CosZero;
+    procedure Test12_CosPiHalf;
+    procedure Test13_TanZero;
+    procedure Test14_TanPiQuarter;
+    
+    { Inverse trigonometric functions }
+    procedure Test15_ArcSinZero;
+    procedure Test16_ArcSinOne;
+    procedure Test17_ArcCosZero;
+    procedure Test18_ArcCosOne;
+    procedure Test19_ArcTanZero;
+    procedure Test20_ArcTanOne;
+    procedure Test21_ArcTan2Vertical;
+    procedure Test22_ArcTan2Horizontal;
+    
+    { Hyperbolic functions }
+    procedure Test23_SinhZero;
+    procedure Test24_CoshZero;
+    procedure Test25_TanhZero;
+    procedure Test26_SinhOne;
+    procedure Test27_CoshOne;
+    procedure Test28_TanhOne;
+    
+    { Inverse hyperbolic functions }
+    procedure Test29_ArcSinhZero;
+    procedure Test30_ArcTanhZero;
+    procedure Test31_ArcCoshOne;
+    procedure Test32_ArcSinhIdentity;
+    procedure Test33_ArcTanhIdentity;
+    
+    { Secant, Cosecant, and Cotangent }
+    procedure Test34_SecZero;
+    procedure Test35_SecPiQuarter;
+    procedure Test36_CscPiQuarter;
+    procedure Test37_CotPiQuarter;
+    
+    { Triangle basics }
+    procedure Test38_Hypotenuse;
+    procedure Test39_TriangleArea;
+    procedure Test40_TriangleAreaSAS;
+    procedure Test41_TriangleAreaSSS;
+    
+    { Triangle advanced }
+    procedure Test42_TrianglePerimeter;
+    procedure Test43_TriangleInRadius;
+    procedure Test44_TriangleCircumRadius;
+    
+    { Circle sector and segment }
+    procedure Test45_CircularSectorArea;
+    procedure Test46_CircularSegmentArea;
+    procedure Test47_ChordLength;
+    
+    { Vector operations }
+    procedure Test48_VectorMagnitude;
+    procedure Test49_VectorAngle45;
+    procedure Test50_VectorAngle90;
+    procedure Test51_VectorAngle180;
   end;
 
   { Test cases for matrix operations }
@@ -1028,46 +1092,259 @@ end;
 
 { TTestCaseTrig }
 
-procedure TTestCaseTrig.Test01_AngleConversions;
+procedure TTestCaseTrig.Test01_DegToRad;
 begin
-  AssertEquals(Pi/2, TTrigKit.DegToRad(90), 'Degrees to radians failed');
-  AssertEquals(90.0, TTrigKit.RadToDeg(Pi/2), 'Radians to degrees failed');
+  AssertEquals(Pi/2, TTrigKit.DegToRad(90), 'DegToRad 90° failed');
 end;
 
-procedure TTestCaseTrig.Test02_BasicTrig;
+procedure TTestCaseTrig.Test02_RadToDeg;
 begin
-  AssertEquals(0.0, TTrigKit.Sin(0), 'Sin(0) failed');
-  AssertEquals(1.0, TTrigKit.Cos(0), 'Cos(0) failed');
-  AssertEquals(0.0, TTrigKit.Tan(0), 'Tan(0) failed');
+  AssertEquals(180, TTrigKit.RadToDeg(Pi), 'RadToDeg π failed');
 end;
 
-procedure TTestCaseTrig.Test03_InverseTrig;
+procedure TTestCaseTrig.Test03_GradToRad;
 begin
-  AssertEquals(0.0, TTrigKit.ArcSin(0), 'ArcSin(0) failed');
+  AssertEquals(Pi/2, TTrigKit.GradToRad(100), 'GradToRad 100g failed');
+end;
+
+procedure TTestCaseTrig.Test04_RadToGrad;
+begin
+  AssertEquals(200, TTrigKit.RadToGrad(Pi), 'RadToGrad π failed');
+end;
+
+procedure TTestCaseTrig.Test05_NormalizeAnglePositive;
+begin
+  AssertEquals(Pi/2, TTrigKit.NormalizeAngle(5*Pi/2), 'NormalizeAngle 5π/2 failed');
+end;
+
+procedure TTestCaseTrig.Test06_NormalizeAngleNegative;
+begin
+  AssertEquals(Pi/2, TTrigKit.NormalizeAngle(-3*Pi/2), 'NormalizeAngle -3π/2 failed');
+end;
+
+procedure TTestCaseTrig.Test07_NormalizeAngleDegPositive;
+begin
+  AssertEquals(90, TTrigKit.NormalizeAngleDeg(450), 'NormalizeAngleDeg 450° failed');
+end;
+
+procedure TTestCaseTrig.Test08_NormalizeAngleDegNegative;
+begin
+  AssertEquals(90, TTrigKit.NormalizeAngleDeg(-270), 'NormalizeAngleDeg -270° failed');
+end;
+
+procedure TTestCaseTrig.Test09_SinZero;
+begin
+  AssertEquals(0, TTrigKit.Sin(0), 'Sin(0) failed');
+end;
+
+procedure TTestCaseTrig.Test10_SinPiHalf;
+begin
+  AssertEquals(1, TTrigKit.Sin(Pi/2), 'Sin(π/2) failed');
+end;
+
+procedure TTestCaseTrig.Test11_CosZero;
+begin
+  AssertEquals(1, TTrigKit.Cos(0), 'Cos(0) failed');
+end;
+
+procedure TTestCaseTrig.Test12_CosPiHalf;
+begin
+  AssertEquals(0, TTrigKit.Cos(Pi/2), 'Cos(π/2) failed');
+end;
+
+procedure TTestCaseTrig.Test13_TanZero;
+begin
+  AssertEquals(0, TTrigKit.Tan(0), 'Tan(0) failed');
+end;
+
+procedure TTestCaseTrig.Test14_TanPiQuarter;
+begin
+  AssertEquals(1, TTrigKit.Tan(Pi/4), 'Tan(π/4) failed');
+end;
+
+procedure TTestCaseTrig.Test15_ArcSinZero;
+begin
+  AssertEquals(0, TTrigKit.ArcSin(0), 'ArcSin(0) failed');
+end;
+
+procedure TTestCaseTrig.Test16_ArcSinOne;
+begin
+  AssertEquals(Pi/2, TTrigKit.ArcSin(1), 'ArcSin(1) failed');
+end;
+
+procedure TTestCaseTrig.Test17_ArcCosZero;
+begin
   AssertEquals(Pi/2, TTrigKit.ArcCos(0), 'ArcCos(0) failed');
-  AssertEquals(0.0, TTrigKit.ArcTan(0), 'ArcTan(0) failed');
-  AssertEquals(Pi/4, TTrigKit.ArcTan2(1, 1), 'ArcTan2(1,1) failed');
 end;
 
-procedure TTestCaseTrig.Test04_Hyperbolic;
+procedure TTestCaseTrig.Test18_ArcCosOne;
 begin
-  AssertEquals(0.0, TTrigKit.Sinh(0), 'Sinh(0) failed');
-  AssertEquals(1.0, TTrigKit.Cosh(0), 'Cosh(0) failed');
-  AssertEquals(0.0, TTrigKit.Tanh(0), 'Tanh(0) failed');
+  AssertEquals(0, TTrigKit.ArcCos(1), 'ArcCos(1) failed');
 end;
 
-procedure TTestCaseTrig.Test05_TriangleCalculations;
+procedure TTestCaseTrig.Test19_ArcTanZero;
 begin
-  AssertEquals(5.0, TTrigKit.Hypotenuse(3, 4), 'Hypotenuse calculation failed');
-  AssertEquals(6.0, TTrigKit.TriangleArea(3, 4), 'Triangle area failed');
-  AssertEquals(6.0, TTrigKit.TriangleAreaSAS(3, Pi/2, 4), 'Triangle area SAS failed');
-  AssertEquals(6.0, TTrigKit.TriangleAreaSSS(3, 4, 5), 'Triangle area SSS failed');
+  AssertEquals(0, TTrigKit.ArcTan(0), 'ArcTan(0) failed');
 end;
 
-procedure TTestCaseTrig.Test06_VectorOperations;
+procedure TTestCaseTrig.Test20_ArcTanOne;
 begin
-  AssertEquals(5.0, TTrigKit.VectorMagnitude(3, 4), 'Vector magnitude failed');
-  AssertEquals(Pi/4, TTrigKit.VectorAngle(0, 0, 1, 1), 'Vector angle failed');
+  AssertEquals(Pi/4, TTrigKit.ArcTan(1), 'ArcTan(1) failed');
+end;
+
+procedure TTestCaseTrig.Test21_ArcTan2Vertical;
+begin
+  AssertEquals(Pi/2, TTrigKit.ArcTan2(1, 0), 'ArcTan2(1,0) failed');
+end;
+
+procedure TTestCaseTrig.Test22_ArcTan2Horizontal;
+begin
+  AssertEquals(Pi, TTrigKit.ArcTan2(0, -1), 'ArcTan2(0,-1) failed');
+end;
+
+procedure TTestCaseTrig.Test23_SinhZero;
+begin
+  AssertEquals(0, TTrigKit.Sinh(0), 'Sinh(0) failed');
+end;
+
+procedure TTestCaseTrig.Test24_CoshZero;
+begin
+  AssertEquals(1, TTrigKit.Cosh(0), 'Cosh(0) failed');
+end;
+
+procedure TTestCaseTrig.Test25_TanhZero;
+begin
+  AssertEquals(0, TTrigKit.Tanh(0), 'Tanh(0) failed');
+end;
+
+procedure TTestCaseTrig.Test26_SinhOne;
+begin
+  AssertEquals((Exp(1)-Exp(-1))/2, TTrigKit.Sinh(1), 'Sinh(1) failed');
+end;
+
+procedure TTestCaseTrig.Test27_CoshOne;
+begin
+  AssertEquals((Exp(1)+Exp(-1))/2, TTrigKit.Cosh(1), 'Cosh(1) failed');
+end;
+
+procedure TTestCaseTrig.Test28_TanhOne;
+begin
+  AssertEquals(TTrigKit.Sinh(1)/TTrigKit.Cosh(1), TTrigKit.Tanh(1), 'Tanh(1) failed');
+end;
+
+procedure TTestCaseTrig.Test29_ArcSinhZero;
+begin
+  AssertEquals(0, TTrigKit.ArcSinh(0), 'ArcSinh(0) failed');
+end;
+
+procedure TTestCaseTrig.Test30_ArcTanhZero;
+begin
+  AssertEquals(0, TTrigKit.ArcTanh(0), 'ArcTanh(0) failed');
+end;
+
+procedure TTestCaseTrig.Test31_ArcCoshOne;
+begin
+  AssertEquals(0, TTrigKit.ArcCosh(1), 'ArcCosh(1) failed');
+end;
+
+procedure TTestCaseTrig.Test32_ArcSinhIdentity;
+begin
+  AssertEquals(1, TTrigKit.ArcSinh(Sinh(1)), 'ArcSinh(sinh(1)) failed');
+end;
+
+procedure TTestCaseTrig.Test33_ArcTanhIdentity;
+begin
+  AssertEquals(1, TTrigKit.ArcTanh(Tanh(1)), 'ArcTanh(tanh(1)) failed');
+end;
+
+procedure TTestCaseTrig.Test34_SecZero;
+begin
+  AssertEquals(1, TTrigKit.Sec(0), 'Sec(0) failed');
+end;
+
+procedure TTestCaseTrig.Test35_SecPiQuarter;
+begin
+  AssertEquals(Sqrt(2), TTrigKit.Sec(Pi/4), 'Sec(π/4) failed');
+end;
+
+procedure TTestCaseTrig.Test36_CscPiQuarter;
+begin
+  AssertEquals(Sqrt(2), TTrigKit.Csc(Pi/4), 'Csc(π/4) failed');
+end;
+
+procedure TTestCaseTrig.Test37_CotPiQuarter;
+begin
+  AssertEquals(1, TTrigKit.Cot(Pi/4), 'Cot(π/4) failed');
+end;
+
+procedure TTestCaseTrig.Test38_Hypotenuse;
+begin
+  AssertEquals(5, TTrigKit.Hypotenuse(3, 4), 'Hypotenuse(3,4) failed');
+end;
+
+procedure TTestCaseTrig.Test39_TriangleArea;
+begin
+  AssertEquals(6, TTrigKit.TriangleArea(3, 4), 'TriangleArea(3,4) failed');
+end;
+
+procedure TTestCaseTrig.Test40_TriangleAreaSAS;
+begin
+  AssertEquals(6, TTrigKit.TriangleAreaSAS(3, Pi/2, 4), 'TriangleAreaSAS right angle failed');
+end;
+
+procedure TTestCaseTrig.Test41_TriangleAreaSSS;
+begin
+  AssertEquals(6, TTrigKit.TriangleAreaSSS(3, 4, 5), 'TriangleAreaSSS(3,4,5) failed');
+end;
+
+procedure TTestCaseTrig.Test42_TrianglePerimeter;
+begin
+  AssertEquals(12, TTrigKit.TrianglePerimeter(3, 4, 5), 'TrianglePerimeter failed');
+end;
+
+procedure TTestCaseTrig.Test43_TriangleInRadius;
+begin
+  AssertEquals(1, TTrigKit.TriangleInRadius(3, 4, 5), 'TriangleInRadius(3,4,5) failed');
+end;
+
+procedure TTestCaseTrig.Test44_TriangleCircumRadius;
+begin
+  AssertEquals(2.5, TTrigKit.TriangleCircumRadius(3, 4, 5), 'TriangleCircumRadius(3,4,5) failed');
+end;
+
+procedure TTestCaseTrig.Test45_CircularSectorArea;
+begin
+  AssertEquals(Pi/2, TTrigKit.CircularSectorArea(1, Pi), 'CircularSectorArea unit circle failed');
+end;
+
+procedure TTestCaseTrig.Test46_CircularSegmentArea;
+begin
+  AssertEquals(Pi/2, TTrigKit.CircularSegmentArea(1, Pi), 'CircularSegmentArea unit circle failed');
+end;
+
+procedure TTestCaseTrig.Test47_ChordLength;
+begin
+  AssertEquals(2, TTrigKit.ChordLength(1, Pi), 'ChordLength unit circle failed');
+end;
+
+procedure TTestCaseTrig.Test48_VectorMagnitude;
+begin
+  AssertEquals(5, TTrigKit.VectorMagnitude(3, 4), 'VectorMagnitude(3,4) failed');
+end;
+
+procedure TTestCaseTrig.Test49_VectorAngle45;
+begin
+  AssertEquals(Pi/4, TTrigKit.VectorAngle(0, 0, 1, 1), 'VectorAngle 45° failed');
+end;
+
+procedure TTestCaseTrig.Test50_VectorAngle90;
+begin
+  AssertEquals(Pi/2, TTrigKit.VectorAngle(0, 0, 0, 1), 'VectorAngle 90° failed');
+end;
+
+procedure TTestCaseTrig.Test51_VectorAngle180;
+begin
+  AssertEquals(Pi, TTrigKit.VectorAngle(0, 0, -1, 0), 'VectorAngle 180° failed');
 end;
 
 { TTestCaseMatrix }
@@ -1161,3 +1438,4 @@ initialization
   RegisterTest(TTestCaseTrig);
   RegisterTest(TTestCaseMatrix);
 end. 
+

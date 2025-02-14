@@ -1,10 +1,30 @@
 # TidyKit
 
-A comprehensive Pascal toolkit providing essential utilities for modern Pascal development.
-
+A comprehensive Pascal toolkit providing essential utilities for Pascal development.  
+**Streamlining your Pascal programming experience with reliable tools.**
 
 > [!WARNING]
 > This library is under active development and is not yet ready for production use. APIs may change without notice.
+
+## Table of Contents
+- [TidyKit](#tidykit)
+  - [Table of Contents](#table-of-contents)
+  - [Features](#features)
+  - [Installation](#installation)
+  - [Quick Start](#quick-start)
+    - [File System Operations](#file-system-operations)
+    - [String Operations](#string-operations)
+    - [DateTime Operations](#datetime-operations)
+    - [Statistical Operations](#statistical-operations)
+    - [Financial Calculations](#financial-calculations)
+    - [Matrix Operations](#matrix-operations)
+    - [Trigonometric Calculations](#trigonometric-calculations)
+  - [Documentation](#documentation)
+  - [Testing](#testing)
+  - [Contributing](#contributing)
+  - [License](#license)
+  - [Acknowledgments](#acknowledgments)
+
 
 ## Features
 
@@ -54,9 +74,14 @@ A comprehensive Pascal toolkit providing essential utilities for modern Pascal d
     - Determinant and trace
     - Matrix decompositions (LU, QR)
   - Trigonometry
-    - Basic functions (sin, cos, tan)
-    - Inverse functions
-    - Triangle calculations
+    - Basic functions (sin, cos, tan, sec, csc, cot)
+    - Inverse functions (arcsin, arccos, arctan, arctan2)
+    - Hyperbolic functions (sinh, cosh, tanh)
+    - Inverse hyperbolic functions (arcsinh, arccosh, arctanh)
+    - Angle conversions (degrees, radians, grads)
+    - Angle normalization
+    - Triangle calculations (area, perimeter, radii)
+    - Circle sector and segment calculations
     - Vector operations
   - All calculations use Double precision (64-bit) for accuracy
 
@@ -115,6 +140,127 @@ Choose Option 2 if you want to optimize your application by including only the s
 Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
 ## Quick Start
+
+### File System Operations
+```pascal
+var
+  Files: TFilePathArray;
+  Attrs: TFileAttributes;
+  Content: string;
+begin
+  // Basic file operations
+  TFileKit.WriteFile('example.txt', 'Hello World');
+  Content := TFileKit.ReadFile('example.txt');
+  
+  // Directory operations
+  TFileKit.CreateDirectory('new_folder');
+  TFileKit.EnsureDirectory('path/to/folder');
+  
+  // List files with pattern matching
+  Files := TFileKit.ListFiles('src', '*.pas', True, fsName);
+  
+  // Get file attributes
+  Attrs := TFileKit.GetAttributes('example.txt');
+  WriteLn(Format('Read-only: %s', [BoolToStr(Attrs.ReadOnly, True)]));
+  
+  // File manipulation
+  TFileKit.CopyFile('source.txt', 'dest.txt');
+  TFileKit.MoveFile('old.txt', 'new.txt');
+  TFileKit.DeleteFile('temp.txt');
+  
+  // Path operations
+  WriteLn(TFileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
+  WriteLn(TFileKit.GetExtension('script.pas')); // Returns '.pas'
+  WriteLn(TFileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
+end;
+```
+
+### String Operations
+```pascal
+var
+  Text: string;
+  Words: TMatchStrings;
+  Matches: TMatchesResults;
+begin
+  // Basic string operations
+  Text := TStringKit.Trim('  Hello World  ');
+  Text := TStringKit.ToUpper('hello'); // Returns 'HELLO'
+  Text := TStringKit.ToLower('WORLD'); // Returns 'world'
+  
+  // String formatting
+  Text := TStringKit.PadLeft('123', 5, '0'); // Returns '00123'
+  Text := TStringKit.PadCenter('Title', 10, '-'); // Returns '--Title---'
+  
+  // String manipulation
+  Text := TStringKit.ReverseText('Hello'); // Returns 'olleH'
+  Text := TStringKit.DuplicateText('Ha', 3); // Returns 'HaHaHa'
+  Text := TStringKit.CollapseWhitespace('Hello    World'); // Returns 'Hello World'
+  
+  // Pattern matching
+  if TStringKit.MatchesPattern('test@email.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
+    WriteLn('Valid email');
+    
+  // Extract words
+  Words := TStringKit.GetWords('Hello World 123');
+  WriteLn(Words[0]); // Returns 'Hello'
+  
+  // Regular expression matches
+  Matches := TStringKit.ExtractMatches('abc123def456', '\d+');
+  WriteLn(Matches[0].Text); // Returns '123'
+end;
+```
+
+### DateTime Operations
+```pascal
+var
+  CurrentTime: TDateTime;
+  Formatted: string;
+  Interval: TInterval;
+  Span: TDateSpan;
+begin
+  // Get current date/time
+  CurrentTime := TDateTimeKit.GetNow;
+  
+  // Format date/time
+  Formatted := TDateTimeKit.GetAsString(CurrentTime, 'yyyy-mm-dd hh:nn:ss');
+  
+  // Date arithmetic
+  CurrentTime := TDateTimeKit.AddDays(CurrentTime, 7); // Add 7 days
+  CurrentTime := TDateTimeKit.AddMonths(CurrentTime, 1); // Add 1 month
+  
+  // Period calculations
+  Interval := TDateTimeKit.CreateInterval(
+    TDateTimeKit.GetToday,
+    TDateTimeKit.AddDays(TDateTimeKit.GetToday, 30)
+  );
+  
+  // Calculate time span
+  Span := TDateTimeKit.SpanBetween(
+    Interval.StartDate,
+    Interval.EndDate,
+    dskPeriod
+  );
+  WriteLn(Format('Days between: %d', [Span.Days]));
+  
+  // Business day calculations
+  if TDateTimeKit.IsBusinessDay(CurrentTime) then
+    WriteLn('Current day is a business day');
+    
+  // Get next business day
+  CurrentTime := TDateTimeKit.NextBusinessDay(CurrentTime);
+  
+  // Period start/end
+  WriteLn(TDateTimeKit.GetAsString(
+    TDateTimeKit.StartOfMonth(CurrentTime),
+    'yyyy-mm-dd'
+  )); // First day of month
+  
+  WriteLn(TDateTimeKit.GetAsString(
+    TDateTimeKit.EndOfYear(CurrentTime),
+    'yyyy-mm-dd'
+  )); // Last day of year
+end;
+```
 
 ### Statistical Operations
 ```pascal
