@@ -2,6 +2,10 @@
 
 A comprehensive Pascal toolkit providing essential utilities for modern Pascal development.
 
+
+> [!WARNING]
+> This library is under active development and is not yet ready for production use. APIs may change without notice.
+
 ## Features
 
 - **String Operations**
