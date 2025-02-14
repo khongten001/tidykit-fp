@@ -5,11 +5,11 @@ program TestRunner;
 uses
   Classes
   , consoletestrunner
-  //, TestCaseDateTime
-  //, TestCaseFS
-  //, TestCaseString
-  //, TestCaseCrypto
-  //, TestCaseRequest
+  , TestCaseDateTime
+  , TestCaseFS
+  , TestCaseString
+  , TestCaseCrypto
+  , TestCaseRequest
   , TestCaseMath;
 
 type
