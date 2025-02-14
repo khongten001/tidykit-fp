@@ -769,10 +769,6 @@ begin
   // Bond price should be higher than face value when yield < coupon rate
   WriteLn('Test 09: Bond Price Test: Starting with FACE_VALUE = 1000.0, COUPON_RATE = 0.06, YIELD_RATE = 0.05, PERIODS_PER_YEAR = 2, YEARS_TO_MATURITY = 5');
 
-  WriteLn('Bond Price: ', TFinanceKit.BondPrice(
-    FACE_VALUE, COUPON_RATE, YIELD_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
-  ));
-
   AssertFinanceEquals(1043.76, TFinanceKit.BondPrice(
     FACE_VALUE, COUPON_RATE, YIELD_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
   ), 'Bond price calculation failed');
@@ -788,9 +784,6 @@ const
   YEARS_TO_MATURITY = 5;
 begin
   WriteLn('Test 10: Bond Yield to Maturity Test: Starting with BOND_PRICE = 1043.76, FACE_VALUE = 1000.0, COUPON_RATE = 0.06, PERIODS_PER_YEAR = 2, YEARS_TO_MATURITY = 5');
-  WriteLn('Bond Yield to Maturity: ', TFinanceKit.BondYieldToMaturity(
-    BOND_PRICE, FACE_VALUE, COUPON_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
-  ));
 
   AssertFinanceEquals(0.05, TFinanceKit.BondYieldToMaturity(
     BOND_PRICE, FACE_VALUE, COUPON_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
@@ -805,9 +798,6 @@ const
   COMPOUNDINGS = 12;    // Monthly compounding
 begin
   WriteLn('Test 11: Effective Annual Rate Test: Starting with NOMINAL_RATE = 0.12, COMPOUNDINGS = 12');
-  WriteLn('Effective Annual Rate: ', TFinanceKit.EffectiveAnnualRate(
-    NOMINAL_RATE, COMPOUNDINGS
-  )); 
 
   AssertFinanceEquals(0.1268, TFinanceKit.EffectiveAnnualRate(  // Updated to match precise calculation
     NOMINAL_RATE, COMPOUNDINGS
@@ -829,7 +819,7 @@ begin
     FACE_VALUE, COUPON_RATE, YIELD_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
   ));
 
-  AssertFinanceEquals(4.4558, TFinanceKit.ModifiedDuration(
+  AssertFinanceEquals(4.3009, TFinanceKit.ModifiedDuration(
     FACE_VALUE, COUPON_RATE, YIELD_RATE, PERIODS_PER_YEAR, YEARS_TO_MATURITY
   ), 'Modified duration calculation failed');
 
@@ -936,15 +926,19 @@ const
 var
   CallPrice, PutPrice: Double;
 begin
+  WriteLn('Test 19: Black-Scholes Test: Starting with SPOT_PRICE = 100.0, STRIKE_PRICE = 100.0, RISK_FREE_RATE = 0.05, VOLATILITY = 0.2, TIME_TO_MATURITY = 1.0');
+
   CallPrice := TFinanceKit.BlackScholes(
     SPOT_PRICE, STRIKE_PRICE, RISK_FREE_RATE, VOLATILITY, TIME_TO_MATURITY, otCall
   );
   PutPrice := TFinanceKit.BlackScholes(
     SPOT_PRICE, STRIKE_PRICE, RISK_FREE_RATE, VOLATILITY, TIME_TO_MATURITY, otPut
   );
-  
+
   AssertFinanceEquals(10.4506, CallPrice, 'Black-Scholes call option price calculation failed');
-  AssertFinanceEquals(5.5723, PutPrice, 'Black-Scholes put option price calculation failed');
+  AssertFinanceEquals(5.5735, PutPrice, 'Black-Scholes put option price calculation failed');
+
+  WriteLn('Test 19: Black-Scholes Test: Finished');
 end;
 
 procedure TTestCaseFinance.Test20_RiskMetrics;
@@ -998,13 +992,16 @@ const
 var
   Leverage: TOperatingLeverage;
 begin
+  WriteLn('Test 22: Operating Leverage Test: Starting with QUANTITY = 10000.0, PRICE_PER_UNIT = 50.0, VARIABLE_COST_PER_UNIT = 30.0, FIXED_COSTS = 100000.0');
   Leverage := TFinanceKit.OperatingLeverage(
     QUANTITY, PRICE_PER_UNIT, VARIABLE_COST_PER_UNIT, FIXED_COSTS
   );
-  
-  AssertFinanceEquals(1.25, Leverage.DOL, 'Degree of operating leverage calculation failed');
+
+  AssertFinanceEquals(2.0000, Leverage.DOL, 'Degree of operating leverage calculation failed');
   AssertFinanceEquals(5000.0, Leverage.BreakEvenPoint, 'Break-even point calculation failed');
-  AssertFinanceEquals(1.25, Leverage.OperatingLeverage, 'Operating leverage calculation failed');
+  AssertFinanceEquals(2.0000, Leverage.OperatingLeverage, 'Operating leverage calculation failed');
+
+  WriteLn('Test 22: Operating Leverage Test: Finished');
 end;
 
 procedure TTestCaseFinance.Test23_ProfitabilityRatios;

@@ -406,29 +406,23 @@ implementation
 
 class function TFinanceKit.CumulativeNormal(const X: Double): Double;
 const
-  A1 = 0.254829592;
-  A2 = -0.284496736;
-  A3 = 1.421413741;
-  A4 = -1.453152027;
-  A5 = 1.061405429;
-  P = 0.3275911;
+  A1 = 0.31938153;
+  A2 = -0.356563782;
+  A3 = 1.781477937;
+  A4 = -1.821255978;
+  A5 = 1.330274429;
+  P = 0.2316419;
 var
-  Sign: Integer;
-  T, Z: Double;
+  K, L: Double;
 begin
   if X < 0 then
-  begin
-    Sign := -1;
-    Z := -X;
-  end
+    Result := 1 - CumulativeNormal(-X)
   else
   begin
-    Sign := 1;
-    Z := X;
+    K := 1 / (1 + P * X);
+    L := ((((A5 * K + A4) * K + A3) * K + A2) * K + A1) * K;
+    Result := 1 - L * Exp(-Sqr(X) / 2) / Sqrt(2 * Pi);
   end;
-  
-  T := 1.0 / (1.0 + P * Z);
-  Result := 0.5 * (1.0 + Sign * (1.0 - (((((A5 * T + A4) * T) + A3) * T + A2) * T + A1) * T * Exp(-Z * Z / 2.0)));
 end;
 
 class function TFinanceKit.PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
@@ -762,8 +756,8 @@ begin
   // Calculate Macaulay Duration (in periods)
   MacDur := WeightedTime / BondPV;
   
-  // Convert to Modified Duration and scale to years
-  Result := SimpleRoundTo(MacDur / ((1 + YieldPerPeriod) * APeriodsPerYear), -ADecimals);
+  // Convert Macaulay Duration to years and then to Modified Duration
+  Result := SimpleRoundTo((MacDur / APeriodsPerYear) / (1 + YieldPerPeriod), -ADecimals);
 end;
 
 class function TFinanceKit.BreakEvenUnits(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double;
@@ -890,6 +884,7 @@ var
   D1, D2: Double;
   DiscountFactor: Double;
   VolSqrtT: Double;
+  ND1, ND2: Double;
 begin
   if ATimeToMaturity <= 0 then
     raise Exception.Create('Time to maturity must be positive');
@@ -908,17 +903,21 @@ begin
   // Calculate discount factor once
   DiscountFactor := Exp(-ARiskFreeRate * ATimeToMaturity);
   
+  // Calculate cumulative normal probabilities
+  ND1 := CumulativeNormal(D1);
+  ND2 := CumulativeNormal(D2);
+  
   case AOptionType of
     otCall:
       Result := SimpleRoundTo(
-        ASpotPrice * CumulativeNormal(D1) - 
-        AStrikePrice * DiscountFactor * CumulativeNormal(D2),
+        ASpotPrice * ND1 - 
+        AStrikePrice * DiscountFactor * ND2,
         -ADecimals
       );
     otPut:
       Result := SimpleRoundTo(
-        AStrikePrice * DiscountFactor * CumulativeNormal(-D2) - 
-        ASpotPrice * CumulativeNormal(-D1),
+        AStrikePrice * DiscountFactor * (1 - ND2) - 
+        ASpotPrice * (1 - ND1),
         -ADecimals
       );
   end;
@@ -994,7 +993,7 @@ begin
   if Abs(EBIT) < 1E-10 then
     Result.DOL := 0
   else
-    Result.DOL := SimpleRoundTo((TotalRevenue - TotalVariableCosts) / EBIT, -ADecimals);
+    Result.DOL := SimpleRoundTo((AQuantity * ContributionMargin) / EBIT, -ADecimals);
   
   // Break-even point in units
   Result.BreakEvenPoint := SimpleRoundTo(AFixedCosts / ContributionMargin, -ADecimals);
