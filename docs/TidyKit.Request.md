@@ -46,25 +46,31 @@ This module implements a fluent interface pattern, which is a specific form of t
 1. **Method Chaining**: Each method returns the request itself, allowing for a chain of method calls:
 ```pascal
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;  // Automatically initialized when declared
+  Response: TResponse;
+begin
   Response := Request
     .Post                                // Chain HTTP method
     .URL('https://api.example.com')      // Chain URL
     .AddHeader('X-API-Key', 'your-key')  // Chain headers
     .WithJSON('{"name": "John"}')        // Chain body
     .Send;                               // Execute
+end;
 ```
 
 2. **Readable, SQL-like Syntax**: The API reads almost like English:
 ```pascal
 var
-  Request: TRequestBuilder;  // Automatically initialized
+  Request: TRequestBuilder;  // Automatically initialized when declared
+  Response: TResponse;
+begin
   Response := Request
     .Get
     .URL('https://api.example.com/secure')
     .BasicAuth('username', 'password')
     .WithTimeout(5000)
     .Send;
+end;
 ```
 
 3. **Context Preservation**: Each method call preserves and adds to the context, with the final state resolved only when `Send` is called.
@@ -108,17 +114,16 @@ end;
 ### Using the Fluent Interface
 ```pascal
 var
-  Request: TRequestBuilder;
+  Request: TRequestBuilder;  // Automatically initialized when declared
   Response: TResponse;
 begin
   Response := Request
-    .Post
-    .URL('https://api.example.com/data')
-    .AddHeader('X-API-Key', 'your-key')
-    .AddParam('version', '1.0')
-    .WithJSON('{"data": "value"}')
-    .Send;
-    
+    .Post                                // Chain HTTP method
+    .URL('https://api.example.com')      // Chain URL
+    .AddHeader('X-API-Key', 'your-key')  // Chain headers
+    .WithJSON('{"name": "John"}')        // Chain body
+    .Send;                               // Execute
+
   if Response.StatusCode = 200 then
     WriteLn(Response.Text);
 end;
