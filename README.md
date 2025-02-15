@@ -1,6 +1,6 @@
 # 🧰 TidyKit
 
-A comprehensive Pascal toolkit providing essential utilities for Pascal development.  
+A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
 
 > [!WARNING]
