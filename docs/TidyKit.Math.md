@@ -38,13 +38,14 @@ The TidyKit Math library provides comprehensive mathematical operations using Do
     - [Rounding Behavior](#rounding-behavior-1)
     - [Best Practices](#best-practices)
   - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
+    - [Error Handling](#error-handling)
   - [Trigonometric Operations (TTrigKit)](#trigonometric-operations-ttrigkit)
     - [Angle Conventions](#angle-conventions)
     - [Basic Usage](#basic-usage)
     - [Triangle Calculations](#triangle-calculations-1)
     - [Vector Operations](#vector-operations-1)
     - [Common Pitfalls to Avoid](#common-pitfalls-to-avoid)
-  - [Error Handling](#error-handling)
+  - [Error Handling](#error-handling-1)
   - [Performance Considerations](#performance-considerations)
   - [Examples](#examples)
     - [Statistical Analysis](#statistical-analysis)
@@ -432,7 +433,7 @@ Leverage := TFinanceKit.OperatingLeverage(
 
 ## Matrix Operations (TMatrixKit)
 
-The `TMatrixKit` class provides matrix operations.
+The `TMatrixKit` class provides basic matrix operations with Double precision.
 
 ```pascal
 uses TidyKit.Math.Matrices;
@@ -451,22 +452,33 @@ F := TMatrixKit.ScalarMultiply(A, 2.0);          // Scalar multiplication
 
 // Matrix transformations
 T := TMatrixKit.Transpose(A);                    // Matrix transpose
-Inv := TMatrixKit.Inverse(A);                    // Matrix inverse
 
 // Matrix properties
 Det := TMatrixKit.Determinant(A);                // Calculate determinant
 Tr := TMatrixKit.Trace(A);                       // Calculate trace
-R := TMatrixKit.Rank(A);                         // Calculate rank
-
-// Matrix decompositions
-TMatrixKit.LUDecomposition(A, L, U);             // LU decomposition
-TMatrixKit.QRDecomposition(A, Q, R);             // QR decomposition
 
 // Helper functions
 Rows := TMatrixKit.GetRows(A);                   // Get number of rows
 Cols := TMatrixKit.GetCols(A);                   // Get number of columns
 IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
+
+// Coming Soon:
+// - Matrix rank calculation
+// - Matrix inversion
+// - LU decomposition
+// - QR decomposition
 ```
+
+### Error Handling
+
+Matrix operations include appropriate error checking:
+
+- Invalid matrix dimensions
+- Matrix size mismatches
+- Singular matrices (for future operations)
+- Out of memory conditions
+
+Errors are raised using standard Pascal exceptions with descriptive messages.
 
 ## Trigonometric Operations (TTrigKit)
 

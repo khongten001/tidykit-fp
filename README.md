@@ -71,9 +71,13 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Return metrics (ROI, ROE)
   - 🔢 Matrix Operations
     - Basic operations (add, subtract, multiply)
-    - Matrix transformations
+    - Matrix creation (zeros, ones, identity)
+    - Matrix transpose
     - Determinant and trace
-    - Matrix decompositions (LU, QR)
+    - Coming Soon:
+      - Matrix decompositions (LU, QR)
+      - Matrix inversion
+      - Matrix rank calculation
   - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)
     - Inverse functions (arcsin, arccos, arctan, arctan2)
@@ -279,19 +283,23 @@ end;
 ### 🔢 Matrix Operations
 ```pascal
 var
-  A, B, Result: TMatrix;
+  A, B, C: TMatrix;
 begin
-  // Image transformation matrix
-  A := TMatrixKit.CreateMatrix(3, 3);
-  A[0,0] := 1; A[0,1] := 0; A[0,2] := 10;  // Translation
-  A[1,0] := 0; A[1,1] := 1; A[1,2] := 20;
-  A[2,0] := 0; A[2,1] := 0; A[2,2] := 1;
+  // Create and initialize matrices
+  A := TMatrixKit.CreateMatrix(2, 2);
+  A[0,0] := 1; A[0,1] := 2;
+  A[1,0] := 3; A[1,1] := 4;
   
-  // Apply transformation
-  B := TMatrixKit.CreateMatrix(3, 1);
-  B[0,0] := 100; B[1,0] := 200; B[2,0] := 1;  // Point coordinates
+  // Basic operations
+  B := TMatrixKit.Identity(2);  // Create 2x2 identity matrix
+  C := TMatrixKit.Multiply(A, B);  // Matrix multiplication
   
-  Result := TMatrixKit.Multiply(A, B);
+  // Calculate properties
+  WriteLn(Format('Determinant: %.2f', [TMatrixKit.Determinant(A)]));
+  WriteLn(Format('Trace: %.2f', [TMatrixKit.Trace(A)]));
+  
+  // Matrix transpose
+  C := TMatrixKit.Transpose(A);
 end;
 ```
 
