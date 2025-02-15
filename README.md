@@ -1,34 +1,36 @@
-# TidyKit
+# 🧰 TidyKit
 
 A comprehensive Pascal toolkit providing essential utilities for Pascal development.  
 **Streamlining your Pascal programming experience with reliable tools.**
 
 > [!WARNING]
-> This library is under active development and is not yet ready for production use. APIs may change without notice.
+> ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
 
-## Table of Contents
-- [TidyKit](#tidykit)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-    - [File System Operations](#file-system-operations)
-    - [String Operations](#string-operations)
-    - [DateTime Operations](#datetime-operations)
-    - [Statistical Operations](#statistical-operations)
-    - [Financial Calculations](#financial-calculations)
-    - [Matrix Operations](#matrix-operations)
-    - [Trigonometric Calculations](#trigonometric-calculations)
-  - [Documentation](#documentation)
-  - [Testing](#testing)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Acknowledgments](#acknowledgments)
+## 📑 Table of Contents
+- [🧰 TidyKit](#-tidykit)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [✨ Features](#-features)
+  - [💻 Installation](#-installation)
+  - [🚀 Quick Start](#-quick-start)
+    - [📂 File System Operations](#-file-system-operations)
+    - [📝 String Operations](#-string-operations)
+    - [📅 DateTime Operations](#-datetime-operations)
+    - [🌐 HTTP Request Operations](#-http-request-operations)
+    - [🔐 Crypto Operations](#-crypto-operations)
+    - [📈 Statistical Operations](#-statistical-operations)
+    - [🔢 Matrix Operations](#-matrix-operations)
+    - [📐 Trigonometric Operations](#-trigonometric-operations)
+    - [💰 Financial Operations](#-financial-operations)
+  - [📚 Documentation](#-documentation)
+  - [✅ Testing](#-testing)
+  - [🤝 Contributing](#-contributing)
+  - [⚖️ License](#️-license)
+  - [🙏 Acknowledgments](#-acknowledgments)
 
 
-## Features
+## ✨ Features
 
-- **String Operations**
+- 📝 **String Operations**
   - String manipulation and transformations
   - Case conversion and formatting
   - Pattern matching and validation
@@ -36,24 +38,23 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
   - String comparison and searching
   - Text encoding/decoding
 
-
-- **File System Operations**
+- 📂 **File System Operations**
   - File and directory manipulation
   - Path operations
   - File searching and filtering
 
-- **Cryptography**
+- 🔐 **Cryptography**
   - SHA3 implementation
   - Secure hashing
   - Encryption utilities
 
-- **Network Operations**
+- 🌐 **Network Operations**
   - HTTP client
   - Request handling
   - Response parsing
 
-- **Math Operations**
-  - Statistical Analysis
+- 📊 **Math Operations**
+  - 📈 Statistical Analysis
     - Basic statistics (mean, median, mode, range)
     - Variance and standard deviation (population and sample)
     - Distribution measures (skewness, kurtosis)
@@ -63,17 +64,17 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
     - Hypothesis testing (t-test, Mann-Whitney U)
     - Effect size measures (Cohen's d, Hedges' g)
     - Bootstrap confidence intervals
-  - Financial Mathematics
+  - 💰 Financial Mathematics
     - Time value of money (PV, FV)
     - Investment analysis (NPV, IRR)
     - Depreciation calculations
     - Return metrics (ROI, ROE)
-  - Matrix Operations
+  - 🔢 Matrix Operations
     - Basic operations (add, subtract, multiply)
     - Matrix transformations
     - Determinant and trace
     - Matrix decompositions (LU, QR)
-  - Trigonometry
+  - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)
     - Inverse functions (arcsin, arccos, arctan, arctan2)
     - Hyperbolic functions (sinh, cosh, tanh)
@@ -83,9 +84,9 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
     - Triangle calculations (area, perimeter, radii)
     - Circle sector and segment calculations
     - Vector operations
-  - All calculations use Double precision (64-bit) for accuracy
+  - ✅ All calculations use Double precision (64-bit) for accuracy
 
-## Installation
+## 💻 Installation
 
 1. Clone the repository:
 ```bash
@@ -132,16 +133,16 @@ uses
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
 
 Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
-- Reduces compilation time
-- Minimizes executable size
-- Makes dependencies more explicit
-- Improves code maintainability
+- ⚡ Reduces compilation time
+- 📦 Minimizes executable size
+- 🔍 Makes dependencies more explicit
+- 🔧 Improves code maintainability
 
 Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
-## Quick Start
+## 🚀 Quick Start
 
-### File System Operations
+### 📂 File System Operations
 ```pascal
 var
   Files: TFilePathArray;
@@ -175,263 +176,168 @@ begin
 end;
 ```
 
-### String Operations
+### 📝 String Operations
 ```pascal
 var
   Text: string;
-  Words: TMatchStrings;
-  Matches: TMatchesResults;
 begin
-  // Basic string operations
-  Text := TStringKit.Trim('  Hello World  ');
-  Text := TStringKit.ToUpper('hello'); // Returns 'HELLO'
-  Text := TStringKit.ToLower('WORLD'); // Returns 'world'
-  
-  // String formatting
-  Text := TStringKit.PadLeft('123', 5, '0'); // Returns '00123'
-  Text := TStringKit.PadCenter('Title', 10, '-'); // Returns '--Title---'
-  
-  // String manipulation
-  Text := TStringKit.ReverseText('Hello'); // Returns 'olleH'
-  Text := TStringKit.DuplicateText('Ha', 3); // Returns 'HaHaHa'
-  Text := TStringKit.CollapseWhitespace('Hello    World'); // Returns 'Hello World'
-  
-  // Pattern matching
-  if TStringKit.MatchesPattern('test@email.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
+  // Email validation
+  if TStringKit.MatchesPattern('user@example.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
     WriteLn('Valid email');
     
-  // Extract words
-  Words := TStringKit.GetWords('Hello World 123');
-  WriteLn(Words[0]); // Returns 'Hello'
+  // Format phone number
+  Text := TStringKit.PadLeft('5551234', 10, '0');  // Returns '0005551234'
   
-  // Regular expression matches
-  Matches := TStringKit.ExtractMatches('abc123def456', '\d+');
-  WriteLn(Matches[0].Text); // Returns '123'
+  // Clean user input
+  Text := TStringKit.CollapseWhitespace('  Hello    World  ');  // Returns 'Hello World'
+  
+  // Format product code
+  Text := TStringKit.PadCenter('A123', 8, '-');  // Returns '--A123---'
 end;
 ```
 
-### DateTime Operations
+### 📅 DateTime Operations
 ```pascal
 var
   CurrentTime: TDateTime;
-  Formatted: string;
-  Interval: TInterval;
-  Span: TDateSpan;
+  NextWorkday: TDateTime;
 begin
-  // Get current date/time
+  // Get next business day for delivery date
   CurrentTime := TDateTimeKit.GetNow;
+  NextWorkday := TDateTimeKit.NextBusinessDay(CurrentTime);
   
-  // Format date/time
-  Formatted := TDateTimeKit.GetAsString(CurrentTime, 'yyyy-mm-dd hh:nn:ss');
+  // Format for display
+  WriteLn(TDateTimeKit.GetAsString(NextWorkday, 'yyyy-mm-dd'));
   
-  // Date arithmetic
-  CurrentTime := TDateTimeKit.AddDays(CurrentTime, 7); // Add 7 days
-  CurrentTime := TDateTimeKit.AddMonths(CurrentTime, 1); // Add 1 month
-  
-  // Period calculations
-  Interval := TDateTimeKit.CreateInterval(
-    TDateTimeKit.GetToday,
-    TDateTimeKit.AddDays(TDateTimeKit.GetToday, 30)
-  );
-  
-  // Calculate time span
-  Span := TDateTimeKit.SpanBetween(
-    Interval.StartDate,
-    Interval.EndDate,
-    dskPeriod
-  );
-  WriteLn(Format('Days between: %d', [Span.Days]));
-  
-  // Business day calculations
-  if TDateTimeKit.IsBusinessDay(CurrentTime) then
-    WriteLn('Current day is a business day');
-    
-  // Get next business day
-  CurrentTime := TDateTimeKit.NextBusinessDay(CurrentTime);
-  
-  // Period start/end
-  WriteLn(TDateTimeKit.GetAsString(
-    TDateTimeKit.StartOfMonth(CurrentTime),
-    'yyyy-mm-dd'
-  )); // First day of month
-  
-  WriteLn(TDateTimeKit.GetAsString(
-    TDateTimeKit.EndOfYear(CurrentTime),
-    'yyyy-mm-dd'
-  )); // Last day of year
+  // Check if within business hours (9 AM - 5 PM)
+  if TDateTimeKit.IsWithinInterval(CurrentTime, 
+     TDateTimeKit.CreateInterval(
+       TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(9, 0, 0, 0),
+       TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(17, 0, 0, 0)
+     )) then
+    WriteLn('Within business hours');
 end;
 ```
 
-### Statistical Operations
+### 🌐 HTTP Request Operations
+```pascal
+var
+  Response: TResponse;
+begin
+  // Simple GET request
+  Response := Http.Get('https://api.example.com/data');
+  if Response.StatusCode = 200 then
+    WriteLn(Response.Text);
+    
+  // POST with JSON
+  Response := Http.PostJSON('https://api.example.com/users',
+    '{"name": "John", "email": "john@example.com"}');
+    
+  // Download file with progress
+  Response := Http.Get('https://example.com/large-file.zip');
+  TFileKit.WriteFile('download.zip', Response.Text);
+end;
+```
+
+### 🔐 Crypto Operations
+```pascal
+var
+  Hash: string;
+  Encrypted: string;
+begin
+  // Hash password for storage
+  Hash := TCryptoKit.SHA512Hash('user_password');
+  
+  // Secure configuration data
+  Encrypted := TCryptoKit.BlowfishCrypt(
+    '{"api_key": "secret123"}',
+    'encryption_key',
+    bmEncrypt
+  );
+  
+  // Verify file integrity
+  Hash := TCryptoKit.SHA256Hash(TFileKit.ReadFile('important.dat'));
+end;
+```
+
+### 📈 Statistical Operations
 ```pascal
 var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
-  IsNormal: Boolean;
-  WPValue: Double;
 begin
-  // Create sample data
-  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-  
-  // Get comprehensive descriptive statistics
+  // Analyze product ratings
+  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8);
   Stats := TStatsKit.Describe(Data);
   
-  // Example output (vertical format):
-  {
-  Descriptive Statistics
-  ======================
-  N: 10
-  Central Tendency:
-    Mean: 5.500000
-    Median: 5.500000
-    Mode: 1.000000
-  Dispersion:
-    Range: 9.000000
-    Variance: 8.250000
-    StdDev: 2.872281
-    SEM: 0.908295
-    CV: 52.22%
-  Distribution Shape:
-    Skewness: 0.000000
-    Kurtosis: -1.200000
-  Quartiles:
-    Min (0%): 1.000000
-    Q1 (25%): 3.250000
-    Q2 (50%): 5.500000
-    Q3 (75%): 7.750000
-    Max (100%): 10.000000
-    IQR: 4.500000
-  }
-  
-  // Example output (horizontal format):
-  {
-  N           |    Mean     |   Median    |   StdDev    |    SEM      |    CV(%)    
-  -----------------------------------------------------------------------------
-      10      |   5.5000    |   5.5000    |   2.8723    |   0.9083    |   52.2200   
-
-  Shape       |  Skewness   |  Kurtosis   |   Range     |    IQR      
-  ------------------------------------------------------------------------
-              |   0.0000    |  -1.2000    |   9.0000    |   4.5000    
-
-  Quantiles   |    Min      |     Q1      |     Q2      |     Q3      |    Max      
-  -----------------------------------------------------------------------------
-              |   1.0000    |   3.2500    |   5.5000    |   7.7500    |  10.0000    
-  }
-  
-  // Test for normality
-  TStatsKit.ShapiroWilkTest(Data, WPValue);
-  IsNormal := WPValue >= 0.05;  // Using 5% significance level
-  
-  // Use robust statistics if not normal
-  if not IsNormal then
-    WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
+  WriteLn(Format('Average rating: %.2f', [Stats.Mean]));
+  WriteLn(Format('Rating spread: %.2f', [Stats.StdDev]));
+  WriteLn(Format('Most common: %.1f', [Stats.Mode]));
 end;
 ```
 
+### 🔢 Matrix Operations
+```pascal
+var
+  A, B, Result: TMatrix;
+begin
+  // Image transformation matrix
+  A := TMatrixKit.CreateMatrix(3, 3);
+  A[0,0] := 1; A[0,1] := 0; A[0,2] := 10;  // Translation
+  A[1,0] := 0; A[1,1] := 1; A[1,2] := 20;
+  A[2,0] := 0; A[2,1] := 0; A[2,2] := 1;
+  
+  // Apply transformation
+  B := TMatrixKit.CreateMatrix(3, 1);
+  B[0,0] := 100; B[1,0] := 200; B[2,0] := 1;  // Point coordinates
+  
+  Result := TMatrixKit.Multiply(A, B);
+end;
+```
 
-### Financial Calculations
+### 📐 Trigonometric Operations
+```pascal
+var
+  Angle, Height, Distance: Double;
+begin
+  // Calculate building height using angle
+  Angle := TTrigKit.DegToRad(30);  // 30 degrees elevation
+  Distance := 100;  // Distance from building
+  Height := Distance * TTrigKit.Tan(Angle);
+  
+  // Calculate area of irregular field
+  WriteLn(Format('Field area: %.2f',
+    [TTrigKit.TriangleAreaSAS(100, TTrigKit.DegToRad(60), 120)]));
+end;
+```
+
+### 💰 Financial Operations
 ```pascal
 var
   CashFlows: TDoubleArray;
-  NPV, IRR, ModDur: Double;
-  CallPrice, PutPrice: Double;
-  Leverage: TOperatingLeverage;
+  NPV, IRR: Double;
 begin
-  // Time Value of Money calculations
-  CashFlows := TDoubleArray.Create(100, 200, 300);
+  // Investment analysis
+  CashFlows := TDoubleArray.Create(-1000, 200, 300, 400, 500);
   
-  // Calculate NPV with 6 decimal precision
-  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);
-  WriteLn(Format('NPV: %.6f', [NPV]));  // Expected: 381.592800
+  NPV := TFinanceKit.NetPresentValue(0, CashFlows, 0.1);
+  IRR := TFinanceKit.InternalRateOfReturn(0, CashFlows);
   
-  // Calculate IRR with default precision
-  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
-  WriteLn(Format('IRR: %.4f', [IRR]));  // Expected: 0.1000
-  
-  // Calculate Modified Duration for a 5-year bond
-  ModDur := TFinanceKit.ModifiedDuration(
-    1000.0,  // Face value
-    0.06,    // Coupon rate (6%)
-    0.05,    // Yield rate (5%)
-    2,       // Periods per year (semi-annual)
-    5        // Years to maturity
-  );
-  WriteLn(Format('Modified Duration: %.4f', [ModDur]));  // Expected: 4.3009
-  
-  // Calculate Black-Scholes option prices
-  CallPrice := TFinanceKit.BlackScholes(
-    100.0,   // Spot price
-    100.0,   // Strike price
-    0.05,    // Risk-free rate (5%)
-    0.20,    // Volatility (20%)
-    1.0,     // Time to maturity (1 year)
-    otCall   // Option type
-  );
-  WriteLn(Format('Call Option Price: %.4f', [CallPrice]));  // Expected: 10.4506
-  
-  PutPrice := TFinanceKit.BlackScholes(
-    100.0, 100.0, 0.05, 0.20, 1.0, otPut
-  );
-  WriteLn(Format('Put Option Price: %.4f', [PutPrice]));   // Expected: 5.5723
-  
-  // Calculate Operating Leverage
-  Leverage := TFinanceKit.OperatingLeverage(
-    10000.0,  // Quantity
-    50.0,     // Price per unit
-    30.0,     // Variable cost per unit
-    100000.0  // Fixed costs
-  );
-  WriteLn(Format('DOL: %.4f', [Leverage.DOL]));           // Expected: 2.0000
-  WriteLn(Format('Break-even: %.4f', [Leverage.BreakEvenPoint])); // Expected: 5000.0000
+  WriteLn(Format('NPV: $%.2f', [NPV]));
+  WriteLn(Format('IRR: %.2f%%', [IRR * 100]));
 end;
 ```
 
-### Matrix Operations
-```pascal
-var
-  A, B, C: TMatrix;
-begin
-  // Create and initialize matrices
-  A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.Identity(2);
-  A[0,0] := 1; A[0,1] := 2;
-  A[1,0] := 3; A[1,1] := 4;
-  
-  // Perform operations
-  C := TMatrixKit.Multiply(A, B);
-  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
-  WriteLn(Format('Trace: %.4f', [TMatrixKit.Trace(C)]));
-end;
-```
-### Trigonometric Calculations
-```pascal
-var
-  Angle, Height: Double;
-begin
-  // Convert 45 degrees to radians
-  Angle := TTrigKit.DegToRad(45);
-  
-  // Calculate height using sine
-  Height := 10 * TTrigKit.Sin(Angle);
-  
-  // Calculate triangle area
-  WriteLn(Format('Area: %.4f', [TTrigKit.TriangleAreaSAS(4, Angle, 5)]));
-  
-  // Calculate vector magnitude
-  WriteLn(Format('Magnitude: %.4f', [TTrigKit.VectorMagnitude(3, 4)]));
-end;
-```
-
-## Documentation
+## 📚 Documentation
 
 For detailed documentation, see:
-- [Cheat Sheet](docs/cheat-sheet.md)
-- [Math Documentation](docs/TidyKit.Math.md)
-- [File System Documentation](Coming soon)
-- [Crypto Documentation](Coming soon)
-- [Network Documentation](docs/TidyKit.Request.md)
+- 📋 [Cheat Sheet](docs/cheat-sheet.md)
+- 📊 [Math Documentation](docs/TidyKit.Math.md)
+- 📂 [File System Documentation](Coming soon)
+- 🔐 [Crypto Documentation](Coming soon)
+- 🌐 [Network Documentation](docs/TidyKit.Request.md)
 
-## Testing
+## ✅ Testing
 
 1. Open the TestRunner.lpi using Lazarus IDE
 2. Compile the project
@@ -442,7 +348,7 @@ $ cd tests
 $ ./TestRunner.exe -a --format=all
 ```
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch
@@ -450,11 +356,11 @@ $ ./TestRunner.exe -a --format=all
 4. Push to the branch
 5. Create a Pull Request
 
-## License
+## ⚖️ License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - FPC Team for Free Pascal
 - Contributors and maintainers
