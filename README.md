@@ -1,37 +1,36 @@
-# TidyKit
+# 🧰 TidyKit
 
 A comprehensive Pascal toolkit providing essential utilities for Pascal development.  
 **Streamlining your Pascal programming experience with reliable tools.**
 
 > [!WARNING]
-> This library is under active development and is not yet ready for production use. APIs may change without notice.
+> ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
 
-## Table of Contents
-- [TidyKit](#tidykit)
-  - [Table of Contents](#table-of-contents)
-  - [Features](#features)
-  - [Installation](#installation)
-  - [Quick Start](#quick-start)
-    - [File System Operations](#file-system-operations)
-    - [String Operations](#string-operations)
-    - [DateTime Operations](#datetime-operations)
-    - [HTTP Request Operations](#http-request-operations)
-    - [File System Operations](#file-system-operations-1)
-    - [Crypto Operations](#crypto-operations)
-    - [Statistical Operations](#statistical-operations)
-    - [Matrix Operations](#matrix-operations)
-    - [Trigonometric Operations](#trigonometric-operations)
-    - [Financial Operations](#financial-operations)
-  - [Documentation](#documentation)
-  - [Testing](#testing)
-  - [Contributing](#contributing)
-  - [License](#license)
-  - [Acknowledgments](#acknowledgments)
+## 📑 Table of Contents
+- [🧰 TidyKit](#-tidykit)
+  - [📑 Table of Contents](#-table-of-contents)
+  - [✨ Features](#-features)
+  - [💻 Installation](#-installation)
+  - [🚀 Quick Start](#-quick-start)
+    - [📂 File System Operations](#-file-system-operations)
+    - [📝 String Operations](#-string-operations)
+    - [📅 DateTime Operations](#-datetime-operations)
+    - [🌐 HTTP Request Operations](#-http-request-operations)
+    - [🔐 Crypto Operations](#-crypto-operations)
+    - [📈 Statistical Operations](#-statistical-operations)
+    - [🔢 Matrix Operations](#-matrix-operations)
+    - [📐 Trigonometric Operations](#-trigonometric-operations)
+    - [💰 Financial Operations](#-financial-operations)
+  - [📚 Documentation](#-documentation)
+  - [✅ Testing](#-testing)
+  - [🤝 Contributing](#-contributing)
+  - [⚖️ License](#️-license)
+  - [🙏 Acknowledgments](#-acknowledgments)
 
 
-## Features
+## ✨ Features
 
-- **String Operations**
+- 📝 **String Operations**
   - String manipulation and transformations
   - Case conversion and formatting
   - Pattern matching and validation
@@ -39,24 +38,23 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
   - String comparison and searching
   - Text encoding/decoding
 
-
-- **File System Operations**
+- 📂 **File System Operations**
   - File and directory manipulation
   - Path operations
   - File searching and filtering
 
-- **Cryptography**
+- 🔐 **Cryptography**
   - SHA3 implementation
   - Secure hashing
   - Encryption utilities
 
-- **Network Operations**
+- 🌐 **Network Operations**
   - HTTP client
   - Request handling
   - Response parsing
 
-- **Math Operations**
-  - Statistical Analysis
+- 📊 **Math Operations**
+  - 📈 Statistical Analysis
     - Basic statistics (mean, median, mode, range)
     - Variance and standard deviation (population and sample)
     - Distribution measures (skewness, kurtosis)
@@ -66,17 +64,17 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
     - Hypothesis testing (t-test, Mann-Whitney U)
     - Effect size measures (Cohen's d, Hedges' g)
     - Bootstrap confidence intervals
-  - Financial Mathematics
+  - 💰 Financial Mathematics
     - Time value of money (PV, FV)
     - Investment analysis (NPV, IRR)
     - Depreciation calculations
     - Return metrics (ROI, ROE)
-  - Matrix Operations
+  - 🔢 Matrix Operations
     - Basic operations (add, subtract, multiply)
     - Matrix transformations
     - Determinant and trace
     - Matrix decompositions (LU, QR)
-  - Trigonometry
+  - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)
     - Inverse functions (arcsin, arccos, arctan, arctan2)
     - Hyperbolic functions (sinh, cosh, tanh)
@@ -86,9 +84,9 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
     - Triangle calculations (area, perimeter, radii)
     - Circle sector and segment calculations
     - Vector operations
-  - All calculations use Double precision (64-bit) for accuracy
+  - ✅ All calculations use Double precision (64-bit) for accuracy
 
-## Installation
+## 💻 Installation
 
 1. Clone the repository:
 ```bash
@@ -135,16 +133,16 @@ uses
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
 
 Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
-- Reduces compilation time
-- Minimizes executable size
-- Makes dependencies more explicit
-- Improves code maintainability
+- ⚡ Reduces compilation time
+- 📦 Minimizes executable size
+- 🔍 Makes dependencies more explicit
+- 🔧 Improves code maintainability
 
 Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
-## Quick Start
+## 🚀 Quick Start
 
-### File System Operations
+### 📂 File System Operations
 ```pascal
 var
   Files: TFilePathArray;
@@ -178,7 +176,7 @@ begin
 end;
 ```
 
-### String Operations
+### 📝 String Operations
 ```pascal
 var
   Text: string;
@@ -198,7 +196,7 @@ begin
 end;
 ```
 
-### DateTime Operations
+### 📅 DateTime Operations
 ```pascal
 var
   CurrentTime: TDateTime;
@@ -221,7 +219,7 @@ begin
 end;
 ```
 
-### HTTP Request Operations
+### 🌐 HTTP Request Operations
 ```pascal
 var
   Response: TResponse;
@@ -241,28 +239,7 @@ begin
 end;
 ```
 
-### File System Operations
-```pascal
-var
-  Files: TFilePathArray;
-begin
-  // Save application config
-  TFileKit.WriteFile('config.json', '{"theme": "dark", "language": "en"}');
-  
-  // Create backup directory
-  TFileKit.EnsureDirectory('backups');
-  
-  // Find all log files
-  Files := TFileKit.ListFiles('logs', '*.log', True, fsDate);
-  
-  // Clean old temp files
-  if TFileKit.Exists('temp.dat') and 
-     (DaysBetween(TFileKit.GetLastAccessTime('temp.dat'), Now) > 7) then
-    TFileKit.DeleteFile('temp.dat');
-end;
-```
-
-### Crypto Operations
+### 🔐 Crypto Operations
 ```pascal
 var
   Hash: string;
@@ -283,7 +260,7 @@ begin
 end;
 ```
 
-### Statistical Operations
+### 📈 Statistical Operations
 ```pascal
 var
   Data: TDoubleArray;
@@ -299,7 +276,7 @@ begin
 end;
 ```
 
-### Matrix Operations
+### 🔢 Matrix Operations
 ```pascal
 var
   A, B, Result: TMatrix;
@@ -318,7 +295,7 @@ begin
 end;
 ```
 
-### Trigonometric Operations
+### 📐 Trigonometric Operations
 ```pascal
 var
   Angle, Height, Distance: Double;
@@ -334,7 +311,7 @@ begin
 end;
 ```
 
-### Financial Operations
+### 💰 Financial Operations
 ```pascal
 var
   CashFlows: TDoubleArray;
@@ -351,16 +328,16 @@ begin
 end;
 ```
 
-## Documentation
+## 📚 Documentation
 
 For detailed documentation, see:
-- [Cheat Sheet](docs/cheat-sheet.md)
-- [Math Documentation](docs/TidyKit.Math.md)
-- [File System Documentation](Coming soon)
-- [Crypto Documentation](Coming soon)
-- [Network Documentation](docs/TidyKit.Request.md)
+- 📋 [Cheat Sheet](docs/cheat-sheet.md)
+- 📊 [Math Documentation](docs/TidyKit.Math.md)
+- 📂 [File System Documentation](Coming soon)
+- 🔐 [Crypto Documentation](Coming soon)
+- 🌐 [Network Documentation](docs/TidyKit.Request.md)
 
-## Testing
+## ✅ Testing
 
 1. Open the TestRunner.lpi using Lazarus IDE
 2. Compile the project
@@ -371,7 +348,7 @@ $ cd tests
 $ ./TestRunner.exe -a --format=all
 ```
 
-## Contributing
+## 🤝 Contributing
 
 1. Fork the repository
 2. Create your feature branch
@@ -379,11 +356,11 @@ $ ./TestRunner.exe -a --format=all
 4. Push to the branch
 5. Create a Pull Request
 
-## License
+## ⚖️ License
 
 This project is licensed under the MIT License - see the LICENSE file for details.
 
-## Acknowledgments
+## 🙏 Acknowledgments
 
 - FPC Team for Free Pascal
 - Contributors and maintainers
