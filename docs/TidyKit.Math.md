@@ -462,7 +462,7 @@ Rows := TMatrixKit.GetRows(A);                   // Get number of rows
 Cols := TMatrixKit.GetCols(A);                   // Get number of columns
 IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
 
-// Coming Soon:
+// Note: The following features are planned for future implementation:
 // - Matrix rank calculation
 // - Matrix inversion
 // - LU decomposition
@@ -473,10 +473,9 @@ IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
 
 Matrix operations include appropriate error checking:
 
-- Invalid matrix dimensions
-- Matrix size mismatches
-- Singular matrices (for future operations)
-- Out of memory conditions
+- Invalid matrix dimensions (e.g., multiplication of incompatible matrices)
+- Matrix size mismatches in operations (e.g., adding matrices of different sizes)
+- Out of memory conditions when creating new matrices
 
 Errors are raised using standard Pascal exceptions with descriptive messages.
 

@@ -741,37 +741,32 @@ end;
 
 ### Matrix Operations (TMatrixKit)
 ```pascal
-// Matrix operations maintain full Double precision
-// No rounding is applied to preserve accuracy
+// Matrix creation
+M := TMatrixKit.CreateMatrix(Rows, Cols);        // Create empty matrix
+I := TMatrixKit.Identity(Size);                  // Create identity matrix
+Z := TMatrixKit.Zeros(Rows, Cols);               // Create zero matrix
+O := TMatrixKit.Ones(Rows, Cols);                // Create matrix of ones
 
-// Error handling for matrix operations
-try
-  Result := TMatrixKit.Multiply(A, B);
-except
-  on E: EMatrixDimensionMismatch do
-    WriteLn('Error: Matrix dimensions do not match');
-  on E: ESingularMatrix do
-    WriteLn('Error: Matrix is singular (non-invertible)');
-end;
+// Basic operations
+C := TMatrixKit.Add(A, B);                       // Matrix addition
+D := TMatrixKit.Subtract(A, B);                  // Matrix subtraction
+E := TMatrixKit.Multiply(A, B);                  // Matrix multiplication
+F := TMatrixKit.ScalarMultiply(A, 2.0);          // Scalar multiplication
 
-// Example with actual test values
-var
-  A, B, C: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2;
-  A[1,0] := 3; A[1,1] := 4;
-  
-  B := TMatrixKit.Identity(2);
-  
-  C := TMatrixKit.Multiply(A, B);
-  // Expected results:
-  // C[0,0] = 1.0  C[0,1] = 2.0
-  // C[1,0] = 3.0  C[1,1] = 4.0
-  
-  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
-  // Expected: -2.0000
-end;
+// Matrix transformations
+T := TMatrixKit.Transpose(A);                    // Matrix transpose
+
+// Matrix properties
+Det := TMatrixKit.Determinant(A);                // Calculate determinant
+Tr := TMatrixKit.Trace(A);                       // Calculate trace
+
+// Helper functions
+Rows := TMatrixKit.GetRows(A);                   // Get number of rows
+Cols := TMatrixKit.GetCols(A);                   // Get number of columns
+IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
+
+// Note: Features like matrix rank, inversion, LU and QR decomposition
+// are planned for future implementation
 ```
 
 ### Trigonometry (TTrigKit)

@@ -73,7 +73,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Basic operations (add, subtract, multiply)
     - Matrix creation (zeros, ones, identity)
     - Matrix transpose
-    - Determinant and trace
+    - Determinant and trace calculation
     - Coming Soon:
       - Matrix decompositions (LU, QR)
       - Matrix inversion
@@ -290,9 +290,11 @@ begin
   A[0,0] := 1; A[0,1] := 2;
   A[1,0] := 3; A[1,1] := 4;
   
-  // Basic operations
-  B := TMatrixKit.Identity(2);  // Create 2x2 identity matrix
-  C := TMatrixKit.Multiply(A, B);  // Matrix multiplication
+  // Create identity matrix
+  B := TMatrixKit.Identity(2);
+  
+  // Matrix multiplication
+  C := TMatrixKit.Multiply(A, B);
   
   // Calculate properties
   WriteLn(Format('Determinant: %.2f', [TMatrixKit.Determinant(A)]));
