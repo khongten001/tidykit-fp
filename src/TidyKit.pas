@@ -42,11 +42,11 @@ type
   THttp = TidyKit.Request.THttp;
 
   { Re-export math types }
-  TMatrix<T> = TidyKit.Math.TMatrix<T>;
-  TMatrixKit<T> = TidyKit.Math.Matrices.TMatrixKit<T>;
-  TFinanceKit<T> = TidyKit.Math.Finance.TFinanceKit<T>;
-  TTrigKit<T> = TidyKit.Math.Trigonometry.TTrigKit<T>;
-  TStatsKit<T> = TidyKit.Math.Stats.TStatsKit<T>;
+  TMatrix = TidyKit.Math.TMatrix;
+  TMatrixKit = TidyKit.Math.Matrices.TMatrixKit;
+  TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
+  TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
+  TStatsKit = TidyKit.Math.Stats.TStatsKit;
 
 const
   { Re-export filesystem constants }
