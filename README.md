@@ -15,10 +15,13 @@ A comprehensive Pascal toolkit providing essential utilities for Pascal developm
     - [File System Operations](#file-system-operations)
     - [String Operations](#string-operations)
     - [DateTime Operations](#datetime-operations)
+    - [HTTP Request Operations](#http-request-operations)
+    - [File System Operations](#file-system-operations-1)
+    - [Crypto Operations](#crypto-operations)
     - [Statistical Operations](#statistical-operations)
-    - [Financial Calculations](#financial-calculations)
     - [Matrix Operations](#matrix-operations)
-    - [Trigonometric Calculations](#trigonometric-calculations)
+    - [Trigonometric Operations](#trigonometric-operations)
+    - [Financial Operations](#financial-operations)
   - [Documentation](#documentation)
   - [Testing](#testing)
   - [Contributing](#contributing)
@@ -179,34 +182,19 @@ end;
 ```pascal
 var
   Text: string;
-  Words: TMatchStrings;
-  Matches: TMatchesResults;
 begin
-  // Basic string operations
-  Text := TStringKit.Trim('  Hello World  ');
-  Text := TStringKit.ToUpper('hello'); // Returns 'HELLO'
-  Text := TStringKit.ToLower('WORLD'); // Returns 'world'
-  
-  // String formatting
-  Text := TStringKit.PadLeft('123', 5, '0'); // Returns '00123'
-  Text := TStringKit.PadCenter('Title', 10, '-'); // Returns '--Title---'
-  
-  // String manipulation
-  Text := TStringKit.ReverseText('Hello'); // Returns 'olleH'
-  Text := TStringKit.DuplicateText('Ha', 3); // Returns 'HaHaHa'
-  Text := TStringKit.CollapseWhitespace('Hello    World'); // Returns 'Hello World'
-  
-  // Pattern matching
-  if TStringKit.MatchesPattern('test@email.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
+  // Email validation
+  if TStringKit.MatchesPattern('user@example.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
     WriteLn('Valid email');
     
-  // Extract words
-  Words := TStringKit.GetWords('Hello World 123');
-  WriteLn(Words[0]); // Returns 'Hello'
+  // Format phone number
+  Text := TStringKit.PadLeft('5551234', 10, '0');  // Returns '0005551234'
   
-  // Regular expression matches
-  Matches := TStringKit.ExtractMatches('abc123def456', '\d+');
-  WriteLn(Matches[0].Text); // Returns '123'
+  // Clean user input
+  Text := TStringKit.CollapseWhitespace('  Hello    World  ');  // Returns 'Hello World'
+  
+  // Format product code
+  Text := TStringKit.PadCenter('A123', 8, '-');  // Returns '--A123---'
 end;
 ```
 
@@ -214,51 +202,84 @@ end;
 ```pascal
 var
   CurrentTime: TDateTime;
-  Formatted: string;
-  Interval: TInterval;
-  Span: TDateSpan;
+  NextWorkday: TDateTime;
 begin
-  // Get current date/time
+  // Get next business day for delivery date
   CurrentTime := TDateTimeKit.GetNow;
+  NextWorkday := TDateTimeKit.NextBusinessDay(CurrentTime);
   
-  // Format date/time
-  Formatted := TDateTimeKit.GetAsString(CurrentTime, 'yyyy-mm-dd hh:nn:ss');
+  // Format for display
+  WriteLn(TDateTimeKit.GetAsString(NextWorkday, 'yyyy-mm-dd'));
   
-  // Date arithmetic
-  CurrentTime := TDateTimeKit.AddDays(CurrentTime, 7); // Add 7 days
-  CurrentTime := TDateTimeKit.AddMonths(CurrentTime, 1); // Add 1 month
-  
-  // Period calculations
-  Interval := TDateTimeKit.CreateInterval(
-    TDateTimeKit.GetToday,
-    TDateTimeKit.AddDays(TDateTimeKit.GetToday, 30)
-  );
-  
-  // Calculate time span
-  Span := TDateTimeKit.SpanBetween(
-    Interval.StartDate,
-    Interval.EndDate,
-    dskPeriod
-  );
-  WriteLn(Format('Days between: %d', [Span.Days]));
-  
-  // Business day calculations
-  if TDateTimeKit.IsBusinessDay(CurrentTime) then
-    WriteLn('Current day is a business day');
+  // Check if within business hours (9 AM - 5 PM)
+  if TDateTimeKit.IsWithinInterval(CurrentTime, 
+     TDateTimeKit.CreateInterval(
+       TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(9, 0, 0, 0),
+       TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(17, 0, 0, 0)
+     )) then
+    WriteLn('Within business hours');
+end;
+```
+
+### HTTP Request Operations
+```pascal
+var
+  Response: TResponse;
+begin
+  // Simple GET request
+  Response := Http.Get('https://api.example.com/data');
+  if Response.StatusCode = 200 then
+    WriteLn(Response.Text);
     
-  // Get next business day
-  CurrentTime := TDateTimeKit.NextBusinessDay(CurrentTime);
+  // POST with JSON
+  Response := Http.PostJSON('https://api.example.com/users',
+    '{"name": "John", "email": "john@example.com"}');
+    
+  // Download file with progress
+  Response := Http.Get('https://example.com/large-file.zip');
+  TFileKit.WriteFile('download.zip', Response.Text);
+end;
+```
+
+### File System Operations
+```pascal
+var
+  Files: TFilePathArray;
+begin
+  // Save application config
+  TFileKit.WriteFile('config.json', '{"theme": "dark", "language": "en"}');
   
-  // Period start/end
-  WriteLn(TDateTimeKit.GetAsString(
-    TDateTimeKit.StartOfMonth(CurrentTime),
-    'yyyy-mm-dd'
-  )); // First day of month
+  // Create backup directory
+  TFileKit.EnsureDirectory('backups');
   
-  WriteLn(TDateTimeKit.GetAsString(
-    TDateTimeKit.EndOfYear(CurrentTime),
-    'yyyy-mm-dd'
-  )); // Last day of year
+  // Find all log files
+  Files := TFileKit.ListFiles('logs', '*.log', True, fsDate);
+  
+  // Clean old temp files
+  if TFileKit.Exists('temp.dat') and 
+     (DaysBetween(TFileKit.GetLastAccessTime('temp.dat'), Now) > 7) then
+    TFileKit.DeleteFile('temp.dat');
+end;
+```
+
+### Crypto Operations
+```pascal
+var
+  Hash: string;
+  Encrypted: string;
+begin
+  // Hash password for storage
+  Hash := TCryptoKit.SHA512Hash('user_password');
+  
+  // Secure configuration data
+  Encrypted := TCryptoKit.BlowfishCrypt(
+    '{"api_key": "secret123"}',
+    'encryption_key',
+    bmEncrypt
+  );
+  
+  // Verify file integrity
+  Hash := TCryptoKit.SHA256Hash(TFileKit.ReadFile('important.dat'));
 end;
 ```
 
@@ -267,158 +288,66 @@ end;
 var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
-  IsNormal: Boolean;
-  WPValue: Double;
 begin
-  // Create sample data
-  Data := TDoubleArray.Create(1, 2, 3, 4, 5, 6, 7, 8, 9, 10);
-  
-  // Get comprehensive descriptive statistics
+  // Analyze product ratings
+  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8);
   Stats := TStatsKit.Describe(Data);
   
-  // Example output (vertical format):
-  {
-  Descriptive Statistics
-  ======================
-  N: 10
-  Central Tendency:
-    Mean: 5.500000
-    Median: 5.500000
-    Mode: 1.000000
-  Dispersion:
-    Range: 9.000000
-    Variance: 8.250000
-    StdDev: 2.872281
-    SEM: 0.908295
-    CV: 52.22%
-  Distribution Shape:
-    Skewness: 0.000000
-    Kurtosis: -1.200000
-  Quartiles:
-    Min (0%): 1.000000
-    Q1 (25%): 3.250000
-    Q2 (50%): 5.500000
-    Q3 (75%): 7.750000
-    Max (100%): 10.000000
-    IQR: 4.500000
-  }
-  
-  // Example output (horizontal format):
-  {
-  N           |    Mean     |   Median    |   StdDev    |    SEM      |    CV(%)    
-  -----------------------------------------------------------------------------
-      10      |   5.5000    |   5.5000    |   2.8723    |   0.9083    |   52.2200   
-
-  Shape       |  Skewness   |  Kurtosis   |   Range     |    IQR      
-  ------------------------------------------------------------------------
-              |   0.0000    |  -1.2000    |   9.0000    |   4.5000    
-
-  Quantiles   |    Min      |     Q1      |     Q2      |     Q3      |    Max      
-  -----------------------------------------------------------------------------
-              |   1.0000    |   3.2500    |   5.5000    |   7.7500    |  10.0000    
-  }
-  
-  // Test for normality
-  TStatsKit.ShapiroWilkTest(Data, WPValue);
-  IsNormal := WPValue >= 0.05;  // Using 5% significance level
-  
-  // Use robust statistics if not normal
-  if not IsNormal then
-    WriteLn(Format('Robust StdDev: %.4f', [TStatsKit.RobustStandardDeviation(Data)]));
-end;
-```
-
-
-### Financial Calculations
-```pascal
-var
-  CashFlows: TDoubleArray;
-  NPV, IRR, ModDur: Double;
-  CallPrice, PutPrice: Double;
-  Leverage: TOperatingLeverage;
-begin
-  // Time Value of Money calculations
-  CashFlows := TDoubleArray.Create(100, 200, 300);
-  
-  // Calculate NPV with 6 decimal precision
-  NPV := TFinanceKit.NetPresentValue(1000, CashFlows, 0.1, 6);
-  WriteLn(Format('NPV: %.6f', [NPV]));  // Expected: 381.592800
-  
-  // Calculate IRR with default precision
-  IRR := TFinanceKit.InternalRateOfReturn(1000, CashFlows);
-  WriteLn(Format('IRR: %.4f', [IRR]));  // Expected: 0.1000
-  
-  // Calculate Modified Duration for a 5-year bond
-  ModDur := TFinanceKit.ModifiedDuration(
-    1000.0,  // Face value
-    0.06,    // Coupon rate (6%)
-    0.05,    // Yield rate (5%)
-    2,       // Periods per year (semi-annual)
-    5        // Years to maturity
-  );
-  WriteLn(Format('Modified Duration: %.4f', [ModDur]));  // Expected: 4.3009
-  
-  // Calculate Black-Scholes option prices
-  CallPrice := TFinanceKit.BlackScholes(
-    100.0,   // Spot price
-    100.0,   // Strike price
-    0.05,    // Risk-free rate (5%)
-    0.20,    // Volatility (20%)
-    1.0,     // Time to maturity (1 year)
-    otCall   // Option type
-  );
-  WriteLn(Format('Call Option Price: %.4f', [CallPrice]));  // Expected: 10.4506
-  
-  PutPrice := TFinanceKit.BlackScholes(
-    100.0, 100.0, 0.05, 0.20, 1.0, otPut
-  );
-  WriteLn(Format('Put Option Price: %.4f', [PutPrice]));   // Expected: 5.5723
-  
-  // Calculate Operating Leverage
-  Leverage := TFinanceKit.OperatingLeverage(
-    10000.0,  // Quantity
-    50.0,     // Price per unit
-    30.0,     // Variable cost per unit
-    100000.0  // Fixed costs
-  );
-  WriteLn(Format('DOL: %.4f', [Leverage.DOL]));           // Expected: 2.0000
-  WriteLn(Format('Break-even: %.4f', [Leverage.BreakEvenPoint])); // Expected: 5000.0000
+  WriteLn(Format('Average rating: %.2f', [Stats.Mean]));
+  WriteLn(Format('Rating spread: %.2f', [Stats.StdDev]));
+  WriteLn(Format('Most common: %.1f', [Stats.Mode]));
 end;
 ```
 
 ### Matrix Operations
 ```pascal
 var
-  A, B, C: TMatrix;
+  A, B, Result: TMatrix;
 begin
-  // Create and initialize matrices
-  A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.Identity(2);
-  A[0,0] := 1; A[0,1] := 2;
-  A[1,0] := 3; A[1,1] := 4;
+  // Image transformation matrix
+  A := TMatrixKit.CreateMatrix(3, 3);
+  A[0,0] := 1; A[0,1] := 0; A[0,2] := 10;  // Translation
+  A[1,0] := 0; A[1,1] := 1; A[1,2] := 20;
+  A[2,0] := 0; A[2,1] := 0; A[2,2] := 1;
   
-  // Perform operations
-  C := TMatrixKit.Multiply(A, B);
-  WriteLn(Format('Determinant: %.4f', [TMatrixKit.Determinant(C)]));
-  WriteLn(Format('Trace: %.4f', [TMatrixKit.Trace(C)]));
+  // Apply transformation
+  B := TMatrixKit.CreateMatrix(3, 1);
+  B[0,0] := 100; B[1,0] := 200; B[2,0] := 1;  // Point coordinates
+  
+  Result := TMatrixKit.Multiply(A, B);
 end;
 ```
-### Trigonometric Calculations
+
+### Trigonometric Operations
 ```pascal
 var
-  Angle, Height: Double;
+  Angle, Height, Distance: Double;
 begin
-  // Convert 45 degrees to radians
-  Angle := TTrigKit.DegToRad(45);
+  // Calculate building height using angle
+  Angle := TTrigKit.DegToRad(30);  // 30 degrees elevation
+  Distance := 100;  // Distance from building
+  Height := Distance * TTrigKit.Tan(Angle);
   
-  // Calculate height using sine
-  Height := 10 * TTrigKit.Sin(Angle);
+  // Calculate area of irregular field
+  WriteLn(Format('Field area: %.2f',
+    [TTrigKit.TriangleAreaSAS(100, TTrigKit.DegToRad(60), 120)]));
+end;
+```
+
+### Financial Operations
+```pascal
+var
+  CashFlows: TDoubleArray;
+  NPV, IRR: Double;
+begin
+  // Investment analysis
+  CashFlows := TDoubleArray.Create(-1000, 200, 300, 400, 500);
   
-  // Calculate triangle area
-  WriteLn(Format('Area: %.4f', [TTrigKit.TriangleAreaSAS(4, Angle, 5)]));
+  NPV := TFinanceKit.NetPresentValue(0, CashFlows, 0.1);
+  IRR := TFinanceKit.InternalRateOfReturn(0, CashFlows);
   
-  // Calculate vector magnitude
-  WriteLn(Format('Magnitude: %.4f', [TTrigKit.VectorMagnitude(3, 4)]));
+  WriteLn(Format('NPV: $%.2f', [NPV]));
+  WriteLn(Format('IRR: %.2f%%', [IRR * 100]));
 end;
 ```
 
