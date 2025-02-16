@@ -25,7 +25,7 @@ type
     // Basic file operations
     procedure Test01_ReadFile;
     procedure Test02_WriteFile;
-    procedure Test03_AppendFile;
+    procedure Test03_AppendText;
     procedure Test04_DeleteFile;
     procedure Test05_CopyTo;
     procedure Test06_MoveTo;
@@ -145,22 +145,22 @@ begin
   WriteLn('Test02_WriteFile:Finished');
 end;
 
-procedure TFSTests.Test03_AppendFile;
+procedure TFSTests.Test03_AppendText;
 const
   FirstLine = 'First Line';
   SecondLine = 'Second Line';
 begin
-  WriteLn('Test03_AppendFile:Starting');
+  WriteLn('Test03_AppendText:Starting');
   // Create initial file
   TFileKit.WriteFile(FTestFile, FirstLine);
   
   // Test append
-  TFileKit.AppendFile(FTestFile, SecondLine);
+  TFileKit.AppendText(FTestFile, SecondLine);
   
   // Verify content
-  AssertEquals('AppendFile should append content correctly',
+  AssertEquals('AppendText should append content correctly',
     FirstLine + SecondLine, TFileKit.ReadFile(FTestFile));
-  WriteLn('Test03_AppendFile:Finished');
+  WriteLn('Test03_AppendText:Finished');
 end;
 
 procedure TFSTests.Test04_DeleteFile;

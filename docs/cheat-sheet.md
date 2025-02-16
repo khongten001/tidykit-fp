@@ -42,44 +42,46 @@ A comprehensive reference of TidyKit's features and usage examples.
 // Basic file operations
 Content := TFileKit.ReadFile('input.txt');                   // Read entire file
 TFileKit.WriteFile('output.txt', 'content');                 // Write to file
-TFileKit.AppendFile('log.txt', 'new line');                  // Append to file
-TFileKit.DeleteFile('temp.txt');                             // Delete file
-TFileKit.CopyFile('source.txt', 'dest.txt');                 // Copy file
-TFileKit.MoveFile('old.txt', 'new.txt');                     // Move/rename file
+TFileKit.AppendText('file.txt', 'new content');             // Append text to file
+TFileKit.PrependText('file.txt', 'prefix text');            // Add text at start
+TFileKit.ReplaceText('file.txt', 'old', 'new');            // Replace text in file
+TFileKit.DeleteFile('temp.txt');                            // Delete file
+TFileKit.CopyFile('source.txt', 'dest.txt');                // Copy file
+TFileKit.MoveFile('old.txt', 'new.txt');                    // Move/rename file
 
 // Directory operations
-TFileKit.CreateDirectory('new_dir');                         // Create directory
-TFileKit.DeleteDirectory('old_dir', True);                   // Delete directory (True = recursive)
-TFileKit.EnsureDirectory('path/to/file.txt');                // Create all parent directories
+TFileKit.CreateDirectory('new_dir');                        // Create directory
+TFileKit.DeleteDirectory('old_dir', True);                  // Delete directory (True = recursive)
+TFileKit.EnsureDirectory('path/to/file.txt');              // Create all parent directories
 
 // File listing
-Files := TFileKit.ListFiles('.', '*', False);                // List files in current dir
-Files := TFileKit.ListFiles('.', '*', True);                 // List files recursively
-Files := TFileKit.ListFiles('.', '*.txt');                   // List only .txt files
-Files := TFileKit.ListFiles('.', '*', False, fsName);        // Sort by name (ascending)
-Files := TFileKit.ListFiles('.', '*', False, fsNameDesc);    // Sort by name (descending)
-Files := TFileKit.ListFiles('.', '*', False, fsDate);        // Sort by date (ascending)
-Files := TFileKit.ListFiles('.', '*', False, fsDateDesc);    // Sort by date (descending)
-Files := TFileKit.ListFiles('.', '*', False, fsSize);        // Sort by size (ascending)
-Files := TFileKit.ListFiles('.', '*', False, fsSizeDesc);    // Sort by size (descending)
+Files := TFileKit.ListFiles('.', '*', False);              // List files in current dir
+Files := TFileKit.ListFiles('.', '*', True);               // List files recursively
+Files := TFileKit.ListFiles('.', '*.txt');                 // List only .txt files
+Files := TFileKit.ListFiles('.', '*', False, fsName);      // Sort by name (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsNameDesc);  // Sort by name (descending)
+Files := TFileKit.ListFiles('.', '*', False, fsDate);      // Sort by date (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsDateDesc);  // Sort by date (descending)
+Files := TFileKit.ListFiles('.', '*', False, fsSize);      // Sort by size (ascending)
+Files := TFileKit.ListFiles('.', '*', False, fsSizeDesc);  // Sort by size (descending)
 
 // Directory listing
-Dirs := TFileKit.ListDirectories('.', '*', False);             // List directories in current dir
-Dirs := TFileKit.ListDirectories('.', '*', True);              // List directories recursively
-Dirs := TFileKit.ListDirectories('.', 'test_*');               // List dirs matching pattern
-Dirs := TFileKit.ListDirectories('.', '*', False, fsName);     // Sort by name (ascending)
-Dirs := TFileKit.ListDirectories('.', '*', False, fsNameDesc); // Sort by name (descending)
-Dirs := TFileKit.ListDirectories('.', '*', False, fsDate);     // Sort by date (ascending)
-Dirs := TFileKit.ListDirectories('.', '*', False, fsDateDesc); // Sort by date (descending)
+Dirs := TFileKit.ListDirectories('.', '*', False);         // List directories in current dir
+Dirs := TFileKit.ListDirectories('.', '*', True);          // List directories recursively
+Dirs := TFileKit.ListDirectories('.', 'test_*');           // List dirs matching pattern
+Dirs := TFileKit.ListDirectories('.', '*', False, fsName); // Sort by name (ascending)
+Dirs := TFileKit.ListDirectories('.', '*', False, fsDate); // Sort by date (ascending)
 
 // Path operations
-Path := TFileKit.GetFileName('path/to/file.txt');         // Returns 'file.txt'
-Path := TFileKit.GetFileNameWithoutExt('file.txt');       // Returns 'file'
-Path := TFileKit.GetDirectory('path/to/file.txt');        // Returns 'path/to'
-Path := TFileKit.GetExtension('file.txt');                // Returns '.txt'
-Path := TFileKit.GetParentDir('path/to/file.txt');        // Returns 'path'
+Path := TFileKit.GetFileName('path/to/file.txt');          // Returns 'file.txt'
+Path := TFileKit.GetFileNameWithoutExt('file.txt');        // Returns 'file'
+Path := TFileKit.GetDirectory('path/to/file.txt');         // Returns 'path/to'
+Path := TFileKit.GetExtension('file.txt');                 // Returns '.txt'
+Path := TFileKit.GetParentDir('path/to/file.txt');        // Returns 'path/to'
 Path := TFileKit.CombinePaths('path', 'file.txt');        // Combine paths
 Path := TFileKit.NormalizePath('path/./to/../file.txt');  // Normalize path
+Path := TFileKit.ChangeExtension('file.txt', '.doc');     // Change file extension
+if TFileKit.IsAbsolutePath('C:\file.txt') then ...        // Check if path is absolute
 
 // File information
 if TFileKit.Exists('file.txt') then ...                   // Check file exists
@@ -89,20 +91,21 @@ Time := TFileKit.GetCreationTime('file.txt');             // Get creation time
 Time := TFileKit.GetLastAccessTime('file.txt');           // Get last access time
 Time := TFileKit.GetLastWriteTime('file.txt');            // Get last write time
 Attrs := TFileKit.GetAttributes('file.txt');              // Get file attributes
-if TFileKit.IsTextFile('file.txt') then ...               // Check if text file
+if TFileKit.IsTextFile('file.txt') then ...              // Check if text file
 Encoding := TFileKit.GetFileEncoding('file.txt');         // Get file encoding
 
 // Search operations
 Results := TFileKit.SearchFiles('.', '*.txt', True);      // Search files recursively
+Results := TFileKit.SearchFilesIn('dir', '*.txt', True);  // Search in specific dir
 File := TFileKit.FindLastModifiedFile('.', '*.txt');      // Find newest file
 File := TFileKit.FindFirstModifiedFile('.', '*.txt');     // Find oldest file
 File := TFileKit.FindLargestFile('.', '*.txt');           // Find largest file
 File := TFileKit.FindSmallestFile('.', '*.txt');          // Find smallest file
 
 // System directories
-Dir := TFileKit.GetUserDir;                                // Get user directory
-Dir := TFileKit.GetCurrentDir;                             // Get current directory
-Dir := TFileKit.GetTempDir;                                // Get temp directory
+Dir := TFileKit.GetUserDir;                               // Get user directory
+Dir := TFileKit.GetCurrentDir;                            // Get current directory
+Dir := TFileKit.GetTempDir;                               // Get temp directory
 
 // Temporary files
 TempFile := TFileKit.CreateTempFile('prefix_');           // Create temp file
@@ -113,22 +116,19 @@ TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
 TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
 TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
 Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
-if TFileKit.IsSymLink('link.txt') then ...                // Check if path is symlink
+if TFileKit.IsSymLink('link.txt') then ...               // Check if path is symlink
 
 // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
 // On Unix/Linux, regular users can create symlinks in their own directories
 
-// Archive operations - ZIP
+// Archive operations
 TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
-TFileKit.CompressToZip('sourcedir', 'archive.zip');                 // Compress directory (non-recursive)
 TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
 TFileKit.CompressToZip('sourcedir', 'archive.zip', True, '*.txt'); // Compress only .txt files
 TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
 TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract only .txt files
 
-// Archive operations - TAR
 TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
-TFileKit.CompressToTar('sourcedir', 'archive.tar');                // Create TAR from directory (non-recursive)
 TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
 TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
 TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files

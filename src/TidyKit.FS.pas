@@ -143,13 +143,6 @@ type
         AContent - The string content to write to the file. }
     class procedure WriteFile(const APath: string; const AContent: string); static;
 
-    { Appends content to the end of an existing file.
-      
-      Parameters:
-        APath - The path to the file to append to.
-        AContent - The string content to append to the file. }
-    class procedure AppendFile(const APath: string; const AContent: string); static;
-
     { Deletes a file from the file system.
       
       Parameters:
@@ -821,22 +814,6 @@ begin
   begin
     ForceDirectories(ExtractFilePath(APath));
     SaveToFile(APath, AContent);
-  end;
-end;
-
-class procedure TFileKit.AppendFile(const APath: string; const AContent: string);
-var
-  ExistingContent: string;
-begin
-  if APath <> '' then
-  begin
-    if FileExists(APath) then
-    begin
-      ExistingContent := LoadFromFile(APath);
-      SaveToFile(APath, ExistingContent + AContent);
-    end
-    else
-      SaveToFile(APath, AContent);
   end;
 end;
 
