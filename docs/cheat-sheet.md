@@ -35,6 +35,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
+  - [📁 Archive Operations](#-archive-operations)
 
 ## 📁File System Operations
 
@@ -120,19 +121,6 @@ if TFileKit.IsSymLink('link.txt') then ...               // Check if path is sym
 
 // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
 // On Unix/Linux, regular users can create symlinks in their own directories
-
-// Archive operations
-TFileKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
-TFileKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
-TFileKit.CompressToZip('sourcedir', 'archive.zip', True, '*.txt'); // Compress only .txt files
-TFileKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
-TFileKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract only .txt files
-
-TFileKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
-TFileKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
-TFileKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
-TFileKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
-TFileKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 ```
 
 ## 🧵String operations
@@ -819,4 +807,21 @@ ChordLen := TTrigKit.ChordLength(R, Angle);  // Length of chord
 // Vector operations
 Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
 Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
+```
+
+## 📁 Archive Operations
+
+```pascal
+// Archive operations
+TArchiveKit.CompressToZip('source.txt', 'archive.zip');                // Compress single file
+TArchiveKit.CompressToZip('sourcedir', 'archive.zip', True);          // Compress recursively
+TArchiveKit.CompressToZip('sourcedir', 'archive.zip', True, '*.txt'); // Compress only .txt files
+TArchiveKit.DecompressFromZip('archive.zip', 'destdir');              // Extract all files
+TArchiveKit.DecompressFromZip('archive.zip', 'destdir', '*.txt');     // Extract only .txt files
+
+TArchiveKit.CompressToTar('source.txt', 'archive.tar');               // Create TAR with single file
+TArchiveKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create TAR recursively
+TArchiveKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
+TArchiveKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
+TArchiveKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 ```

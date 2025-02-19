@@ -21,6 +21,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [🔢 Matrix Operations](#-matrix-operations)
     - [📐 Trigonometric Operations](#-trigonometric-operations)
     - [💰 Financial Operations](#-financial-operations)
+    - [📦 Archive Operations](#-archive-operations)
   - [📚 Documentation](#-documentation)
   - [✅ Testing](#-testing)
   - [🤝 Contributing](#-contributing)
@@ -42,6 +43,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - File and directory manipulation
   - Path operations
   - File searching and filtering
+
+- 📦 **Archive Operations**
+  - ZIP file compression and decompression
+  - TAR file creation and extraction
+  - Pattern-based file filtering
+  - Recursive directory handling
 
 - 🔐 **Cryptography**
   - SHA3 implementation
@@ -335,6 +342,27 @@ begin
   
   WriteLn(Format('NPV: $%.2f', [NPV]));
   WriteLn(Format('IRR: %.2f%%', [IRR * 100]));
+end;
+```
+
+### 📦 Archive Operations
+```pascal
+var
+  SourceDir, DestDir: string;
+begin
+  // Create ZIP archive
+  SourceDir := 'path/to/source';
+  TArchiveKit.CompressToZip(SourceDir, 'archive.zip', True);  // Recursive
+  
+  // Extract specific files
+  DestDir := 'path/to/extract';
+  TArchiveKit.DecompressFromZip('archive.zip', DestDir, '*.txt');  // Only .txt files
+  
+  // Create TAR archive with specific files
+  TArchiveKit.CompressToTar(SourceDir, 'backup.tar', True, '*.pas');  // Only .pas files
+  
+  // Extract entire TAR archive
+  TArchiveKit.DecompressFromTar('backup.tar', DestDir);
 end;
 ```
 
