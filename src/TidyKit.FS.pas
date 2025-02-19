@@ -826,10 +826,20 @@ end;
 class procedure TFileKit.CopyFile(const ASourcePath, ADestPath: string);
 var
   SourceStream, DestStream: TFileStream;
+  {$IFDEF WINDOWS}
+  SourceAttrs: DWord;
+  FileTime: TFileTime;
+  Handle: THandle;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  Info: BaseUnix.Stat;
+  {$ENDIF}
 begin
   if FileExists(ASourcePath) then
   begin
     ForceDirectories(ExtractFilePath(ADestPath));
+    
+    // First copy the file content
     SourceStream := TFileStream.Create(ASourcePath, fmOpenRead or fmShareDenyWrite);
     try
       DestStream := TFileStream.Create(ADestPath, fmCreate);
@@ -841,6 +851,57 @@ begin
     finally
       SourceStream.Free;
     end;
+    
+    // Now copy file attributes and timestamps
+    {$IFDEF WINDOWS}
+    // Get source file attributes
+    SourceAttrs := Windows.GetFileAttributes(PChar(ASourcePath));
+    if SourceAttrs <> INVALID_FILE_ATTRIBUTES then
+      Windows.SetFileAttributes(PChar(ADestPath), SourceAttrs);
+      
+    // Copy timestamps
+    Handle := CreateFile(PChar(ASourcePath), GENERIC_READ, FILE_SHARE_READ, nil,
+                        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+    if Handle <> INVALID_HANDLE_VALUE then
+    begin
+      try
+        if GetFileTime(Handle, @FileTime, nil, nil) then
+        begin
+          CloseHandle(Handle);
+          Handle := CreateFile(PChar(ADestPath), GENERIC_WRITE, 0, nil,
+                             OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+          if Handle <> INVALID_HANDLE_VALUE then
+          begin
+            SetFileTime(Handle, @FileTime, @FileTime, @FileTime);
+          end;
+        end;
+      finally
+        if Handle <> INVALID_HANDLE_VALUE then
+          CloseHandle(Handle);
+      end;
+    end;
+    {$ENDIF}
+    
+    {$IFDEF UNIX}
+    // Get source file metadata
+    if fpStat(PChar(ASourcePath), Info) = 0 then
+    begin
+      // Set permissions
+      fpChmod(PChar(ADestPath), Info.Mode and $0FFF);
+      
+      // Set ownership if we have permissions
+      if fpGetuid = 0 then  // Only try if we're root
+      begin
+        fpChown(PChar(ADestPath), Info.uid, Info.gid);
+      end;
+      
+      // Set timestamps
+      with Info do
+      begin
+        fpUtime(PChar(ADestPath), @Info.mtime);
+      end;
+    end;
+    {$ENDIF}
   end;
 end;
 

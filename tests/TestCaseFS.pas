@@ -6,7 +6,25 @@ interface
 
 uses
   Classes, SysUtils, DateUtils, fpcunit, testregistry,
+  {$IFDEF WINDOWS}
+  Windows,   // Add Windows unit for Windows-specific types and constants
+  {$ENDIF}
+  {$IFDEF UNIX}
+  BaseUnix,  // Already used for Unix-specific types
+  Unix,
+  {$ENDIF}
   TidyKit;
+
+{$IFDEF WINDOWS}
+const
+  // Define Windows constants if not using Windows unit
+  FILE_ATTRIBUTE_READONLY  = $00000001;
+  FILE_ATTRIBUTE_HIDDEN    = $00000002;
+  FILE_ATTRIBUTE_SYSTEM    = $00000004;
+  FILE_ATTRIBUTE_DIRECTORY = $00000010;
+  FILE_ATTRIBUTE_ARCHIVE   = $00000020;
+  FILE_ATTRIBUTE_NORMAL    = $00000080;
+{$ENDIF}
 
 type
   TStringArray = array of string;
@@ -107,16 +125,18 @@ var
 begin
   // Use a more accessible location for tests
   {$IFDEF WINDOWS}
-  TestBasePath := GetEnvironmentVariable('TEMP');
+  TestBasePath := SysUtils.GetEnvironmentVariable('TEMP');
   if TestBasePath = '' then
-    TestBasePath := GetEnvironmentVariable('TMP');
+    TestBasePath := SysUtils.GetEnvironmentVariable('TMP');
   if TestBasePath = '' then
     TestBasePath := 'C:\Temp';
   {$ELSE}
   TestBasePath := '/tmp';
   {$ENDIF}
   
-  FTestDir := IncludeTrailingPathDelimiter(TestBasePath) + 'TidyKitTest_' + FormatDateTime('yyyymmddhhnnss', Now);
+  // Create a unique test directory for each test
+  FTestDir := IncludeTrailingPathDelimiter(TestBasePath) + 
+              'TidyKitTest_' + FormatDateTime('yyyymmddhhnnsszzz', Now);
   FTestFile := FTestDir + PathDelim + 'test.txt';
   
   // Ensure clean test environment
@@ -124,6 +144,8 @@ begin
   begin
     try
       TFileKit.DeleteDirectory(FTestDir, True);
+      Sleep(100); // Give OS time to release handles
+      RemoveDir(FTestDir);
     except
       on E: Exception do
         WriteLn('Warning: Could not delete existing test directory: ', E.Message);
@@ -144,7 +166,10 @@ begin
   // Clean up test environment
   if DirectoryExists(FTestDir) then
   try
+    // First try to delete any remaining files
     TFileKit.DeleteDirectory(FTestDir, True);
+    Sleep(100); // Give OS time to release handles
+    RemoveDir(FTestDir);
   except
     on E: Exception do
       WriteLn('Warning: Could not clean up test directory: ', E.Message);
@@ -215,6 +240,15 @@ const
   TestContent = 'Test Content';
 var
   CopyFile: string;
+  {$IFDEF WINDOWS}
+  SourceAttrs, DestAttrs: DWord;
+  SourceHandle, DestHandle: THandle;
+  SourceTime, DestTime: TFileTime;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  SourceInfo, DestInfo: BaseUnix.Stat;
+  {$ENDIF}
+  SourceModTime, DestModTime: TDateTime;
 begin
   WriteLn('Test05_CopyTo:Starting');
   CopyFile := FTestDir + PathDelim + 'copy.txt';
@@ -222,13 +256,68 @@ begin
   // Create source file
   TFileKit.WriteTextFile(FTestFile, TestContent);
   
+  // Set some test attributes on source file
+  {$IFDEF WINDOWS}
+  // Set read-only attribute on source
+  SetFileAttributes(PChar(FTestFile), FILE_ATTRIBUTE_READONLY);
+  
+  // Get initial source attributes
+  SourceAttrs := GetFileAttributes(PChar(FTestFile));
+  AssertTrue('Source file should have read-only attribute set',
+    (SourceAttrs and FILE_ATTRIBUTE_READONLY) <> 0);
+  {$ENDIF}
+  
+  {$IFDEF UNIX}
+  // Set read-only permissions on source (0444 = r--r--r--)
+  fpChmod(PChar(FTestFile), $1A4); // Octal 444
+  
+  // Get initial source attributes
+  AssertEquals('fpStat should succeed on source file',
+    0, fpStat(PChar(FTestFile), SourceInfo));
+  AssertEquals('Source file should have read-only permissions',
+    $1A4, SourceInfo.Mode and $1FF);
+  {$ENDIF}
+  
+  // Set a specific modification time for testing
+  SysUtils.FileSetDate(FTestFile, DateTimeToFileDate(EncodeDateTime(2024, 1, 14, 12, 0, 0, 0)));
+  SourceModTime := FileDateToDateTime(SysUtils.FileAge(FTestFile));
+  
   // Test copy
   TFileKit.CopyFile(FTestFile, CopyFile);
   
+  // Basic copy verification
   AssertTrue('Destination file should exist after copy',
-    FileExists(CopyFile));
+    SysUtils.FileExists(CopyFile));
   AssertEquals('Copied content should match source',
     TestContent, TFileKit.ReadTextFile(CopyFile));
+    
+  // Verify attributes were preserved
+  {$IFDEF WINDOWS}
+  // Check if read-only attribute was preserved
+  DestAttrs := GetFileAttributes(PChar(CopyFile));
+  AssertTrue('Destination file should have read-only attribute',
+    (DestAttrs and FILE_ATTRIBUTE_READONLY) <> 0);
+  
+  // Verify other relevant attributes match
+  AssertEquals('File attributes should match',
+    SourceAttrs and (not FILE_ATTRIBUTE_ARCHIVE), // Ignore archive bit
+    DestAttrs and (not FILE_ATTRIBUTE_ARCHIVE));
+  {$ENDIF}
+  
+  {$IFDEF UNIX}
+  // Verify permissions were preserved
+  AssertEquals('fpStat should succeed on destination file',
+    0, fpStat(PChar(CopyFile), DestInfo));
+  AssertEquals('File permissions should match',
+    SourceInfo.Mode and $1FF,  // Compare only permission bits
+    DestInfo.Mode and $1FF);
+  {$ENDIF}
+  
+  // Verify modification time was preserved
+  DestModTime := FileDateToDateTime(SysUtils.FileAge(CopyFile));
+  AssertEquals('File modification time should match',
+    SourceModTime, DestModTime);
+  
   WriteLn('Test05_CopyTo:Finished');
 end;
 
@@ -505,9 +594,9 @@ begin
       TFileKit.IsTextFile(BinaryFile));
   finally
     if FileExists(TextFile) then
-      DeleteFile(TextFile);
+      TFileKit.DeleteFile(TextFile);
     if FileExists(BinaryFile) then
-      DeleteFile(BinaryFile);
+      TFileKit.DeleteFile(BinaryFile);
   end;
   WriteLn('Test24_IsTextFile:Finished');
 end;
@@ -543,7 +632,7 @@ begin
       'UTF-8', TFileKit.GetFileEncoding(UTF8File));
   finally
     if FileExists(UTF8File) then
-      DeleteFile(UTF8File);
+      TFileKit.DeleteFile(UTF8File);
   end;
   WriteLn('Test25_GetFileEncoding:Finished');
 end;
@@ -557,7 +646,11 @@ begin
   
   // Clean up the entire test directory first
   if DirectoryExists(FTestDir) then
+  begin
     TFileKit.DeleteDirectory(FTestDir, True);
+    Sleep(100); // Give OS time to release handles
+    RemoveDir(FTestDir);
+  end;
   ForceDirectories(FTestDir);
 
   // Create test files in root directory
@@ -602,10 +695,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with delay to ensure different timestamps
@@ -641,10 +734,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with delay to ensure different timestamps
@@ -679,10 +772,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with delay to ensure different timestamps
@@ -724,10 +817,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with delay to ensure different timestamps
@@ -768,10 +861,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with different sizes
@@ -798,10 +891,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with different sizes
@@ -833,10 +926,10 @@ begin
   if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
   try
     repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
+      TFileKit.DeleteFile(FTestDir + PathDelim + SR.Name);
     until FindNext(SR) <> 0;
   finally
-    FindClose(SR);
+    SysUtils.FindClose(SR);
   end;
 
   // Create test files with different sizes
@@ -1432,7 +1525,7 @@ begin
       'test_', Copy(ExtractFileName(TempFile), 1, 5));
   finally
     if FileExists(TempFile) then
-      DeleteFile(TempFile);
+      TFileKit.DeleteFile(TempFile);
   end;
   WriteLn('Test38_CreateTempFile: Finished');
 end;
@@ -1645,9 +1738,9 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if FileExists(FTestFile) then
-    DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToZip(FTestDir, ZipFile);
@@ -1670,11 +1763,11 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if DirectoryExists(ExtractDir) then
     RemoveDir(ExtractDir);
   if FileExists(FTestFile) then
-    DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
@@ -1703,9 +1796,9 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if FileExists(FTestFile) then
-    DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToTar(FTestDir, TarFile);
@@ -1728,11 +1821,11 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if DirectoryExists(ExtractDir) then
     RemoveDir(ExtractDir);
   if FileExists(FTestFile) then
-    DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
@@ -1761,7 +1854,7 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if DirectoryExists(FTestDir) then
   begin
     TFileKit.DeleteDirectory(FTestDir, True);
@@ -1835,7 +1928,7 @@ begin
   // Create ZIP file in a different directory to avoid including it in the archive
   ZipFile := GetTempDir + PathDelim + 'test_recursive.zip';
   if FileExists(ZipFile) then
-    DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
     
   // Compress then extract
   TFileKit.CompressToZip(FTestDir, ZipFile, True);
@@ -1871,7 +1964,7 @@ begin
     
   // Clean up
   if FileExists(ZipFile) then
-    DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
     
   WriteLn('Test45b_DecompressFromZipRecursive: Finished');
 end;
@@ -1887,7 +1980,7 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if DirectoryExists(FTestDir) then
   begin
     TFileKit.DeleteDirectory(FTestDir, True);
@@ -1960,7 +2053,7 @@ begin
   // Create TAR file in a different directory to avoid including it in the archive
   TarFile := GetTempDir + PathDelim + 'test_recursive.tar';
   if FileExists(TarFile) then
-    DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
     
   // Compress then extract
   TFileKit.CompressToTar(FTestDir, TarFile, True);
@@ -1996,7 +2089,7 @@ begin
     
   // Clean up
   if FileExists(TarFile) then
-    DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
     
   WriteLn('Test47b_DecompressFromTarRecursive: Finished');
 end;
