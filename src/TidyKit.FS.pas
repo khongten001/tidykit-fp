@@ -134,14 +134,14 @@ type
         
       Returns:
         The entire content of the file as a string. }
-    class function ReadFile(const APath: string): string; static;
+    class function ReadTextFile(const APath: string): string; static;
 
     { Writes content to a file, overwriting any existing content.
       
       Parameters:
         APath - The path to the file to write.
         AContent - The string content to write to the file. }
-    class procedure WriteFile(const APath: string; const AContent: string); static;
+    class procedure WriteTextFile(const APath: string; const AContent: string); static;
 
     { Deletes a file from the file system.
       
@@ -701,7 +701,7 @@ end;
 
 { Helper functions }
 
-function LoadFromFile(const APath: string): string;
+function LoadTextFromFile(const APath: string): string;
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -724,7 +724,7 @@ begin
   end;
 end;
 
-procedure SaveToFile(const APath: string; const AContent: string);
+procedure SaveTextToFile(const APath: string; const AContent: string);
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -803,17 +803,17 @@ begin
   NormalPath := '';
 end;
 
-class function TFileKit.ReadFile(const APath: string): string;
+class function TFileKit.ReadTextFile(const APath: string): string;
 begin
-  Result := LoadFromFile(APath);
+  Result := LoadTextFromFile(APath);
 end;
 
-class procedure TFileKit.WriteFile(const APath: string; const AContent: string);
+class procedure TFileKit.WriteTextFile(const APath: string; const AContent: string);
 begin
   if APath <> '' then
   begin
     ForceDirectories(ExtractFilePath(APath));
-    SaveToFile(APath, AContent);
+    SaveTextToFile(APath, AContent);
   end;
 end;
 
@@ -871,11 +871,11 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, Content + AText);
+      Content := LoadTextFromFile(APath);
+      SaveTextToFile(APath, Content + AText);
     end
     else
-      SaveToFile(APath, AText);
+      SaveTextToFile(APath, AText);
   end;
 end;
 
@@ -887,11 +887,11 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, AText + Content);
+      Content := LoadTextFromFile(APath);
+      SaveTextToFile(APath, AText + Content);
     end
     else
-      SaveToFile(APath, AText);
+      SaveTextToFile(APath, AText);
   end;
 end;
 
@@ -903,9 +903,9 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
+      Content := LoadTextFromFile(APath);
       Content := StringReplace(Content, OldText, NewText, [rfReplaceAll]);
-      SaveToFile(APath, Content);
+      SaveTextToFile(APath, Content);
     end;
   end;
 end;
@@ -1661,7 +1661,7 @@ begin
       Result := CombinePaths(TempPath, APrefix + '_' + GuidStr + '.tmp')
     else
       Result := CombinePaths(TempPath, 'tmp_' + GuidStr + '.tmp');
-    WriteFile(Result, ''); // Create empty file
+    WriteTextFile(Result, ''); // Create empty file
   end
   else
     raise ETidyKitException.Create('Failed to create GUID for temporary file');

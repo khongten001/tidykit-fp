@@ -102,21 +102,53 @@ implementation
 { TFSTests }
 
 procedure TFSTests.SetUp;
+var
+  TestBasePath: string;
 begin
-  FTestDir := GetTempDir + PathDelim + 'TidyKitTest';
+  // Use a more accessible location for tests
+  {$IFDEF WINDOWS}
+  TestBasePath := GetEnvironmentVariable('TEMP');
+  if TestBasePath = '' then
+    TestBasePath := GetEnvironmentVariable('TMP');
+  if TestBasePath = '' then
+    TestBasePath := 'C:\Temp';
+  {$ELSE}
+  TestBasePath := '/tmp';
+  {$ENDIF}
+  
+  FTestDir := IncludeTrailingPathDelimiter(TestBasePath) + 'TidyKitTest_' + FormatDateTime('yyyymmddhhnnss', Now);
   FTestFile := FTestDir + PathDelim + 'test.txt';
   
   // Ensure clean test environment
   if DirectoryExists(FTestDir) then
-    RemoveDir(FTestDir);
-  CreateDir(FTestDir);
+  begin
+    try
+      TFileKit.DeleteDirectory(FTestDir, True);
+    except
+      on E: Exception do
+        WriteLn('Warning: Could not delete existing test directory: ', E.Message);
+    end;
+  end;
+  
+  try
+    if not ForceDirectories(FTestDir) then
+      raise ETidyKitException.CreateFmt('Could not create test directory: %s', [FTestDir]);
+  except
+    on E: Exception do
+      raise ETidyKitException.CreateFmt('Failed to setup test environment: %s', [E.Message]);
+  end;
 end;
 
 procedure TFSTests.TearDown;
 begin
   // Clean up test environment
   if DirectoryExists(FTestDir) then
-    RemoveDir(FTestDir);
+  try
+    TFileKit.DeleteDirectory(FTestDir, True);
+  except
+    on E: Exception do
+      WriteLn('Warning: Could not clean up test directory: ', E.Message);
+  end;
 end;
 
 procedure TFSTests.Test01_ReadFile;
@@ -125,11 +157,11 @@ const
 begin
   WriteLn('Test01_ReadFile:Starting');
   // Write test content first
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   
   // Test read
   AssertEquals('ReadFile should read the correct content',
-    TestContent, TFileKit.ReadFile(FTestFile));
+    TestContent, TFileKit.ReadTextFile(FTestFile));
   WriteLn('Test01_ReadFile:Finished');
 end;
 
@@ -139,7 +171,7 @@ const
 begin
   WriteLn('Test02_WriteFile:Starting');
   // Test write
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   AssertTrue('File should exist after write',
     FileExists(FTestFile));
   WriteLn('Test02_WriteFile:Finished');
@@ -152,14 +184,14 @@ const
 begin
   WriteLn('Test03_AppendText:Starting');
   // Create initial file
-  TFileKit.WriteFile(FTestFile, FirstLine);
+  TFileKit.WriteTextFile(FTestFile, FirstLine);
   
   // Test append
   TFileKit.AppendText(FTestFile, SecondLine);
   
   // Verify content
   AssertEquals('AppendText should append content correctly',
-    FirstLine + SecondLine, TFileKit.ReadFile(FTestFile));
+    FirstLine + SecondLine, TFileKit.ReadTextFile(FTestFile));
   WriteLn('Test03_AppendText:Finished');
 end;
 
@@ -169,7 +201,7 @@ const
 begin
   WriteLn('Test04_DeleteFile:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   
   // Test delete
   TFileKit.DeleteFile(FTestFile);
@@ -188,7 +220,7 @@ begin
   CopyFile := FTestDir + PathDelim + 'copy.txt';
   
   // Create source file
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   
   // Test copy
   TFileKit.CopyFile(FTestFile, CopyFile);
@@ -196,7 +228,7 @@ begin
   AssertTrue('Destination file should exist after copy',
     FileExists(CopyFile));
   AssertEquals('Copied content should match source',
-    TestContent, TFileKit.ReadFile(CopyFile));
+    TestContent, TFileKit.ReadTextFile(CopyFile));
   WriteLn('Test05_CopyTo:Finished');
 end;
 
@@ -210,7 +242,7 @@ begin
   MoveFile := FTestDir + PathDelim + 'moved.txt';
   
   // Create source file
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   
   // Test move
   TFileKit.MoveFile(FTestFile, MoveFile);
@@ -220,7 +252,7 @@ begin
   AssertTrue('Destination file should exist after move',
     FileExists(MoveFile));
   AssertEquals('Moved content should match source',
-    TestContent, TFileKit.ReadFile(MoveFile));
+    TestContent, TFileKit.ReadTextFile(MoveFile));
   WriteLn('Test06_MoveTo:Finished');
 end;
 
@@ -231,13 +263,13 @@ const
 begin
   WriteLn('Test07_AppendText:Starting');
   // Create initial file
-  TFileKit.WriteFile(FTestFile, FirstLine);
+  TFileKit.WriteTextFile(FTestFile, FirstLine);
   
   // Test append text
   TFileKit.AppendText(FTestFile, SecondLine);
   
   AssertEquals('AppendText should append content correctly',
-    FirstLine + SecondLine, TFileKit.ReadFile(FTestFile));
+    FirstLine + SecondLine, TFileKit.ReadTextFile(FTestFile));
   WriteLn('Test07_AppendText:Finished');
 end;
 
@@ -248,13 +280,13 @@ const
 begin
   WriteLn('Test08_PrependText:Starting');
   // Create initial file
-  TFileKit.WriteFile(FTestFile, SecondLine);
+  TFileKit.WriteTextFile(FTestFile, SecondLine);
   
   // Test prepend text
   TFileKit.PrependText(FTestFile, FirstLine);
   
   AssertEquals('PrependText should prepend content correctly',
-    FirstLine + SecondLine, TFileKit.ReadFile(FTestFile));
+    FirstLine + SecondLine, TFileKit.ReadTextFile(FTestFile));
   WriteLn('Test08_PrependText:Finished');
 end;
 
@@ -266,13 +298,13 @@ const
 begin
   WriteLn('Test09_ReplaceText:Starting');
   // Create initial file
-  TFileKit.WriteFile(FTestFile, OriginalText);
+  TFileKit.WriteTextFile(FTestFile, OriginalText);
   
   // Test replace text
   TFileKit.ReplaceText(FTestFile, OldText, NewText);
   
   AssertEquals('ReplaceText should replace content correctly',
-    'Hello, TidyKit!', TFileKit.ReadFile(FTestFile));
+    'Hello, TidyKit!', TFileKit.ReadTextFile(FTestFile));
   WriteLn('Test09_ReplaceText:Finished');
 end;
 
@@ -302,7 +334,7 @@ begin
   
   // Create test structure
   TFileKit.CreateDirectory(TestSubDir);
-  TFileKit.WriteFile(TestSubFile, 'Test Content');
+  TFileKit.WriteTextFile(TestSubFile, 'Test Content');
   
   // Test delete directory
   TFileKit.DeleteDirectory(TestSubDir, True);
@@ -370,7 +402,7 @@ procedure TFSTests.Test17_Exists;
 begin
   WriteLn('Test17_Exists:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, 'Test Content');
+  TFileKit.WriteTextFile(FTestFile, 'Test Content');
   
   AssertTrue('Exists should return true for existing file',
     TFileKit.Exists(FTestFile));
@@ -395,7 +427,7 @@ const
 begin
   WriteLn('Test19_GetSize:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   
   AssertEquals('GetSize should return correct file size',
     Length(TestContent), TFileKit.GetSize(FTestFile));
@@ -406,7 +438,7 @@ procedure TFSTests.Test20_GetCreationTime;
 begin
   WriteLn('Test20_GetCreationTime:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, 'Test Content');
+  TFileKit.WriteTextFile(FTestFile, 'Test Content');
   
   AssertTrue('GetCreationTime should return valid timestamp',
     TFileKit.GetCreationTime(FTestFile) > 0);
@@ -417,7 +449,7 @@ procedure TFSTests.Test21_GetLastAccessTime;
 begin
   WriteLn('Test21_GetLastAccessTime:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, 'Test Content');
+  TFileKit.WriteTextFile(FTestFile, 'Test Content');
   
   AssertTrue('GetLastAccessTime should return valid timestamp',
     TFileKit.GetLastAccessTime(FTestFile) > 0);
@@ -428,7 +460,7 @@ procedure TFSTests.Test22_GetLastWriteTime;
 begin
   WriteLn('Test22_GetLastWriteTime:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, 'Test Content');
+  TFileKit.WriteTextFile(FTestFile, 'Test Content');
   
   AssertTrue('GetLastWriteTime should return valid timestamp',
     TFileKit.GetLastWriteTime(FTestFile) > 0);
@@ -439,7 +471,7 @@ procedure TFSTests.Test23_GetAttributes;
 begin
   WriteLn('Test23_GetAttributes:Starting');
   // Create test file
-  TFileKit.WriteFile(FTestFile, 'Test Content');
+  TFileKit.WriteTextFile(FTestFile, 'Test Content');
   
   AssertFalse('New file should not be read-only',
     TFileKit.GetAttributes(FTestFile).ReadOnly);
@@ -456,7 +488,7 @@ begin
   BinaryFile := FTestDir + PathDelim + 'test.bin';
   
   // Create a text file
-  TFileKit.WriteFile(TextFile, 'This is a text file');
+  TFileKit.WriteTextFile(TextFile, 'This is a text file');
   
   // Create a binary file
   BinStream := TFileStream.Create(BinaryFile, fmCreate);
@@ -529,14 +561,14 @@ begin
   ForceDirectories(FTestDir);
 
   // Create test files in root directory
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test2.txt', 'Content 2');
 
   // Create subdirectory with more test files
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test3.txt', 'Content 3');
-  TFileKit.WriteFile(SubDir + PathDelim + 'test4.txt', 'Content 4');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test4.txt', 'Content 4');
 
   // Test non-recursive search (default)
   Results := TFileKit.SearchFiles(FTestDir, '*.txt');
@@ -577,16 +609,16 @@ begin
   end;
 
   // Create test files with delay to ensure different timestamps
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   Sleep(1000);
   
   // Create subdirectory with newer file
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
   Sleep(1000);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
   Sleep(1000);
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
   Sleep(1000);
   
   // Test non-recursive search
@@ -616,16 +648,16 @@ begin
   end;
 
   // Create test files with delay to ensure different timestamps
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   Sleep(1000);
   
   // Create subdirectory with newer file
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
   Sleep(1000);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
   Sleep(1000);
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
   Sleep(1000);
   
   // Test recursive search
@@ -654,7 +686,7 @@ begin
   end;
 
   // Create test files with delay to ensure different timestamps
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   FileSetDate(FTestDir + PathDelim + 'test1.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 32, 0)));
   
   Sleep(2000);
@@ -662,12 +694,12 @@ begin
   // Create subdirectory with newer files
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
   FileSetDate(SubDir + PathDelim + 'test2.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 36, 0)));
   
   Sleep(2000);
   
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
   FileSetDate(FTestDir + PathDelim + 'test3.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 38, 0)));
   
   Sleep(2000);
@@ -699,7 +731,7 @@ begin
   end;
 
   // Create test files with delay to ensure different timestamps
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', 'Content 1');
   FileSetDate(FTestDir + PathDelim + 'test1.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 32, 0)));
   
   Sleep(2000);
@@ -707,12 +739,12 @@ begin
   // Create subdirectory with newer files
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', 'Content 2');
   FileSetDate(SubDir + PathDelim + 'test2.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 36, 0)));
   
   Sleep(2000);
   
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', 'Content 3');
   FileSetDate(FTestDir + PathDelim + 'test3.txt', DateTimeToFileDate(EncodeDateTime(2025, 1, 14, 21, 48, 38, 0)));
   
   Sleep(2000);
@@ -743,8 +775,8 @@ begin
   end;
 
   // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
   
   // Test non-recursive search
   WriteLn('Test29_FindLargestFile: Non-recursive search');
@@ -773,14 +805,14 @@ begin
   end;
 
   // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
   
   // Create subdirectory with larger file
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 500));
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 500));
   
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 300));
   
   // Test recursive search
   WriteLn('Test29b_FindLargestFileRecursive: Recursive search');
@@ -808,8 +840,8 @@ begin
   end;
 
   // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
   
   // Test non-recursive search
   WriteLn('Test30_FindSmallestFile: Non-recursive search');
@@ -827,31 +859,29 @@ var
   SubDir: string;
 begin
   WriteLn('Test30b_FindSmallestFileRecursive: Starting');
-  // Clean up any existing txt files
-  if FindFirst(FTestDir + PathDelim + '*.txt', faAnyFile, SR) = 0 then
-  try
-    repeat
-      DeleteFile(FTestDir + PathDelim + SR.Name);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
+  // Clean up any existing files and directories first
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
   end;
+  TFileKit.CreateDirectory(FTestDir);
 
   // Create test files with different sizes
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test1.txt', StringOfChar('A', 100));
   
   // Create subdirectory with smaller file
   SubDir := FTestDir + PathDelim + 'subdir';
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 25));
+  TFileKit.WriteTextFile(SubDir + PathDelim + 'test2.txt', StringOfChar('B', 25));
   
-  TFileKit.WriteFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
+  TFileKit.WriteTextFile(FTestDir + PathDelim + 'test3.txt', StringOfChar('C', 50));
   
   // Test recursive search
   WriteLn('Test30b_FindSmallestFileRecursive: Recursive search');
   SmallestFile := TFileKit.FindSmallestFile(FTestDir, '*.txt', True);
   AssertEquals('Recursive FindSmallestFile should find smallest file in any directory',
-    'test3.txt', SmallestFile);
+    'test2.txt', SmallestFile);
 
   WriteLn('Test30b_FindSmallestFileRecursive: Finished');
 end;
@@ -907,21 +937,18 @@ var
   Dirs: TStringArray;
   I: Integer;
   Found: Boolean;
-  SR: TSearchRec;
 begin
   WriteLn('Test34b_ListDirectories: Starting');
-  // Clean up any existing directories first
-  if FindFirst(FTestDir + PathDelim + '*', faAnyFile, SR) = 0 then
-  try
-    repeat
-      if (SR.Name <> '.') and (SR.Name <> '..') then
-        TFileKit.DeleteDirectory(FTestDir + PathDelim + SR.Name, True);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
+  
+  // Clean up any existing files and directories first
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
   end;
+  ForceDirectories(FTestDir);
 
-  // Create test directories
+  // Create exactly two test directories
   SubDir1 := TFileKit.CombinePaths(FTestDir, 'dir1');
   SubDir2 := TFileKit.CombinePaths(FTestDir, 'dir2');
   TFileKit.CreateDirectory(SubDir1);
@@ -929,7 +956,11 @@ begin
   
   // Test non-recursive directory listing
   Dirs := TFileKit.ListDirectories(FTestDir, '*', False);
-  AssertEquals('ListDirectories should find 2 directories', 2, Length(Dirs));
+  WriteLn('Test34b_ListDirectories: Found ', Length(Dirs), ' directories:');
+  for I := 0 to High(Dirs) do
+    WriteLn('Test34b_ListDirectories: Dir[', I, '] = ', Dirs[I]);
+  
+  AssertEquals('ListDirectories should find exactly 2 directories', 2, Length(Dirs));
   
   // Verify both directories are found
   Found := False;
@@ -958,22 +989,18 @@ var
   Dirs: TStringArray;
   I: Integer;
   Found: Boolean;
-  SR: TSearchRec;
 begin
   WriteLn('Test34c_ListDirectoriesRecursive: Starting');
 
-  // Clean up any existing directories first
-  if FindFirst(FTestDir + PathDelim + '*', faAnyFile, SR) = 0 then
-  try
-    repeat
-      if (SR.Name <> '.') and (SR.Name <> '..') then
-        TFileKit.DeleteDirectory(FTestDir + PathDelim + SR.Name, True);
-    until FindNext(SR) <> 0;
-  finally
-    FindClose(SR);
+  // Clean up any existing files and directories first
+  if DirectoryExists(FTestDir) then
+  begin
+    TFileKit.DeleteDirectory(FTestDir, True);
+    RemoveDir(FTestDir);
   end;
+  ForceDirectories(FTestDir);
 
-  // Create test directory structure
+  // Create test directory structure with exactly three directories
   SubDir1 := TFileKit.CombinePaths(FTestDir, 'dir1');
   SubDir2 := TFileKit.CombinePaths(FTestDir, 'dir2');
   SubSubDir := TFileKit.CombinePaths(SubDir1, 'subdir1');
@@ -983,7 +1010,11 @@ begin
   
   // Test recursive directory listing
   Dirs := TFileKit.ListDirectories(FTestDir, '*', True);
-  AssertEquals('ListDirectories should find 3 directories recursively', 3, Length(Dirs));
+  WriteLn('Test34c_ListDirectoriesRecursive: Found ', Length(Dirs), ' directories:');
+  for I := 0 to High(Dirs) do
+    WriteLn('Test34c_ListDirectoriesRecursive: Dir[', I, '] = ', Dirs[I]);
+  
+  AssertEquals('ListDirectories should find exactly 3 directories recursively', 3, Length(Dirs));
   
   // Verify all directories are found
   Found := False;
@@ -1024,19 +1055,20 @@ var
   Found: Boolean;
 begin
   WriteLn('Test34d_ListFiles: Starting');
+  
   // Clean up any existing files and directories first
   if DirectoryExists(FTestDir) then
   begin
     TFileKit.DeleteDirectory(FTestDir, True);
     RemoveDir(FTestDir);
   end;
-  TFileKit.CreateDirectory(FTestDir);
+  ForceDirectories(FTestDir);
 
-  // Create test files
+  // Create only test files we want to test with
   File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
   File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
-  TFileKit.WriteFile(File1, 'test1');
-  TFileKit.WriteFile(File2, 'test2');
+  TFileKit.WriteTextFile(File1, 'test1');
+  TFileKit.WriteTextFile(File2, 'test2');
   
   // Test non-recursive file listing
   Files := TFileKit.ListFiles(FTestDir, '*', False);
@@ -1044,7 +1076,7 @@ begin
   for I := 0 to High(Files) do
     WriteLn('Test34d_ListFiles: File[', I, '] = ', Files[I]);
   
-  AssertEquals('ListFiles should find 2 files', 2, Length(Files));
+  AssertEquals('ListFiles should find exactly 2 files', 2, Length(Files));
   
   // Verify both files are found
   Found := False;
@@ -1083,18 +1115,18 @@ begin
     TFileKit.DeleteDirectory(FTestDir, True);
     RemoveDir(FTestDir);
   end;
-  TFileKit.CreateDirectory(FTestDir);
+  ForceDirectories(FTestDir);
 
-  // Create test directory structure with files
+  // Create test directory structure with exactly the files we want to test
   File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
   File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
   SubDir := TFileKit.CombinePaths(FTestDir, 'subdir');
   File3 := TFileKit.CombinePaths(SubDir, 'file3.txt');
   
-  TFileKit.WriteFile(File1, 'test1');
-  TFileKit.WriteFile(File2, 'test2');
+  TFileKit.WriteTextFile(File1, 'test1');
+  TFileKit.WriteTextFile(File2, 'test2');
   TFileKit.CreateDirectory(SubDir);
-  TFileKit.WriteFile(File3, 'test3');
+  TFileKit.WriteTextFile(File3, 'test3');
   
   // Test recursive file listing
   Files := TFileKit.ListFiles(FTestDir, '*', True);
@@ -1102,7 +1134,7 @@ begin
   for I := 0 to High(Files) do
     WriteLn('Test34e_ListFilesRecursive: File[', I, '] = ', Files[I]);
   
-  AssertEquals('ListFiles should find 3 files recursively', 3, Length(Files));
+  AssertEquals('ListFiles should find exactly 3 files recursively', 3, Length(Files));
   
   // Verify all files are found
   Found := False;
@@ -1155,10 +1187,10 @@ begin
   File3 := TFileKit.CombinePaths(FTestDir, 'data1.dat');
   File4 := TFileKit.CombinePaths(FTestDir, 'data2.dat');
   
-  TFileKit.WriteFile(File1, 'test1');
-  TFileKit.WriteFile(File2, 'test2');
-  TFileKit.WriteFile(File3, 'data1');
-  TFileKit.WriteFile(File4, 'data2');
+  TFileKit.WriteTextFile(File1, 'test1');
+  TFileKit.WriteTextFile(File2, 'test2');
+  TFileKit.WriteTextFile(File3, 'data1');
+  TFileKit.WriteTextFile(File4, 'data2');
   
   // Test pattern matching for .txt files
   Files := TFileKit.ListFiles(FTestDir, '*.txt');
@@ -1196,9 +1228,9 @@ var
   File3 := TFileKit.CombinePaths(FTestDir, 'c_file.txt');  // Last name
   
   // Create files with different sizes
-  TFileKit.WriteFile(File1, StringOfChar('B', 200));  // 200 bytes
-  TFileKit.WriteFile(File2, StringOfChar('A', 100));  // 100 bytes
-  TFileKit.WriteFile(File3, StringOfChar('C', 300));  // 300 bytes
+  TFileKit.WriteTextFile(File1, StringOfChar('B', 200));  // 200 bytes
+  TFileKit.WriteTextFile(File2, StringOfChar('A', 100));  // 100 bytes
+  TFileKit.WriteTextFile(File3, StringOfChar('C', 300));  // 300 bytes
   
   // Set different timestamps
   FileSetDate(File1, DateTimeToFileDate(EncodeDateTime(2024, 1, 2, 0, 0, 0, 0)));
@@ -1433,7 +1465,7 @@ begin
   
   try
     // Create a target file
-    TFileKit.WriteFile(TargetFile, 'Test content');
+    TFileKit.WriteTextFile(TargetFile, 'Test content');
     
     // Create symlink
     try
@@ -1446,7 +1478,7 @@ begin
       // Verify content can be read through symlink
       AssertEquals('Content should be readable through symlink', 
                  'Test content', 
-                 TFileKit.ReadFile(LinkFile));
+                 TFileKit.ReadTextFile(LinkFile));
     except
       on E: ETidyKitException do
       begin
@@ -1477,7 +1509,7 @@ begin
   
   try
     // Create target and symlink
-    TFileKit.WriteFile(TargetFile, 'Test content');
+    TFileKit.WriteTextFile(TargetFile, 'Test content');
     try
       TFileKit.CreateSymLink(TargetFile, LinkFile);
       
@@ -1522,7 +1554,7 @@ begin
   
   try
     // Create target and symlink
-    TFileKit.WriteFile(TargetFile, 'Test content');
+    TFileKit.WriteTextFile(TargetFile, 'Test content');
     try
       TFileKit.CreateSymLink(TargetFile, LinkFile);
       
@@ -1568,7 +1600,7 @@ begin
   
   try
     // Create target and symlink
-    TFileKit.WriteFile(TargetFile, 'Test content');
+    TFileKit.WriteTextFile(TargetFile, 'Test content');
     try
       TFileKit.CreateSymLink(TargetFile, LinkFile);
       
@@ -1617,7 +1649,7 @@ begin
   if FileExists(FTestFile) then
     DeleteFile(FTestFile);
     
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToZip(FTestDir, ZipFile);
   AssertTrue('ZIP file should be created', FileExists(ZipFile));
   WriteLn('Test44_CompressToZip: Finished');
@@ -1646,7 +1678,7 @@ begin
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToZip(FTestDir, ZipFile);
   
   // Verify ZIP was created
@@ -1656,7 +1688,7 @@ begin
   TFileKit.DecompressFromZip(ZipFile, ExtractDir);
   AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
   AssertEquals('Extracted content should match original',
-    TestContent, TFileKit.ReadFile(ExtractedFile));
+    TestContent, TFileKit.ReadTextFile(ExtractedFile));
   WriteLn('Test45_DecompressFromZip: Finished');
 end;
 
@@ -1675,7 +1707,7 @@ begin
   if FileExists(FTestFile) then
     DeleteFile(FTestFile);
     
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToTar(FTestDir, TarFile);
   AssertTrue('TAR file should be created', FileExists(TarFile));
   WriteLn('Test46_CompressToTar: Finished');
@@ -1704,7 +1736,7 @@ begin
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
-  TFileKit.WriteFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TFileKit.CompressToTar(FTestDir, TarFile);
   
   // Verify TAR was created
@@ -1714,7 +1746,7 @@ begin
   TFileKit.DecompressFromTar(TarFile, ExtractDir);
   AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
   AssertEquals('Extracted content should match original',
-    TestContent, TFileKit.ReadFile(ExtractedFile));
+    TestContent, TFileKit.ReadTextFile(ExtractedFile));
   WriteLn('Test47_DecompressFromTar: Finished');
 end;
 
@@ -1751,10 +1783,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  TFileKit.WriteFile(TestFile1, 'Root content 1');
-  TFileKit.WriteFile(TestFile2, 'Dir1 content');
-  TFileKit.WriteFile(TestFile3, 'Dir2 content');
-  TFileKit.WriteFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Compress the entire directory structure
   TFileKit.CompressToZip(FTestDir, ZipFile, True);
@@ -1795,10 +1827,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  TFileKit.WriteFile(TestFile1, 'Root content 1');
-  TFileKit.WriteFile(TestFile2, 'Dir1 content');
-  TFileKit.WriteFile(TestFile3, 'Dir2 content');
-  TFileKit.WriteFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Create ZIP file in a different directory to avoid including it in the archive
   ZipFile := GetTempDir + PathDelim + 'test_recursive.zip';
@@ -1829,13 +1861,13 @@ begin
     
   // Verify content integrity
   AssertEquals('Root file content should match',
-    'Root content 1', TFileKit.ReadFile(ExtractDir + PathDelim + 'root1.txt'));
+    'Root content 1', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
   AssertEquals('Dir1 file content should match',
-    'Dir1 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+    'Dir1 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
   AssertEquals('Dir2 file content should match',
-    'Dir2 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+    'Dir2 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
   AssertEquals('Deep file content should match',
-    'Deep content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    'Deep content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
     
   // Clean up
   if FileExists(ZipFile) then
@@ -1877,10 +1909,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  TFileKit.WriteFile(TestFile1, 'Root content 1');
-  TFileKit.WriteFile(TestFile2, 'Dir1 content');
-  TFileKit.WriteFile(TestFile3, 'Dir2 content');
-  TFileKit.WriteFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Compress the entire directory structure
   TFileKit.CompressToTar(FTestDir, TarFile, True);
@@ -1920,10 +1952,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  TFileKit.WriteFile(TestFile1, 'Root content 1');
-  TFileKit.WriteFile(TestFile2, 'Dir1 content');
-  TFileKit.WriteFile(TestFile3, 'Dir2 content');
-  TFileKit.WriteFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Create TAR file in a different directory to avoid including it in the archive
   TarFile := GetTempDir + PathDelim + 'test_recursive.tar';
@@ -1954,13 +1986,13 @@ begin
     
   // Verify content integrity
   AssertEquals('Root file content should match',
-    'Root content 1', TFileKit.ReadFile(ExtractDir + PathDelim + 'root1.txt'));
+    'Root content 1', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
   AssertEquals('Dir1 file content should match',
-    'Dir1 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+    'Dir1 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
   AssertEquals('Dir2 file content should match',
-    'Dir2 content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+    'Dir2 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
   AssertEquals('Deep file content should match',
-    'Deep content', TFileKit.ReadFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    'Deep content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
     
   // Clean up
   if FileExists(TarFile) then
