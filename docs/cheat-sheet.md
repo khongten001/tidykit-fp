@@ -40,18 +40,18 @@ A comprehensive reference of TidyKit's features and usage examples.
 
 ```pascal
 // Basic file operations
-Content := TFileKit.ReadFile('input.txt');                   // Read entire file
-TFileKit.WriteFile('output.txt', 'content');                 // Write to file
-TFileKit.AppendText('file.txt', 'new content');             // Append text to file
-TFileKit.PrependText('file.txt', 'prefix text');            // Add text at start
+Content := TFileKit.ReadTextFile('input.txt');             // Read entire file
+TFileKit.WriteTextFile('output.txt', 'content');           // Write to file
+TFileKit.AppendText('file.txt', 'new content');            // Append text to file
+TFileKit.PrependText('file.txt', 'prefix text');           // Add text at start
 TFileKit.ReplaceText('file.txt', 'old', 'new');            // Replace text in file
-TFileKit.DeleteFile('temp.txt');                            // Delete file
-TFileKit.CopyFile('source.txt', 'dest.txt');                // Copy file
-TFileKit.MoveFile('old.txt', 'new.txt');                    // Move/rename file
+TFileKit.DeleteFile('temp.txt');                           // Delete file
+TFileKit.CopyFile('source.txt', 'dest.txt');               // Copy file
+TFileKit.MoveFile('old.txt', 'new.txt');                   // Move/rename file
 
 // Directory operations
-TFileKit.CreateDirectory('new_dir');                        // Create directory
-TFileKit.DeleteDirectory('old_dir', True);                  // Delete directory (True = recursive)
+TFileKit.CreateDirectory('new_dir');                       // Create directory
+TFileKit.DeleteDirectory('old_dir', True);                 // Delete directory (True = recursive)
 TFileKit.EnsureDirectory('path/to/file.txt');              // Create all parent directories
 
 // File listing
@@ -73,10 +73,10 @@ Dirs := TFileKit.ListDirectories('.', '*', False, fsName); // Sort by name (asce
 Dirs := TFileKit.ListDirectories('.', '*', False, fsDate); // Sort by date (ascending)
 
 // Path operations
-Path := TFileKit.GetFileName('path/to/file.txt');          // Returns 'file.txt'
-Path := TFileKit.GetFileNameWithoutExt('file.txt');        // Returns 'file'
-Path := TFileKit.GetDirectory('path/to/file.txt');         // Returns 'path/to'
-Path := TFileKit.GetExtension('file.txt');                 // Returns '.txt'
+Path := TFileKit.GetFileName('path/to/file.txt');         // Returns 'file.txt'
+Path := TFileKit.GetFileNameWithoutExt('file.txt');       // Returns 'file'
+Path := TFileKit.GetDirectory('path/to/file.txt');        // Returns 'path/to'
+Path := TFileKit.GetExtension('file.txt');                // Returns '.txt'
 Path := TFileKit.GetParentDir('path/to/file.txt');        // Returns 'path/to'
 Path := TFileKit.CombinePaths('path', 'file.txt');        // Combine paths
 Path := TFileKit.NormalizePath('path/./to/../file.txt');  // Normalize path
