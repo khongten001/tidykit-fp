@@ -561,6 +561,12 @@ type
       Returns:
         True if the path is a symbolic link. }
     class function IsSymLink(const APath: string): Boolean; static;
+
+    { Batch file operations }
+
+    class procedure CopyFiles(const ASourceDir, ADestDir, APattern: string); static;
+    class procedure MoveFiles(const ASourceDir, ADestDir, APattern: string); static;
+    class procedure DeleteFiles(const ASourceDir, APattern: string); static;
   end;
 
 implementation
@@ -906,11 +912,19 @@ begin
     if DestDir <> '' then
       ForceDirectories(DestDir);
       
+    // First try a simple rename
     if not RenameFile(ASourcePath, ADestPath) then
     begin
+      // If rename fails, copy and delete
       CopyFile(ASourcePath, ADestPath);
       if FileExists(ADestPath) then
-        SysUtils.DeleteFile(ASourcePath);
+      begin
+        // Verify copy succeeded before deleting source
+        if GetSize(ADestPath) = GetSize(ASourcePath) then
+          SysUtils.DeleteFile(ASourcePath)
+        else
+          raise ETidyKitException.Create('Move operation failed: Size mismatch after copy');
+      end;
     end;
   end;
 end;
@@ -2190,6 +2204,94 @@ begin
   if fpLStat(PChar(APath), Info) = 0 then
     Result := S_ISLNK(Info.Mode);
   {$ENDIF}
+end;
+
+{ Batch file operations }
+
+class procedure TFileKit.CopyFiles(const ASourceDir, ADestDir, APattern: string);
+var
+  Files: TFilePathArray;
+  I: Integer;
+  RelativePath, DestPath: string;
+begin
+  if not DirectoryExists(ASourceDir) then
+    Exit;
+    
+  // Create destination directory if it doesn't exist
+  ForceDirectories(ADestDir);
+  
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
+  
+  // Copy each file
+  for I := 0 to High(Files) do
+  begin
+    // Get relative path from source directory
+    RelativePath := ExtractRelativePath(
+      IncludeTrailingPathDelimiter(ASourceDir),
+      Files[I]
+    );
+    
+    // Construct destination path
+    DestPath := CombinePaths(ADestDir, RelativePath);
+    
+    // Create destination directory if needed
+    ForceDirectories(ExtractFilePath(DestPath));
+    
+    // Copy the file
+    CopyFile(Files[I], DestPath);
+  end;
+end;
+
+class procedure TFileKit.MoveFiles(const ASourceDir, ADestDir, APattern: string);
+var
+  Files: TFilePathArray;
+  I: Integer;
+  RelativePath, DestPath: string;
+begin
+  if not DirectoryExists(ASourceDir) then
+    Exit;
+    
+  // Create destination directory if it doesn't exist
+  ForceDirectories(ADestDir);
+  
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
+  
+  // Move each file
+  for I := 0 to High(Files) do
+  begin
+    // Get relative path from source directory
+    RelativePath := ExtractRelativePath(
+      IncludeTrailingPathDelimiter(ASourceDir),
+      Files[I]
+    );
+    
+    // Construct destination path
+    DestPath := CombinePaths(ADestDir, RelativePath);
+    
+    // Create destination directory if needed
+    ForceDirectories(ExtractFilePath(DestPath));
+    
+    // Move the file
+    MoveFile(Files[I], DestPath);
+  end;
+end;
+
+class procedure TFileKit.DeleteFiles(const ASourceDir, APattern: string);
+var
+  Files: TFilePathArray;
+  I: Integer;
+begin
+  if not DirectoryExists(ASourceDir) then
+    Exit;
+    
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
+  
+  // Delete each file
+  for I := 0 to High(Files) do
+    DeleteFile(Files[I]);
 end;
 
 function MatchPattern(const FileName, Pattern: string): Boolean;

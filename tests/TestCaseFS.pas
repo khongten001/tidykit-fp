@@ -104,6 +104,9 @@ type
     procedure Test41_DeleteSymLink;
     procedure Test42_ResolveSymLink;
     procedure Test43_IsSymLink;
+    procedure Test40_CopyFiles;
+    procedure Test41_MoveFiles;
+    procedure Test42_DeleteFiles;
   end;
 
 implementation
@@ -1537,6 +1540,116 @@ begin
       RemoveDir(TempDir);
   end;
   WriteLn('Test39_CreateTempDirectory: Finished');
+end;
+
+procedure TFSTests.Test40_CopyFiles;
+var
+  SourceDir, DestDir: string;
+  TestFiles: array[1..3] of string;
+  I: Integer;
+begin
+  WriteLn('Test40_CopyFiles: Starting');
+  
+  // Create test directories
+  SourceDir := FTestDir + PathDelim + 'source';
+  DestDir := FTestDir + PathDelim + 'dest';
+  ForceDirectories(SourceDir);
+  
+  // Create test files
+  TestFiles[1] := SourceDir + PathDelim + 'test1.txt';
+  TestFiles[2] := SourceDir + PathDelim + 'test2.txt';
+  TestFiles[3] := SourceDir + PathDelim + 'test.dat';
+  
+  for I := 1 to 3 do
+    TFileKit.WriteTextFile(TestFiles[I], 'Test content ' + IntToStr(I));
+  
+  // Test copying only .txt files
+  TFileKit.CopyFiles(SourceDir, DestDir, '*.txt');
+  
+  // Verify results
+  AssertTrue('Destination directory should exist', DirectoryExists(DestDir));
+  AssertTrue('First .txt file should be copied',
+    FileExists(DestDir + PathDelim + 'test1.txt'));
+  AssertTrue('Second .txt file should be copied',
+    FileExists(DestDir + PathDelim + 'test2.txt'));
+  AssertFalse('.dat file should not be copied',
+    FileExists(DestDir + PathDelim + 'test.dat'));
+    
+  WriteLn('Test40_CopyFiles: Finished');
+end;
+
+procedure TFSTests.Test41_MoveFiles;
+var
+  SourceDir, DestDir: string;
+  TestFiles: array[1..3] of string;
+  I: Integer;
+begin
+  WriteLn('Test41_MoveFiles: Starting');
+  
+  // Create test directories
+  SourceDir := FTestDir + PathDelim + 'source';
+  DestDir := FTestDir + PathDelim + 'dest';
+  ForceDirectories(SourceDir);
+  
+  // Create test files
+  TestFiles[1] := SourceDir + PathDelim + 'test1.txt';
+  TestFiles[2] := SourceDir + PathDelim + 'test2.txt';
+  TestFiles[3] := SourceDir + PathDelim + 'test.dat';
+  
+  for I := 1 to 3 do
+    TFileKit.WriteTextFile(TestFiles[I], 'Test content ' + IntToStr(I));
+  
+  // Test moving only .txt files
+  TFileKit.MoveFiles(SourceDir, DestDir, '*.txt');
+  
+  // Verify results
+  AssertTrue('Destination directory should exist', DirectoryExists(DestDir));
+  AssertTrue('First .txt file should be moved',
+    FileExists(DestDir + PathDelim + 'test1.txt'));
+  AssertTrue('Second .txt file should be moved',
+    FileExists(DestDir + PathDelim + 'test2.txt'));
+  AssertFalse('First .txt file should not exist in source',
+    FileExists(SourceDir + PathDelim + 'test1.txt'));
+  AssertFalse('Second .txt file should not exist in source',
+    FileExists(SourceDir + PathDelim + 'test2.txt'));
+  AssertTrue('.dat file should remain in source',
+    FileExists(SourceDir + PathDelim + 'test.dat'));
+    
+  WriteLn('Test41_MoveFiles: Finished');
+end;
+
+procedure TFSTests.Test42_DeleteFiles;
+var
+  TestDir: string;
+  TestFiles: array[1..3] of string;
+  I: Integer;
+begin
+  WriteLn('Test42_DeleteFiles: Starting');
+  
+  // Create test directory
+  TestDir := FTestDir + PathDelim + 'delete_test';
+  ForceDirectories(TestDir);
+  
+  // Create test files
+  TestFiles[1] := TestDir + PathDelim + 'test1.txt';
+  TestFiles[2] := TestDir + PathDelim + 'test2.txt';
+  TestFiles[3] := TestDir + PathDelim + 'test.dat';
+  
+  for I := 1 to 3 do
+    TFileKit.WriteTextFile(TestFiles[I], 'Test content ' + IntToStr(I));
+  
+  // Test deleting only .txt files
+  TFileKit.DeleteFiles(TestDir, '*.txt');
+  
+  // Verify results
+  AssertFalse('First .txt file should be deleted',
+    FileExists(TestDir + PathDelim + 'test1.txt'));
+  AssertFalse('Second .txt file should be deleted',
+    FileExists(TestDir + PathDelim + 'test2.txt'));
+  AssertTrue('.dat file should remain',
+    FileExists(TestDir + PathDelim + 'test.dat'));
+    
+  WriteLn('Test42_DeleteFiles: Finished');
 end;
 
 procedure TFSTests.Test40_CreateSymLink;

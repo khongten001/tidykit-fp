@@ -50,6 +50,11 @@ TFileKit.DeleteFile('temp.txt');                           // Delete file
 TFileKit.CopyFile('source.txt', 'dest.txt');               // Copy file
 TFileKit.MoveFile('old.txt', 'new.txt');                   // Move/rename file
 
+// Batch file operations
+TFileKit.CopyFiles('source_dir', 'dest_dir', '*.txt');     // Copy all .txt files
+TFileKit.MoveFiles('source_dir', 'dest_dir', '*.doc');     // Move all .doc files
+TFileKit.DeleteFiles('temp_dir', '*.tmp');                 // Delete all .tmp files
+
 // Directory operations
 TFileKit.CreateDirectory('new_dir');                       // Create directory
 TFileKit.DeleteDirectory('old_dir', True);                 // Delete directory (True = recursive)
