@@ -21,6 +21,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [🔢 Matrix Operations](#-matrix-operations)
     - [📐 Trigonometric Operations](#-trigonometric-operations)
     - [💰 Financial Operations](#-financial-operations)
+    - [📦 Archive Operations](#-archive-operations)
+  - [📖 System Requirements](#-system-requirements)
+    - [Tested Environments](#tested-environments)
+    - [Theoretical Compatibility](#theoretical-compatibility)
+    - [Dependencies](#dependencies)
+    - [Build Requirements](#build-requirements)
   - [📚 Documentation](#-documentation)
   - [✅ Testing](#-testing)
   - [🤝 Contributing](#-contributing)
@@ -42,6 +48,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - File and directory manipulation
   - Path operations
   - File searching and filtering
+
+- 📦 **Archive Operations**
+  - ZIP file compression and decompression
+  - TAR file creation and extraction
+  - Pattern-based file filtering
+  - Recursive directory handling
 
 - 🔐 **Cryptography**
   - SHA3 implementation
@@ -338,6 +350,55 @@ begin
 end;
 ```
 
+### 📦 Archive Operations
+```pascal
+var
+  SourceDir, DestDir: string;
+begin
+  // Create ZIP archive
+  SourceDir := 'path/to/source';
+  TArchiveKit.CompressToZip(SourceDir, 'archive.zip', True);  // Recursive
+  
+  // Extract specific files
+  DestDir := 'path/to/extract';
+  TArchiveKit.DecompressFromZip('archive.zip', DestDir, '*.txt');  // Only .txt files
+  
+  // Create TAR archive with specific files
+  TArchiveKit.CompressToTar(SourceDir, 'backup.tar', True, '*.pas');  // Only .pas files
+  
+  // Extract entire TAR archive
+  TArchiveKit.DecompressFromTar('backup.tar', DestDir);
+end;
+```
+
+## 📖 System Requirements
+
+### Tested Environments
+- **Operating System**: Windows 11
+- **Compiler**: Free Pascal (FPC) 3.2.2
+- **IDE**: Lazarus 3.8
+
+### Theoretical Compatibility
+- **Operating Systems**:
+  - Windows (7, 8, 10, 11)
+  - Linux (Any distribution with FPC support)
+  - macOS (with FPC support)
+  - FreeBSD
+- **Compiler**: Free Pascal 3.2.2 or higher
+- **IDE**: Any IDE that supports Free Pascal
+  - Lazarus 3.6 or higher
+  - VS Code with OmniPascal
+  - Other text editors
+
+### Dependencies
+- No external dependencies required
+- Uses only standard Free Pascal RTL units
+
+### Build Requirements
+- Free Pascal Compiler (FPC) 3.2.2+
+- Lazarus 3.6+
+- Basic development tools (git, terminal, etc)
+
 ## 📚 Documentation
 
 For detailed documentation, see:
@@ -360,15 +421,17 @@ $ ./TestRunner.exe -a --format=all
 
 ## 🤝 Contributing
 
-1. Fork the repository
-2. Create your feature branch
-3. Commit your changes
-4. Push to the branch
-5. Create a Pull Request
+Contributions are welcome! Please feel free to submit a Pull Request. For major changes, please open an issue first to discuss what you would like to change.
+
+1. Fork the Project
+2. Create your Feature Branch (git checkout -b feature/AmazingFeature)
+3. Commit your Changes (git commit -m 'Add some AmazingFeature')
+4. Push to the Branch (git push origin feature/AmazingFeature)
+5. Open a Pull Request
 
 ## ⚖️ License
 
-This project is licensed under the MIT License - see the LICENSE file for details.
+This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) file for details.
 
 ## 🙏 Acknowledgments
 

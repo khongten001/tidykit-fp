@@ -16,7 +16,8 @@ uses
   TidyKit.Math.Matrices,
   TidyKit.Math.Finance,
   TidyKit.Math.Trigonometry,
-  TidyKit.Math.Stats;
+  TidyKit.Math.Stats,
+  TidyKit.Archive;
 
 type
   { Re-export the core types }
@@ -47,6 +48,9 @@ type
   TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
   TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
   TStatsKit = TidyKit.Math.Stats.TStatsKit;
+
+  { Re-export archive types }
+  TArchiveKit = TidyKit.Archive.TArchiveKit;
 
 const
   { Re-export filesystem constants }

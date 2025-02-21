@@ -134,21 +134,14 @@ type
         
       Returns:
         The entire content of the file as a string. }
-    class function ReadFile(const APath: string): string; static;
+    class function ReadTextFile(const APath: string): string; static;
 
     { Writes content to a file, overwriting any existing content.
       
       Parameters:
         APath - The path to the file to write.
         AContent - The string content to write to the file. }
-    class procedure WriteFile(const APath: string; const AContent: string); static;
-
-    { Appends content to the end of an existing file.
-      
-      Parameters:
-        APath - The path to the file to append to.
-        AContent - The string content to append to the file. }
-    class procedure AppendFile(const APath: string; const AContent: string); static;
+    class procedure WriteTextFile(const APath: string; const AContent: string); static;
 
     { Deletes a file from the file system.
       
@@ -569,14 +562,11 @@ type
         True if the path is a symbolic link. }
     class function IsSymLink(const APath: string): Boolean; static;
 
-    { Compresses files into a ZIP archive. }
-    class procedure CompressToZip(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*'); static;
-    { Decompresses files from a ZIP archive. }
-    class procedure DecompressFromZip(const AZipPath, ADestPath: string; const Pattern: string = '*'); static;
-    { Compresses files into a TAR archive. }
-    class procedure CompressToTar(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*'); static;
-    { Decompresses files from a TAR archive. }
-    class procedure DecompressFromTar(const ATarPath, ADestPath: string; const Pattern: string = '*'); static;
+    { Batch file operations }
+
+    class procedure CopyFiles(const ASourceDir, ADestDir, APattern: string); static;
+    class procedure MoveFiles(const ASourceDir, ADestDir, APattern: string); static;
+    class procedure DeleteFiles(const ASourceDir, APattern: string); static;
   end;
 
 implementation
@@ -708,7 +698,7 @@ end;
 
 { Helper functions }
 
-function LoadFromFile(const APath: string): string;
+function LoadTextFromFile(const APath: string): string;
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -731,7 +721,7 @@ begin
   end;
 end;
 
-procedure SaveToFile(const APath: string; const AContent: string);
+procedure SaveTextToFile(const APath: string; const AContent: string);
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -810,33 +800,17 @@ begin
   NormalPath := '';
 end;
 
-class function TFileKit.ReadFile(const APath: string): string;
+class function TFileKit.ReadTextFile(const APath: string): string;
 begin
-  Result := LoadFromFile(APath);
+  Result := LoadTextFromFile(APath);
 end;
 
-class procedure TFileKit.WriteFile(const APath: string; const AContent: string);
+class procedure TFileKit.WriteTextFile(const APath: string; const AContent: string);
 begin
   if APath <> '' then
   begin
     ForceDirectories(ExtractFilePath(APath));
-    SaveToFile(APath, AContent);
-  end;
-end;
-
-class procedure TFileKit.AppendFile(const APath: string; const AContent: string);
-var
-  ExistingContent: string;
-begin
-  if APath <> '' then
-  begin
-    if FileExists(APath) then
-    begin
-      ExistingContent := LoadFromFile(APath);
-      SaveToFile(APath, ExistingContent + AContent);
-    end
-    else
-      SaveToFile(APath, AContent);
+    SaveTextToFile(APath, AContent);
   end;
 end;
 
@@ -849,10 +823,20 @@ end;
 class procedure TFileKit.CopyFile(const ASourcePath, ADestPath: string);
 var
   SourceStream, DestStream: TFileStream;
+  {$IFDEF WINDOWS}
+  SourceAttrs: DWord;
+  FileTime: TFileTime;
+  Handle: THandle;
+  {$ENDIF}
+  {$IFDEF UNIX}
+  Info: BaseUnix.Stat;
+  {$ENDIF}
 begin
   if FileExists(ASourcePath) then
   begin
     ForceDirectories(ExtractFilePath(ADestPath));
+    
+    // First copy the file content
     SourceStream := TFileStream.Create(ASourcePath, fmOpenRead or fmShareDenyWrite);
     try
       DestStream := TFileStream.Create(ADestPath, fmCreate);
@@ -864,6 +848,57 @@ begin
     finally
       SourceStream.Free;
     end;
+    
+    // Now copy file attributes and timestamps
+    {$IFDEF WINDOWS}
+    // Get source file attributes
+    SourceAttrs := Windows.GetFileAttributes(PChar(ASourcePath));
+    if SourceAttrs <> INVALID_FILE_ATTRIBUTES then
+      Windows.SetFileAttributes(PChar(ADestPath), SourceAttrs);
+      
+    // Copy timestamps
+    Handle := CreateFile(PChar(ASourcePath), GENERIC_READ, FILE_SHARE_READ, nil,
+                        OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+    if Handle <> INVALID_HANDLE_VALUE then
+    begin
+      try
+        if GetFileTime(Handle, @FileTime, nil, nil) then
+        begin
+          CloseHandle(Handle);
+          Handle := CreateFile(PChar(ADestPath), GENERIC_WRITE, 0, nil,
+                             OPEN_EXISTING, FILE_FLAG_BACKUP_SEMANTICS, 0);
+          if Handle <> INVALID_HANDLE_VALUE then
+          begin
+            SetFileTime(Handle, @FileTime, @FileTime, @FileTime);
+          end;
+        end;
+      finally
+        if Handle <> INVALID_HANDLE_VALUE then
+          CloseHandle(Handle);
+      end;
+    end;
+    {$ENDIF}
+    
+    {$IFDEF UNIX}
+    // Get source file metadata
+    if fpStat(PChar(ASourcePath), Info) = 0 then
+    begin
+      // Set permissions
+      fpChmod(PChar(ADestPath), Info.Mode and $0FFF);
+      
+      // Set ownership if we have permissions
+      if fpGetuid = 0 then  // Only try if we're root
+      begin
+        fpChown(PChar(ADestPath), Info.uid, Info.gid);
+      end;
+      
+      // Set timestamps
+      with Info do
+      begin
+        fpUtime(PChar(ADestPath), @Info.mtime);
+      end;
+    end;
+    {$ENDIF}
   end;
 end;
 
@@ -877,11 +912,19 @@ begin
     if DestDir <> '' then
       ForceDirectories(DestDir);
       
+    // First try a simple rename
     if not RenameFile(ASourcePath, ADestPath) then
     begin
+      // If rename fails, copy and delete
       CopyFile(ASourcePath, ADestPath);
       if FileExists(ADestPath) then
-        SysUtils.DeleteFile(ASourcePath);
+      begin
+        // Verify copy succeeded before deleting source
+        if GetSize(ADestPath) = GetSize(ASourcePath) then
+          SysUtils.DeleteFile(ASourcePath)
+        else
+          raise ETidyKitException.Create('Move operation failed: Size mismatch after copy');
+      end;
     end;
   end;
 end;
@@ -894,11 +937,11 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, Content + AText);
+      Content := LoadTextFromFile(APath);
+      SaveTextToFile(APath, Content + AText);
     end
     else
-      SaveToFile(APath, AText);
+      SaveTextToFile(APath, AText);
   end;
 end;
 
@@ -910,11 +953,11 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
-      SaveToFile(APath, AText + Content);
+      Content := LoadTextFromFile(APath);
+      SaveTextToFile(APath, AText + Content);
     end
     else
-      SaveToFile(APath, AText);
+      SaveTextToFile(APath, AText);
   end;
 end;
 
@@ -926,9 +969,9 @@ begin
   begin
     if FileExists(APath) then
     begin
-      Content := LoadFromFile(APath);
+      Content := LoadTextFromFile(APath);
       Content := StringReplace(Content, OldText, NewText, [rfReplaceAll]);
-      SaveToFile(APath, Content);
+      SaveTextToFile(APath, Content);
     end;
   end;
 end;
@@ -1684,7 +1727,7 @@ begin
       Result := CombinePaths(TempPath, APrefix + '_' + GuidStr + '.tmp')
     else
       Result := CombinePaths(TempPath, 'tmp_' + GuidStr + '.tmp');
-    WriteFile(Result, ''); // Create empty file
+    WriteTextFile(Result, ''); // Create empty file
   end
   else
     raise ETidyKitException.Create('Failed to create GUID for temporary file');
@@ -2163,345 +2206,92 @@ begin
   {$ENDIF}
 end;
 
-class procedure TFileKit.CompressToZip(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*');
+{ Batch file operations }
+
+class procedure TFileKit.CopyFiles(const ASourceDir, ADestDir, APattern: string);
 var
-  Zipper: TZipper;
   Files: TFilePathArray;
-  Dirs: TStringArray;
   I: Integer;
-  BaseDir: string;
-  RelativePath: string;
+  RelativePath, DestPath: string;
 begin
-  if DEBUG_MODE then
-    WriteLn('CompressToZip: Starting compression of ', APath, ' to ', ADestPath);
+  if not DirectoryExists(ASourceDir) then
+    Exit;
     
-  BaseDir := IncludeTrailingPathDelimiter(ExpandFileName(APath));
+  // Create destination directory if it doesn't exist
+  ForceDirectories(ADestDir);
   
-  if DEBUG_MODE then
-    WriteLn('CompressToZip: Base directory is ', BaseDir);
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
   
-  // Get files first
-  Files := ListFiles(APath, Pattern, Recursive);
-  
-  if DEBUG_MODE then
-    WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
-  
-  Zipper := TZipper.Create;
-  try
-    Zipper.FileName := ADestPath;
+  // Copy each file
+  for I := 0 to High(Files) do
+  begin
+    // Get relative path from source directory
+    RelativePath := ExtractRelativePath(
+      IncludeTrailingPathDelimiter(ASourceDir),
+      Files[I]
+    );
     
-    // Add each file with its relative path
-    for I := 0 to High(Files) do
-    begin
-      RelativePath := ExtractRelativePath(BaseDir, Files[I]);
-      if DEBUG_MODE then
-        WriteLn('CompressToZip: Adding file ', RelativePath);
-        
-      // Store only the relative path in the ZIP
-      Zipper.Entries.AddFileEntry(Files[I], RelativePath);
-    end;
+    // Construct destination path
+    DestPath := CombinePaths(ADestDir, RelativePath);
     
-    if DEBUG_MODE then
-      WriteLn('CompressToZip: Creating ZIP file');
-      
-    Zipper.ZipAllFiles;  // This will create the ZIP file
+    // Create destination directory if needed
+    ForceDirectories(ExtractFilePath(DestPath));
     
-    if DEBUG_MODE then
-      WriteLn('CompressToZip: ZIP file created successfully');
-  finally
-    Zipper.Free;  // This will close all resources
-    if DEBUG_MODE then
-      WriteLn('CompressToZip: Resources freed');
+    // Copy the file
+    CopyFile(Files[I], DestPath);
   end;
 end;
 
-class procedure TFileKit.DecompressFromZip(const AZipPath, ADestPath: string; const Pattern: string = '*');
+class procedure TFileKit.MoveFiles(const ASourceDir, ADestDir, APattern: string);
 var
-  UnZipper: TUnZipper;
-  DestDir: string;
-begin
-  if DEBUG_MODE then
-    WriteLn('DecompressFromZip: Starting decompression of ', AZipPath, ' to ', ADestPath);
-    
-  // Ensure absolute, normalized path with trailing delimiter
-  DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
-  
-  if DEBUG_MODE then
-    WriteLn('DecompressFromZip: Destination directory is ', DestDir);
-    
-  if not ForceDirectories(DestDir) then
-  begin
-    if DEBUG_MODE then
-      WriteLn('DecompressFromZip: Failed to create destination directory');
-    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
-  end;
-  
-  if not FileExists(AZipPath) then
-  begin
-    if DEBUG_MODE then
-      WriteLn('DecompressFromZip: ZIP file not found');
-    raise ETidyKitException.CreateFmt('ZIP file not found: %s', [AZipPath]);
-  end;
-  
-  UnZipper := TUnZipper.Create;
-  try
-    UnZipper.FileName := AZipPath;
-    UnZipper.OutputPath := ExcludeTrailingPathDelimiter(DestDir);  // UnZipper adds its own delimiter
-    
-    if DEBUG_MODE then
-      WriteLn('DecompressFromZip: Examining ZIP file');
-      
-    UnZipper.Examine;  // Read the ZIP directory
-    
-    if DEBUG_MODE then
-    begin
-      WriteLn('DecompressFromZip: Found ', UnZipper.Entries.Count, ' entries');
-      WriteLn('DecompressFromZip: Output path is ', UnZipper.OutputPath);
-    end;
-      
-    UnZipper.UnZipAllFiles;  // Extract all files
-    
-    if DEBUG_MODE then
-      WriteLn('DecompressFromZip: Files extracted successfully');
-  finally
-    UnZipper.Free;  // This will close all resources
-    if DEBUG_MODE then
-      WriteLn('DecompressFromZip: Resources freed');
-  end;
-end;
-
-class procedure TFileKit.CompressToTar(const APath, ADestPath: string; const Recursive: Boolean = False; const Pattern: string = '*');
-var
-  TarWriter: TTarWriter;
   Files: TFilePathArray;
-  Dirs: TStringArray;
   I: Integer;
-  BaseDir: string;
-  FileStream: TFileStream;
-  TarFileName: string;
-  RelativePath: string;
-  ModTime: TDateTime;
+  RelativePath, DestPath: string;
 begin
-  if DEBUG_MODE then
-    WriteLn('CompressToTar: Starting compression of ', APath, ' to ', ADestPath);
+  if not DirectoryExists(ASourceDir) then
+    Exit;
     
-  BaseDir := IncludeTrailingPathDelimiter(ExpandFileName(APath));
-  TarFileName := ExpandFileName(ADestPath);  // Get full path of TAR file
+  // Create destination directory if it doesn't exist
+  ForceDirectories(ADestDir);
   
-  if DEBUG_MODE then
-    WriteLn('CompressToTar: Base directory is ', BaseDir);
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
   
-  // Delete existing file if it exists
-  if FileExists(TarFileName) then
+  // Move each file
+  for I := 0 to High(Files) do
   begin
-    if DEBUG_MODE then
-      WriteLn('CompressToTar: Deleting existing TAR file');
-    DeleteFile(TarFileName);
-  end;
-  
-  // Get directories first (if recursive)
-  if Recursive then
-  begin
-    Dirs := ListDirectories(APath, '*', True);
-    if DEBUG_MODE then
-      WriteLn('CompressToTar: Found ', Length(Dirs), ' directories');
-  end;
-  
-  // Get files
-  Files := ListFiles(APath, Pattern, Recursive);
-  
-  // Filter out the TAR file itself from the list
-  for I := High(Files) downto 0 do
-  begin
-    if SameFileName(Files[I], TarFileName) then
-    begin
-      if DEBUG_MODE then
-        WriteLn('CompressToTar: Excluding TAR file from archive');
-      Delete(Files, I, 1);
-    end;
-  end;
-  
-  if DEBUG_MODE then
-    WriteLn('CompressToTar: Found ', Length(Files), ' files to compress');
-  
-  // Create output file with exclusive access
-  FileStream := TFileStream.Create(TarFileName, fmCreate or fmShareExclusive);
-  try
-    if DEBUG_MODE then
-      WriteLn('CompressToTar: Creating TAR writer');
-      
-    TarWriter := TTarWriter.Create(FileStream);
-    try
-      // Add directories first (if recursive)
-      if Recursive then
-      begin
-        for I := 0 to High(Dirs) do
-        begin
-          // TAR format requires trailing path delimiter for directories
-          RelativePath := IncludeTrailingPathDelimiter(ExtractRelativePath(BaseDir, Dirs[I]));
-          ModTime := GetLastWriteTime(Dirs[I]);
-          if DEBUG_MODE then
-            WriteLn('CompressToTar: Adding directory ', RelativePath);
-          TarWriter.AddDir(RelativePath, ModTime);
-        end;
-      end;
-      
-      // Add each file with its relative path
-      for I := 0 to High(Files) do
-      begin
-        RelativePath := ExtractRelativePath(BaseDir, Files[I]);
-        if DEBUG_MODE then
-          WriteLn('CompressToTar: Adding file ', RelativePath);
-          
-        // Store only the relative path in the TAR
-        TarWriter.AddFile(Files[I], RelativePath);
-      end;
-      
-      if DEBUG_MODE then
-        WriteLn('CompressToTar: Writing TAR footer');
-        
-      TarWriter.Finalize;  // Write TAR footer
-      
-      if DEBUG_MODE then
-        begin
-          WriteLn('CompressToTar: TAR file created successfully');
-          WriteLn('CompressToTar: Final file size is ', FileStream.Size, ' bytes');
-        end;
-    finally
-      TarWriter.Free;
-      if DEBUG_MODE then
-        WriteLn('CompressToTar: TAR writer freed');
-    end;
-  finally
-    FileStream.Free;
-    if DEBUG_MODE then
-      WriteLn('CompressToTar: File stream freed');
+    // Get relative path from source directory
+    RelativePath := ExtractRelativePath(
+      IncludeTrailingPathDelimiter(ASourceDir),
+      Files[I]
+    );
+    
+    // Construct destination path
+    DestPath := CombinePaths(ADestDir, RelativePath);
+    
+    // Create destination directory if needed
+    ForceDirectories(ExtractFilePath(DestPath));
+    
+    // Move the file
+    MoveFile(Files[I], DestPath);
   end;
 end;
 
-class procedure TFileKit.DecompressFromTar(const ATarPath, ADestPath: string; const Pattern: string = '*');
+class procedure TFileKit.DeleteFiles(const ASourceDir, APattern: string);
 var
-  TarArchive: TTarArchive;
-  DirRec: TTarDirRec;
-  OutputFile: string;
-  DestDir: string;
-  EntryCount: Integer;
-  DirToCreate: string;
+  Files: TFilePathArray;
+  I: Integer;
 begin
-  if DEBUG_MODE then
-    WriteLn('DecompressFromTar: Starting decompression of ', ATarPath, ' to ', ADestPath);
+  if not DirectoryExists(ASourceDir) then
+    Exit;
     
-  // Ensure absolute, normalized path with trailing delimiter
-  DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
   
-  if DEBUG_MODE then
-    WriteLn('DecompressFromTar: Destination directory is ', DestDir);
-    
-  if not ForceDirectories(DestDir) then
-  begin
-    if DEBUG_MODE then
-      WriteLn('DecompressFromTar: Failed to create destination directory');
-    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
-  end;
-  
-  if not FileExists(ATarPath) then
-  begin
-    if DEBUG_MODE then
-      WriteLn('DecompressFromTar: TAR file not found');
-    raise ETidyKitException.CreateFmt('TAR file not found: %s', [ATarPath]);
-  end;
-  
-  // Create TAR archive directly with filename
-  TarArchive := TTarArchive.Create(ATarPath);
-  try
-    if DEBUG_MODE then
-      WriteLn('DecompressFromTar: Reading TAR entries');
-      
-    // Reset the archive to start reading from the beginning
-    TarArchive.Reset;
-      
-    EntryCount := 0;
-    while TarArchive.FindNext(DirRec) do
-    begin
-      Inc(EntryCount);
-
-      if DEBUG_MODE then
-      begin
-        WriteLn('DecompressFromTar: Size = ', DirRec.Size, ' bytes');
-        WriteLn('DecompressFromTar: Found entry #', EntryCount);
-        WriteLn('DecompressFromTar: Name = ', DirRec.Name);
-        WriteLn('DecompressFromTar: Type = ', Integer(DirRec.FileType));
-      end;
-        
-      // Handle directory entries
-      if DirRec.FileType = ftDirectory then
-      begin
-        // For directory entries, use the full path
-        DirToCreate := DestDir + ExcludeTrailingPathDelimiter(DirRec.Name);
-        
-        if DEBUG_MODE then
-          WriteLn('DecompressFromTar: Creating directory ', DirToCreate);
-          
-        if not ForceDirectories(DirToCreate) then
-        begin
-          if DEBUG_MODE then
-            WriteLn('DecompressFromTar: Failed to create directory');
-          raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
-        end;
-        
-        Continue;  // Skip to next entry
-      end;
-      
-      // Handle file entries
-      if DirRec.FileType = ftNormal then
-      begin
-        OutputFile := DestDir + DirRec.Name;
-        
-        if DEBUG_MODE then
-          WriteLn('DecompressFromTar: Processing file ', DirRec.Name);
-          
-        if MatchPattern(DirRec.Name, Pattern) then
-        begin
-          if DEBUG_MODE then
-            WriteLn('DecompressFromTar: Extracting file ', OutputFile);
-            
-          // Create parent directory for file
-          DirToCreate := ExtractFilePath(OutputFile);
-          if not ForceDirectories(DirToCreate) then
-          begin
-            if DEBUG_MODE then
-              WriteLn('DecompressFromTar: Failed to create directory for file');
-            raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
-          end;
-            
-          try
-            TarArchive.ReadFile(OutputFile);
-            if DEBUG_MODE then
-              WriteLn('DecompressFromTar: File extracted successfully');
-          except
-            on E: Exception do
-            begin
-              if DEBUG_MODE then
-                WriteLn('DecompressFromTar: Failed to extract file - ', E.Message);
-              raise ETidyKitException.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
-            end;
-          end;
-        end
-        else if DEBUG_MODE then
-          WriteLn('DecompressFromTar: Skipping file ', DirRec.Name, ' (does not match pattern)');
-      end;
-    end;
-    
-    if DEBUG_MODE then
-    begin
-      WriteLn('DecompressFromTar: Found ', EntryCount, ' entries in total');
-      WriteLn('DecompressFromTar: All files extracted successfully');
-    end;
-  finally
-    TarArchive.Free;
-    if DEBUG_MODE then
-      WriteLn('DecompressFromTar: TAR archive reader freed');
-  end;
+  // Delete each file
+  for I := 0 to High(Files) do
+    DeleteFile(Files[I]);
 end;
 
 function MatchPattern(const FileName, Pattern: string): Boolean;
@@ -2509,7 +2299,7 @@ begin
   Result := False;
   if Pattern = '*' then
     Exit(True);
-    
+
   // Simple wildcard matching for now
   if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
     Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
