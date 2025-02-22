@@ -189,6 +189,8 @@ end;
 - File paths use backslashes (`\`) but forward slashes (`/`) are also accepted
 - Drive letters (e.g., `C:`) are supported
 - Maximum path length is 260 characters by default
+- File locking is implemented using Windows API exclusive file access
+- Hidden files are determined by file attributes
 
 ### Unix/Linux
 
@@ -196,6 +198,8 @@ end;
 - File paths use forward slashes (`/`)
 - No drive letters, all paths are relative to root (`/`)
 - Maximum path length is typically 4096 characters
+- File locking is implemented using lock files
+- Hidden files are determined by leading dot in filename
 
 ## Error Handling
 
@@ -255,5 +259,5 @@ end;
    - Reuse `TSearchResults` instead of searching repeatedly
 
 3. For large files:
-   - Use streaming operations (planned for future versions)
-   - Consider chunked processing for very large files 
+   - Consider chunked processing for very large files
+   - Use appropriate buffer sizes for file operations 

@@ -131,8 +131,12 @@ Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
 if TFileKit.IsSymLink('link.txt') then ...               // Check if path is symlink
 
 // File locking
-if TFileKit.LockFile('file.txt') then ...               // Lock file
-if TFileKit.UnlockFile('file.txt') then ...             // Unlock file
+if TFileKit.LockFile('file.txt') then                    // Lock file
+try
+  // Work with file
+finally
+  TFileKit.UnlockFile('file.txt');                       // Unlock file
+end;
 if TFileKit.IsFileLocked('file.txt') then ...           // Check if file is locked
 
 // File validation and sanitization
