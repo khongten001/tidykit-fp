@@ -57,8 +57,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 
 - 🔐 **Cryptography**
   - SHA3 implementation
+  - SHA2 family (SHA-256, SHA-512, SHA-512/256)
+  - AES-256 encryption (CBC and CTR modes)
   - Secure hashing
   - Encryption utilities
+  - Base64 encoding/decoding
+  - Legacy support (MD5, SHA1, Blowfish)
 
 - 🌐 **Network Operations**
   - HTTP client

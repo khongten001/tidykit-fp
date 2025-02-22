@@ -24,6 +24,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Base64 Encoding/Decoding](#base64-encodingdecoding)
     - [XOR Encryption (Basic)](#xor-encryption-basic)
     - [Blowfish Encryption (Legacy Support)](#blowfish-encryption-legacy-support)
+    - [AES-256 Encryption](#aes-256-encryption)
     - [Common Use Cases](#common-use-cases)
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
@@ -389,185 +390,136 @@ Local := TDateTimeKit.ForceTimeZone(Now, 'EST'); // Force timezone
 ## 🔒 Cryptographic Operations
 
 ### Hash Functions
-
 ```pascal
-// MD5 (legacy, not recommended for security)
-hash := TCryptoKit.MD5Hash('text');  // 128-bit output
+// MD5 (legacy support)
+Hash := TCryptoKit.MD5Hash('text');                // Returns MD5 hash
 
-// SHA-1 (legacy, not recommended for security)
-hash := TCryptoKit.SHA1Hash('text'); // 160-bit output
+// SHA1 (legacy support)
+Hash := TCryptoKit.SHA1Hash('text');               // Returns SHA1 hash
 
-// SHA-256 (recommended for general use)
-hash := TCryptoKit.SHA256Hash('text'); // 256-bit output
+// SHA2 Family
+Hash := TCryptoKit.SHA256Hash('text');             // Returns SHA-256 hash
+Hash := TCryptoKit.SHA512Hash('text');             // Returns SHA-512 hash
+Hash := TCryptoKit.SHA512_256Hash('text');         // Returns SHA-512/256 hash
 
-// SHA-512 (recommended for 64-bit systems)
-hash := TCryptoKit.SHA512Hash('text'); // 512-bit output
-
-// SHA-512/256 (FIPS 180-4 compliant, recommended for 64-bit systems)
-hash := TCryptoKit.SHA512_256Hash('text'); // 256-bit output
-
-// SHA3-224 (FIPS 202 compliant)
-hash := TCryptoKit.SHA3_224Hash('text'); // 224-bit output
-
-// SHA3-256 (FIPS 202 compliant)
-hash := TCryptoKit.SHA3_256Hash('text'); // 256-bit output
-
-// SHA3-384 (FIPS 202 compliant)
-hash := TCryptoKit.SHA3_384Hash('text'); // 384-bit output
-
-// SHA3-512 (FIPS 202 compliant)
-hash := TCryptoKit.SHA3_512Hash('text'); // 512-bit output
+// SHA3 Family (Keccak)
+Hash := TCryptoKit.SHA3_224Hash('text');           // Returns SHA3-224 hash
+Hash := TCryptoKit.SHA3_256Hash('text');           // Returns SHA3-256 hash
+Hash := TCryptoKit.SHA3_384Hash('text');           // Returns SHA3-384 hash
+Hash := TCryptoKit.SHA3_512Hash('text');           // Returns SHA3-512 hash
 ```
 
 ### Base64 Encoding/Decoding
-
 ```pascal
-// Encoding
-encoded := TCryptoKit.Base64Encode('Hello, World!');
-// Result: 'SGVsbG8sIFdvcmxkIQ=='
-
-// Decoding
-decoded := TCryptoKit.Base64Decode('SGVsbG8sIFdvcmxkIQ==');
-// Result: 'Hello, World!'
-
-// Error handling
-if (encoded = '') or (decoded = '') then
-  WriteLn('Encoding/decoding failed');
+// Base64 encoding/decoding
+Encoded := TCryptoKit.Base64Encode('text');        // Encode to Base64
+Decoded := TCryptoKit.Base64Decode(Encoded);       // Decode from Base64
 ```
 
 ### XOR Encryption (Basic)
-
 ```pascal
-// Basic encryption (not for sensitive data)
-const
-  Key = 'MySecretKey123';
-var
-  Text: string = 'Hello, World!';
-  Encrypted, Decrypted: string;
-begin
-  // Encrypt
-  Encrypted := TCryptoKit.XORCrypt(Text, Key);
-  
-  // Decrypt (same operation)
-  Decrypted := TCryptoKit.XORCrypt(Encrypted, Key);
-  
-  // Key wrapping is automatic for long texts
-  LongText := 'Very long text...';
-  Encrypted := TCryptoKit.XORCrypt(LongText, 'short key');
-end;
+// Simple XOR encryption (not secure for sensitive data)
+Encrypted := TCryptoKit.XORCrypt('text', 'key');   // Encrypt text
+Decrypted := TCryptoKit.XORCrypt(Encrypted, 'key'); // Decrypt text (same operation)
 ```
 
 ### Blowfish Encryption (Legacy Support)
-
 ```pascal
-// Encryption
-const
-  Key = 'MySecretKey123456'; // Up to 56 bytes
+// Blowfish encryption/decryption
+Encrypted := TCryptoKit.BlowfishCrypt('text', 'key', bmEncrypt); // Encrypt
+Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, 'key', bmDecrypt); // Decrypt
+```
+
+### AES-256 Encryption
+```pascal
 var
-  Text: string = 'Hello, World!';
-  Encrypted, Decrypted: string;
+  Key: TAESKey;
+  IV: TAESBlock;
+  PlainText, CipherText: string;
 begin
-  // Encrypt
-  Encrypted := TCryptoKit.BlowfishCrypt(Text, Key, bmEncrypt);
+  // Initialize Key and IV (example - use secure random generation in practice)
+  FillChar(Key, SizeOf(Key), 0);
+  FillChar(IV, SizeOf(IV), 0);
   
-  // Decrypt
-  Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, Key, bmDecrypt);
+  // CBC Mode (with PKCS7 padding)
+  CipherText := TCryptoKit.AES256EncryptCBC('secret text', Key, IV);
+  PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
   
-  // Key length handling
-  if Length(Key) > 56 then
-    SetLength(Key, 56);  // Truncate to maximum allowed length
+  // CTR Mode (no padding needed)
+  CipherText := TCryptoKit.AES256EncryptCTR('secret text', Key, IV);
+  PlainText := TCryptoKit.AES256DecryptCTR(CipherText, Key, IV);
 end;
 ```
 
 ### Common Use Cases
 
-1. Password Hashing (use SHA-256 or SHA-512/256):
+1. Password Hashing
 ```pascal
-userPasswordHash := TCryptoKit.SHA512_256Hash(password + salt);
+// Hash password before storage (use SHA-512 or SHA3-512)
+HashedPassword := TCryptoKit.SHA512Hash(Password);
 ```
 
-2. File Checksum:
+2. File Integrity Check
 ```pascal
-fileContent := TFileKit.ReadFile('myfile.txt');
-checksum := TCryptoKit.SHA256Hash(fileContent);
+// Calculate file hash
+FileHash := TCryptoKit.SHA256Hash(TFileKit.ReadFile('file.txt'));
 ```
 
-3. Data Integrity Check:
+3. Secure Data Storage
 ```pascal
-originalHash := TCryptoKit.SHA512_256Hash(originalData);
-receivedHash := TCryptoKit.SHA512_256Hash(receivedData);
-isValid := originalHash = receivedHash;
-```
-
-4. Safe String Storage:
-```pascal
-// Store sensitive string in Base64
-encoded := TCryptoKit.Base64Encode(sensitiveString);
-// Later, decode it
-decoded := TCryptoKit.Base64Decode(encoded);
+// Store sensitive data using AES-256
+var
+  Key: TAESKey;
+  IV: TAESBlock;
+begin
+  // Generate secure key and IV
+  // ... secure key generation code ...
+  
+  // Encrypt and store
+  EncryptedData := TCryptoKit.AES256EncryptCBC(SensitiveData, Key, IV);
+  TFileKit.WriteFile('secure.dat', EncryptedData);
+end;
 ```
 
 ### Best Practices
 
-1. Hash Function Selection:
-   - New applications: Use SHA-256 or SHA-512/256
-   - Legacy compatibility: MD5 or SHA-1 only if required
-   - Performance on 64-bit: Prefer SHA-512/256
-
-2. Key Management:
-   - Generate strong random keys
-   - Never store keys in plaintext
-   - Never reuse keys across systems
+1. Key Management
+   - Never store encryption keys in source code
+   - Use secure key generation methods
    - Rotate keys periodically
+   - Securely erase keys from memory when done
 
-3. Algorithm Usage:
-   - XOR: Only for basic data obfuscation
-   - Blowfish: Only for legacy system compatibility
-   - Base64: Safe string encoding, not encryption
-   - Modern hashes: Always use salt for passwords
+2. IV (Initialization Vector) Handling
+   - Use a unique IV for each encryption operation
+   - Never reuse IVs with the same key
+   - Store IV alongside encrypted data (it's not secret)
 
-4. Error Handling:
-   ```pascal
-   try
-     hash := TCryptoKit.SHA512_256Hash(data);
-     if hash = '' then
-       raise Exception.Create('Hashing failed');
-   except
-     on E: Exception do
-       // Handle error
-   end;
-   ```
+3. Mode Selection
+   - Use CBC mode when integrity is important
+   - Use CTR mode for streaming or random access
+   - Always validate decrypted data in CBC mode
+
+4. Hash Selection
+   - Use SHA-256 or better for general hashing
+   - Use SHA-512 for password hashing (with proper salting)
+   - Avoid MD5 and SHA1 for security-critical operations
 
 ### Security Notes
 
-1. **Hash Collisions**:
-   - MD5: Known collisions, avoid for security
-   - SHA-1: Theoretically broken, avoid for security
-   - SHA-256/SHA-512: No known practical collisions
-   - SHA3 family: No known collisions, NIST standard
+1. Encryption Strength
+   - AES-256 provides 256-bit security
+   - Key size determines security level
+   - Mode of operation affects security properties
 
-2. **Performance**:
-   - SHA-512/256: Better on 64-bit systems
-   - SHA-256: Better on 32-bit systems
-   - SHA3: Consistent performance across platforms
-   - Base64: Minimal overhead
-   - Blowfish: Moderate CPU usage
+2. Known Limitations
+   - CBC mode requires padding (potential padding oracle attacks)
+   - CTR mode requires unique counter values
+   - XOR encryption is not cryptographically secure
 
-3. **Output Sizes**:
-   - MD5: 32 hex chars (128 bits)
-   - SHA-1: 40 hex chars (160 bits)
-   - SHA-256: 64 hex chars (256 bits)
-   - SHA-512: 128 hex chars (512 bits)
-   - SHA-512/256: 64 hex chars (256 bits)
-   - SHA3-224: 56 hex chars (224 bits)
-   - SHA3-256: 64 hex chars (256 bits)
-   - SHA3-384: 96 hex chars (384 bits)
-   - SHA3-512: 128 hex chars (512 bits)
-
-4. **Standards Compliance**:
-   - SHA2 family: FIPS 180-4 compliant
-   - SHA3 family: FIPS 202 compliant
-   - All implementations tested against official NIST test vectors
+3. Compliance
+   - AES-256 implementation follows NIST standards
+   - Supports FIPS-compliant modes of operation
+   - Includes PKCS7 padding for CBC mode
 ```
 
 ## HTTP Client (TidyKit.Request.Simple)
