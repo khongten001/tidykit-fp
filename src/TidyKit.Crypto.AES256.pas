@@ -1,3 +1,54 @@
+{*******************************************************************************
+  TidyKit.Crypto.AES256 - Advanced Encryption Standard (AES-256) Implementation
+  
+  This unit provides a FIPS-compliant implementation of AES-256 encryption and
+  decryption in CBC and CTR modes. The implementation follows NIST standards:
+  - FIPS 197: Advanced Encryption Standard (AES)
+  - NIST SP 800-38A: Block Cipher Modes of Operation
+  
+  References:
+  1. NIST FIPS 197 - Advanced Encryption Standard (AES)
+     https://nvlpubs.nist.gov/nistpubs/FIPS/NIST.FIPS.197.pdf
+  
+  2. NIST SP 800-38A - Block Cipher Modes of Operation
+     https://nvlpubs.nist.gov/nistpubs/Legacy/SP/nistspecialpublication800-38a.pdf
+  
+  3. PKCS #7: Cryptographic Message Syntax (for padding)
+     RFC 5652 - https://tools.ietf.org/html/rfc5652
+  
+  Key Features:
+  - AES-256 block cipher (14 rounds)
+  - CBC mode with PKCS7 padding
+  - CTR mode for streaming operations
+  - NIST test vectors compliance
+  - Secure key and IV handling
+  
+  Security Notes:
+  1. This implementation has been tested against NIST test vectors
+  2. The code includes range-check optimization for performance
+  3. Memory is securely cleared after use
+  4. No timing attack mitigations are currently implemented
+  
+  Usage Example:
+    var
+      Key: TAESKey;
+      IV: TAESBlock;
+      PlainText, CipherText: string;
+    begin
+      // Initialize Key and IV (use secure random generation in practice)
+      FillChar(Key, SizeOf(Key), 0);
+      FillChar(IV, SizeOf(IV), 0);
+      
+      // CBC Mode
+      CipherText := TAES256.EncryptCBC(PlainBytes, Key, IV);
+      PlainText := TAES256.DecryptCBC(CipherBytes, Key, IV);
+    end;
+  
+  @author   TidyKit Team
+  @version  1.0
+  @date     2024
+*******************************************************************************}
+
 unit TidyKit.Crypto.AES256;
 
 {$mode objfpc}{$H+}{$J-}
@@ -52,6 +103,16 @@ type
     class procedure IncCounter(var Counter: TAESBlock); static;
     class procedure XorBlock(const Source1, Source2: PByte; Dest: PByte; Size: Integer); static;
   public
+    {*******************************************************************************
+      Creates a new AES cipher instance with specified mode, key, and IV.
+      
+      @param Mode   The operation mode (CBC or CTR)
+      @param Key    256-bit encryption key
+      @param IV     128-bit initialization vector
+      
+      Note: For CBC mode, IV must be unpredictable (random).
+            For CTR mode, IV serves as initial counter value.
+    *******************************************************************************}
     constructor Create(Mode: TAESMode; const Key: TAESKey; const IV: TAESBlock);
     destructor Destroy; override;
     
@@ -165,6 +226,16 @@ const
 
 { TAESCipher }
 
+{*******************************************************************************
+  Creates a new AES cipher instance with specified mode, key, and IV.
+  
+  @param Mode   The operation mode (CBC or CTR)
+  @param Key    256-bit encryption key
+  @param IV     128-bit initialization vector
+  
+  Note: For CBC mode, IV must be unpredictable (random).
+        For CTR mode, IV serves as initial counter value.
+*******************************************************************************}
 constructor TAESCipher.Create(Mode: TAESMode; const Key: TAESKey; const IV: TAESBlock);
 begin
   inherited Create;
@@ -194,6 +265,21 @@ begin
             UInt32(SBox[Value and $FF]);
 end;
 
+{*******************************************************************************
+  Expands the 256-bit key into the key schedule.
+  
+  The key expansion routine creates round keys derived from the cipher key.
+  For AES-256, it generates 60 32-bit words (15 128-bit round keys).
+  
+  Algorithm from FIPS 197 Section 5.2:
+  1. First round key is the key itself
+  2. Subsequent round keys are generated using:
+     - RotWord: Cyclic left shift of 32-bit word
+     - SubWord: S-box substitution
+     - Rcon: Round constant XOR
+  
+  @param Key   The 256-bit master key
+*******************************************************************************}
 procedure TAESCipher.ExpandKey(const Key: TAESKey);
 var
   I: Integer;
@@ -218,6 +304,16 @@ begin
   end;
 end;
 
+{*******************************************************************************
+  Performs SubBytes transformation using S-box.
+  
+  SubBytes is a non-linear byte substitution that operates independently
+  on each byte of the state using a substitution table (S-box).
+  
+  Reference: FIPS 197 Section 5.1.1
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.SubBytes(var State: TAESBlock);
 var
   I: Integer;
@@ -226,6 +322,16 @@ begin
     State[I] := SBox[State[I]];
 end;
 
+{*******************************************************************************
+  Performs inverse SubBytes transformation using inverse S-box.
+  
+  InvSubBytes is the inverse of the SubBytes transformation, using the
+  inverse S-box lookup table.
+  
+  Reference: FIPS 197 Section 5.3.2
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.InvSubBytes(var State: TAESBlock);
 var
   I: Integer;
@@ -234,6 +340,19 @@ begin
     State[I] := InvSBox[State[I]];
 end;
 
+{*******************************************************************************
+  Performs ShiftRows transformation.
+  
+  ShiftRows cyclically shifts the bytes in each row by different offsets:
+  - Row 0: no shift
+  - Row 1: 1-byte shift
+  - Row 2: 2-byte shift
+  - Row 3: 3-byte shift
+  
+  Reference: FIPS 197 Section 5.1.2
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.ShiftRows(var State: TAESBlock);
 var
   Temp: Byte;
@@ -261,6 +380,20 @@ begin
   State[3] := Temp;
 end;
 
+{*******************************************************************************
+  Performs inverse ShiftRows transformation.
+  
+  InvShiftRows cyclically shifts the bytes in each row by different offsets
+  in the opposite direction of ShiftRows:
+  - Row 0: no shift
+  - Row 1: 3-byte shift
+  - Row 2: 2-byte shift
+  - Row 3: 1-byte shift
+  
+  Reference: FIPS 197 Section 5.3.1
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.InvShiftRows(var State: TAESBlock);
 var
   Temp: Byte;
@@ -308,6 +441,17 @@ begin
   Result := P;
 end;
 
+{*******************************************************************************
+  Performs MixColumns transformation.
+  
+  MixColumns treats each column as a polynomial over GF(2^8) and
+  multiplies it with a fixed polynomial:
+  a = (03 * x^3) + (01 * x^2) + (01 * x) + 02
+  
+  Reference: FIPS 197 Section 5.1.3
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.MixColumns(var State: TAESBlock);
 var
   I: Integer;
@@ -328,6 +472,17 @@ begin
   end;
 end;
 
+{*******************************************************************************
+  Performs inverse MixColumns transformation.
+  
+  InvMixColumns is the inverse of the MixColumns transformation.
+  Each column is treated as a polynomial and multiplied by the inverse:
+  a^(-1) = (0B * x^3) + (0D * x^2) + (09 * x) + 0E
+  
+  Reference: FIPS 197 Section 5.3.3
+  
+  @param Block   The block to transform (modified in place)
+*******************************************************************************}
 procedure TAESCipher.InvMixColumns(var State: TAESBlock);
 var
   I: Integer;
@@ -378,6 +533,17 @@ begin
   end;
 end;
 
+{*******************************************************************************
+  XORs two blocks of memory.
+  
+  This is a helper function used in both CBC and CTR modes to combine
+  blocks with XOR operation.
+  
+  @param Source1   First source block
+  @param Source2   Second source block
+  @param Dest      Destination block (can be same as either source)
+  @param Size      Size of blocks in bytes
+*******************************************************************************}
 class procedure TAESCipher.XorBlock(const Source1, Source2: PByte; Dest: PByte; Size: Integer);
 var
   I: Integer;
@@ -386,6 +552,16 @@ begin
     Dest[I] := Source1[I] xor Source2[I];
 end;
 
+{*******************************************************************************
+  Encrypts a single 128-bit block using AES-256.
+  
+  The encryption process consists of:
+  1. Initial round key addition
+  2. 13 main rounds (SubBytes, ShiftRows, MixColumns, AddRoundKey)
+  3. Final round (SubBytes, ShiftRows, AddRoundKey)
+  
+  @param Block   The 128-bit block to encrypt (modified in place)
+*******************************************************************************}
 procedure TAESCipher.EncryptBlock(var Block: TAESBlock);
 var
   Round: Integer;
@@ -406,6 +582,16 @@ begin
   AddRoundKey(Block, 14);
 end;
 
+{*******************************************************************************
+  Decrypts a single 128-bit block using AES-256.
+  
+  The decryption process is the inverse of encryption:
+  1. Initial round key addition
+  2. 13 inverse main rounds (InvShiftRows, InvSubBytes, AddRoundKey, InvMixColumns)
+  3. Final round (InvShiftRows, InvSubBytes, AddRoundKey)
+  
+  @param Block   The 128-bit block to decrypt (modified in place)
+*******************************************************************************}
 procedure TAESCipher.DecryptBlock(var Block: TAESBlock);
 var
   Round: Integer;
@@ -426,6 +612,18 @@ begin
   AddRoundKey(Block, 0);
 end;
 
+{*******************************************************************************
+  Encrypts data using CBC (Cipher Block Chaining) mode.
+  
+  CBC mode provides confidentiality and limited integrity through chaining.
+  Each plaintext block is XORed with the previous ciphertext block before
+  encryption. PKCS7 padding is used to handle partial blocks.
+  
+  @param Data   The data to encrypt
+  @return       The encrypted data with padding
+  
+  Note: CBC mode is not parallelizable for encryption.
+*******************************************************************************}
 function TAESCipher.EncryptCBC(const Data: TBytes): TBytes;
 var
   NumBlocks, LastBlockSize, PaddingSize, I: Integer;
@@ -468,6 +666,20 @@ begin
   end;
 end;
 
+{*******************************************************************************
+  Decrypts data using CBC (Cipher Block Chaining) mode.
+  
+  CBC decryption process:
+  1. Decrypt ciphertext block
+  2. XOR with previous ciphertext block
+  3. Remove PKCS7 padding from final block
+  
+  @param Data   The encrypted data with padding
+  @return       The decrypted data with padding removed
+  
+  Note: CBC decryption can be parallelized, unlike encryption.
+        Invalid padding will raise EAESError.
+*******************************************************************************}
 function TAESCipher.DecryptCBC(const Data: TBytes): TBytes;
 var
   NumBlocks, PaddingSize, I: Integer;
@@ -513,6 +725,21 @@ begin
     raise EAESError.Create('Invalid padding');
 end;
 
+{*******************************************************************************
+  Encrypts data using CTR (Counter) mode.
+  
+  CTR mode turns a block cipher into a stream cipher by encrypting
+  incrementing counter values and XORing with plaintext. Benefits:
+  1. No padding required
+  2. Parallelizable
+  3. Random access to encrypted data
+  4. No error propagation
+  
+  @param Data   The data to encrypt
+  @return       The encrypted data (same length as input)
+  
+  Note: Counter must never be reused with the same key.
+*******************************************************************************}
 function TAESCipher.EncryptCTR(const Data: TBytes): TBytes;
 var
   NumBlocks, LastBlockSize, I: Integer;
@@ -546,6 +773,18 @@ begin
   end;
 end;
 
+{*******************************************************************************
+  Decrypts data using CTR (Counter) mode.
+  
+  CTR mode decryption is identical to encryption:
+  1. Encrypt counter values
+  2. XOR with ciphertext
+  
+  @param Data   The encrypted data
+  @return       The decrypted data
+  
+  Note: CTR mode is self-reversible - encryption and decryption are identical.
+*******************************************************************************}
 function TAESCipher.DecryptCTR(const Data: TBytes): TBytes;
 begin
   // CTR mode is symmetric - encryption and decryption are the same operation
