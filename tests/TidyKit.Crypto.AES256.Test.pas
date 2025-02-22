@@ -79,21 +79,15 @@ const
                               '39f23369a9d9bacfa530e26304231461' +
                               'b2eb05e2c39be9fcda6c19078c6a9d1b';
 var
-  Cipher: TAESCipher;
   KeyBytes, IVBytes, PlainBytes, CipherBytes: TBytes;
 begin
   KeyBytes := HexToBytes(Key);
   IVBytes := HexToBytes(IV);
   PlainBytes := HexToBytes(Plaintext);
   
-  Cipher := TAESCipher.Create(amCBC, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
-  try
-    CipherBytes := Cipher.Encrypt(PlainBytes);
-    AssertEquals('CBC encryption failed', ExpectedCiphertext.ToLower, 
-                 BytesToHex(CipherBytes).ToLower);
-  finally
-    Cipher.Free;
-  end;
+  CipherBytes := TAES256.EncryptCBC(PlainBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  AssertEquals('CBC encryption failed', ExpectedCiphertext.ToLower, 
+               BytesToHex(CipherBytes).ToLower);
 end;
 
 procedure TAESCipherTest.TestCBCDecryption;
@@ -110,21 +104,15 @@ const
                              '30c81c46a35ce411e5fbc1191a0a52ef' +
                              'f69f2445df4f9b17ad2b417be66c3710';
 var
-  Cipher: TAESCipher;
   KeyBytes, IVBytes, CipherBytes, PlainBytes: TBytes;
 begin
   KeyBytes := HexToBytes(Key);
   IVBytes := HexToBytes(IV);
   CipherBytes := HexToBytes(Ciphertext);
   
-  Cipher := TAESCipher.Create(amCBC, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
-  try
-    PlainBytes := Cipher.Decrypt(CipherBytes);
-    AssertEquals('CBC decryption failed', ExpectedPlaintext.ToLower, 
-                 BytesToHex(PlainBytes).ToLower);
-  finally
-    Cipher.Free;
-  end;
+  PlainBytes := TAES256.DecryptCBC(CipherBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  AssertEquals('CBC decryption failed', ExpectedPlaintext.ToLower, 
+               BytesToHex(PlainBytes).ToLower);
 end;
 
 procedure TAESCipherTest.TestCTREncryption;
@@ -141,21 +129,15 @@ const
                               '2b0930daa23de94ce87017ba2d84988d' +
                               'dfc9c58db67aada613c2dd08457941a6';
 var
-  Cipher: TAESCipher;
   KeyBytes, IVBytes, PlainBytes, CipherBytes: TBytes;
 begin
   KeyBytes := HexToBytes(Key);
   IVBytes := HexToBytes(IV);
   PlainBytes := HexToBytes(Plaintext);
   
-  Cipher := TAESCipher.Create(amCTR, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
-  try
-    CipherBytes := Cipher.Encrypt(PlainBytes);
-    AssertEquals('CTR encryption failed', ExpectedCiphertext.ToLower, 
-                 BytesToHex(CipherBytes).ToLower);
-  finally
-    Cipher.Free;
-  end;
+  CipherBytes := TAES256.EncryptCTR(PlainBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  AssertEquals('CTR encryption failed', ExpectedCiphertext.ToLower, 
+               BytesToHex(CipherBytes).ToLower);
 end;
 
 procedure TAESCipherTest.TestCTRDecryption;
@@ -172,44 +154,31 @@ const
                              '30c81c46a35ce411e5fbc1191a0a52ef' +
                              'f69f2445df4f9b17ad2b417be66c3710';
 var
-  Cipher: TAESCipher;
   KeyBytes, IVBytes, CipherBytes, PlainBytes: TBytes;
 begin
   KeyBytes := HexToBytes(Key);
   IVBytes := HexToBytes(IV);
   CipherBytes := HexToBytes(Ciphertext);
   
-  Cipher := TAESCipher.Create(amCTR, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
-  try
-    PlainBytes := Cipher.Decrypt(CipherBytes);
-    AssertEquals('CTR decryption failed', ExpectedPlaintext.ToLower, 
-                 BytesToHex(PlainBytes).ToLower);
-  finally
-    Cipher.Free;
-  end;
+  PlainBytes := TAES256.DecryptCTR(CipherBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  AssertEquals('CTR decryption failed', ExpectedPlaintext.ToLower, 
+               BytesToHex(PlainBytes).ToLower);
 end;
 
 procedure TAESCipherTest.TestEmptyInput;
 var
-  Cipher: TAESCipher;
   Key: TAESKey;
   IV: TAESBlock;
 begin
   FillChar(Key, SizeOf(Key), 0);
   FillChar(IV, SizeOf(IV), 0);
   
-  Cipher := TAESCipher.Create(amCBC, Key, IV);
-  try
-    AssertEquals('Empty input encryption failed', 0, Length(Cipher.Encrypt(nil)));
-    AssertEquals('Empty input decryption failed', 0, Length(Cipher.Decrypt(nil)));
-  finally
-    Cipher.Free;
-  end;
+  AssertEquals('Empty input encryption failed', 0, Length(TAES256.EncryptCBC(nil, Key, IV)));
+  AssertEquals('Empty input decryption failed', 0, Length(TAES256.DecryptCBC(nil, Key, IV)));
 end;
 
 procedure TAESCipherTest.TestInvalidPadding;
 var
-  Cipher: TAESCipher;
   Key: TAESKey;
   IV: TAESBlock;
   InvalidData: TBytes;
@@ -218,17 +187,12 @@ begin
   FillChar(IV, SizeOf(IV), 0);
   SetLength(InvalidData, 32);
   
-  Cipher := TAESCipher.Create(amCBC, Key, IV);
   try
-    try
-      Cipher.Decrypt(InvalidData);
-      Fail('Expected EAESError for invalid padding');
-    except
-      on E: EAESError do
-        ; // Expected exception
-    end;
-  finally
-    Cipher.Free;
+    TAES256.DecryptCBC(InvalidData, Key, IV);
+    Fail('Expected EAESError for invalid padding');
+  except
+    on E: EAESError do
+      ; // Expected exception
   end;
 end;
 

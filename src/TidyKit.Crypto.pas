@@ -5,7 +5,7 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES256;
 
 type
   { TBlowfishMode
@@ -145,6 +145,50 @@ type
       Returns:
         Encrypted/decrypted string in Base64 format. }
     class function BlowfishCrypt(const Text, Key: string; Mode: TBlowfishMode): string; static;
+
+    { Encrypts data using AES-256 in CBC mode.
+      
+      Parameters:
+        Data - The data to encrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector.
+        
+      Returns:
+        Encrypted data in Base64 format. }
+    class function AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
+    
+    { Decrypts data using AES-256 in CBC mode.
+      
+      Parameters:
+        Base64Data - The Base64-encoded encrypted data.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector.
+        
+      Returns:
+        Decrypted data. }
+    class function AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
+    
+    { Encrypts data using AES-256 in CTR mode.
+      
+      Parameters:
+        Data - The data to encrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector (nonce + counter).
+        
+      Returns:
+        Encrypted data in Base64 format. }
+    class function AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
+    
+    { Decrypts data using AES-256 in CTR mode.
+      
+      Parameters:
+        Base64Data - The Base64-encoded encrypted data.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector (nonce + counter).
+        
+      Returns:
+        Decrypted data. }
+    class function AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
   end;
 
 implementation
@@ -323,6 +367,72 @@ begin
   finally
     Context.Free;
   end;
+end;
+
+{ TCryptoKit - AES-256 Methods }
+
+class function TCryptoKit.AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
+var
+  DataBytes, EncryptedBytes: TBytes;
+begin
+  if Length(Data) = 0 then
+    Exit('');
+    
+  SetLength(DataBytes, Length(Data));
+  if Length(Data) > 0 then
+    Move(Data[1], DataBytes[0], Length(Data));
+    
+  EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
+  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+end;
+
+class function TCryptoKit.AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
+var
+  EncryptedData, DecryptedBytes: TBytes;
+  DecodedStr: string;
+begin
+  if Length(Base64Data) = 0 then
+    Exit('');
+    
+  DecodedStr := Base64Decode(Base64Data);
+  SetLength(EncryptedData, Length(DecodedStr));
+  if Length(DecodedStr) > 0 then
+    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
+    
+  DecryptedBytes := TAES256.DecryptCBC(EncryptedData, Key, IV);
+  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
+end;
+
+class function TCryptoKit.AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
+var
+  DataBytes, EncryptedBytes: TBytes;
+begin
+  if Length(Data) = 0 then
+    Exit('');
+    
+  SetLength(DataBytes, Length(Data));
+  if Length(Data) > 0 then
+    Move(Data[1], DataBytes[0], Length(Data));
+    
+  EncryptedBytes := TAES256.EncryptCTR(DataBytes, Key, IV);
+  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+end;
+
+class function TCryptoKit.AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
+var
+  EncryptedData, DecryptedBytes: TBytes;
+  DecodedStr: string;
+begin
+  if Length(Base64Data) = 0 then
+    Exit('');
+    
+  DecodedStr := Base64Decode(Base64Data);
+  SetLength(EncryptedData, Length(DecodedStr));
+  if Length(DecodedStr) > 0 then
+    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
+    
+  DecryptedBytes := TAES256.DecryptCTR(EncryptedData, Key, IV);
+  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
 end;
 
 end. 

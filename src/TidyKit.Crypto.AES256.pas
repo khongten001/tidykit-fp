@@ -61,6 +61,57 @@ type
     property Mode: TAESMode read FMode;
   end;
 
+  { TAES256
+    -------
+    Static class providing AES-256 encryption and decryption functionality.
+    All methods are static (class functions) for ease of use - no need to create instances. }
+  TAES256 = class
+  public
+    { Encrypts data using AES-256 in CBC mode.
+      
+      Parameters:
+        Data - The data to encrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector.
+        
+      Returns:
+        Encrypted data. }
+    class function EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+    
+    { Decrypts data using AES-256 in CBC mode.
+      
+      Parameters:
+        Data - The data to decrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector.
+        
+      Returns:
+        Decrypted data. }
+    class function DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+    
+    { Encrypts data using AES-256 in CTR mode.
+      
+      Parameters:
+        Data - The data to encrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector (nonce + counter).
+        
+      Returns:
+        Encrypted data. }
+    class function EncryptCTR(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+    
+    { Decrypts data using AES-256 in CTR mode.
+      
+      Parameters:
+        Data - The data to decrypt.
+        Key - 256-bit encryption key.
+        IV - 128-bit initialization vector (nonce + counter).
+        
+      Returns:
+        Decrypted data. }
+    class function DecryptCTR(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+  end;
+
 implementation
 
 {$R-} // Disable range checking for performance-critical sections
@@ -528,5 +579,55 @@ begin
 end;
 
 {$R+} // Re-enable range checking for the rest of the implementation
- 
+
+{ TAES256 }
+
+class function TAES256.EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+var
+  Cipher: TAESCipher;
+begin
+  Cipher := TAESCipher.Create(amCBC, Key, IV);
+  try
+    Result := Cipher.Encrypt(Data);
+  finally
+    Cipher.Free;
+  end;
+end;
+
+class function TAES256.DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+var
+  Cipher: TAESCipher;
+begin
+  Cipher := TAESCipher.Create(amCBC, Key, IV);
+  try
+    Result := Cipher.Decrypt(Data);
+  finally
+    Cipher.Free;
+  end;
+end;
+
+class function TAES256.EncryptCTR(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+var
+  Cipher: TAESCipher;
+begin
+  Cipher := TAESCipher.Create(amCTR, Key, IV);
+  try
+    Result := Cipher.Encrypt(Data);
+  finally
+    Cipher.Free;
+  end;
+end;
+
+class function TAES256.DecryptCTR(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+var
+  Cipher: TAESCipher;
+begin
+  Cipher := TAESCipher.Create(amCTR, Key, IV);
+  try
+    Result := Cipher.Decrypt(Data);
+  finally
+    Cipher.Free;
+  end;
+end;
+
 end. 
