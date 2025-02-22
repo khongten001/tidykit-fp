@@ -1761,16 +1761,13 @@ begin
 end;
 
 class function TFileKit.NormalizePath(const APath: string): string;
-var
-  TempPath: string;
 begin
-  TempPath := APath;
   {$IFDEF WINDOWS}
-  TempPath := StringReplace(TempPath, '/', '\', [rfReplaceAll]);
+  Result := StringReplace(APath, '/', '\', [rfReplaceAll]);
   {$ELSE}
-  TempPath := StringReplace(TempPath, '\', '/', [rfReplaceAll]);
+  Result := StringReplace(APath, '\', '/', [rfReplaceAll]);
   {$ENDIF}
-  Result := ExpandFileName(TempPath);
+  Result := ExpandFileName(Result);
 end;
 
 class function TFileKit.CreateTempFile(const APrefix: string = ''): string;
@@ -2411,22 +2408,28 @@ var
   Parts1, Parts2: TStringArray;
   I, MinLen: Integer;
   CommonParts: TStringArray;
+  IsUnixStyle: Boolean;
 begin
-  Parts1 := SplitString(NormalizePath(Path1), PathDelim);
-  Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+  // Check if paths are Unix-style (starting with /)
+  IsUnixStyle := (Length(Path1) > 0) and (Path1[1] = '/') and
+                 (Length(Path2) > 0) and (Path2[1] = '/');
+                 
+  // For Unix-style paths, split by '/' instead of PathDelim
+  if IsUnixStyle then
+  begin
+    Parts1 := SplitString(Path1, '/');
+    Parts2 := SplitString(Path2, '/');
+  end
+  else
+  begin
+    Parts1 := SplitString(NormalizePath(Path1), PathDelim);
+    Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+  end;
   
   // If either path is empty, return empty string
   if (Length(Parts1) = 0) or (Length(Parts2) = 0) then
     Exit('');
     
-  // If drive letters are different on Windows, return empty string
-  {$IFDEF WINDOWS}
-  if (Length(Parts1[0]) >= 2) and (Length(Parts2[0]) >= 2) and
-     (Parts1[0][2] = ':') and (Parts2[0][2] = ':') and
-     (UpperCase(Parts1[0][1]) <> UpperCase(Parts2[0][1])) then
-    Exit('');
-  {$ENDIF}
-  
   // If root paths are different, return empty string
   if Parts1[0] <> Parts2[0] then
     Exit('');
@@ -2451,9 +2454,18 @@ begin
   if Length(CommonParts) = 0 then
     Result := ''
   else begin
-    Result := CommonParts[0];
-    for I := 1 to High(CommonParts) do
-      Result := Result + PathDelim + CommonParts[I];
+    if IsUnixStyle then
+    begin
+      Result := '/' + CommonParts[0];  // Add leading slash for Unix paths
+      for I := 1 to High(CommonParts) do
+        Result := Result + '/' + CommonParts[I];
+    end
+    else
+    begin
+      Result := CommonParts[0];
+      for I := 1 to High(CommonParts) do
+        Result := Result + PathDelim + CommonParts[I];
+    end;
   end;
 end;
 
@@ -2463,40 +2475,74 @@ var
   BaseParts, TargetParts: TStringArray;
   CommonLength, I: Integer;
   ResultParts: TStringArray;
+  BaseStart, TargetStart: Integer;
+  IsUnixStyle: Boolean;
 begin
-  BaseNorm := ExcludeTrailingPathDelimiter(NormalizePath(BasePath));
-  TargetNorm := ExcludeTrailingPathDelimiter(NormalizePath(TargetPath));
+  // Check if paths are Unix-style (starting with /)
+  IsUnixStyle := (Length(BasePath) > 0) and (BasePath[1] = '/') and
+                 (Length(TargetPath) > 0) and (TargetPath[1] = '/');
+                 
+  if IsUnixStyle then
+  begin
+    // For Unix paths, use them as-is
+    BaseNorm := ExcludeTrailingPathDelimiter(BasePath);
+    TargetNorm := ExcludeTrailingPathDelimiter(TargetPath);
+    BaseParts := SplitString(BaseNorm, '/');
+    TargetParts := SplitString(TargetNorm, '/');
+    BaseStart := 1;  // Skip empty string before first /
+    TargetStart := 1;
+  end
+  else
+  begin
+    BaseNorm := ExcludeTrailingPathDelimiter(NormalizePath(BasePath));
+    TargetNorm := ExcludeTrailingPathDelimiter(NormalizePath(TargetPath));
+    BaseParts := SplitString(BaseNorm, PathDelim);
+    TargetParts := SplitString(TargetNorm, PathDelim);
+    
+    // Skip drive letters on Windows
+    {$IFDEF WINDOWS}
+    if (Length(BaseParts[0]) >= 2) and (BaseParts[0][2] = ':') then
+      BaseStart := 1
+    else
+      BaseStart := 0;
+      
+    if (Length(TargetParts[0]) >= 2) and (TargetParts[0][2] = ':') then
+      TargetStart := 1
+    else
+      TargetStart := 0;
+    {$ELSE}
+    BaseStart := 0;
+    TargetStart := 0;
+    {$ENDIF}
+  end;
   
   if BaseNorm = TargetNorm then
     Exit('.');
     
-  BaseParts := SplitString(BaseNorm, PathDelim);
-  TargetParts := SplitString(TargetNorm, PathDelim);
-  
   // Find common prefix
   CommonLength := 0;
-  while (CommonLength < Length(BaseParts)) and 
-        (CommonLength < Length(TargetParts)) and 
-        (BaseParts[CommonLength] = TargetParts[CommonLength]) do
+  while (BaseStart + CommonLength < Length(BaseParts)) and 
+        (TargetStart + CommonLength < Length(TargetParts)) and 
+        (BaseParts[BaseStart + CommonLength] = TargetParts[TargetStart + CommonLength]) do
     Inc(CommonLength);
     
-  // Build relative path
-  SetLength(ResultParts, Length(BaseParts) - CommonLength + Length(TargetParts) - CommonLength);
+  // Calculate number of levels to go up
+  SetLength(ResultParts, Length(BaseParts) - BaseStart - CommonLength + Length(TargetParts) - TargetStart - CommonLength);
   
   // Add '..' for each level we need to go up
-  for I := 0 to Length(BaseParts) - CommonLength - 1 do
+  for I := 0 to Length(BaseParts) - BaseStart - CommonLength - 1 do
     ResultParts[I] := '..';
     
   // Add the remaining path components
-  for I := 0 to Length(TargetParts) - CommonLength - 1 do
-    ResultParts[Length(BaseParts) - CommonLength + I] := TargetParts[CommonLength + I];
+  for I := 0 to Length(TargetParts) - TargetStart - CommonLength - 1 do
+    ResultParts[Length(BaseParts) - BaseStart - CommonLength + I] := TargetParts[TargetStart + CommonLength + I];
     
   if Length(ResultParts) = 0 then
     Result := '.'
   else begin
     Result := ResultParts[0];
     for I := 1 to High(ResultParts) do
-      Result := Result + '/' + ResultParts[I];
+      Result := Result + '/' + ResultParts[I];  // Always use forward slash for Unix paths
   end;
 end;
 
@@ -3035,6 +3081,7 @@ const
 var
   I: Integer;
   LastWasUnderscore: Boolean;
+  TempResult: string;
 begin
   Result := '';
   
@@ -3044,30 +3091,25 @@ begin
     
   // Replace invalid characters with underscore
   LastWasUnderscore := False;
+  TempResult := '';
+  
   for I := 1 to Length(FileName) do
   begin
     if (FileName[I] < #32) or (FileName[I] in InvalidChars) then
     begin
-      if not LastWasUnderscore then
-      begin
-        Result := Result + '_';
-        LastWasUnderscore := True;
-      end;
+      TempResult := TempResult + '_';
+      LastWasUnderscore := True;
     end
     else
     begin
-      Result := Result + FileName[I];
-      LastWasUnderscore := False;
+      TempResult := TempResult + FileName[I];
+      LastWasUnderscore := (FileName[I] = '_');
     end;
   end;
   
   // Trim trailing spaces and dots
-  Result := TrimRight(Result);
+  Result := TrimRight(TempResult);
   while (Length(Result) > 0) and (Result[Length(Result)] = '.') do
-    SetLength(Result, Length(Result) - 1);
-    
-  // Remove trailing underscore if present
-  while (Length(Result) > 0) and (Result[Length(Result)] = '_') do
     SetLength(Result, Length(Result) - 1);
     
   // If result is empty after sanitization, return underscore
@@ -3289,4 +3331,7 @@ begin
   Result := DirCount;
 end;
 
+finalization
+  if Assigned(LockedFiles) then
+    FreeAndNil(LockedFiles);
 end. 

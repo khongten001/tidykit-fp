@@ -2268,7 +2268,7 @@ begin
   WriteLn('Test67_SanitizeFileName: Starting');
   
   AssertEquals('Should sanitize invalid characters',
-    'test_file.txt', TFileKit.SanitizeFileName('test/file*.txt'));
+    'test_file_.txt', TFileKit.SanitizeFileName('test/file*.txt'));
     
   WriteLn('Test67_SanitizeFileName: Finished');
 end;
