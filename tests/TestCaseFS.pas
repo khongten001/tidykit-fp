@@ -1911,7 +1911,7 @@ begin
   WriteLn('Test46_GetRelativePath: Starting');
   
   AssertEquals('Relative path should be calculated correctly',
-    '../../local/bin',
+    '../local/bin',
     TFileKit.GetRelativePath('/usr/share', '/usr/local/bin'));
     
   AssertEquals('Same paths should return "."',

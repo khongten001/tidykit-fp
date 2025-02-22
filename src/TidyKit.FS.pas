@@ -2507,7 +2507,6 @@ var
   BaseParts, TargetParts: TStringArray;
   CommonLength, I, UpLevels: Integer;
   ResultParts: TStringArray;
-  BaseStart, TargetStart: Integer;
   IsUnixStyle: Boolean;
   {$IFDEF WINDOWS}
   HasDriveLetter: Boolean;
@@ -2529,8 +2528,6 @@ begin
     TargetNorm := Copy(TargetPath, 2, Length(TargetPath));
     BaseParts := SplitString(BaseNorm, '/');
     TargetParts := SplitString(TargetNorm, '/');
-    BaseStart := 0;  // No need to skip empty string since we removed leading slash
-    TargetStart := 0;
   end
   else
   begin
@@ -2543,16 +2540,12 @@ begin
       // Remove drive letters for comparison
       BaseParts := SplitString(Copy(BaseNorm, 3, Length(BaseNorm)), PathDelim);
       TargetParts := SplitString(Copy(TargetNorm, 3, Length(TargetNorm)), PathDelim);
-      BaseStart := 0;
-      TargetStart := 0;
     end
     else
     {$ENDIF}
     begin
       BaseParts := SplitString(BaseNorm, PathDelim);
       TargetParts := SplitString(TargetNorm, PathDelim);
-      BaseStart := 0;
-      TargetStart := 0;
     end;
   end;
   
@@ -2561,31 +2554,31 @@ begin
     
   // Find common prefix length
   CommonLength := 0;
-  while (BaseStart + CommonLength < Length(BaseParts)) and 
-        (TargetStart + CommonLength < Length(TargetParts)) and 
-        (BaseParts[BaseStart + CommonLength] = TargetParts[TargetStart + CommonLength]) do
+  while (CommonLength < Length(BaseParts)) and 
+        (CommonLength < Length(TargetParts)) and 
+        (BaseParts[CommonLength] = TargetParts[CommonLength]) do
     Inc(CommonLength);
     
-  // Calculate number of levels to go up - this is the key fix
-  UpLevels := Length(BaseParts) - BaseStart - CommonLength;
+  // Calculate number of levels to go up - from the end of BaseParts to CommonLength
+  UpLevels := Length(BaseParts) - CommonLength;
   
   // Create result array with correct size
-  SetLength(ResultParts, UpLevels + Length(TargetParts) - TargetStart - CommonLength);
+  SetLength(ResultParts, UpLevels + Length(TargetParts) - CommonLength);
   
   // Add '..' for each level we need to go up
   for I := 0 to UpLevels - 1 do
     ResultParts[I] := '..';
     
-  // Add the remaining path components
-  for I := 0 to Length(TargetParts) - TargetStart - CommonLength - 1 do
-    ResultParts[UpLevels + I] := TargetParts[TargetStart + CommonLength + I];
+  // Add the remaining path components from TargetParts
+  for I := 0 to Length(TargetParts) - CommonLength - 1 do
+    ResultParts[UpLevels + I] := TargetParts[CommonLength + I];
     
   if Length(ResultParts) = 0 then
     Result := '.'
   else begin
     Result := ResultParts[0];
     for I := 1 to High(ResultParts) do
-      Result := Result + '/' + ResultParts[I];  // Always use forward slash for Unix paths
+      Result := Result + '/' + ResultParts[I];  // Always use forward slash for consistency
   end;
 end;
 
