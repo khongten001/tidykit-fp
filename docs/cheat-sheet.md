@@ -47,7 +47,7 @@ TFileKit.AppendText('file.txt', 'new content');            // Append text to fil
 TFileKit.PrependText('file.txt', 'prefix text');           // Add text at start
 TFileKit.ReplaceText('file.txt', 'old', 'new');            // Replace text in file
 TFileKit.DeleteFile('temp.txt');                           // Delete file
-TFileKit.CopyFile('source.txt', 'dest.txt');               // Copy file
+TFileKit.CopyFile('source.txt', 'dest.txt');               // Copy file with attributes
 TFileKit.MoveFile('old.txt', 'new.txt');                   // Move/rename file
 
 // Batch file operations
@@ -58,9 +58,9 @@ TFileKit.DeleteFiles('temp_dir', '*.tmp');                 // Delete all .tmp fi
 // Directory operations
 TFileKit.CreateDirectory('new_dir');                       // Create directory
 TFileKit.DeleteDirectory('old_dir', True);                 // Delete directory (True = recursive)
-TFileKit.EnsureDirectory('path/to/file.txt');              // Create all parent directories
+TFileKit.EnsureDirectory('path/to/file.txt');             // Create all parent directories
 
-// File listing
+// File listing with sorting options
 Files := TFileKit.ListFiles('.', '*', False);              // List files in current dir
 Files := TFileKit.ListFiles('.', '*', True);               // List files recursively
 Files := TFileKit.ListFiles('.', '*.txt');                 // List only .txt files
@@ -71,7 +71,7 @@ Files := TFileKit.ListFiles('.', '*', False, fsDateDesc);  // Sort by date (desc
 Files := TFileKit.ListFiles('.', '*', False, fsSize);      // Sort by size (ascending)
 Files := TFileKit.ListFiles('.', '*', False, fsSizeDesc);  // Sort by size (descending)
 
-// Directory listing
+// Directory listing with sorting options
 Dirs := TFileKit.ListDirectories('.', '*', False);         // List directories in current dir
 Dirs := TFileKit.ListDirectories('.', '*', True);          // List directories recursively
 Dirs := TFileKit.ListDirectories('.', 'test_*');           // List dirs matching pattern
@@ -89,6 +89,11 @@ Path := TFileKit.NormalizePath('path/./to/../file.txt');  // Normalize path
 Path := TFileKit.ChangeExtension('file.txt', '.doc');     // Change file extension
 if TFileKit.IsAbsolutePath('C:\file.txt') then ...        // Check if path is absolute
 
+// Path analysis
+CommonPath := TFileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib');  // Returns '/usr/local'
+RelPath := TFileKit.GetRelativePath('/usr/share', '/usr/local/bin');       // Returns '../local/bin'
+if TFileKit.IsSubPath('/usr/local', '/usr/local/bin') then ...            // Check if path is subpath
+
 // File information
 if TFileKit.Exists('file.txt') then ...                   // Check file exists
 if TFileKit.DirectoryExists('dir') then ...               // Check directory exists
@@ -99,6 +104,7 @@ Time := TFileKit.GetLastWriteTime('file.txt');            // Get last write time
 Attrs := TFileKit.GetAttributes('file.txt');              // Get file attributes
 if TFileKit.IsTextFile('file.txt') then ...              // Check if text file
 Encoding := TFileKit.GetFileEncoding('file.txt');         // Get file encoding
+if TFileKit.IsEmptyDirectory('dir') then ...             // Check if directory is empty
 
 // Search operations
 Results := TFileKit.SearchFiles('.', '*.txt', True);      // Search files recursively
@@ -123,6 +129,31 @@ TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory sy
 TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
 Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
 if TFileKit.IsSymLink('link.txt') then ...               // Check if path is symlink
+
+// File locking
+if TFileKit.LockFile('file.txt') then ...               // Lock file
+if TFileKit.UnlockFile('file.txt') then ...             // Unlock file
+if TFileKit.IsFileLocked('file.txt') then ...           // Check if file is locked
+
+// File validation and sanitization
+if TFileKit.IsValidFileName('file.txt') then ...         // Check if filename is valid
+Name := TFileKit.SanitizeFileName('file*.txt');          // Sanitize filename
+Path := TFileKit.MakeValidPath('/path//to/./file');      // Make path valid
+if TFileKit.IsPathTooLong('very/long/path') then ...     // Check if path is too long
+
+// Directory information
+Info := TFileKit.GetDirectoryInfo('dir');                // Get directory statistics
+WriteLn('Files: ', Info.FileCount);                      // Number of files
+WriteLn('Directories: ', Info.DirectoryCount);           // Number of subdirectories
+WriteLn('Total size: ', Info.TotalSize);                 // Total size in bytes
+WriteLn('Oldest file: ', Info.OldestFile);              // Name of oldest file
+WriteLn('Newest file: ', Info.NewestFile);              // Name of newest file
+WriteLn('Largest file: ', Info.LargestFile);            // Name of largest file
+
+// Pattern matching
+if TFileKit.MatchesPattern('test.txt', '*.txt') then ... // Check if filename matches pattern
+File := TFileKit.FindFirstMatch('dir', '*.txt');         // Find first matching file
+Count := TFileKit.CountMatches('dir', '*.txt');          // Count matching files
 
 // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
 // On Unix/Linux, regular users can create symlinks in their own directories
