@@ -143,7 +143,9 @@ uses
   
   // Cryptography units
   TidyKit.Crypto,           // Base crypto operations
+  TidyKit.Crypto.SHA2,      // SHA2 implementation
   TidyKit.Crypto.SHA3,      // SHA3 implementation
+  TidyKit.Crypto.AES256,    // AES-256 implementation
   
   // Network units
   TidyKit.Request;          // HTTP client with simple and advanced features
