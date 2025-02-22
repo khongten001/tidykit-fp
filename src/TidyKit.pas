@@ -31,6 +31,7 @@ type
   TFileAttributes = TidyKit.FS.TFileAttributes;
   TSearchResult = TidyKit.FS.TSearchResult;
   TFilePathArray = TidyKit.FS.TFilePathArray;
+  TDirectoryInfo = TidyKit.FS.TDirectoryInfo;
 
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;

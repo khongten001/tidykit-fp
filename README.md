@@ -404,7 +404,7 @@ end;
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
 - 📊 [Math Documentation](docs/TidyKit.Math.md)
-- 📂 [File System Documentation](Coming soon)
+- 📂 [File System Documentation](docs/TidyKit.FS.md)
 - 🔐 [Crypto Documentation](Coming soon)
 - 🌐 [Network Documentation](docs/TidyKit.Request.md)
 
