@@ -54,6 +54,16 @@ type
     Permissions: string;  // Contains Unix-style permissions (e.g., 'rwxr-xr--') indicating access rights
   end;
 
+  TDirectoryInfo = record
+    FileCount: Integer;
+    DirectoryCount: Integer;
+    TotalSize: Int64;
+    OldestFile: string;
+    NewestFile: string;
+    LargestFile: string;
+  end;
+
+
   { 
     TFilePathArray
     -------------
@@ -567,7 +577,57 @@ type
     class procedure CopyFiles(const ASourceDir, ADestDir, APattern: string); static;
     class procedure MoveFiles(const ASourceDir, ADestDir, APattern: string); static;
     class procedure DeleteFiles(const ASourceDir, APattern: string); static;
+
+    { Simple Path Analysis }
+    class function IsEmptyDirectory(const Path: string): Boolean; static;
+    class function GetCommonPath(const Path1, Path2: string): string; static;
+    class function GetRelativePath(const BasePath, TargetPath: string): string; static;
+    class function IsSubPath(const ParentPath, ChildPath: string): Boolean; static;
+
+    { Basic File Content Operations }
+    class function CountLines(const FilePath: string): Integer; static;
+    class function GetFirstLine(const FilePath: string): string; static;
+    class function GetLastLine(const FilePath: string): string; static;
+    class function IsFileEmpty(const FilePath: string): Boolean; static;
+    class function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean; static;
+
+    { Simple File Type Detection }
+    class function IsBinaryFile(const FilePath: string): Boolean; static;
+    class function GetMimeType(const FilePath: string): string; static;
+    class function IsExecutable(const FilePath: string): Boolean; static;
+    class function IsHidden(const FilePath: string): Boolean; static;
+
+    { Basic Space Operations }
+    class function GetDriveFreeSpace(const Path: string): Int64; static;
+    class function GetDriveCapacity(const Path: string): Int64; static;
+    class function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean; static;
+
+    { Basic File Comparison }
+    class function AreFilesIdentical(const File1, File2: string): Boolean; static;
+    class function GetNewerFile(const File1, File2: string): string; static;
+    class function GetFileDifferences(const File1, File2: string): TStringArray; static;
+
+    { Simple File Locking }
+    class function LockFile(const FilePath: string): Boolean; static;
+    class function UnlockFile(const FilePath: string): Boolean; static;
+    class function IsFileLocked(const FilePath: string): Boolean; static;
+
+    { Path Validation and Sanitization }
+    class function IsValidFileName(const FileName: string): Boolean; static;
+    class function SanitizeFileName(const FileName: string): string; static;
+    class function MakeValidPath(const Path: string): string; static;
+    class function IsPathTooLong(const Path: string): Boolean; static;
+
+    { Simple Directory Summary }
+    class function GetDirectoryInfo(const Path: string): TDirectoryInfo; static;
+
+    { Basic File Patterns }
+    class function MatchesPattern(const FileName, Pattern: string): Boolean; static;
+    class function FindFirstMatch(const Directory, Pattern: string): string; static;
+    class function CountMatches(const Directory, Pattern: string): Integer; static;
   end;
+
+
 
 implementation
 
@@ -2309,6 +2369,758 @@ begin
     Result := AnsiStartsText(Copy(Pattern, 1, Length(Pattern)-1), FileName)
   else
     Result := AnsiSameText(Pattern, FileName);
+end;
+
+{ Simple Path Analysis }
+
+class function TFileKit.IsEmptyDirectory(const Path: string): Boolean;
+var
+  SearchRec: TSearchRec;
+  FindResult: Integer;
+  IsEmpty: Boolean;
+begin
+  if not DirectoryExists(Path) then
+    raise ETidyKitException.CreateFmt('Directory does not exist: %s', [Path]);
+    
+  IsEmpty := True;  // Assume empty until we find a non-special entry
+  
+  try
+    FindResult := FindFirst(IncludeTrailingPathDelimiter(Path) + '*', faAnyFile, SearchRec);
+    try
+      while FindResult = 0 do
+      begin
+        if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+        begin
+          IsEmpty := False;  // Found a real file or directory
+          Break;
+        end;
+        FindResult := FindNext(SearchRec);
+      end;
+      Result := IsEmpty;
+    finally
+      FindClose(SearchRec);
+    end;
+  except
+    on E: Exception do
+      raise ETidyKitException.CreateFmt('Error checking if directory is empty: %s', [E.Message]);
+  end;
+end;
+
+class function TFileKit.GetCommonPath(const Path1, Path2: string): string;
+var
+  Parts1, Parts2: TStringArray;
+  I, MinLen: Integer;
+  CommonParts: TStringArray;
+begin
+  Parts1 := SplitString(NormalizePath(Path1), PathDelim);
+  Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+  
+  MinLen := Length(Parts1);
+  if Length(Parts2) < MinLen then
+    MinLen := Length(Parts2);
+    
+  SetLength(CommonParts, 0);
+  
+  for I := 0 to MinLen - 1 do
+  begin
+    if Parts1[I] = Parts2[I] then
+    begin
+      SetLength(CommonParts, Length(CommonParts) + 1);
+      CommonParts[High(CommonParts)] := Parts1[I];
+    end
+    else
+      Break;
+  end;
+  
+  if Length(CommonParts) = 0 then
+    Result := ''
+  else begin
+    Result := CommonParts[0];
+    for I := 1 to High(CommonParts) do
+      Result := TFileKit.CombinePaths(Result, CommonParts[I]);
+  end;
+end;
+
+class function TFileKit.GetRelativePath(const BasePath, TargetPath: string): string;
+var
+  BaseNorm, TargetNorm: string;
+  BaseParts, TargetParts: TStringArray;
+  CommonLength, I: Integer;
+  ResultParts: TStringArray;
+begin
+  BaseNorm := ExcludeTrailingPathDelimiter(NormalizePath(BasePath));
+  TargetNorm := ExcludeTrailingPathDelimiter(NormalizePath(TargetPath));
+  
+  if BaseNorm = TargetNorm then
+    Exit('.');
+    
+  BaseParts := SplitString(BaseNorm, PathDelim);
+  TargetParts := SplitString(TargetNorm, PathDelim);
+  
+  // Find common prefix
+  CommonLength := 0;
+  while (CommonLength < Length(BaseParts)) and 
+        (CommonLength < Length(TargetParts)) and 
+        (BaseParts[CommonLength] = TargetParts[CommonLength]) do
+    Inc(CommonLength);
+    
+  // Build relative path
+  SetLength(ResultParts, Length(BaseParts) - CommonLength + Length(TargetParts) - CommonLength);
+  // Initialize array elements to empty strings
+  for I := 0 to High(ResultParts) do
+    ResultParts[I] := '';
+  
+  // Add '..' for each level we need to go up
+  for I := 0 to Length(BaseParts) - CommonLength - 1 do
+    ResultParts[I] := '..';
+    
+  // Add the remaining path components
+  for I := 0 to Length(TargetParts) - CommonLength - 1 do
+    ResultParts[Length(BaseParts) - CommonLength + I] := TargetParts[CommonLength + I];
+    
+  if Length(ResultParts) = 0 then
+    Result := '.'
+  else begin
+    Result := ResultParts[0];
+    for I := 1 to High(ResultParts) do
+      Result := TFileKit.CombinePaths(Result, ResultParts[I]);
+  end;
+end;
+
+class function TFileKit.IsSubPath(const ParentPath, ChildPath: string): Boolean;
+var
+  ParentNorm, ChildNorm: string;
+begin
+  ParentNorm := IncludeTrailingPathDelimiter(NormalizePath(ParentPath));
+  ChildNorm := NormalizePath(ChildPath);
+  
+  Result := (Length(ChildNorm) > Length(ParentNorm)) and
+            (Copy(ChildNorm, 1, Length(ParentNorm)) = ParentNorm);
+end;
+
+{ Basic File Content Operations }
+
+class function TFileKit.CountLines(const FilePath: string): Integer;
+var
+  FileStream: TFileStream;
+  Buffer: array[0..4095] of Byte;
+  BytesRead: Integer;
+  I: Integer;
+begin
+  Result := 0;
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    while FileStream.Position < FileStream.Size do
+    begin
+      BytesRead := FileStream.Read(Buffer, SizeOf(Buffer));
+      for I := 0 to BytesRead - 1 do
+        if Buffer[I] = 10 then  // LF (Line Feed)
+          Inc(Result);
+    end;
+    
+    // If file doesn't end with newline and has content, count last line
+    if (FileStream.Size > 0) and (Buffer[BytesRead - 1] <> 10) then
+      Inc(Result);
+  finally
+    FileStream.Free;
+  end;
+end;
+
+class function TFileKit.GetFirstLine(const FilePath: string): string;
+var
+  FileStream: TFileStream;
+  Buffer: array[0..4095] of Char;
+  BytesRead: Integer;
+  I: Integer;
+begin
+  Result := '';
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    BytesRead := FileStream.Read(Buffer, SizeOf(Buffer));
+    if BytesRead > 0 then
+    begin
+      for I := 0 to BytesRead - 1 do
+        if Buffer[I] in [#10, #13] then
+          Break
+        else
+          Result := Result + Buffer[I];
+    end;
+  finally
+    FileStream.Free;
+  end;
+end;
+
+class function TFileKit.GetLastLine(const FilePath: string): string;
+var
+  Lines: TStringList;
+begin
+  Result := '';
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  Lines := TStringList.Create;
+  try
+    Lines.LoadFromFile(FilePath);
+    if Lines.Count > 0 then
+      Result := Lines[Lines.Count - 1];
+  finally
+    Lines.Free;
+  end;
+end;
+
+class function TFileKit.IsFileEmpty(const FilePath: string): Boolean;
+var
+  FileStream: TFileStream;
+begin
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    Result := FileStream.Size = 0;
+  finally
+    FileStream.Free;
+  end;
+end;
+
+class function TFileKit.ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
+var
+  FileStream: TFileStream;
+  Buffer: array[0..4095] of Char;
+  BytesRead: Integer;
+  SearchLen: Integer;
+  Content: string;
+begin
+  Result := False;
+  Content := '';
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  if SearchText = '' then
+    Exit(True);
+    
+  SearchLen := Length(SearchText);
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    SetLength(Content, FileStream.Size);
+    FileStream.Read(Content[1], FileStream.Size);
+    
+    if CaseSensitive then
+      Result := Pos(SearchText, Content) > 0
+    else
+      Result := Pos(UpperCase(SearchText), UpperCase(Content)) > 0;
+  finally
+    FileStream.Free;
+  end;
+end;
+
+{ Simple File Type Detection }
+
+class function TFileKit.IsBinaryFile(const FilePath: string): Boolean;
+var
+  FileStream: TFileStream;
+  Buffer: array[0..4095] of Byte;
+  BytesRead, I: Integer;
+  NonTextCount: Integer;
+  MaxCheck: Integer;
+begin
+  Result := True;  // Assume binary by default
+  
+  if not FileExists(FilePath) then
+    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    NonTextCount := 0;
+    MaxCheck := 512; // Check first 512 bytes
+    
+    BytesRead := FileStream.Read(Buffer, Min(MaxCheck, SizeOf(Buffer)));
+    if BytesRead = 0 then
+      Exit(False); // Empty file is considered text
+      
+    for I := 0 to BytesRead - 1 do
+    begin
+      if (Buffer[I] < 32) and not (Buffer[I] in [9, 10, 13]) then // Not tab, LF, CR
+        Inc(NonTextCount);
+    end;
+    
+    // If more than 10% non-text characters, consider it binary
+    Result := (NonTextCount / BytesRead) > 0.1;
+  finally
+    FileStream.Free;
+  end;
+end;
+
+class function TFileKit.GetMimeType(const FilePath: string): string;
+const
+  ExtToMime: array[0..19] of array[0..1] of string = (
+    ('.txt', 'text/plain'),
+    ('.html', 'text/html'),
+    ('.htm', 'text/html'),
+    ('.css', 'text/css'),
+    ('.js', 'application/javascript'),
+    ('.json', 'application/json'),
+    ('.xml', 'application/xml'),
+    ('.jpg', 'image/jpeg'),
+    ('.jpeg', 'image/jpeg'),
+    ('.png', 'image/png'),
+    ('.gif', 'image/gif'),
+    ('.bmp', 'image/bmp'),
+    ('.pdf', 'application/pdf'),
+    ('.zip', 'application/zip'),
+    ('.doc', 'application/msword'),
+    ('.docx', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'),
+    ('.xls', 'application/vnd.ms-excel'),
+    ('.xlsx', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet'),
+    ('.mp3', 'audio/mpeg'),
+    ('.mp4', 'video/mp4')
+  );
+var
+  Ext: string;
+  I: Integer;
+begin
+  Result := 'application/octet-stream'; // Default MIME type
+  Ext := LowerCase(ExtractFileExt(FilePath));
+  
+  for I := Low(ExtToMime) to High(ExtToMime) do
+    if ExtToMime[I][0] = Ext then
+    begin
+      Result := ExtToMime[I][1];
+      Break;
+    end;
+end;
+
+class function TFileKit.IsExecutable(const FilePath: string): Boolean;
+begin
+  {$IFDEF WINDOWS}
+  Result := AnsiEndsText('.exe', FilePath) or
+            AnsiEndsText('.com', FilePath) or
+            AnsiEndsText('.bat', FilePath) or
+            AnsiEndsText('.cmd', FilePath);
+  {$ELSE}
+  Result := (fpStatFS(PChar(FilePath), @Stats) = 0) and ((Stats.Mode and S_IXUSR) <> 0);
+  {$ENDIF}
+end;
+
+class function TFileKit.IsHidden(const FilePath: string): Boolean;
+begin
+  {$IFDEF WINDOWS}
+  Result := (Windows.GetFileAttributes(PChar(FilePath)) and DWORD(FILE_ATTRIBUTE_HIDDEN)) <> 0;
+  {$ELSE}
+  Result := (ExtractFileName(FilePath)[1] = '.');
+  {$ENDIF}
+end;
+
+{ Basic Space Operations }
+
+class function TFileKit.GetDriveFreeSpace(const Path: string): Int64;
+{$IFDEF WINDOWS}
+var
+  FreeAvailable, TotalSpace: Int64;
+  RootPath: array[0..3] of Char;
+begin
+  Result := -1;
+  StrPCopy(RootPath, ExtractFileDrive(Path) + '\');
+  if GetDiskFreeSpaceEx(RootPath, FreeAvailable, TotalSpace, nil) then
+    Result := FreeAvailable;
+end;
+{$ELSE}
+var
+  Stats: TStatFs;
+begin
+  Result := -1;
+  if fpStatFS(PChar(ExtractFilePath(Path)), @Stats) = 0 then
+    Result := Int64(Stats.bsize) * Int64(Stats.bavail);
+end;
+{$ENDIF}
+
+class function TFileKit.GetDriveCapacity(const Path: string): Int64;
+{$IFDEF WINDOWS}
+var
+  FreeAvailable, TotalSpace: Int64;
+  RootPath: array[0..3] of Char;
+begin
+  Result := -1;
+  StrPCopy(RootPath, ExtractFileDrive(Path) + '\');
+  if GetDiskFreeSpaceEx(RootPath, FreeAvailable, TotalSpace, nil) then
+    Result := TotalSpace;
+end;
+{$ELSE}
+var
+  Stats: TStatFs;
+begin
+  Result := -1;
+  if fpStatFS(PChar(ExtractFilePath(Path)), @Stats) = 0 then
+    Result := Int64(Stats.bsize) * Int64(Stats.blocks);
+end;
+{$ENDIF}
+
+class function TFileKit.HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
+var
+  FreeSpace: Int64;
+begin
+  FreeSpace := GetDriveFreeSpace(Path);
+  Result := (FreeSpace <> -1) and (FreeSpace >= RequiredBytes);
+end;
+
+{ Basic File Comparison }
+
+class function TFileKit.AreFilesIdentical(const File1, File2: string): Boolean;
+var
+  File1Stream, File2Stream: TFileStream;
+  Buffer1, Buffer2: array[0..4095] of Byte;
+  BytesRead1, BytesRead2: Integer;
+  I: Integer;
+begin
+  Result := False;
+  if not FileExists(File1) or not FileExists(File2) then
+    Exit;
+    
+  File1Stream := TFileStream.Create(File1, fmOpenRead or fmShareDenyNone);
+  File2Stream := TFileStream.Create(File2, fmOpenRead or fmShareDenyNone);
+  try
+    while (File1Stream.Position < File1Stream.Size) and (File2Stream.Position < File2Stream.Size) do
+    begin
+      BytesRead1 := File1Stream.Read(Buffer1, SizeOf(Buffer1));
+      BytesRead2 := File2Stream.Read(Buffer2, SizeOf(Buffer2));
+      
+      if BytesRead1 <> BytesRead2 then
+        Exit(False);
+      
+      for I := 0 to BytesRead1 - 1 do
+        if Buffer1[I] <> Buffer2[I] then
+          Exit(False);
+    end;
+    
+    // Check if both files are at the end
+    Result := (File1Stream.Position = File1Stream.Size) and (File2Stream.Position = File2Stream.Size);
+  finally
+    File1Stream.Free;
+    File2Stream.Free;
+  end;
+end;
+
+class function TFileKit.GetNewerFile(const File1, File2: string): string;
+begin
+  if FileExists(File1) and FileExists(File2) then
+  begin
+    if FileDateToDateTime(FileAge(File1)) > FileDateToDateTime(FileAge(File2)) then
+      Result := File1
+    else
+      Result := File2;
+  end
+  else if FileExists(File1) then
+    Result := File1
+  else if FileExists(File2) then
+    Result := File2
+  else
+    raise ETidyKitException.Create('Both files do not exist');
+end;
+
+class function TFileKit.GetFileDifferences(const File1, File2: string): TStringArray;
+var
+  File1Stream, File2Stream: TFileStream;
+  Buffer1, Buffer2: array[0..4095] of Byte;
+  BytesRead1, BytesRead2: Integer;
+  I: Integer;
+begin
+  SetLength(Result, 0);
+  if not FileExists(File1) or not FileExists(File2) then
+    Exit;
+    
+  File1Stream := TFileStream.Create(File1, fmOpenRead or fmShareDenyNone);
+  File2Stream := TFileStream.Create(File2, fmOpenRead or fmShareDenyNone);
+  try
+    while (File1Stream.Position < File1Stream.Size) and (File2Stream.Position < File2Stream.Size) do
+    begin
+      BytesRead1 := File1Stream.Read(Buffer1, SizeOf(Buffer1));
+      BytesRead2 := File2Stream.Read(Buffer2, SizeOf(Buffer2));
+      
+      if BytesRead1 <> BytesRead2 then
+      begin
+        SetLength(Result, Length(Result) + 1);
+        Result[High(Result)] := Format('Difference at position %d: File1 has %d bytes, File2 has %d bytes', [File1Stream.Position - BytesRead1, BytesRead1, BytesRead2]);
+      end
+      else
+      begin
+        for I := 0 to BytesRead1 - 1 do
+          if Buffer1[I] <> Buffer2[I] then
+          begin
+            SetLength(Result, Length(Result) + 1);
+            Result[High(Result)] := Format('Difference at position %d: File1 has %d, File2 has %d', [File1Stream.Position - BytesRead1 + I, Buffer1[I], Buffer2[I]]);
+          end;
+      end;
+    end;
+    
+    // Check if both files are at the end
+    if (File1Stream.Position < File1Stream.Size) or (File2Stream.Position < File2Stream.Size) then
+    begin
+      SetLength(Result, Length(Result) + 1);
+      Result[High(Result)] := Format('File1 has %d bytes left, File2 has %d bytes left', [File1Stream.Size - File1Stream.Position, File2Stream.Size - File2Stream.Position]);
+    end;
+  finally
+    File1Stream.Free;
+    File2Stream.Free;
+  end;
+end;
+
+{ Simple File Locking }
+
+class function TFileKit.LockFile(const FilePath: string): Boolean;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+begin
+  Result := False;
+  if not FileExists(FilePath) then
+    Exit;
+    
+  Handle := CreateFile(PChar(FilePath),
+                      GENERIC_READ or GENERIC_WRITE,
+                      0,  // No sharing
+                      nil,
+                      OPEN_EXISTING,
+                      FILE_ATTRIBUTE_NORMAL,
+                      0);
+                      
+  if Handle <> INVALID_HANDLE_VALUE then
+  begin
+    CloseHandle(Handle);
+    Result := True;
+  end;
+end;
+{$ELSE}
+var
+  LockFile: Text;
+  LockPath: string;
+begin
+  Result := False;
+  if not FileExists(FilePath) then
+    Exit;
+    
+  LockPath := FilePath + '.lock';
+  try
+    AssignFile(LockFile, LockPath);
+    Rewrite(LockFile);
+    CloseFile(LockFile);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+{$ENDIF}
+
+class function TFileKit.UnlockFile(const FilePath: string): Boolean;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+begin
+  Result := False;
+  if not FileExists(FilePath) then
+    Exit;
+    
+  Handle := CreateFile(PChar(FilePath),
+                      GENERIC_READ or GENERIC_WRITE,
+                      FILE_SHARE_READ or FILE_SHARE_WRITE,
+                      nil,
+                      OPEN_EXISTING,
+                      FILE_ATTRIBUTE_NORMAL,
+                      0);
+                      
+  if Handle <> INVALID_HANDLE_VALUE then
+  begin
+    CloseHandle(Handle);
+    Result := True;
+  end;
+end;
+{$ELSE}
+var
+  LockPath: string;
+begin
+  Result := False;
+  if not FileExists(FilePath) then
+    Exit;
+    
+  LockPath := FilePath + '.lock';
+  if FileExists(LockPath) then
+  try
+    DeleteFile(LockPath);
+    Result := True;
+  except
+    Result := False;
+  end;
+end;
+{$ENDIF}
+
+class function TFileKit.IsFileLocked(const FilePath: string): Boolean;
+{$IFDEF WINDOWS}
+var
+  Handle: THandle;
+begin
+  if not FileExists(FilePath) then
+    Exit(False);
+    
+  Handle := CreateFile(PChar(FilePath),
+                      GENERIC_READ or GENERIC_WRITE,
+                      FILE_SHARE_READ or FILE_SHARE_WRITE,
+                      nil,
+                      OPEN_EXISTING,
+                      FILE_ATTRIBUTE_NORMAL,
+                      0);
+                      
+  if Handle = INVALID_HANDLE_VALUE then
+    Result := True
+  else
+  begin
+    CloseHandle(Handle);
+    Result := False;
+  end;
+end;
+{$ELSE}
+begin
+  Result := FileExists(FilePath + '.lock');
+end;
+{$ENDIF}
+
+{ Path Validation and Sanitization }
+
+class function TFileKit.IsValidFileName(const FileName: string): Boolean;
+begin
+  Result := False;
+  // Implement file name validation logic
+end;
+
+class function TFileKit.SanitizeFileName(const FileName: string): string;
+begin
+  Result := '';
+  // Implement file name sanitization logic
+end;
+
+class function TFileKit.MakeValidPath(const Path: string): string;
+begin
+  Result := '';
+  // Implement path sanitization logic
+end;
+
+class function TFileKit.IsPathTooLong(const Path: string): Boolean;
+begin
+  Result := False;
+  // Implement path length check logic
+end;
+
+{ Simple Directory Summary }
+
+class function TFileKit.GetDirectoryInfo(const Path: string): TDirectoryInfo;
+var
+  SearchRec: TSearchRec;
+  DirCount, FileCount: Integer;
+  TotalSize: Int64;
+  OldestFile, NewestFile, LargestFile: string;
+  FullPath: string;
+begin
+  Result.FileCount := 0;
+  Result.DirectoryCount := 0;
+  Result.TotalSize := 0;
+  Result.OldestFile := '';
+  Result.NewestFile := '';
+  Result.LargestFile := '';
+  
+  if not DirectoryExists(Path) then
+    Exit;
+    
+  DirCount := 0;
+  FileCount := 0;
+  TotalSize := 0;
+  OldestFile := '';
+  NewestFile := '';
+  LargestFile := '';
+  
+  if FindFirst(IncludeTrailingPathDelimiter(Path) + '*', faAnyFile, SearchRec) = 0 then
+  try
+    repeat
+      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+      begin
+        FullPath := IncludeTrailingPathDelimiter(Path) + SearchRec.Name;
+        if (SearchRec.Attr and faDirectory) <> 0 then
+        begin
+          Inc(DirCount);
+          Inc(Result.DirectoryCount);
+        end
+        else
+        begin
+          Inc(FileCount);
+          Inc(Result.FileCount);
+          TotalSize := TotalSize + SearchRec.Size;
+          if (Result.OldestFile = '') or (SearchRec.Time < FileDateToDateTime(FileAge(Result.OldestFile))) then
+            Result.OldestFile := SearchRec.Name;
+          if (Result.NewestFile = '') or (SearchRec.Time > FileDateToDateTime(FileAge(Result.NewestFile))) then
+            Result.NewestFile := SearchRec.Name;
+          if (Result.LargestFile = '') or (SearchRec.Size > TFileKit.GetSize(IncludeTrailingPathDelimiter(Path) + Result.LargestFile)) then
+            Result.LargestFile := SearchRec.Name;
+        end;
+      end;
+    until FindNext(SearchRec) <> 0;
+  finally
+    FindClose(SearchRec);
+  end;
+  
+  Result.TotalSize := TotalSize;
+end;
+
+{ Basic File Patterns }
+
+class function TFileKit.MatchesPattern(const FileName, Pattern: string): Boolean;
+begin
+  Result := False;
+  if Pattern = '*' then
+    Exit(True);
+
+  // Simple wildcard matching for now
+  if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
+    Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
+  else if Pattern[1] = '*' then
+    Result := AnsiEndsText(Copy(Pattern, 2, MaxInt), FileName)
+  else if Pattern[Length(Pattern)] = '*' then
+    Result := AnsiStartsText(Copy(Pattern, 1, Length(Pattern)-1), FileName)
+  else
+    Result := AnsiSameText(Pattern, FileName);
+end;
+
+class function TFileKit.FindFirstMatch(const Directory, Pattern: string): string;
+var
+  SearchRec: TSearchRec;
+begin
+  Result := '';
+  if FindFirst(IncludeTrailingPathDelimiter(Directory) + Pattern, faAnyFile, SearchRec) = 0 then
+  try
+    Result := SearchRec.Name;
+  finally
+    FindClose(SearchRec);
+  end;
+end;
+
+class function TFileKit.CountMatches(const Directory, Pattern: string): Integer;
+var
+  SearchRec: TSearchRec;
+  DirCount: Integer;
+begin
+  DirCount := 0;
+  if FindFirst(IncludeTrailingPathDelimiter(Directory) + Pattern, faAnyFile, SearchRec) = 0 then
+  try
+    repeat
+      if (SearchRec.Name <> '.') and (SearchRec.Name <> '..') then
+        Inc(DirCount);
+    until FindNext(SearchRec) <> 0;
+  finally
+    FindClose(SearchRec);
+  end;
+  Result := DirCount;
 end;
 
 end. 

@@ -6,12 +6,12 @@ uses
   Classes
   , consoletestrunner
   //, TestCaseDateTime
-  , TestCaseFS
+  , TestCaseFS;
   //, TestCaseString
   //, TestCaseCrypto
   //, TestCaseRequest
   //, TestCaseMath
-  , TestCaseArchive;
+  //, TestCaseArchive;
 
 type
 

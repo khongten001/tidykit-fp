@@ -107,6 +107,45 @@ type
     procedure Test40_CopyFiles;
     procedure Test41_MoveFiles;
     procedure Test42_DeleteFiles;
+    // Simple Path Analysis Tests
+    procedure Test44_IsEmptyDirectory;
+    procedure Test45_GetCommonPath;
+    procedure Test46_GetRelativePath;
+    procedure Test47_IsSubPath;
+    // Basic File Content Operations Tests
+    procedure Test48_CountLines;
+    procedure Test49_GetFirstLine;
+    procedure Test50_GetLastLine;
+    procedure Test51_IsFileEmpty;
+    procedure Test52_ContainsText;
+    // Simple File Type Detection Tests
+    procedure Test53_IsBinaryFile;
+    procedure Test54_GetMimeType;
+    procedure Test55_IsExecutable;
+    procedure Test56_IsHidden;
+    // Basic Space Operations Tests
+    procedure Test57_GetDriveFreeSpace;
+    procedure Test58_GetDriveCapacity;
+    procedure Test59_HasEnoughSpace;
+    // Basic File Comparison Tests
+    procedure Test60_AreFilesIdentical;
+    procedure Test61_GetNewerFile;
+    procedure Test62_GetFileDifferences;
+    // Simple File Locking Tests
+    procedure Test63_LockFile;
+    procedure Test64_UnlockFile;
+    procedure Test65_IsFileLocked;
+    // Path Validation and Sanitization Tests
+    procedure Test66_IsValidFileName;
+    procedure Test67_SanitizeFileName;
+    procedure Test68_MakeValidPath;
+    procedure Test69_IsPathTooLong;
+    // Simple Directory Summary Tests
+    procedure Test70_GetDirectoryInfo;
+    // Basic File Patterns Tests
+    procedure Test71_MatchesPattern;
+    procedure Test72_FindFirstMatch;
+    procedure Test73_CountMatches;
   end;
 
 implementation
@@ -1829,6 +1868,518 @@ begin
   end;
 
   WriteLn('Test43_IsSymLink: Finished');
+end;
+
+{ Simple Path Analysis Tests }
+
+procedure TFSTests.Test44_IsEmptyDirectory;
+var
+  EmptyDir, NonEmptyDir: string;
+begin
+  WriteLn('Test44_IsEmptyDirectory: Starting');
+  
+  EmptyDir := TFileKit.CombinePaths(FTestDir, 'empty');
+  NonEmptyDir := TFileKit.CombinePaths(FTestDir, 'nonempty');
+  
+  TFileKit.CreateDirectory(EmptyDir);
+  TFileKit.CreateDirectory(NonEmptyDir);
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(NonEmptyDir, 'test.txt'), 'test');
+  
+  AssertTrue('Empty directory should be reported as empty', TFileKit.IsEmptyDirectory(EmptyDir));
+  AssertFalse('Non-empty directory should not be reported as empty', TFileKit.IsEmptyDirectory(NonEmptyDir));
+  
+  WriteLn('Test44_IsEmptyDirectory: Finished');
+end;
+
+procedure TFSTests.Test45_GetCommonPath;
+begin
+  WriteLn('Test45_GetCommonPath: Starting');
+  
+  AssertEquals('Common path should be found correctly',
+    TFileKit.NormalizePath('/usr/local'),
+    TFileKit.NormalizePath(TFileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib')));
+    
+  AssertEquals('No common path should return empty string',
+    '',
+    TFileKit.GetCommonPath('/usr/local', '/etc/local'));
+    
+  WriteLn('Test45_GetCommonPath: Finished');
+end;
+
+procedure TFSTests.Test46_GetRelativePath;
+begin
+  WriteLn('Test46_GetRelativePath: Starting');
+  
+  AssertEquals('Relative path should be calculated correctly',
+    '../../local/bin',
+    TFileKit.GetRelativePath('/usr/share', '/usr/local/bin'));
+    
+  AssertEquals('Same paths should return "."',
+    '.',
+    TFileKit.GetRelativePath('/usr/local', '/usr/local'));
+    
+  WriteLn('Test46_GetRelativePath: Finished');
+end;
+
+procedure TFSTests.Test47_IsSubPath;
+begin
+  WriteLn('Test47_IsSubPath: Starting');
+  
+  AssertTrue('Should detect valid subpath',
+    TFileKit.IsSubPath('/usr/local', '/usr/local/bin'));
+    
+  AssertFalse('Should not detect invalid subpath',
+    TFileKit.IsSubPath('/usr/local', '/etc/local'));
+    
+  WriteLn('Test47_IsSubPath: Finished');
+end;
+
+{ Basic File Content Operations Tests }
+
+procedure TFSTests.Test48_CountLines;
+var
+  TestFile: string;
+begin
+  WriteLn('Test48_CountLines: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lines.txt');
+  TFileKit.WriteTextFile(TestFile, 'Line 1'#13#10'Line 2'#13#10'Line 3');
+  
+  AssertEquals('Should count lines correctly', 3, TFileKit.CountLines(TestFile));
+  
+  WriteLn('Test48_CountLines: Finished');
+end;
+
+procedure TFSTests.Test49_GetFirstLine;
+var
+  TestFile: string;
+begin
+  WriteLn('Test49_GetFirstLine: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lines.txt');
+  TFileKit.WriteTextFile(TestFile, 'First Line'#13#10'Second Line');
+  
+  AssertEquals('Should get first line correctly', 'First Line', TFileKit.GetFirstLine(TestFile));
+  
+  WriteLn('Test49_GetFirstLine: Finished');
+end;
+
+procedure TFSTests.Test50_GetLastLine;
+var
+  TestFile: string;
+begin
+  WriteLn('Test50_GetLastLine: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lines.txt');
+  TFileKit.WriteTextFile(TestFile, 'First Line'#13#10'Last Line');
+  
+  AssertEquals('Should get last line correctly', 'Last Line', TFileKit.GetLastLine(TestFile));
+  
+  WriteLn('Test50_GetLastLine: Finished');
+end;
+
+procedure TFSTests.Test51_IsFileEmpty;
+var
+  EmptyFile, NonEmptyFile: string;
+begin
+  WriteLn('Test51_IsFileEmpty: Starting');
+  
+  EmptyFile := TFileKit.CombinePaths(FTestDir, 'empty.txt');
+  NonEmptyFile := TFileKit.CombinePaths(FTestDir, 'nonempty.txt');
+  
+  TFileKit.WriteTextFile(EmptyFile, '');
+  TFileKit.WriteTextFile(NonEmptyFile, 'Content');
+  
+  AssertTrue('Empty file should be reported as empty', TFileKit.IsFileEmpty(EmptyFile));
+  AssertFalse('Non-empty file should not be reported as empty', TFileKit.IsFileEmpty(NonEmptyFile));
+  
+  WriteLn('Test51_IsFileEmpty: Finished');
+end;
+
+procedure TFSTests.Test52_ContainsText;
+var
+  TestFile: string;
+begin
+  WriteLn('Test52_ContainsText: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'search.txt');
+  TFileKit.WriteTextFile(TestFile, 'This is a test content');
+  
+  AssertTrue('Should find existing text (case-sensitive)',
+    TFileKit.ContainsText(TestFile, 'test', True));
+    
+  AssertTrue('Should find existing text (case-insensitive)',
+    TFileKit.ContainsText(TestFile, 'TEST', False));
+    
+  AssertFalse('Should not find non-existing text',
+    TFileKit.ContainsText(TestFile, 'nonexistent', False));
+    
+  WriteLn('Test52_ContainsText: Finished');
+end;
+
+{ Simple File Type Detection Tests }
+
+procedure TFSTests.Test53_IsBinaryFile;
+var
+  TextFile, BinaryFile: string;
+  BinStream: TFileStream;
+  BinData: array[0..9] of Byte;
+  I: Integer;
+begin
+  WriteLn('Test53_IsBinaryFile: Starting');
+  
+  TextFile := TFileKit.CombinePaths(FTestDir, 'text.txt');
+  BinaryFile := TFileKit.CombinePaths(FTestDir, 'binary.bin');
+  
+  TFileKit.WriteTextFile(TextFile, 'This is text content');
+  
+  // Create binary file
+  BinStream := TFileStream.Create(BinaryFile, fmCreate);
+  try
+    for I := 0 to 9 do
+      BinData[I] := I;
+    BinStream.WriteBuffer(BinData, SizeOf(BinData));
+  finally
+    BinStream.Free;
+  end;
+  
+  AssertFalse('Text file should not be detected as binary', TFileKit.IsBinaryFile(TextFile));
+  AssertTrue('Binary file should be detected as binary', TFileKit.IsBinaryFile(BinaryFile));
+  
+  WriteLn('Test53_IsBinaryFile: Finished');
+end;
+
+procedure TFSTests.Test54_GetMimeType;
+begin
+  WriteLn('Test54_GetMimeType: Starting');
+  
+  AssertEquals('Should detect text/plain',
+    'text/plain', TFileKit.GetMimeType('test.txt'));
+    
+  AssertEquals('Should detect image/jpeg',
+    'image/jpeg', TFileKit.GetMimeType('test.jpg'));
+    
+  AssertEquals('Should return default for unknown extension',
+    'application/octet-stream', TFileKit.GetMimeType('test.unknown'));
+    
+  WriteLn('Test54_GetMimeType: Finished');
+end;
+
+procedure TFSTests.Test55_IsExecutable;
+var
+  TestFile: string;
+begin
+  WriteLn('Test55_IsExecutable: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'test.exe');
+  TFileKit.WriteTextFile(TestFile, 'dummy content');
+  
+  {$IFDEF WINDOWS}
+  AssertTrue('Should detect .exe as executable', TFileKit.IsExecutable(TestFile));
+  {$ELSE}
+  // Set executable permission
+  fpChmod(PChar(TestFile), $1ED); // 755 in octal
+  AssertTrue('Should detect file with executable permission', TFileKit.IsExecutable(TestFile));
+  {$ENDIF}
+  
+  WriteLn('Test55_IsExecutable: Finished');
+end;
+
+procedure TFSTests.Test56_IsHidden;
+var
+  TestFile: string;
+begin
+  WriteLn('Test56_IsHidden: Starting');
+  
+  {$IFDEF WINDOWS}
+  TestFile := TFileKit.CombinePaths(FTestDir, 'test.txt');
+  TFileKit.WriteTextFile(TestFile, 'test');
+  SetFileAttributes(PChar(TestFile), FILE_ATTRIBUTE_HIDDEN);
+  {$ELSE}
+  TestFile := TFileKit.CombinePaths(FTestDir, '.hidden');
+  TFileKit.WriteTextFile(TestFile, 'test');
+  {$ENDIF}
+  
+  AssertTrue('Should detect hidden file', TFileKit.IsHidden(TestFile));
+  
+  WriteLn('Test56_IsHidden: Finished');
+end;
+
+{ Basic Space Operations Tests }
+
+procedure TFSTests.Test57_GetDriveFreeSpace;
+begin
+  WriteLn('Test57_GetDriveFreeSpace: Starting');
+  
+  AssertTrue('Should return valid free space',
+    TFileKit.GetDriveFreeSpace(FTestDir) > 0);
+    
+  WriteLn('Test57_GetDriveFreeSpace: Finished');
+end;
+
+procedure TFSTests.Test58_GetDriveCapacity;
+begin
+  WriteLn('Test58_GetDriveCapacity: Starting');
+  
+  AssertTrue('Should return valid capacity',
+    TFileKit.GetDriveCapacity(FTestDir) > 0);
+    
+  WriteLn('Test58_GetDriveCapacity: Finished');
+end;
+
+procedure TFSTests.Test59_HasEnoughSpace;
+begin
+  WriteLn('Test59_HasEnoughSpace: Starting');
+  
+  AssertTrue('Should have enough space for 1 byte',
+    TFileKit.HasEnoughSpace(FTestDir, 1));
+    
+  AssertFalse('Should not have enough space for massive size',
+    TFileKit.HasEnoughSpace(FTestDir, High(Int64)));
+    
+  WriteLn('Test59_HasEnoughSpace: Finished');
+end;
+
+{ Basic File Comparison Tests }
+
+procedure TFSTests.Test60_AreFilesIdentical;
+var
+  File1, File2, File3: string;
+begin
+  WriteLn('Test60_AreFilesIdentical: Starting');
+  
+  File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
+  File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
+  File3 := TFileKit.CombinePaths(FTestDir, 'file3.txt');
+  
+  TFileKit.WriteTextFile(File1, 'Content');
+  TFileKit.WriteTextFile(File2, 'Content');
+  TFileKit.WriteTextFile(File3, 'Different');
+  
+  AssertTrue('Identical files should be detected', TFileKit.AreFilesIdentical(File1, File2));
+  AssertFalse('Different files should be detected', TFileKit.AreFilesIdentical(File1, File3));
+  
+  WriteLn('Test60_AreFilesIdentical: Finished');
+end;
+
+procedure TFSTests.Test61_GetNewerFile;
+var
+  OlderFile, NewerFile: string;
+begin
+  WriteLn('Test61_GetNewerFile: Starting');
+  
+  OlderFile := TFileKit.CombinePaths(FTestDir, 'older.txt');
+  NewerFile := TFileKit.CombinePaths(FTestDir, 'newer.txt');
+  
+  TFileKit.WriteTextFile(OlderFile, 'old');
+  Sleep(1000);
+  TFileKit.WriteTextFile(NewerFile, 'new');
+  
+  AssertEquals('Should detect newer file',
+    NewerFile, TFileKit.GetNewerFile(OlderFile, NewerFile));
+    
+  WriteLn('Test61_GetNewerFile: Finished');
+end;
+
+procedure TFSTests.Test62_GetFileDifferences;
+var
+  File1, File2: string;
+  Differences: TStringArray;
+begin
+  WriteLn('Test62_GetFileDifferences: Starting');
+  
+  File1 := TFileKit.CombinePaths(FTestDir, 'file1.txt');
+  File2 := TFileKit.CombinePaths(FTestDir, 'file2.txt');
+  
+  TFileKit.WriteTextFile(File1, 'Line 1'#13#10'Line 2');
+  TFileKit.WriteTextFile(File2, 'Line 1'#13#10'Different');
+  
+  Differences := TFileKit.GetFileDifferences(File1, File2);
+  AssertTrue('Should detect differences', Length(Differences) > 0);
+  
+  WriteLn('Test62_GetFileDifferences: Finished');
+end;
+
+{ Simple File Locking Tests }
+
+procedure TFSTests.Test63_LockFile;
+var
+  TestFile: string;
+begin
+  WriteLn('Test63_LockFile: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lock.txt');
+  TFileKit.WriteTextFile(TestFile, 'test');
+  
+  AssertTrue('Should be able to lock file', TFileKit.LockFile(TestFile));
+  
+  WriteLn('Test63_LockFile: Finished');
+end;
+
+procedure TFSTests.Test64_UnlockFile;
+var
+  TestFile: string;
+begin
+  WriteLn('Test64_UnlockFile: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lock.txt');
+  TFileKit.WriteTextFile(TestFile, 'test');
+  
+  if TFileKit.LockFile(TestFile) then
+    AssertTrue('Should be able to unlock file', TFileKit.UnlockFile(TestFile));
+  
+  WriteLn('Test64_UnlockFile: Finished');
+end;
+
+procedure TFSTests.Test65_IsFileLocked;
+var
+  TestFile: string;
+begin
+  WriteLn('Test65_IsFileLocked: Starting');
+  
+  TestFile := TFileKit.CombinePaths(FTestDir, 'lock.txt');
+  TFileKit.WriteTextFile(TestFile, 'test');
+  
+  AssertFalse('New file should not be locked', TFileKit.IsFileLocked(TestFile));
+  
+  if TFileKit.LockFile(TestFile) then
+    AssertTrue('Locked file should be detected', TFileKit.IsFileLocked(TestFile));
+  
+  WriteLn('Test65_IsFileLocked: Finished');
+end;
+
+{ Path Validation and Sanitization Tests }
+
+procedure TFSTests.Test66_IsValidFileName;
+begin
+  WriteLn('Test66_IsValidFileName: Starting');
+  
+  AssertTrue('Valid filename should be accepted',
+    TFileKit.IsValidFileName('test.txt'));
+    
+  AssertFalse('Invalid filename should be rejected',
+    TFileKit.IsValidFileName('test/invalid.txt'));
+    
+  WriteLn('Test66_IsValidFileName: Finished');
+end;
+
+procedure TFSTests.Test67_SanitizeFileName;
+begin
+  WriteLn('Test67_SanitizeFileName: Starting');
+  
+  AssertEquals('Should sanitize invalid characters',
+    'test_file.txt', TFileKit.SanitizeFileName('test/file*.txt'));
+    
+  WriteLn('Test67_SanitizeFileName: Finished');
+end;
+
+procedure TFSTests.Test68_MakeValidPath;
+begin
+  WriteLn('Test68_MakeValidPath: Starting');
+  
+  AssertEquals('Should make path valid',
+    TFileKit.NormalizePath('/path/to/file'),
+    TFileKit.NormalizePath(TFileKit.MakeValidPath('/path//to/./file')));
+    
+  WriteLn('Test68_MakeValidPath: Finished');
+end;
+
+procedure TFSTests.Test69_IsPathTooLong;
+var
+  LongPath: string;
+begin
+  WriteLn('Test69_IsPathTooLong: Starting');
+  
+  LongPath := TFileKit.CombinePaths(FTestDir, StringOfChar('a', 300));
+  
+  AssertTrue('Should detect too long path',
+    TFileKit.IsPathTooLong(LongPath));
+    
+  AssertFalse('Should accept normal path',
+    TFileKit.IsPathTooLong(FTestDir));
+    
+  WriteLn('Test69_IsPathTooLong: Finished');
+end;
+
+{ Simple Directory Summary Tests }
+
+procedure TFSTests.Test70_GetDirectoryInfo;
+var
+  TestDir: string;
+  Info: TDirectoryInfo;
+begin
+  WriteLn('Test70_GetDirectoryInfo: Starting');
+  
+  TestDir := TFileKit.CombinePaths(FTestDir, 'info_test');
+  TFileKit.CreateDirectory(TestDir);
+  
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'file1.txt'), 'small');
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'file2.txt'), StringOfChar('a', 1000));
+  TFileKit.CreateDirectory(TFileKit.CombinePaths(TestDir, 'subdir'));
+  
+  Info := TFileKit.GetDirectoryInfo(TestDir);
+  
+  AssertEquals('Should count files correctly', 2, Info.FileCount);
+  AssertEquals('Should count directories correctly', 1, Info.DirectoryCount);
+  AssertTrue('Should calculate total size correctly', Info.TotalSize > 1000);
+  
+  WriteLn('Test70_GetDirectoryInfo: Finished');
+end;
+
+{ Basic File Patterns Tests }
+
+procedure TFSTests.Test71_MatchesPattern;
+begin
+  WriteLn('Test71_MatchesPattern: Starting');
+  
+  AssertTrue('Should match exact pattern',
+    TFileKit.MatchesPattern('test.txt', 'test.txt'));
+    
+  AssertTrue('Should match wildcard pattern',
+    TFileKit.MatchesPattern('test.txt', '*.txt'));
+    
+  AssertFalse('Should not match different pattern',
+    TFileKit.MatchesPattern('test.doc', '*.txt'));
+    
+  WriteLn('Test71_MatchesPattern: Finished');
+end;
+
+procedure TFSTests.Test72_FindFirstMatch;
+var
+  TestDir: string;
+  FoundFile: string;
+begin
+  WriteLn('Test72_FindFirstMatch: Starting');
+  
+  TestDir := TFileKit.CombinePaths(FTestDir, 'pattern_test');
+  TFileKit.CreateDirectory(TestDir);
+  
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'test1.txt'), '');
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'test2.txt'), '');
+  
+  FoundFile := TFileKit.FindFirstMatch(TestDir, '*.txt');
+  AssertTrue('Should find matching file', FoundFile <> '');
+  
+  WriteLn('Test72_FindFirstMatch: Finished');
+end;
+
+procedure TFSTests.Test73_CountMatches;
+var
+  TestDir: string;
+begin
+  WriteLn('Test73_CountMatches: Starting');
+  
+  TestDir := TFileKit.CombinePaths(FTestDir, 'count_test');
+  TFileKit.CreateDirectory(TestDir);
+  
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'test1.txt'), '');
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'test2.txt'), '');
+  TFileKit.WriteTextFile(TFileKit.CombinePaths(TestDir, 'test.doc'), '');
+  
+  AssertEquals('Should count matching files correctly',
+    2, TFileKit.CountMatches(TestDir, '*.txt'));
+    
+  WriteLn('Test73_CountMatches: Finished');
 end;
 
 initialization
