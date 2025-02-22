@@ -2409,21 +2409,44 @@ var
   I, MinLen: Integer;
   CommonParts: TStringArray;
   IsUnixStyle: Boolean;
+  {$IFDEF WINDOWS}
+  HasDriveLetter: Boolean;
+  DriveLetter: string;
+  {$ENDIF}
 begin
   // Check if paths are Unix-style (starting with /)
   IsUnixStyle := (Length(Path1) > 0) and (Path1[1] = '/') and
                  (Length(Path2) > 0) and (Path2[1] = '/');
-                 
-  // For Unix-style paths, split by '/' instead of PathDelim
+
+  {$IFDEF WINDOWS}
+  // On Windows, if the paths are Unix-style, convert them to Windows format
   if IsUnixStyle then
   begin
-    Parts1 := SplitString(Path1, '/');
-    Parts2 := SplitString(Path2, '/');
+    DriveLetter := 'C:';
+    HasDriveLetter := True;
+    // Remove leading slash and split by forward slash
+    Parts1 := SplitString(Copy(Path1, 2, Length(Path1)), '/');
+    Parts2 := SplitString(Copy(Path2, 2, Length(Path2)), '/');
   end
   else
+  {$ENDIF}
   begin
-    Parts1 := SplitString(NormalizePath(Path1), PathDelim);
-    Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+    {$IFDEF WINDOWS}
+    HasDriveLetter := (Length(Path1) >= 2) and (Path1[2] = ':') and
+                      (Length(Path2) >= 2) and (Path2[2] = ':');
+    if HasDriveLetter then
+    begin
+      DriveLetter := UpperCase(Path1[1]) + ':';
+      // Remove drive letters for comparison
+      Parts1 := SplitString(Copy(Path1, 3, Length(Path1)), PathDelim);
+      Parts2 := SplitString(Copy(Path2, 3, Length(Path2)), PathDelim);
+    end
+    else
+    {$ENDIF} 
+    begin
+      Parts1 := SplitString(NormalizePath(Path1), PathDelim);
+      Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+    end;
   end;
   
   // If either path is empty, return empty string
@@ -2454,6 +2477,15 @@ begin
   if Length(CommonParts) = 0 then
     Result := ''
   else begin
+    {$IFDEF WINDOWS}
+    if HasDriveLetter then
+    begin
+      Result := DriveLetter + '\' + CommonParts[0];
+      for I := 1 to High(CommonParts) do
+        Result := Result + '\' + CommonParts[I];
+    end
+    else
+    {$ENDIF}
     if IsUnixStyle then
     begin
       Result := '/' + CommonParts[0];  // Add leading slash for Unix paths
@@ -2473,69 +2505,80 @@ class function TFileKit.GetRelativePath(const BasePath, TargetPath: string): str
 var
   BaseNorm, TargetNorm: string;
   BaseParts, TargetParts: TStringArray;
-  CommonLength, I: Integer;
+  CommonLength, I, UpLevels: Integer;
   ResultParts: TStringArray;
   BaseStart, TargetStart: Integer;
   IsUnixStyle: Boolean;
+  {$IFDEF WINDOWS}
+  HasDriveLetter: Boolean;
+  {$ENDIF}
 begin
   // Check if paths are Unix-style (starting with /)
   IsUnixStyle := (Length(BasePath) > 0) and (BasePath[1] = '/') and
                  (Length(TargetPath) > 0) and (TargetPath[1] = '/');
                  
+  {$IFDEF WINDOWS}
+  HasDriveLetter := (Length(BasePath) >= 2) and (BasePath[2] = ':') and
+                    (Length(TargetPath) >= 2) and (TargetPath[2] = ':');
+  {$ENDIF}
+                 
   if IsUnixStyle then
   begin
-    // For Unix paths, use them as-is
-    BaseNorm := ExcludeTrailingPathDelimiter(BasePath);
-    TargetNorm := ExcludeTrailingPathDelimiter(TargetPath);
+    // For Unix paths, use them as-is but remove leading slash
+    BaseNorm := Copy(BasePath, 2, Length(BasePath));
+    TargetNorm := Copy(TargetPath, 2, Length(TargetPath));
     BaseParts := SplitString(BaseNorm, '/');
     TargetParts := SplitString(TargetNorm, '/');
-    BaseStart := 1;  // Skip empty string before first /
-    TargetStart := 1;
+    BaseStart := 0;  // No need to skip empty string since we removed leading slash
+    TargetStart := 0;
   end
   else
   begin
     BaseNorm := ExcludeTrailingPathDelimiter(NormalizePath(BasePath));
     TargetNorm := ExcludeTrailingPathDelimiter(NormalizePath(TargetPath));
-    BaseParts := SplitString(BaseNorm, PathDelim);
-    TargetParts := SplitString(TargetNorm, PathDelim);
     
-    // Skip drive letters on Windows
     {$IFDEF WINDOWS}
-    if (Length(BaseParts[0]) >= 2) and (BaseParts[0][2] = ':') then
-      BaseStart := 1
-    else
+    if HasDriveLetter then
+    begin
+      // Remove drive letters for comparison
+      BaseParts := SplitString(Copy(BaseNorm, 3, Length(BaseNorm)), PathDelim);
+      TargetParts := SplitString(Copy(TargetNorm, 3, Length(TargetNorm)), PathDelim);
       BaseStart := 0;
-      
-    if (Length(TargetParts[0]) >= 2) and (TargetParts[0][2] = ':') then
-      TargetStart := 1
-    else
       TargetStart := 0;
-    {$ELSE}
-    BaseStart := 0;
-    TargetStart := 0;
+    end
+    else
     {$ENDIF}
+    begin
+      BaseParts := SplitString(BaseNorm, PathDelim);
+      TargetParts := SplitString(TargetNorm, PathDelim);
+      BaseStart := 0;
+      TargetStart := 0;
+    end;
   end;
   
   if BaseNorm = TargetNorm then
     Exit('.');
     
-  // Find common prefix
+  // Find common prefix length
   CommonLength := 0;
   while (BaseStart + CommonLength < Length(BaseParts)) and 
         (TargetStart + CommonLength < Length(TargetParts)) and 
         (BaseParts[BaseStart + CommonLength] = TargetParts[TargetStart + CommonLength]) do
     Inc(CommonLength);
     
-  // Calculate number of levels to go up
-  SetLength(ResultParts, Length(BaseParts) - BaseStart - CommonLength + Length(TargetParts) - TargetStart - CommonLength);
+  // Calculate number of levels to go up - this is the key fix
+  UpLevels := Length(BaseParts) - BaseStart - CommonLength;
+  
+  // Create result array with correct size
+  SetLength(ResultParts, UpLevels + Length(TargetParts) - TargetStart - CommonLength);
   
   // Add '..' for each level we need to go up
-  for I := 0 to Length(BaseParts) - BaseStart - CommonLength - 1 do
+  for I := 0 to UpLevels - 1 do
     ResultParts[I] := '..';
     
   // Add the remaining path components
   for I := 0 to Length(TargetParts) - TargetStart - CommonLength - 1 do
-    ResultParts[Length(BaseParts) - BaseStart - CommonLength + I] := TargetParts[TargetStart + CommonLength + I];
+    ResultParts[UpLevels + I] := TargetParts[TargetStart + CommonLength + I];
     
   if Length(ResultParts) = 0 then
     Result := '.'
