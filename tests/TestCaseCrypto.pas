@@ -5,7 +5,7 @@ unit TestCaseCrypto;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit, TidyKit.Crypto.AES256;
+  Classes, SysUtils, fpcunit, testregistry, TidyKit, TidyKit.Crypto.AES256, DateUtils;
 
 type
   { TTestCaseCrypto }
@@ -1160,132 +1160,151 @@ end;
 // Helper function tests (110-119)
 procedure TTestCaseCrypto.Test110_GenerateRandomKey;
 var
-  Key: TAESKey;
+  Key1, Key2: TAESKey;
 begin
-  TCryptoKit.GenerateRandomKey(Key);
-  AssertTrue('Generated key should not be empty', Length(Key) > 0);
+  // Generate two keys and verify they are different (random)
+  Key1 := TCryptoKit.GenerateRandomKey;
+  Key2 := TCryptoKit.GenerateRandomKey;
+  
+  // Verify key length
+  AssertEquals('Generated key should be 32 bytes', 32, SizeOf(Key1));
+  
+  // Verify keys are different (random)
+  AssertTrue('Generated keys should be different',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+  
+  // Verify key is not all zeros
+  FillChar(Key2, SizeOf(Key2), 0);
+  AssertTrue('Generated key should not be all zeros',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 procedure TTestCaseCrypto.Test111_GenerateIV;
 var
-  IV: TAESBlock;
+  IV1, IV2: TAESBlock;
 begin
-  TCryptoKit.GenerateIV(IV);
-  AssertTrue('Generated IV should not be empty', Length(IV) > 0);
+  // Generate two IVs and verify they are different (random)
+  IV1 := TCryptoKit.GenerateIV;
+  IV2 := TCryptoKit.GenerateIV;
+  
+  // Verify IV length
+  AssertEquals('Generated IV should be 16 bytes', 16, SizeOf(IV1));
+  
+  // Verify IVs are different (random)
+  AssertTrue('Generated IVs should be different',
+    CompareMem(@IV1[0], @IV2[0], SizeOf(TAESBlock)) = False);
+  
+  // Verify IV is not all zeros
+  FillChar(IV2, SizeOf(IV2), 0);
+  AssertTrue('Generated IV should not be all zeros',
+    CompareMem(@IV1[0], @IV2[0], SizeOf(TAESBlock)) = False);
 end;
 
 procedure TTestCaseCrypto.Test112_DeriveKeyBasic;
-const
-  Password = 'password';
-  Salt = 'salt';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key1, Key2: TAESKey;
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Same password and salt should produce same key
+  Key1 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  AssertTrue('Same password/salt should produce same key',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)));
 end;
 
 procedure TTestCaseCrypto.Test113_DeriveKeyDifferentPasswords;
-const
-  Password1 = 'password1';
-  Password2 = 'password2';
-  Salt = 'salt';
-  ExpectedKey1 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
-  ExpectedKey2 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey1, DerivedKey2: TAESKey;
+  Key1, Key2: TAESKey;
 begin
-  TCryptoKit.DeriveKey(Password1, Salt, DerivedKey1);
-  TCryptoKit.DeriveKey(Password2, Salt, DerivedKey2);
-  AssertEquals('Derived key should be the same for the same password and salt',
-    ExpectedKey1, TCryptoKit.SHA256Hash(string(DerivedKey1)));
-  AssertEquals('Derived key should be the same for the same password and salt',
-    ExpectedKey2, TCryptoKit.SHA256Hash(string(DerivedKey2)));
+  // Different passwords should produce different keys
+  Key1 := TCryptoKit.DeriveKey('password1', 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('password2', 'salt123', 1000);
+  AssertTrue('Different passwords should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 procedure TTestCaseCrypto.Test114_DeriveKeyDifferentSalts;
-const
-  Password = 'password';
-  Salt1 = 'salt1';
-  Salt2 = 'salt2';
-  ExpectedKey1 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
-  ExpectedKey2 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey1, DerivedKey2: TAESKey;
+  Key1, Key2: TAESKey;
 begin
-  TCryptoKit.DeriveKey(Password, Salt1, DerivedKey1);
-  TCryptoKit.DeriveKey(Password, Salt2, DerivedKey2);
-  AssertEquals('Derived key should be different for different salts',
-    ExpectedKey1, TCryptoKit.SHA256Hash(string(DerivedKey1)));
-  AssertEquals('Derived key should be different for different salts',
-    ExpectedKey2, TCryptoKit.SHA256Hash(string(DerivedKey2)));
+  // Different salts should produce different keys
+  Key1 := TCryptoKit.DeriveKey('password123', 'salt1', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', 'salt2', 1000);
+  AssertTrue('Different salts should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 procedure TTestCaseCrypto.Test115_DeriveKeyEmptyPassword;
-const
-  Password = '';
-  Salt = 'salt';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key: TAESKey;
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Empty password should still produce a key
+  Key := TCryptoKit.DeriveKey('', 'salt123', 1000);
+  FillChar(FAESKey, SizeOf(FAESKey), 0);
+  AssertTrue('Empty password should not produce all-zero key',
+    CompareMem(@Key[0], @FAESKey[0], SizeOf(TAESKey)) = False);
 end;
 
 procedure TTestCaseCrypto.Test116_DeriveKeyEmptySalt;
-const
-  Password = 'password';
-  Salt = '';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key1, Key2: TAESKey;
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Empty salt should generate random salt internally
+  Key1 := TCryptoKit.DeriveKey('password123', '', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', '', 1000);
+  AssertTrue('Empty salt should produce different keys (random salt)',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 procedure TTestCaseCrypto.Test117_DeriveKeyIterations;
-const
-  Password = 'password';
-  Salt = 'salt';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key1, Key2: TAESKey;
+  StartTime: TDateTime;
+  ElapsedMs: Integer;
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Different iteration counts should produce different keys
+  Key1 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', 'salt123', 2000);
+  AssertTrue('Different iterations should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+    
+  // Verify iteration count affects timing
+  StartTime := Now;
+  TCryptoKit.DeriveKey('password123', 'salt123', 10000);
+  ElapsedMs := MilliSecondsBetween(Now, StartTime);
+  
+  StartTime := Now;
+  TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  AssertTrue('More iterations should take longer',
+    MilliSecondsBetween(Now, StartTime) < ElapsedMs);
 end;
 
 procedure TTestCaseCrypto.Test118_DeriveKeyWithEncryption;
-const
-  Password = 'password';
-  Salt = 'salt';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key: TAESKey;
+  IV: TAESBlock;
+  Encrypted, Decrypted: string;
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000, True);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Test derived key with actual encryption
+  Key := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  IV := TCryptoKit.GenerateIV;
+  
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, Key, IV);
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, Key, IV);
+  
+  AssertEquals('Encryption with derived key should work', FPlainText, Decrypted);
 end;
 
 procedure TTestCaseCrypto.Test119_DeriveKeyUnicode;
-const
-  Password = 'password';
-  Salt = 'salt';
-  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
 var
-  DerivedKey: TAESKey;
+  Key1, Key2: TAESKey;
+const
+  UnicodePassword = '你好，世界！';
 begin
-  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000, False);
-  AssertEquals('Derived key should match expected value',
-    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+  // Unicode passwords should work
+  Key1 := TCryptoKit.DeriveKey(UnicodePassword, 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('Hello, World!', 'salt123', 1000);
+  AssertTrue('Unicode and ASCII passwords should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 initialization

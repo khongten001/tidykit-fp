@@ -565,7 +565,6 @@ end;
 class function TCryptoKit.DeriveKey(const Password: string; const Salt: string;
   Iterations: Integer): TAESKey;
 var
-  Context: TSHA256;
   I, J: Integer;
   Counter: Cardinal;
   Block: array[0..31] of Byte;
@@ -573,7 +572,11 @@ var
   PasswordBytes: array of Byte;
   TempKey: array[0..31] of Byte;
   Temp: array[0..31] of Byte;
+  HashStr: string;
 begin
+  // Initialize result
+  FillChar(Result, SizeOf(Result), 0);
+  
   // Convert password and salt to bytes
   SetLength(PasswordBytes, Length(Password));
   for I := 0 to Length(Password) - 1 do
@@ -591,43 +594,37 @@ begin
       SaltBytes[I] := Byte(Salt[I + 1]);
   end;
 
+  // Initialize working arrays
+  FillChar(Block, SizeOf(Block), 0);
+  FillChar(TempKey, SizeOf(TempKey), 0);
+  FillChar(Temp, SizeOf(Temp), 0);
+
   // PBKDF2-SHA256 implementation
-  FillChar(Result, SizeOf(Result), 0);
   Counter := 1;
   
-  repeat
-    // Initialize HMAC-SHA256
-    Context := TSHA256.Create;
-    try
-      // First pass
-      Context.Update(@PasswordBytes[0], Length(PasswordBytes));
-      Context.Update(@SaltBytes[0], Length(SaltBytes));
-      Context.Update(@Counter, SizeOf(Counter));
-      Context.Final(Block);
-      Move(Block, TempKey, 32);
-      
-      // Additional iterations
-      for I := 2 to Iterations do
-      begin
-        Context.Init;
-        Context.Update(@PasswordBytes[0], Length(PasswordBytes));
-        Context.Update(@Block, 32);
-        Context.Final(Block);
-        
-        Move(Block, Temp, 32);
-        for J := 0 to 31 do
-          TempKey[J] := TempKey[J] xor Temp[J];
-      end;
-      
-      // XOR into final key
-      for I := 0 to 31 do
-        Result[I] := Result[I] xor TempKey[I];
-        
-      Inc(Counter);
-    finally
-      Context.Free;
-    end;
-  until Counter > 1; // We only need one block for AES-256
+  // First pass
+  SetString(HashStr, PChar(@PasswordBytes[0]), Length(PasswordBytes));
+  HashStr := HashStr + string(PChar(@SaltBytes[0]));
+  HashStr := HashStr + string(PChar(@Counter));
+  HashStr := TSHA2.SHA256(HashStr);
+  HexToBin(PChar(HashStr), @Block[0], 32);
+  Move(Block, TempKey, 32);
+  
+  // Additional iterations
+  for I := 2 to Iterations do
+  begin
+    HashStr := string(PChar(@PasswordBytes[0])) + string(PChar(@Block[0]));
+    HashStr := TSHA2.SHA256(HashStr);
+    HexToBin(PChar(HashStr), @Block[0], 32);
+    
+    Move(Block, Temp, 32);
+    for J := 0 to 31 do
+      TempKey[J] := TempKey[J] xor Temp[J];
+  end;
+  
+  // XOR into final key
+  for I := 0 to 31 do
+    Result[I] := Result[I] xor TempKey[I];
 end;
 
 end. 
