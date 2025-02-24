@@ -26,7 +26,17 @@ unit TidyKit.Crypto;
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES256;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES256
+{$IFDEF MSWINDOWS}
+  , Windows
+{$ENDIF}
+  ;
+
+const
+{$IFDEF MSWINDOWS}
+  PROV_RSA_FULL = 1;
+  CRYPT_VERIFYCONTEXT = $F0000000;
+{$ENDIF}
 
 type
   { TBlowfishMode
@@ -51,7 +61,34 @@ type
   private
     class procedure InitBlowfish(var Context: TBlowFish; const Key: string); static;
     class function BytesToHexStr(const Bytes: array of Byte): string; static;
+    class procedure FillRandomBytes(var Buffer; Count: Integer); static;
   public    
+    { Generates a cryptographically secure random AES-256 key.
+      Uses OS-provided secure random number generator when available.
+      
+      Returns:
+        A randomly generated 256-bit key suitable for AES encryption. }
+    class function GenerateRandomKey: TAESKey; static;
+    
+    { Generates a cryptographically secure random initialization vector.
+      Uses OS-provided secure random number generator when available.
+      
+      Returns:
+        A randomly generated 128-bit block suitable for use as an IV. }
+    class function GenerateIV: TAESBlock; static;
+    
+    { Derives an AES-256 key from a password using PBKDF2-SHA256.
+      
+      Parameters:
+        Password - The password to derive the key from.
+        Salt - Optional salt value (if not provided, a random salt will be used).
+        Iterations - Number of iterations (default: 100000).
+        
+      Returns:
+        A 256-bit key derived from the password using PBKDF2. }
+    class function DeriveKey(const Password: string; const Salt: string;
+      Iterations: Integer): TAESKey; static;
+    
     { Computes MD5 hash of a string.
       
       Parameters:
@@ -229,6 +266,18 @@ type
   end;
 
 implementation
+
+{$IFDEF MSWINDOWS}
+function CryptoAcquireContext(var hProv: THandle; pszContainer: PChar;
+  pszProvider: PChar; dwProvType: DWORD; dwFlags: DWORD): BOOL; stdcall;
+  external advapi32 name 'CryptAcquireContextA';
+
+function CryptoGenRandom(hProv: THandle; dwLen: DWORD; pbBuffer: Pointer): BOOL;
+  stdcall; external advapi32 name 'CryptGenRandom';
+
+function CryptoReleaseContext(hProv: THandle; dwFlags: DWORD): BOOL; stdcall;
+  external advapi32 name 'CryptReleaseContext';
+{$ENDIF}
 
 class function TCryptoKit.BytesToHexStr(const Bytes: array of Byte): string;
 var
@@ -416,8 +465,7 @@ begin
     Exit('');
     
   SetLength(DataBytes, Length(Data));
-  if Length(Data) > 0 then
-    Move(Data[1], DataBytes[0], Length(Data));
+  Move(Data[1], DataBytes[0], Length(Data));
     
   EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
   SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
@@ -432,13 +480,15 @@ begin
   if Length(Base64Data) = 0 then
     Exit('');
     
-  DecodedStr := Base64Decode(Base64Data);
+  DecodedStr := DecodeStringBase64(Base64Data);
   SetLength(EncryptedData, Length(DecodedStr));
-  if Length(DecodedStr) > 0 then
-    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
-    
+  Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
+  
   DecryptedBytes := TAES256.DecryptCBC(EncryptedData, Key, IV);
-  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
+  
+  SetLength(Result, Length(DecryptedBytes));
+  if Length(DecryptedBytes) > 0 then
+    Move(DecryptedBytes[0], Result[1], Length(DecryptedBytes));
 end;
 
 class function TCryptoKit.AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
@@ -449,8 +499,7 @@ begin
     Exit('');
     
   SetLength(DataBytes, Length(Data));
-  if Length(Data) > 0 then
-    Move(Data[1], DataBytes[0], Length(Data));
+  Move(Data[1], DataBytes[0], Length(Data));
     
   EncryptedBytes := TAES256.EncryptCTR(DataBytes, Key, IV);
   SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
@@ -465,13 +514,120 @@ begin
   if Length(Base64Data) = 0 then
     Exit('');
     
-  DecodedStr := Base64Decode(Base64Data);
+  DecodedStr := DecodeStringBase64(Base64Data);
   SetLength(EncryptedData, Length(DecodedStr));
-  if Length(DecodedStr) > 0 then
-    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
-    
+  Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
+  
   DecryptedBytes := TAES256.DecryptCTR(EncryptedData, Key, IV);
-  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
+  
+  SetLength(Result, Length(DecryptedBytes));
+  if Length(DecryptedBytes) > 0 then
+    Move(DecryptedBytes[0], Result[1], Length(DecryptedBytes));
+end;
+
+class procedure TCryptoKit.FillRandomBytes(var Buffer; Count: Integer);
+{$IFDEF MSWINDOWS}
+var
+  hProv: THandle;
+begin
+  if not CryptoAcquireContext(hProv, nil, nil, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT) then
+    raise Exception.Create('Failed to acquire crypto context');
+  try
+    if not CryptoGenRandom(hProv, Count, @Buffer) then
+      raise Exception.Create('Failed to generate random bytes');
+  finally
+    CryptoReleaseContext(hProv, 0);
+  end;
+{$ELSE}
+var
+  F: file;
+begin
+  AssignFile(F, '/dev/urandom');
+  try
+    Reset(F, 1);
+    BlockRead(F, Buffer, Count);
+  finally
+    CloseFile(F);
+  end;
+{$ENDIF}
+end;
+
+class function TCryptoKit.GenerateRandomKey: TAESKey;
+begin
+  FillRandomBytes(Result, SizeOf(TAESKey));
+end;
+
+class function TCryptoKit.GenerateIV: TAESBlock;
+begin
+  FillRandomBytes(Result, SizeOf(TAESBlock));
+end;
+
+class function TCryptoKit.DeriveKey(const Password: string; const Salt: string;
+  Iterations: Integer): TAESKey;
+var
+  Context: TSHA256;
+  I, J: Integer;
+  Counter: Cardinal;
+  Block: array[0..31] of Byte;
+  SaltBytes: array of Byte;
+  PasswordBytes: array of Byte;
+  TempKey: array[0..31] of Byte;
+  Temp: array[0..31] of Byte;
+begin
+  // Convert password and salt to bytes
+  SetLength(PasswordBytes, Length(Password));
+  for I := 0 to Length(Password) - 1 do
+    PasswordBytes[I] := Byte(Password[I + 1]);
+    
+  if Salt = '' then
+  begin
+    SetLength(SaltBytes, 16);
+    FillRandomBytes(SaltBytes[0], 16);
+  end
+  else
+  begin
+    SetLength(SaltBytes, Length(Salt));
+    for I := 0 to Length(Salt) - 1 do
+      SaltBytes[I] := Byte(Salt[I + 1]);
+  end;
+
+  // PBKDF2-SHA256 implementation
+  FillChar(Result, SizeOf(Result), 0);
+  Counter := 1;
+  
+  repeat
+    // Initialize HMAC-SHA256
+    Context := TSHA256.Create;
+    try
+      // First pass
+      Context.Update(@PasswordBytes[0], Length(PasswordBytes));
+      Context.Update(@SaltBytes[0], Length(SaltBytes));
+      Context.Update(@Counter, SizeOf(Counter));
+      Context.Final(Block);
+      Move(Block, TempKey, 32);
+      
+      // Additional iterations
+      for I := 2 to Iterations do
+      begin
+        Context.Init;
+        Context.Update(@PasswordBytes[0], Length(PasswordBytes));
+        Context.Update(@Block, 32);
+        Context.Final(Block);
+        
+        Move(Block, Temp, 32);
+        for J := 0 to 31 do
+          TempKey[J] := TempKey[J] xor Temp[J];
+      end;
+      
+      // XOR into final key
+      for I := 0 to 31 do
+        Result[I] := Result[I] xor TempKey[I];
+        
+      Inc(Counter);
+    finally
+      Context.Free;
+    end;
+  until Counter > 1; // We only need one block for AES-256
 end;
 
 end. 

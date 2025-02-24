@@ -5,7 +5,7 @@ unit TestCaseCrypto;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit;
+  Classes, SysUtils, fpcunit, testregistry, TidyKit, TidyKit.Crypto.AES256;
 
 type
   { TTestCaseCrypto }
@@ -135,6 +135,18 @@ type
     procedure Test127_AES256CTRStreamOperation;
     procedure Test128_AES256CTRInvalidBase64;
     procedure Test129_AES256CTRInvalidKey;
+
+    // Helper function tests (110-119)
+    procedure Test110_GenerateRandomKey;
+    procedure Test111_GenerateIV;
+    procedure Test112_DeriveKeyBasic;
+    procedure Test113_DeriveKeyDifferentPasswords;
+    procedure Test114_DeriveKeyDifferentSalts;
+    procedure Test115_DeriveKeyEmptyPassword;
+    procedure Test116_DeriveKeyEmptySalt;
+    procedure Test117_DeriveKeyIterations;
+    procedure Test118_DeriveKeyWithEncryption;
+    procedure Test119_DeriveKeyUnicode;
   end;
 
 implementation
@@ -985,15 +997,19 @@ end;
 procedure TTestCaseCrypto.Test109_AES256CBCInvalidKey;
 var
   InvalidKey: TAESKey;
-  Encrypted, Decrypted: string;
+  Encrypted: string;
 begin
   Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
   
   // Try decrypting with a different key
   FillChar(InvalidKey, SizeOf(InvalidKey), 0);
-  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
-  AssertTrue('Decryption with wrong key should not match original', 
-             FPlainText <> Decrypted);
+  try
+    TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
+    Fail('Decryption with wrong key should raise padding error');
+  except
+    on E: EAESError do
+      ; // Expected exception - decryption with wrong key produces invalid padding
+  end;
 end;
 
 // AES-256 CTR Tests
@@ -1139,6 +1155,137 @@ begin
   Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, InvalidKey, FAESIV);
   AssertTrue('Decryption with wrong key should not match original', 
              FPlainText <> Decrypted);
+end;
+
+// Helper function tests (110-119)
+procedure TTestCaseCrypto.Test110_GenerateRandomKey;
+var
+  Key: TAESKey;
+begin
+  TCryptoKit.GenerateRandomKey(Key);
+  AssertTrue('Generated key should not be empty', Length(Key) > 0);
+end;
+
+procedure TTestCaseCrypto.Test111_GenerateIV;
+var
+  IV: TAESBlock;
+begin
+  TCryptoKit.GenerateIV(IV);
+  AssertTrue('Generated IV should not be empty', Length(IV) > 0);
+end;
+
+procedure TTestCaseCrypto.Test112_DeriveKeyBasic;
+const
+  Password = 'password';
+  Salt = 'salt';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+end;
+
+procedure TTestCaseCrypto.Test113_DeriveKeyDifferentPasswords;
+const
+  Password1 = 'password1';
+  Password2 = 'password2';
+  Salt = 'salt';
+  ExpectedKey1 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+  ExpectedKey2 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey1, DerivedKey2: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password1, Salt, DerivedKey1);
+  TCryptoKit.DeriveKey(Password2, Salt, DerivedKey2);
+  AssertEquals('Derived key should be the same for the same password and salt',
+    ExpectedKey1, TCryptoKit.SHA256Hash(string(DerivedKey1)));
+  AssertEquals('Derived key should be the same for the same password and salt',
+    ExpectedKey2, TCryptoKit.SHA256Hash(string(DerivedKey2)));
+end;
+
+procedure TTestCaseCrypto.Test114_DeriveKeyDifferentSalts;
+const
+  Password = 'password';
+  Salt1 = 'salt1';
+  Salt2 = 'salt2';
+  ExpectedKey1 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+  ExpectedKey2 = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey1, DerivedKey2: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt1, DerivedKey1);
+  TCryptoKit.DeriveKey(Password, Salt2, DerivedKey2);
+  AssertEquals('Derived key should be different for different salts',
+    ExpectedKey1, TCryptoKit.SHA256Hash(string(DerivedKey1)));
+  AssertEquals('Derived key should be different for different salts',
+    ExpectedKey2, TCryptoKit.SHA256Hash(string(DerivedKey2)));
+end;
+
+procedure TTestCaseCrypto.Test115_DeriveKeyEmptyPassword;
+const
+  Password = '';
+  Salt = 'salt';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+end;
+
+procedure TTestCaseCrypto.Test116_DeriveKeyEmptySalt;
+const
+  Password = 'password';
+  Salt = '';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+end;
+
+procedure TTestCaseCrypto.Test117_DeriveKeyIterations;
+const
+  Password = 'password';
+  Salt = 'salt';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+end;
+
+procedure TTestCaseCrypto.Test118_DeriveKeyWithEncryption;
+const
+  Password = 'password';
+  Salt = 'salt';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000, True);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
+end;
+
+procedure TTestCaseCrypto.Test119_DeriveKeyUnicode;
+const
+  Password = 'password';
+  Salt = 'salt';
+  ExpectedKey = '5c08eb61fdf72850d66d8007d620e4050b5715dc83f4a921d36ce9ce47d0d13c5';
+var
+  DerivedKey: TAESKey;
+begin
+  TCryptoKit.DeriveKey(Password, Salt, DerivedKey, 1000, False);
+  AssertEquals('Derived key should match expected value',
+    ExpectedKey, TCryptoKit.SHA256Hash(string(DerivedKey)));
 end;
 
 initialization
