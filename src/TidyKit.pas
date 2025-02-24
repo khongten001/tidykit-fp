@@ -11,6 +11,7 @@ uses
   TidyKit.Strings,
   TidyKit.DateTime,
   TidyKit.Crypto,
+  TidyKit.Crypto.AES256,
   TidyKit.Request,
   TidyKit.Math,
   TidyKit.Math.Matrices,
@@ -36,6 +37,8 @@ type
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
+  TAESKey = TidyKit.Crypto.TAESKey;
+  TAESBlock = TidyKit.Crypto.TAESBlock;
 
   { Re-export the request types }
   TResponse = TidyKit.Request.TResponse;

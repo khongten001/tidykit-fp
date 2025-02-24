@@ -34,6 +34,12 @@ type
     Defines the operation mode for Blowfish encryption/decryption }
   TBlowfishMode = (bmEncrypt, bmDecrypt);
 
+  { TAESKey - 256-bit key for AES encryption }
+  TAESKey = TidyKit.Crypto.AES256.TAESKey;
+
+  { TAESBlock - 128-bit block for AES encryption }
+  TAESBlock = TidyKit.Crypto.AES256.TAESBlock;
+
 type
   { TCryptoKit
     ----------

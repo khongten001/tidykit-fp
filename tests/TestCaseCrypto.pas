@@ -14,7 +14,10 @@ type
     FCryptoKit: TCryptoKit;
     FPlainText: string;
     FKey: string;
+    FAESKey: TAESKey;
+    FAESIV: TAESBlock;
     function GenerateLongString(Size: Integer): string;
+    procedure InitAESKeyAndIV;
   protected
     procedure SetUp; override;
     procedure TearDown; override;
@@ -108,6 +111,30 @@ type
     procedure Test93_SHA3_256UnicodeString;
     procedure Test94_SHA3_384UnicodeString;
     procedure Test95_SHA3_512UnicodeString;
+
+    // AES-256 CBC tests (100-119)
+    procedure Test100_AES256CBCEncryption;
+    procedure Test101_AES256CBCDecryption;
+    procedure Test102_AES256CBCRoundTrip;
+    procedure Test103_AES256CBCEmptyString;
+    procedure Test104_AES256CBCUnicodeString;
+    procedure Test105_AES256CBCLongString;
+    procedure Test106_AES256CBCBinaryData;
+    procedure Test107_AES256CBCPadding;
+    procedure Test108_AES256CBCInvalidBase64;
+    procedure Test109_AES256CBCInvalidKey;
+
+    // AES-256 CTR tests (120-139)
+    procedure Test120_AES256CTREncryption;
+    procedure Test121_AES256CTRDecryption;
+    procedure Test122_AES256CTRRoundTrip;
+    procedure Test123_AES256CTREmptyString;
+    procedure Test124_AES256CTRUnicodeString;
+    procedure Test125_AES256CTRLongString;
+    procedure Test126_AES256CTRBinaryData;
+    procedure Test127_AES256CTRStreamOperation;
+    procedure Test128_AES256CTRInvalidBase64;
+    procedure Test129_AES256CTRInvalidKey;
   end;
 
 implementation
@@ -117,6 +144,18 @@ begin
   FCryptoKit := TCryptoKit.Create;
   FPlainText := 'Hello, TidyKit Crypto!';
   FKey := 'MySecretKey123456';
+  InitAESKeyAndIV;
+end;
+
+procedure TTestCaseCrypto.InitAESKeyAndIV;
+var
+  I: Integer;
+begin
+  // Initialize with a known pattern for testing
+  for I := 0 to 31 do
+    FAESKey[I] := I;
+  for I := 0 to 15 do
+    FAESIV[I] := I * 2;
 end;
 
 procedure TTestCaseCrypto.TearDown;
@@ -821,6 +860,285 @@ begin
     TCryptoKit.SHA3_512Hash(UnicodeText) <> '');
   AssertEquals('SHA3-512 hash length', 128,
     Length(TCryptoKit.SHA3_512Hash(UnicodeText)));
+end;
+
+// AES-256 CBC Tests
+
+procedure TTestCaseCrypto.Test100_AES256CBCEncryption;
+var
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  AssertTrue('Encrypted text should not be empty', Length(Encrypted) > 0);
+  AssertTrue('Encrypted text should be Base64 encoded', Encrypted <> FPlainText);
+end;
+
+procedure TTestCaseCrypto.Test101_AES256CBCDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted text should match original', FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test102_AES256CBCRoundTrip;
+const
+  TestData: array[1..3] of string = (
+    'Short text',
+    'Medium length text with some numbers 12345',
+    'A longer text that will span multiple AES blocks and require proper padding'
+  );
+var
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  for I := Low(TestData) to High(TestData) do
+  begin
+    Encrypted := TCryptoKit.AES256EncryptCBC(TestData[I], FAESKey, FAESIV);
+    Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('Round trip failed for test case %d', [I]), 
+                TestData[I], Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test103_AES256CBCEmptyString;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC('', FAESKey, FAESIV);
+  AssertEquals('Encryption of empty string should return empty string', '', Encrypted);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC('', FAESKey, FAESIV);
+  AssertEquals('Decryption of empty string should return empty string', '', Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test104_AES256CBCUnicodeString;
+const
+  UnicodeText = '你好，世界！';
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(UnicodeText, FAESKey, FAESIV);
+  AssertTrue('Encrypted Unicode text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted Unicode text should match original', UnicodeText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test105_AES256CBCLongString;
+var
+  LongText: string;
+  Encrypted, Decrypted: string;
+begin
+  LongText := GenerateLongString(1000);
+  Encrypted := TCryptoKit.AES256EncryptCBC(LongText, FAESKey, FAESIV);
+  AssertTrue('Encrypted long text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted long text should match original', LongText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData;
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  SetLength(BinaryData, 256);
+  for I := 0 to 255 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted binary data should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted binary data should match original', BinaryData, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test107_AES256CBCPadding;
+var
+  I: Integer;
+  TestStr, Encrypted, Decrypted: string;
+begin
+  // Test strings of different lengths to verify padding
+  for I := 1 to 32 do
+  begin
+    TestStr := GenerateLongString(I);
+    Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+    Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('Padding failed for length %d', [I]), TestStr, Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test108_AES256CBCInvalidBase64;
+begin
+  try
+    TCryptoKit.AES256DecryptCBC('Invalid Base64!', FAESKey, FAESIV);
+    Fail('Should raise exception on invalid Base64 input');
+  except
+    on E: Exception do
+      ; // Expected exception
+  end;
+end;
+
+procedure TTestCaseCrypto.Test109_AES256CBCInvalidKey;
+var
+  InvalidKey: TAESKey;
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  
+  // Try decrypting with a different key
+  FillChar(InvalidKey, SizeOf(InvalidKey), 0);
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
+  AssertTrue('Decryption with wrong key should not match original', 
+             FPlainText <> Decrypted);
+end;
+
+// AES-256 CTR Tests
+
+procedure TTestCaseCrypto.Test120_AES256CTREncryption;
+var
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  AssertTrue('Encrypted text should not be empty', Length(Encrypted) > 0);
+  AssertTrue('Encrypted text should be Base64 encoded', Encrypted <> FPlainText);
+end;
+
+procedure TTestCaseCrypto.Test121_AES256CTRDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted text should match original', FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test122_AES256CTRRoundTrip;
+const
+  TestData: array[1..3] of string = (
+    'Short text',
+    'Medium length text with some numbers 12345',
+    'A longer text that will span multiple AES blocks but requires no padding in CTR mode'
+  );
+var
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  for I := Low(TestData) to High(TestData) do
+  begin
+    Encrypted := TCryptoKit.AES256EncryptCTR(TestData[I], FAESKey, FAESIV);
+    Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('Round trip failed for test case %d', [I]), 
+                TestData[I], Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test123_AES256CTREmptyString;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR('', FAESKey, FAESIV);
+  AssertEquals('Encryption of empty string should return empty string', '', Encrypted);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR('', FAESKey, FAESIV);
+  AssertEquals('Decryption of empty string should return empty string', '', Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test124_AES256CTRUnicodeString;
+const
+  UnicodeText = '你好，世界！';
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(UnicodeText, FAESKey, FAESIV);
+  AssertTrue('Encrypted Unicode text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted Unicode text should match original', UnicodeText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test125_AES256CTRLongString;
+var
+  LongText: string;
+  Encrypted, Decrypted: string;
+begin
+  LongText := GenerateLongString(1000);
+  Encrypted := TCryptoKit.AES256EncryptCTR(LongText, FAESKey, FAESIV);
+  AssertTrue('Encrypted long text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted long text should match original', LongText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test126_AES256CTRBinaryData;
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  SetLength(BinaryData, 256);
+  for I := 0 to 255 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCTR(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted binary data should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted binary data should match original', BinaryData, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test127_AES256CTRStreamOperation;
+var
+  Parts: array[1..3] of string;
+  Encrypted: array[1..3] of string;
+  FullText, CombinedDecrypted: string;
+  I: Integer;
+begin
+  // Split text into parts to simulate streaming
+  Parts[1] := 'First part ';
+  Parts[2] := 'second part ';
+  Parts[3] := 'third part';
+  FullText := Parts[1] + Parts[2] + Parts[3];
+  
+  // Encrypt each part with same key/IV
+  for I := 1 to 3 do
+    Encrypted[I] := TCryptoKit.AES256EncryptCTR(Parts[I], FAESKey, FAESIV);
+  
+  // Decrypt combined parts
+  CombinedDecrypted := '';
+  for I := 1 to 3 do
+    CombinedDecrypted := CombinedDecrypted + 
+                        TCryptoKit.AES256DecryptCTR(Encrypted[I], FAESKey, FAESIV);
+  
+  AssertEquals('Stream operation should preserve data', FullText, CombinedDecrypted);
+end;
+
+procedure TTestCaseCrypto.Test128_AES256CTRInvalidBase64;
+begin
+  try
+    TCryptoKit.AES256DecryptCTR('Invalid Base64!', FAESKey, FAESIV);
+    Fail('Should raise exception on invalid Base64 input');
+  except
+    on E: Exception do
+      ; // Expected exception
+  end;
+end;
+
+procedure TTestCaseCrypto.Test129_AES256CTRInvalidKey;
+var
+  InvalidKey: TAESKey;
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  
+  // Try decrypting with a different key
+  FillChar(InvalidKey, SizeOf(InvalidKey), 0);
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, InvalidKey, FAESIV);
+  AssertTrue('Decryption with wrong key should not match original', 
+             FPlainText <> Decrypted);
 end;
 
 initialization
