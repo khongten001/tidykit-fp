@@ -24,6 +24,7 @@ unit TidyKit.Crypto;
      - Always uses PKCS7 padding in CBC mode for safety
      - CTR mode for streaming (no padding needed)
      - Suitable for most applications
+     - No padding mode configuration (uses safe defaults)
   
   2. Low-Level Interface (TidyKit.Crypto.AES256)
      - Raw binary operations
@@ -32,6 +33,24 @@ unit TidyKit.Crypto;
        * No padding for NIST testing
      - Direct byte array manipulation
      - Used for testing and special protocols
+     - Full control over padding modes
+  
+  Design Choices:
+  1. Padding Modes
+     - High-level interface enforces safe defaults:
+       * CBC mode always uses PKCS7 padding
+       * CTR mode never needs padding
+       * No padding configuration exposed
+     - Low-level interface provides full control:
+       * Configurable padding for special cases
+       * Required for NIST test vectors
+       * Used by crypto implementers
+  
+  2. Security
+     - Prevents padding oracle vulnerabilities
+     - Enforces cryptographic best practices
+     - Minimizes API surface for safety
+     - Hides complexity from regular users
   
   @author   TidyKit Team
   @version  1.0
