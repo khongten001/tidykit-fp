@@ -383,7 +383,8 @@ begin
     Move(Data[1], DataBytes[0], Length(Data));
     
   EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
-  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  Result := EncodeStringBase64(Result);
 end;
 
 class function TCryptoKit.AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
@@ -415,7 +416,8 @@ begin
     Move(Data[1], DataBytes[0], Length(Data));
     
   EncryptedBytes := TAES256.EncryptCTR(DataBytes, Key, IV);
-  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  Result := EncodeStringBase64(Result);
 end;
 
 class function TCryptoKit.AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
