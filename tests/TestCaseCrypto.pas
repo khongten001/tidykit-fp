@@ -1155,15 +1155,19 @@ end;
 procedure TTestCaseCrypto.Test109_AES256CBCInvalidKey;
 var
   InvalidKey: TAESKey;
-  Encrypted, Decrypted: string;
+  Encrypted: string;
 begin
   Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
   
   // Try decrypting with a different key
   FillChar(InvalidKey, SizeOf(InvalidKey), 0);
-  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
-  AssertTrue('Decryption with wrong key should not match original', 
-             FPlainText <> Decrypted);
+  try
+    TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
+    Fail('Should raise EAESError when using invalid key');
+  except
+    on E: EAESError do
+      ; // Expected - decryption with wrong key should fail
+  end;
 end;
 
 // AES-256 CTR Tests
