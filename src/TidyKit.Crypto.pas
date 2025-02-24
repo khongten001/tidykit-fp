@@ -2,6 +2,27 @@ unit TidyKit.Crypto;
 
 {$mode objfpc}{$H+}{$J-}
 
+{*******************************************************************************
+  TidyKit.Crypto - High-Level Cryptographic Operations Interface
+  
+  This unit provides a high-level wrapper around various cryptographic operations,
+  making them easy to use with string inputs and outputs. It handles:
+  - String to bytes conversion
+  - Base64 encoding of binary cryptographic outputs
+  - Base64 decoding of encrypted data for decryption
+  
+  Base64 encoding is used because encrypted binary data cannot be safely stored
+  in strings (they may contain null bytes or non-printable characters).
+  This ensures encrypted data can be safely stored and transmitted as text.
+  
+  For low-level binary operations and NIST compliance testing, use the underlying
+  implementation units directly (e.g., TidyKit.Crypto.AES256).
+  
+  @author   TidyKit Team
+  @version  1.0
+  @date     2024
+*******************************************************************************}
+
 interface
 
 uses
@@ -147,47 +168,57 @@ type
     class function BlowfishCrypt(const Text, Key: string; Mode: TBlowfishMode): string; static;
 
     { Encrypts data using AES-256 in CBC mode.
+      This is a high-level wrapper that handles string conversion and Base64 encoding.
+      For raw binary operations, use TAES256.EncryptCBC directly.
       
       Parameters:
-        Data - The data to encrypt.
+        Data - The string data to encrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
         
       Returns:
-        Encrypted data in Base64 format. }
+        Base64-encoded encrypted data string. The Base64 encoding ensures the binary
+        encrypted data can be safely stored and transmitted as text. }
     class function AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Decrypts data using AES-256 in CBC mode.
+      This is a high-level wrapper that handles Base64 decoding and string conversion.
+      For raw binary operations, use TAES256.DecryptCBC directly.
       
       Parameters:
-        Base64Data - The Base64-encoded encrypted data.
+        Base64Data - The Base64-encoded encrypted data string.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
         
       Returns:
-        Decrypted data. }
+        Decrypted string data. }
     class function AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Encrypts data using AES-256 in CTR mode.
+      This is a high-level wrapper that handles string conversion and Base64 encoding.
+      For raw binary operations, use TAES256.EncryptCTR directly.
       
       Parameters:
-        Data - The data to encrypt.
+        Data - The string data to encrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector (nonce + counter).
         
       Returns:
-        Encrypted data in Base64 format. }
+        Base64-encoded encrypted data string. The Base64 encoding ensures the binary
+        encrypted data can be safely stored and transmitted as text. }
     class function AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Decrypts data using AES-256 in CTR mode.
+      This is a high-level wrapper that handles Base64 decoding and string conversion.
+      For raw binary operations, use TAES256.DecryptCTR directly.
       
       Parameters:
-        Base64Data - The Base64-encoded encrypted data.
+        Base64Data - The Base64-encoded encrypted data string.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector (nonce + counter).
         
       Returns:
-        Decrypted data. }
+        Decrypted string data. }
     class function AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
   end;
 

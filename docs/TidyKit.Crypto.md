@@ -2,11 +2,19 @@
 
 ## Overview
 
-The TidyKit.Crypto module provides a comprehensive set of cryptographic operations, including modern encryption algorithms, secure hashing functions, and encoding utilities. All functionality is exposed through the `TCryptoKit` class, which provides static methods for ease of use.
+The TidyKit.Crypto module provides a high-level wrapper around various cryptographic operations, making them easy to use with string inputs and outputs. It handles:
+- String to bytes conversion
+- Base64 encoding of binary cryptographic outputs
+- Base64 decoding of encrypted data for decryption
+
+Base64 encoding is used because encrypted binary data cannot be safely stored in strings (they may contain null bytes or non-printable characters). This ensures encrypted data can be safely stored and transmitted as text.
+
+For low-level binary operations and NIST compliance testing, use the underlying implementation units directly (e.g., TidyKit.Crypto.AES256).
 
 ## Features
 
 - 🔑 **AES-256 Encryption**
+  - High-level string operations with automatic Base64 encoding
   - CBC mode with PKCS7 padding
   - CTR mode for streaming
   - NIST SP 800-38A compliant
@@ -41,13 +49,37 @@ begin
   FillChar(Key, SizeOf(Key), 0);
   FillChar(IV, SizeOf(IV), 0);
   
-  // CBC Mode
+  // CBC Mode - High-level string operations with automatic Base64 encoding
   CipherText := TCryptoKit.AES256EncryptCBC('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
   
-  // CTR Mode
+  // CTR Mode - High-level string operations with automatic Base64 encoding
   CipherText := TCryptoKit.AES256EncryptCTR('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCTR(CipherText, Key, IV);
+end;
+```
+
+### Low-Level Binary Operations
+
+For NIST compliance testing or when working directly with binary data, use the TAES256 class:
+
+```pascal
+var
+  Key: TAESKey;
+  IV: TAESBlock;
+  PlainBytes, CipherBytes: TBytes;
+begin
+  // Initialize Key and IV (use secure random generation in practice)
+  FillChar(Key, SizeOf(Key), 0);
+  FillChar(IV, SizeOf(IV), 0);
+  
+  // CBC Mode - Raw binary operations
+  CipherBytes := TAES256.EncryptCBC(PlainBytes, Key, IV);
+  PlainBytes := TAES256.DecryptCBC(CipherBytes, Key, IV);
+  
+  // CTR Mode - Raw binary operations
+  CipherBytes := TAES256.EncryptCTR(PlainBytes, Key, IV);
+  PlainBytes := TAES256.DecryptCTR(CipherBytes, Key, IV);
 end;
 ```
 
@@ -244,3 +276,23 @@ We welcome contributions to improve the crypto module. Please ensure:
 ## License
 
 This module is part of TidyKit and is licensed under the same terms as the main project. 
+
+## Architecture
+
+### High-Level vs Low-Level APIs
+
+1. **TCryptoKit (High-Level)**
+   - String-based operations
+   - Automatic Base64 encoding/decoding
+   - Easy to use for common scenarios
+   - Handles binary-to-text conversion
+
+2. **TAES256 (Low-Level)**
+   - Raw binary operations
+   - NIST test vectors compliance
+   - Direct byte array manipulation
+   - No automatic encoding
+
+Choose the appropriate API based on your needs:
+- Use TCryptoKit for general application development
+- Use TAES256 for cryptographic protocol implementation or testing 

@@ -1,8 +1,17 @@
 {*******************************************************************************
-  TidyKit.Crypto.AES256 - Advanced Encryption Standard (AES-256) Implementation
+  TidyKit.Crypto.AES256 - Low-Level AES-256 Implementation
   
   This unit provides a FIPS-compliant implementation of AES-256 encryption and
-  decryption in CBC and CTR modes. The implementation follows NIST standards:
+  decryption in CBC and CTR modes. It operates directly on raw binary data (bytes)
+  and is designed for:
+  1. NIST compliance and testing
+  2. Low-level cryptographic operations
+  3. Integration with other cryptographic protocols
+  
+  For string-based operations with automatic Base64 encoding, use the high-level
+  wrapper in TidyKit.Crypto unit instead.
+  
+  This implementation follows NIST standards:
   - FIPS 197: Advanced Encryption Standard (AES)
   - NIST SP 800-38A: Block Cipher Modes of Operation
   
@@ -22,6 +31,7 @@
   - CTR mode for streaming operations
   - NIST test vectors compliance
   - Secure key and IV handling
+  - Raw binary data operations
   
   Security Notes:
   1. This implementation has been tested against NIST test vectors
@@ -33,16 +43,19 @@
     var
       Key: TAESKey;
       IV: TAESBlock;
-      PlainText, CipherText: string;
+      PlainBytes, CipherBytes: TBytes;
     begin
       // Initialize Key and IV (use secure random generation in practice)
       FillChar(Key, SizeOf(Key), 0);
       FillChar(IV, SizeOf(IV), 0);
       
-      // CBC Mode
-      CipherText := TAES256.EncryptCBC(PlainBytes, Key, IV);
-      PlainText := TAES256.DecryptCBC(CipherBytes, Key, IV);
+      // CBC Mode - operates on raw bytes
+      CipherBytes := TAES256.EncryptCBC(PlainBytes, Key, IV);
+      PlainBytes := TAES256.DecryptCBC(CipherBytes, Key, IV);
     end;
+  
+  Note: For string-based operations with automatic Base64 encoding of binary data,
+        use TCryptoKit methods from TidyKit.Crypto unit instead.
   
   @author   TidyKit Team
   @version  1.0
