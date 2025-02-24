@@ -18,6 +18,21 @@ unit TidyKit.Crypto;
   For low-level binary operations and NIST compliance testing, use the underlying
   implementation units directly (e.g., TidyKit.Crypto.AES256).
   
+  AES-256 Implementation:
+  1. High-Level Interface (this unit)
+     - String-based operations with automatic Base64 encoding
+     - Always uses PKCS7 padding in CBC mode for safety
+     - CTR mode for streaming (no padding needed)
+     - Suitable for most applications
+  
+  2. Low-Level Interface (TidyKit.Crypto.AES256)
+     - Raw binary operations
+     - Configurable padding modes:
+       * PKCS7 for general use
+       * No padding for NIST testing
+     - Direct byte array manipulation
+     - Used for testing and special protocols
+  
   @author   TidyKit Team
   @version  1.0
   @date     2024

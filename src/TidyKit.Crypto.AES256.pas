@@ -27,11 +27,29 @@
   
   Key Features:
   - AES-256 block cipher (14 rounds)
-  - CBC mode with PKCS7 padding
-  - CTR mode for streaming operations
+  - CBC mode with configurable padding:
+    * PKCS7 padding for general use (RFC 5652)
+    * No padding for NIST test vectors and block-aligned data
+  - CTR mode for streaming operations (no padding needed)
   - NIST test vectors compliance
   - Secure key and IV handling
   - Raw binary data operations
+  
+  Padding Modes:
+  1. PKCS7 Padding (Default)
+     - Standard padding scheme defined in RFC 5652
+     - Automatically pads data to block size
+     - Ensures unambiguous unpadding
+     - Required for most standard protocols
+     - Used by default in CBC mode
+  
+  2. No Padding
+     - Input must be a multiple of block size
+     - Used for NIST test vector validation
+     - Suitable for pre-padded or block-aligned data
+     - Required by some protocols that handle padding externally
+  
+  Note: CTR mode never requires padding as it operates as a stream cipher.
   
   Security Notes:
   1. This implementation has been tested against NIST test vectors
