@@ -459,8 +459,8 @@ end;
 
 class function TCryptoKit.AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
-  DataBytes, EncryptedBytes: TBytes;
-  I: Integer;
+  DataBytes, PaddedBytes, EncryptedBytes: TBytes;
+  I, LastBlockSize, PaddingSize: Integer;
   RawStr: string;
 begin
   if Length(Data) = 0 then
@@ -471,8 +471,16 @@ begin
   for I := 1 to Length(Data) do
     DataBytes[I-1] := Byte(Data[I]);
     
-  // Encrypt the data
-  EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
+  // Add PKCS7 padding
+  LastBlockSize := Length(DataBytes) mod 16;
+  PaddingSize := 16 - LastBlockSize;
+  SetLength(PaddedBytes, Length(DataBytes) + PaddingSize);
+  Move(DataBytes[0], PaddedBytes[0], Length(DataBytes));
+  for I := Length(DataBytes) to Length(PaddedBytes) - 1 do
+    PaddedBytes[I] := PaddingSize;
+    
+  // Encrypt the padded data
+  EncryptedBytes := TAES256.EncryptCBC(PaddedBytes, Key, IV);
   
   // Convert encrypted bytes to raw string for Base64
   SetLength(RawStr, Length(EncryptedBytes));
@@ -485,7 +493,7 @@ class function TCryptoKit.AES256DecryptCBC(const Base64Data: string; const Key: 
 var
   EncryptedData, DecryptedBytes: TBytes;
   DecodedStr: string;
-  I: Integer;
+  I, PaddingSize: Integer;
 begin
   if Length(Base64Data) = 0 then
     Exit('');
@@ -501,9 +509,22 @@ begin
   // Decrypt the data
   DecryptedBytes := TAES256.DecryptCBC(EncryptedData, Key, IV);
   
-  // Convert decrypted bytes back to string
-  SetLength(Result, Length(DecryptedBytes));
-  for I := 1 to Length(DecryptedBytes) do
+  // Verify and remove PKCS7 padding
+  if Length(DecryptedBytes) = 0 then
+    Exit('');
+    
+  PaddingSize := DecryptedBytes[Length(DecryptedBytes) - 1];
+  if (PaddingSize = 0) or (PaddingSize > 16) then
+    raise EAESError.Create('Invalid padding');
+    
+  // Verify all padding bytes match
+  for I := Length(DecryptedBytes) - PaddingSize to Length(DecryptedBytes) - 1 do
+    if DecryptedBytes[I] <> PaddingSize then
+      raise EAESError.Create('Invalid padding');
+  
+  // Convert decrypted bytes back to string, removing padding
+  SetLength(Result, Length(DecryptedBytes) - PaddingSize);
+  for I := 1 to Length(Result) do
     Result[I] := Chr(DecryptedBytes[I-1]);
 end;
 

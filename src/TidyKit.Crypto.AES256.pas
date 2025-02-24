@@ -74,7 +74,10 @@ uses
 type
   { TAESMode - Defines the operation mode for AES encryption/decryption }
   TAESMode = (amCBC, amCTR);
-
+  
+  { TAESPadding - Defines the padding mode for block cipher operations }
+  TAESPadding = (apNone, apPKCS7);
+  
   { TAESBlock - 128-bit AES block }
   TAESBlock = array[0..15] of Byte;
 
@@ -92,6 +95,7 @@ type
   private
     FKeySchedule: TAESKeySchedule;
     FMode: TAESMode;
+    FPadding: TAESPadding;
     FIV: TAESBlock;
     
     procedure ExpandKey(const Key: TAESKey);
@@ -117,22 +121,24 @@ type
     class procedure XorBlock(const Source1, Source2: PByte; Dest: PByte; Size: Integer); static;
   public
     {*******************************************************************************
-      Creates a new AES cipher instance with specified mode, key, and IV.
+      Creates a new AES cipher instance with specified mode, padding, key, and IV.
       
       @param Mode   The operation mode (CBC or CTR)
+      @param Padding The padding mode (None or PKCS7)
       @param Key    256-bit encryption key
       @param IV     128-bit initialization vector
       
       Note: For CBC mode, IV must be unpredictable (random).
             For CTR mode, IV serves as initial counter value.
     *******************************************************************************}
-    constructor Create(Mode: TAESMode; const Key: TAESKey; const IV: TAESBlock);
+    constructor Create(Mode: TAESMode; Padding: TAESPadding; const Key: TAESKey; const IV: TAESBlock);
     destructor Destroy; override;
     
     function Encrypt(const Data: TBytes): TBytes;
     function Decrypt(const Data: TBytes): TBytes;
     
     property Mode: TAESMode read FMode;
+    property Padding: TAESPadding read FPadding;
   end;
 
   { TAES256
@@ -147,10 +153,12 @@ type
         Data - The data to encrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
+        Padding - The padding mode (None or PKCS7)
         
       Returns:
         Encrypted data. }
-    class function EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+    class function EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock;
+      Padding: TAESPadding = apPKCS7): TBytes; static;
     
     { Decrypts data using AES-256 in CBC mode.
       
@@ -158,10 +166,12 @@ type
         Data - The data to decrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
+        Padding - The padding mode (None or PKCS7)
         
       Returns:
         Decrypted data. }
-    class function DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes; static;
+    class function DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock;
+      Padding: TAESPadding = apPKCS7): TBytes; static;
     
     { Encrypts data using AES-256 in CTR mode.
       
@@ -240,19 +250,21 @@ const
 { TAESCipher }
 
 {*******************************************************************************
-  Creates a new AES cipher instance with specified mode, key, and IV.
+  Creates a new AES cipher instance with specified mode, padding, key, and IV.
   
   @param Mode   The operation mode (CBC or CTR)
+  @param Padding The padding mode (None or PKCS7)
   @param Key    256-bit encryption key
   @param IV     128-bit initialization vector
   
   Note: For CBC mode, IV must be unpredictable (random).
         For CTR mode, IV serves as initial counter value.
 *******************************************************************************}
-constructor TAESCipher.Create(Mode: TAESMode; const Key: TAESKey; const IV: TAESBlock);
+constructor TAESCipher.Create(Mode: TAESMode; Padding: TAESPadding; const Key: TAESKey; const IV: TAESBlock);
 begin
   inherited Create;
   FMode := Mode;
+  FPadding := Padding;
   Move(IV[0], FIV[0], SizeOf(TAESBlock));
   ExpandKey(Key);
 end;
@@ -639,30 +651,35 @@ end;
 *******************************************************************************}
 function TAESCipher.EncryptCBC(const Data: TBytes): TBytes;
 var
-  NumBlocks, LastBlockSize, PaddingSize, I: Integer;
+  NumBlocks, I, LastBlockSize, PaddingSize: Integer;
   Block, PrevBlock: TAESBlock;
 begin
-  // Calculate padding
-  LastBlockSize := Length(Data) mod 16;
-  if LastBlockSize = 0 then
-    // If data is already block-aligned, no padding needed
-    SetLength(Result, Length(Data))
-  else
-  begin
-    PaddingSize := 16 - LastBlockSize;
-    SetLength(Result, Length(Data) + PaddingSize);
+  if Length(Data) = 0 then
+    raise EAESError.Create('Input data cannot be empty');
+    
+  case FPadding of
+    apNone:
+      begin
+        if Length(Data) mod 16 <> 0 then
+          raise EAESError.Create('Input data length must be a multiple of 16 bytes');
+        SetLength(Result, Length(Data));
+      end;
+      
+    apPKCS7:
+      begin
+        // Calculate padding size according to PKCS7
+        LastBlockSize := Length(Data) mod 16;
+        PaddingSize := 16 - LastBlockSize;
+        SetLength(Result, Length(Data) + PaddingSize);
+        
+        // Add PKCS7 padding
+        for I := Length(Data) to Length(Result) - 1 do
+          Result[I] := PaddingSize;
+      end;
   end;
   
   // Copy input data
-  if Length(Data) > 0 then
-    Move(Data[0], Result[0], Length(Data));
-  
-  // Add PKCS7 padding if needed
-  if LastBlockSize <> 0 then
-  begin
-    for I := Length(Data) to Length(Result) - 1 do
-      Result[I] := 16 - LastBlockSize;
-  end;
+  Move(Data[0], Result[0], Length(Data));
   
   // Initialize IV
   Move(FIV[0], PrevBlock[0], 16);
@@ -695,11 +712,11 @@ end;
 *******************************************************************************}
 function TAESCipher.DecryptCBC(const Data: TBytes): TBytes;
 var
-  NumBlocks, PaddingSize, I: Integer;
+  NumBlocks, I, PaddingSize: Integer;
   Block, PrevBlock, CurrBlock: TAESBlock;
 begin
   if (Length(Data) = 0) or (Length(Data) mod 16 <> 0) then
-    raise EAESError.Create('Invalid encrypted data length');
+    raise EAESError.Create('Input data length must be a multiple of 16 bytes');
   
   SetLength(Result, Length(Data));
   Move(Data[0], Result[0], Length(Data));
@@ -719,18 +736,28 @@ begin
     Move(CurrBlock[0], PrevBlock[0], 16);
   end;
   
-  // Check and remove PKCS7 padding if present
-  PaddingSize := Result[Length(Result) - 1];
-  if (PaddingSize = 0) or (PaddingSize > 16) then
-    raise EAESError.Create('Invalid padding');
+  // Handle padding
+  case FPadding of
+    apNone: ; // No padding to remove
     
-  // Verify all padding bytes match
-  for I := Length(Result) - PaddingSize to Length(Result) - 1 do
-    if Result[I] <> PaddingSize then
-      raise EAESError.Create('Invalid padding');
-      
-  // Remove padding after successful validation
-  SetLength(Result, Length(Result) - PaddingSize);
+    apPKCS7:
+      begin
+        // Get padding size from last byte
+        PaddingSize := Result[Length(Result) - 1];
+        
+        // Validate PKCS7 padding
+        if (PaddingSize = 0) or (PaddingSize > 16) then
+          raise EAESError.Create('Invalid padding');
+          
+        // Verify all padding bytes
+        for I := Length(Result) - PaddingSize to Length(Result) - 1 do
+          if Result[I] <> PaddingSize then
+            raise EAESError.Create('Invalid padding');
+        
+        // Remove padding
+        SetLength(Result, Length(Result) - PaddingSize);
+      end;
+  end;
 end;
 
 {*******************************************************************************
@@ -829,11 +856,12 @@ end;
 
 { TAES256 }
 
-class function TAES256.EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+class function TAES256.EncryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock;
+  Padding: TAESPadding = apPKCS7): TBytes;
 var
   Cipher: TAESCipher;
 begin
-  Cipher := TAESCipher.Create(amCBC, Key, IV);
+  Cipher := TAESCipher.Create(amCBC, Padding, Key, IV);
   try
     Result := Cipher.Encrypt(Data);
   finally
@@ -841,11 +869,12 @@ begin
   end;
 end;
 
-class function TAES256.DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock): TBytes;
+class function TAES256.DecryptCBC(const Data: TBytes; const Key: TAESKey; const IV: TAESBlock;
+  Padding: TAESPadding = apPKCS7): TBytes;
 var
   Cipher: TAESCipher;
 begin
-  Cipher := TAESCipher.Create(amCBC, Key, IV);
+  Cipher := TAESCipher.Create(amCBC, Padding, Key, IV);
   try
     Result := Cipher.Decrypt(Data);
   finally
@@ -857,7 +886,7 @@ class function TAES256.EncryptCTR(const Data: TBytes; const Key: TAESKey; const 
 var
   Cipher: TAESCipher;
 begin
-  Cipher := TAESCipher.Create(amCTR, Key, IV);
+  Cipher := TAESCipher.Create(amCTR, apNone, Key, IV);
   try
     Result := Cipher.Encrypt(Data);
   finally
@@ -869,7 +898,7 @@ class function TAES256.DecryptCTR(const Data: TBytes; const Key: TAESKey; const 
 var
   Cipher: TAESCipher;
 begin
-  Cipher := TAESCipher.Create(amCTR, Key, IV);
+  Cipher := TAESCipher.Create(amCTR, apNone, Key, IV);
   try
     Result := Cipher.Decrypt(Data);
   finally
