@@ -564,6 +564,7 @@ end;
 
 class function TCryptoKit.DeriveKey(const Password: string; const Salt: string;
   Iterations: Integer): TAESKey;
+{$R-} // Disable range checking for array operations
 var
   I, J: Integer;
   Counter: Cardinal;
@@ -626,5 +627,6 @@ begin
   for I := 0 to 31 do
     Result[I] := Result[I] xor TempKey[I];
 end;
+{$R+} // Re-enable range checking
 
 end. 

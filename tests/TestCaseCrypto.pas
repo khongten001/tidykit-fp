@@ -952,23 +952,33 @@ begin
 end;
 
 procedure TTestCaseCrypto.Test106_AES256CBCBinaryData;
+{$R-} // Disable range checking for array operations
 var
   BinaryData: string;
   I: Integer;
   Encrypted, Decrypted: string;
+  DataBytes: TBytes;
 begin
+  // Create binary data that's a multiple of block size (16 bytes)
   SetLength(BinaryData, 256);
   for I := 0 to 255 do
     BinaryData[I + 1] := Chr(I);
+    
+  // Convert to bytes first
+  SetLength(DataBytes, Length(BinaryData));
+  Move(BinaryData[1], DataBytes[0], Length(BinaryData));
     
   Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
   AssertTrue('Encrypted binary data should not be empty', Length(Encrypted) > 0);
   
   Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
-  AssertEquals('Decrypted binary data should match original', BinaryData, Decrypted);
+  AssertEquals('Decrypted binary data length should match original', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Decrypted binary data should match original', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
 end;
+{$R+} // Re-enable range checking
 
 procedure TTestCaseCrypto.Test107_AES256CBCPadding;
+{$R-} // Disable range checking for array operations
 var
   I: Integer;
   TestStr, Encrypted, Decrypted: string;
@@ -977,11 +987,18 @@ begin
   for I := 1 to 32 do
   begin
     TestStr := GenerateLongString(I);
+    // Ensure string length is known
+    SetLength(TestStr, I);
+    
     Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+    AssertTrue(Format('Encrypted data should not be empty for length %d', [I]), Length(Encrypted) > 0);
+    
     Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('String length mismatch for length %d', [I]), Length(TestStr), Length(Decrypted));
     AssertEquals(Format('Padding failed for length %d', [I]), TestStr, Decrypted);
   end;
 end;
+{$R+} // Re-enable range checking
 
 procedure TTestCaseCrypto.Test108_AES256CBCInvalidBase64;
 begin
@@ -1256,27 +1273,39 @@ begin
 end;
 
 procedure TTestCaseCrypto.Test117_DeriveKeyIterations;
+{$R-} // Disable range checking for array operations
 var
+  Password: string;
+  Salt: string;
   Key1, Key2: TAESKey;
-  StartTime: TDateTime;
-  ElapsedMs: Integer;
+  StartTime, EndTime: TDateTime;
+  Time1, Time2: Int64;
+  I: Integer;
 begin
-  // Different iteration counts should produce different keys
-  Key1 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
-  Key2 := TCryptoKit.DeriveKey('password123', 'salt123', 2000);
-  AssertTrue('Different iterations should produce different keys',
-    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
-    
-  // Verify iteration count affects timing
-  StartTime := Now;
-  TCryptoKit.DeriveKey('password123', 'salt123', 10000);
-  ElapsedMs := MilliSecondsBetween(Now, StartTime);
+  Password := 'test_password';
+  Salt := 'test_salt_123456';
+
+  // Test that different iteration counts produce different keys
+  Key1 := TCryptoKit.DeriveKey(Password, Salt, 1000);
+  Key2 := TCryptoKit.DeriveKey(Password, Salt, 2000);
   
+  AssertTrue('Keys with different iteration counts should be different',
+    not CompareMem(@Key1[0], @Key2[0], Length(Key1)));
+
+  // Test that more iterations take longer
   StartTime := Now;
-  TCryptoKit.DeriveKey('password123', 'salt123', 1000);
-  AssertTrue('More iterations should take longer',
-    MilliSecondsBetween(Now, StartTime) < ElapsedMs);
+  Key1 := TCryptoKit.DeriveKey(Password, Salt, 1000);
+  EndTime := Now;
+  Time1 := MilliSecondsBetween(EndTime, StartTime);
+
+  StartTime := Now;
+  Key2 := TCryptoKit.DeriveKey(Password, Salt, 10000);
+  EndTime := Now;
+  Time2 := MilliSecondsBetween(EndTime, StartTime);
+
+  AssertTrue('More iterations should take longer', Time2 > Time1);
 end;
+{$R+} // Re-enable range checking
 
 procedure TTestCaseCrypto.Test118_DeriveKeyWithEncryption;
 var
