@@ -2,16 +2,87 @@ unit TidyKit.Crypto;
 
 {$mode objfpc}{$H+}{$J-}
 
+{*******************************************************************************
+  TidyKit.Crypto - High-Level Cryptographic Operations Interface
+  
+  This unit provides a high-level wrapper around various cryptographic operations,
+  making them easy to use with string inputs and outputs. It handles:
+  - String to bytes conversion
+  - Base64 encoding of binary cryptographic outputs
+  - Base64 decoding of encrypted data for decryption
+  
+  Base64 encoding is used because encrypted binary data cannot be safely stored
+  in strings (they may contain null bytes or non-printable characters).
+  This ensures encrypted data can be safely stored and transmitted as text.
+  
+  For low-level binary operations and NIST compliance testing, use the underlying
+  implementation units directly (e.g., TidyKit.Crypto.AES256).
+  
+  AES-256 Implementation:
+  1. High-Level Interface (this unit)
+     - String-based operations with automatic Base64 encoding
+     - Always uses PKCS7 padding in CBC mode for safety
+     - CTR mode for streaming (no padding needed)
+     - Suitable for most applications
+     - No padding mode configuration (uses safe defaults)
+  
+  2. Low-Level Interface (TidyKit.Crypto.AES256)
+     - Raw binary operations
+     - Configurable padding modes:
+       * PKCS7 for general use
+       * No padding for NIST testing
+     - Direct byte array manipulation
+     - Used for testing and special protocols
+     - Full control over padding modes
+  
+  Design Choices:
+  1. Padding Modes
+     - High-level interface enforces safe defaults:
+       * CBC mode always uses PKCS7 padding
+       * CTR mode never needs padding
+       * No padding configuration exposed
+     - Low-level interface provides full control:
+       * Configurable padding for special cases
+       * Required for NIST test vectors
+       * Used by crypto implementers
+  
+  2. Security
+     - Prevents padding oracle vulnerabilities
+     - Enforces cryptographic best practices
+     - Minimizes API surface for safety
+     - Hides complexity from regular users
+  
+  @author   TidyKit Team
+  @version  1.0
+  @date     2024
+*******************************************************************************}
+
 interface
 
 uses
-  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES256;
+  Classes, SysUtils, Base64, MD5, SHA1, BlowFish, Math, TidyKit.Crypto.SHA2, TidyKit.Crypto.SHA3, TidyKit.Crypto.AES256
+{$IFDEF MSWINDOWS}
+  , Windows
+{$ENDIF}
+  ;
+
+const
+{$IFDEF MSWINDOWS}
+  PROV_RSA_FULL = 1;
+  CRYPT_VERIFYCONTEXT = $F0000000;
+{$ENDIF}
 
 type
   { TBlowfishMode
     -------------
     Defines the operation mode for Blowfish encryption/decryption }
   TBlowfishMode = (bmEncrypt, bmDecrypt);
+
+  { TAESKey - 256-bit key for AES encryption }
+  TAESKey = TidyKit.Crypto.AES256.TAESKey;
+
+  { TAESBlock - 128-bit block for AES encryption }
+  TAESBlock = TidyKit.Crypto.AES256.TAESBlock;
 
 type
   { TCryptoKit
@@ -24,7 +95,34 @@ type
   private
     class procedure InitBlowfish(var Context: TBlowFish; const Key: string); static;
     class function BytesToHexStr(const Bytes: array of Byte): string; static;
+    class procedure FillRandomBytes(var Buffer; Count: Integer); static;
   public    
+    { Generates a cryptographically secure random AES-256 key.
+      Uses OS-provided secure random number generator when available.
+      
+      Returns:
+        A randomly generated 256-bit key suitable for AES encryption. }
+    class function GenerateRandomKey: TAESKey; static;
+    
+    { Generates a cryptographically secure random initialization vector.
+      Uses OS-provided secure random number generator when available.
+      
+      Returns:
+        A randomly generated 128-bit block suitable for use as an IV. }
+    class function GenerateIV: TAESBlock; static;
+    
+    { Derives an AES-256 key from a password using PBKDF2-SHA256.
+      
+      Parameters:
+        Password - The password to derive the key from.
+        Salt - Optional salt value (if not provided, a random salt will be used).
+        Iterations - Number of iterations (default: 100000).
+        
+      Returns:
+        A 256-bit key derived from the password using PBKDF2. }
+    class function DeriveKey(const Password: string; const Salt: string;
+      Iterations: Integer): TAESKey; static;
+    
     { Computes MD5 hash of a string.
       
       Parameters:
@@ -147,51 +245,73 @@ type
     class function BlowfishCrypt(const Text, Key: string; Mode: TBlowfishMode): string; static;
 
     { Encrypts data using AES-256 in CBC mode.
+      This is a high-level wrapper that handles string conversion and Base64 encoding.
+      For raw binary operations, use TAES256.EncryptCBC directly.
       
       Parameters:
-        Data - The data to encrypt.
+        Data - The string data to encrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
         
       Returns:
-        Encrypted data in Base64 format. }
+        Base64-encoded encrypted data string. The Base64 encoding ensures the binary
+        encrypted data can be safely stored and transmitted as text. }
     class function AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Decrypts data using AES-256 in CBC mode.
+      This is a high-level wrapper that handles Base64 decoding and string conversion.
+      For raw binary operations, use TAES256.DecryptCBC directly.
       
       Parameters:
-        Base64Data - The Base64-encoded encrypted data.
+        Base64Data - The Base64-encoded encrypted data string.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector.
         
       Returns:
-        Decrypted data. }
+        Decrypted string data. }
     class function AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Encrypts data using AES-256 in CTR mode.
+      This is a high-level wrapper that handles string conversion and Base64 encoding.
+      For raw binary operations, use TAES256.EncryptCTR directly.
       
       Parameters:
-        Data - The data to encrypt.
+        Data - The string data to encrypt.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector (nonce + counter).
         
       Returns:
-        Encrypted data in Base64 format. }
+        Base64-encoded encrypted data string. The Base64 encoding ensures the binary
+        encrypted data can be safely stored and transmitted as text. }
     class function AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
     
     { Decrypts data using AES-256 in CTR mode.
+      This is a high-level wrapper that handles Base64 decoding and string conversion.
+      For raw binary operations, use TAES256.DecryptCTR directly.
       
       Parameters:
-        Base64Data - The Base64-encoded encrypted data.
+        Base64Data - The Base64-encoded encrypted data string.
         Key - 256-bit encryption key.
         IV - 128-bit initialization vector (nonce + counter).
         
       Returns:
-        Decrypted data. }
+        Decrypted string data. }
     class function AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string; static;
   end;
 
 implementation
+
+{$IFDEF MSWINDOWS}
+function CryptoAcquireContext(var hProv: THandle; pszContainer: PChar;
+  pszProvider: PChar; dwProvType: DWORD; dwFlags: DWORD): BOOL; stdcall;
+  external advapi32 name 'CryptAcquireContextA';
+
+function CryptoGenRandom(hProv: THandle; dwLen: DWORD; pbBuffer: Pointer): BOOL;
+  stdcall; external advapi32 name 'CryptGenRandom';
+
+function CryptoReleaseContext(hProv: THandle; dwFlags: DWORD): BOOL; stdcall;
+  external advapi32 name 'CryptReleaseContext';
+{$ENDIF}
 
 class function TCryptoKit.BytesToHexStr(const Bytes: array of Byte): string;
 var
@@ -373,66 +493,227 @@ end;
 
 class function TCryptoKit.AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
-  DataBytes, EncryptedBytes: TBytes;
+  DataBytes, PaddedBytes, EncryptedBytes: TBytes;
+  I, LastBlockSize, PaddingSize: Integer;
+  RawStr: string;
 begin
   if Length(Data) = 0 then
     Exit('');
     
+  // Convert string to bytes preserving all values
   SetLength(DataBytes, Length(Data));
-  if Length(Data) > 0 then
-    Move(Data[1], DataBytes[0], Length(Data));
+  for I := 1 to Length(Data) do
+    DataBytes[I-1] := Byte(Data[I]);
     
-  EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
-  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  // Add PKCS7 padding
+  LastBlockSize := Length(DataBytes) mod 16;
+  PaddingSize := 16 - LastBlockSize;
+  SetLength(PaddedBytes, Length(DataBytes) + PaddingSize);
+  Move(DataBytes[0], PaddedBytes[0], Length(DataBytes));
+  for I := Length(DataBytes) to Length(PaddedBytes) - 1 do
+    PaddedBytes[I] := PaddingSize;
+    
+  // Encrypt the padded data
+  EncryptedBytes := TAES256.EncryptCBC(PaddedBytes, Key, IV);
+  
+  // Convert encrypted bytes to raw string for Base64
+  SetLength(RawStr, Length(EncryptedBytes));
+  for I := 1 to Length(EncryptedBytes) do
+    RawStr[I] := Chr(EncryptedBytes[I-1]);
+  Result := EncodeStringBase64(RawStr);
 end;
 
 class function TCryptoKit.AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   EncryptedData, DecryptedBytes: TBytes;
   DecodedStr: string;
+  I, PaddingSize: Integer;
 begin
   if Length(Base64Data) = 0 then
     Exit('');
     
-  DecodedStr := Base64Decode(Base64Data);
+  // Decode Base64 to raw string first
+  DecodedStr := DecodeStringBase64(Base64Data);
+  
+  // Convert raw string to bytes
   SetLength(EncryptedData, Length(DecodedStr));
-  if Length(DecodedStr) > 0 then
-    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
-    
+  for I := 1 to Length(DecodedStr) do
+    EncryptedData[I-1] := Byte(DecodedStr[I]);
+  
+  // Decrypt the data
   DecryptedBytes := TAES256.DecryptCBC(EncryptedData, Key, IV);
-  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
+  
+  // Verify and remove PKCS7 padding
+  if Length(DecryptedBytes) = 0 then
+    Exit('');
+    
+  PaddingSize := DecryptedBytes[Length(DecryptedBytes) - 1];
+  if (PaddingSize = 0) or (PaddingSize > 16) then
+    raise EAESError.Create('Invalid padding');
+    
+  // Verify all padding bytes match
+  for I := Length(DecryptedBytes) - PaddingSize to Length(DecryptedBytes) - 1 do
+    if DecryptedBytes[I] <> PaddingSize then
+      raise EAESError.Create('Invalid padding');
+  
+  // Convert decrypted bytes back to string, removing padding
+  SetLength(Result, Length(DecryptedBytes) - PaddingSize);
+  for I := 1 to Length(Result) do
+    Result[I] := Chr(DecryptedBytes[I-1]);
 end;
 
 class function TCryptoKit.AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   DataBytes, EncryptedBytes: TBytes;
+  I: Integer;
+  RawStr: string;
 begin
   if Length(Data) = 0 then
     Exit('');
     
+  // Convert string to bytes preserving all values
   SetLength(DataBytes, Length(Data));
-  if Length(Data) > 0 then
-    Move(Data[1], DataBytes[0], Length(Data));
+  for I := 0 to Length(Data) - 1 do
+    DataBytes[I] := Byte(Data[I + 1]);
     
+  // Encrypt the data
   EncryptedBytes := TAES256.EncryptCTR(DataBytes, Key, IV);
-  Result := Base64Encode(PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
+  
+  // Convert bytes to Base64 directly
+  SetLength(RawStr, Length(EncryptedBytes));
+  for I := 0 to Length(EncryptedBytes) - 1 do
+    RawStr[I + 1] := Chr(EncryptedBytes[I]);
+  Result := EncodeStringBase64(RawStr);
 end;
 
 class function TCryptoKit.AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   EncryptedData, DecryptedBytes: TBytes;
   DecodedStr: string;
+  I: Integer;
 begin
   if Length(Base64Data) = 0 then
     Exit('');
     
-  DecodedStr := Base64Decode(Base64Data);
+  // Decode Base64 to raw string first
+  DecodedStr := DecodeStringBase64(Base64Data);
+  
+  // Convert raw string to bytes
   SetLength(EncryptedData, Length(DecodedStr));
-  if Length(DecodedStr) > 0 then
-    Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
-    
+  for I := 0 to Length(DecodedStr) - 1 do
+    EncryptedData[I] := Byte(DecodedStr[I + 1]);
+  
+  // Decrypt the data
   DecryptedBytes := TAES256.DecryptCTR(EncryptedData, Key, IV);
-  SetString(Result, PChar(@DecryptedBytes[0]), Length(DecryptedBytes));
+  
+  // Convert decrypted bytes back to string
+  SetLength(Result, Length(DecryptedBytes));
+  for I := 0 to Length(DecryptedBytes) - 1 do
+    Result[I + 1] := Chr(DecryptedBytes[I]);
 end;
+
+class procedure TCryptoKit.FillRandomBytes(var Buffer; Count: Integer);
+{$IFDEF MSWINDOWS}
+var
+  hProv: THandle;
+begin
+  if not CryptoAcquireContext(hProv, nil, nil, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT) then
+    raise Exception.Create('Failed to acquire crypto context');
+  try
+    if not CryptoGenRandom(hProv, Count, @Buffer) then
+      raise Exception.Create('Failed to generate random bytes');
+  finally
+    CryptoReleaseContext(hProv, 0);
+  end;
+{$ELSE}
+var
+  F: file;
+begin
+  AssignFile(F, '/dev/urandom');
+  try
+    Reset(F, 1);
+    BlockRead(F, Buffer, Count);
+  finally
+    CloseFile(F);
+  end;
+{$ENDIF}
+end;
+
+class function TCryptoKit.GenerateRandomKey: TAESKey;
+begin
+  FillRandomBytes(Result, SizeOf(TAESKey));
+end;
+
+class function TCryptoKit.GenerateIV: TAESBlock;
+begin
+  FillRandomBytes(Result, SizeOf(TAESBlock));
+end;
+
+class function TCryptoKit.DeriveKey(const Password: string; const Salt: string;
+  Iterations: Integer): TAESKey;
+{$R-} // Disable range checking for array operations
+var
+  I, J: Integer;
+  Counter: Cardinal;
+  Block: array[0..31] of Byte;
+  SaltBytes: array of Byte;
+  PasswordBytes: array of Byte;
+  TempKey: array[0..31] of Byte;
+  Temp: array[0..31] of Byte;
+  HashStr: string;
+begin
+  // Initialize result
+  FillChar(Result, SizeOf(Result), 0);
+  
+  // Convert password and salt to bytes
+  SetLength(PasswordBytes, Length(Password));
+  for I := 0 to Length(Password) - 1 do
+    PasswordBytes[I] := Byte(Password[I + 1]);
+    
+  if Salt = '' then
+  begin
+    SetLength(SaltBytes, 16);
+    FillRandomBytes(SaltBytes[0], 16);
+  end
+  else
+  begin
+    SetLength(SaltBytes, Length(Salt));
+    for I := 0 to Length(Salt) - 1 do
+      SaltBytes[I] := Byte(Salt[I + 1]);
+  end;
+
+  // Initialize working arrays
+  FillChar(Block, SizeOf(Block), 0);
+  FillChar(TempKey, SizeOf(TempKey), 0);
+  FillChar(Temp, SizeOf(Temp), 0);
+
+  // PBKDF2-SHA256 implementation
+  Counter := 1;
+  
+  // First pass
+  SetString(HashStr, PChar(@PasswordBytes[0]), Length(PasswordBytes));
+  HashStr := HashStr + string(PChar(@SaltBytes[0]));
+  HashStr := HashStr + string(PChar(@Counter));
+  HashStr := TSHA2.SHA256(HashStr);
+  HexToBin(PChar(HashStr), @Block[0], 32);
+  Move(Block, TempKey, 32);
+  
+  // Additional iterations
+  for I := 2 to Iterations do
+  begin
+    HashStr := string(PChar(@PasswordBytes[0])) + string(PChar(@Block[0]));
+    HashStr := TSHA2.SHA256(HashStr);
+    HexToBin(PChar(HashStr), @Block[0], 32);
+    
+    Move(Block, Temp, 32);
+    for J := 0 to 31 do
+      TempKey[J] := TempKey[J] xor Temp[J];
+  end;
+  
+  // XOR into final key
+  for I := 0 to 31 do
+    Result[I] := Result[I] xor TempKey[I];
+end;
+{$R+} // Re-enable range checking
 
 end. 

@@ -85,7 +85,7 @@ begin
   IVBytes := HexToBytes(IV);
   PlainBytes := HexToBytes(Plaintext);
   
-  CipherBytes := TAES256.EncryptCBC(PlainBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  CipherBytes := TAES256.EncryptCBC(PlainBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes), apNone);
   AssertEquals('CBC encryption failed', ExpectedCiphertext.ToLower, 
                BytesToHex(CipherBytes).ToLower);
 end;
@@ -110,7 +110,7 @@ begin
   IVBytes := HexToBytes(IV);
   CipherBytes := HexToBytes(Ciphertext);
   
-  PlainBytes := TAES256.DecryptCBC(CipherBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes));
+  PlainBytes := TAES256.DecryptCBC(CipherBytes, BytesToKey(KeyBytes), BytesToBlock(IVBytes), apNone);
   AssertEquals('CBC decryption failed', ExpectedPlaintext.ToLower, 
                BytesToHex(PlainBytes).ToLower);
 end;

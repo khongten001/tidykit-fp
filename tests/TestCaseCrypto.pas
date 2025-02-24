@@ -5,7 +5,7 @@ unit TestCaseCrypto;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit;
+  Classes, SysUtils, fpcunit, testregistry, TidyKit, TidyKit.Crypto.AES256, DateUtils;
 
 type
   { TTestCaseCrypto }
@@ -14,7 +14,10 @@ type
     FCryptoKit: TCryptoKit;
     FPlainText: string;
     FKey: string;
+    FAESKey: TAESKey;
+    FAESIV: TAESBlock;
     function GenerateLongString(Size: Integer): string;
+    procedure InitAESKeyAndIV;
   protected
     procedure SetUp; override;
     procedure TearDown; override;
@@ -108,6 +111,50 @@ type
     procedure Test93_SHA3_256UnicodeString;
     procedure Test94_SHA3_384UnicodeString;
     procedure Test95_SHA3_512UnicodeString;
+
+    // AES-256 CBC tests (100-119)
+    procedure Test100_AES256CBCEncryption;
+    procedure Test101_AES256CBCDecryption;
+    procedure Test102_AES256CBCRoundTrip;
+    procedure Test103_AES256CBCEmptyString;
+    procedure Test104_AES256CBCUnicodeString;
+    procedure Test105_AES256CBCLongString;
+    procedure Test106_AES256CBCBinaryData;
+    procedure Test107_AES256CBCPadding_SingleByte;
+    procedure Test107_AES256CBCPadding_FullBlock;
+    procedure Test107_AES256CBCPadding_PartialBlock;
+    procedure Test107_AES256CBCPadding_MultiBlock;
+    procedure Test108_AES256CBCInvalidBase64;
+    procedure Test109_AES256CBCInvalidKey;
+
+    // AES-256 CTR tests (120-139)
+    procedure Test120_AES256CTREncryption;
+    procedure Test121_AES256CTRDecryption;
+    procedure Test122_AES256CTRRoundTrip;
+    procedure Test123_AES256CTREmptyString;
+    procedure Test124_AES256CTRUnicodeString;
+    procedure Test125_AES256CTRLongString;
+    procedure Test126_AES256CTRBinaryData;
+    procedure Test127_AES256CTRStreamOperation;
+    procedure Test128_AES256CTRInvalidBase64;
+    procedure Test129_AES256CTRInvalidKey;
+
+    // Helper function tests (110-119)
+    procedure Test110_GenerateRandomKey;
+    procedure Test111_GenerateIV;
+    procedure Test112_DeriveKeyBasic;
+    procedure Test113_DeriveKeyDifferentPasswords;
+    procedure Test114_DeriveKeyDifferentSalts;
+    procedure Test115_DeriveKeyEmptyPassword;
+    procedure Test116_DeriveKeyEmptySalt;
+    procedure Test117_DeriveKeyIterations;
+    procedure Test118_DeriveKeyWithEncryption;
+    procedure Test119_DeriveKeyUnicode;
+
+    procedure Test106_AES256CBCBinaryData_SmallBlock;
+    procedure Test106_AES256CBCBinaryData_PartialBlock;
+    procedure Test106_AES256CBCBinaryData_MultiBlock;
+    procedure Test106_AES256CBCBinaryData_ZeroBytes;
   end;
 
 implementation
@@ -117,6 +164,18 @@ begin
   FCryptoKit := TCryptoKit.Create;
   FPlainText := 'Hello, TidyKit Crypto!';
   FKey := 'MySecretKey123456';
+  InitAESKeyAndIV;
+end;
+
+procedure TTestCaseCrypto.InitAESKeyAndIV;
+var
+  I: Integer;
+begin
+  // Initialize with a known pattern for testing
+  for I := 0 to 31 do
+    FAESKey[I] := I;
+  for I := 0 to 15 do
+    FAESIV[I] := I * 2;
 end;
 
 procedure TTestCaseCrypto.TearDown;
@@ -821,6 +880,601 @@ begin
     TCryptoKit.SHA3_512Hash(UnicodeText) <> '');
   AssertEquals('SHA3-512 hash length', 128,
     Length(TCryptoKit.SHA3_512Hash(UnicodeText)));
+end;
+
+// AES-256 CBC Tests
+
+procedure TTestCaseCrypto.Test100_AES256CBCEncryption;
+var
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  AssertTrue('Encrypted text should not be empty', Length(Encrypted) > 0);
+  AssertTrue('Encrypted text should be Base64 encoded', Encrypted <> FPlainText);
+end;
+
+procedure TTestCaseCrypto.Test101_AES256CBCDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted text should match original', FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test102_AES256CBCRoundTrip;
+const
+  TestData: array[1..3] of string = (
+    'Short text',
+    'Medium length text with some numbers 12345',
+    'A longer text that will span multiple AES blocks and require proper padding'
+  );
+var
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  for I := Low(TestData) to High(TestData) do
+  begin
+    Encrypted := TCryptoKit.AES256EncryptCBC(TestData[I], FAESKey, FAESIV);
+    Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('Round trip failed for test case %d', [I]), 
+                TestData[I], Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test103_AES256CBCEmptyString;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC('', FAESKey, FAESIV);
+  AssertEquals('Encryption of empty string should return empty string', '', Encrypted);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC('', FAESKey, FAESIV);
+  AssertEquals('Decryption of empty string should return empty string', '', Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test104_AES256CBCUnicodeString;
+const
+  UnicodeText = '你好，世界！';
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(UnicodeText, FAESKey, FAESIV);
+  AssertTrue('Encrypted Unicode text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted Unicode text should match original', UnicodeText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test105_AES256CBCLongString;
+var
+  LongText: string;
+  Encrypted, Decrypted: string;
+begin
+  LongText := GenerateLongString(1000);
+  Encrypted := TCryptoKit.AES256EncryptCBC(LongText, FAESKey, FAESIV);
+  AssertTrue('Encrypted long text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted long text should match original', LongText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData;
+{$R-}
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  // Test with exactly one block (16 bytes)
+  SetLength(BinaryData, 16);
+  for I := 0 to 15 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted small binary block should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Small binary block: length mismatch', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Small binary block: content mismatch', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData_SmallBlock;
+{$R-}
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  // Test with exactly one block (16 bytes)
+  SetLength(BinaryData, 16);
+  for I := 0 to 15 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted small binary block should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Small binary block: length mismatch', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Small binary block: content mismatch', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData_PartialBlock;
+{$R-}
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  // Test with partial block (10 bytes)
+  SetLength(BinaryData, 10);
+  for I := 0 to 9 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted partial binary block should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Partial binary block: length mismatch', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Partial binary block: content mismatch', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData_MultiBlock;
+{$R-}
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  // Test with multiple blocks (48 bytes)
+  SetLength(BinaryData, 48);
+  for I := 0 to 47 do
+    BinaryData[I + 1] := Chr(I mod 256);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted multi-block binary should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Multi-block binary: length mismatch', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Multi-block binary: content mismatch', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test106_AES256CBCBinaryData_ZeroBytes;
+{$R-}
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  // Test with data containing zero bytes (32 bytes)
+  SetLength(BinaryData, 32);
+  for I := 0 to 31 do
+    if I mod 2 = 0 then
+      BinaryData[I + 1] := #0
+    else
+      BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted zero-byte binary should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Zero-byte binary: length mismatch', Length(BinaryData), Length(Decrypted));
+  AssertEquals('Zero-byte binary: content mismatch', 0, CompareByte(BinaryData[1], Decrypted[1], Length(BinaryData)));
+end;
+{$R+}
+
+// AES-256 CBC Padding Tests
+
+procedure TTestCaseCrypto.Test107_AES256CBCPadding_SingleByte;
+{$R-}
+var
+  TestStr, Encrypted, Decrypted: string;
+begin
+  // Test single byte (requires 15 bytes padding)
+  TestStr := 'A';
+  SetLength(TestStr, 1);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+  AssertTrue('Single byte encryption should not be empty', Length(Encrypted) > 0);
+    
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Single byte padding failed', 1, Length(Decrypted));
+  AssertEquals('Single byte content mismatch', TestStr, Decrypted);
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test107_AES256CBCPadding_FullBlock;
+{$R-}
+var
+  TestStr, Encrypted, Decrypted: string;
+begin
+  // Test full block (16 bytes - requires full block padding)
+  TestStr := GenerateLongString(16);
+  SetLength(TestStr, 16);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+  AssertTrue('Full block encryption should not be empty', Length(Encrypted) > 0);
+    
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Full block padding failed', 16, Length(Decrypted));
+  AssertEquals('Full block content mismatch', TestStr, Decrypted);
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test107_AES256CBCPadding_PartialBlock;
+{$R-}
+var
+  TestStr, Encrypted, Decrypted: string;
+begin
+  // Test partial block (7 bytes - requires 9 bytes padding)
+  TestStr := GenerateLongString(7);
+  SetLength(TestStr, 7);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+  AssertTrue('Partial block encryption should not be empty', Length(Encrypted) > 0);
+    
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Partial block padding failed', 7, Length(Decrypted));
+  AssertEquals('Partial block content mismatch', TestStr, Decrypted);
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test107_AES256CBCPadding_MultiBlock;
+{$R-}
+var
+  TestStr, Encrypted, Decrypted: string;
+begin
+  // Test multiple blocks plus partial (40 bytes - requires 8 bytes padding)
+  TestStr := GenerateLongString(40);
+  SetLength(TestStr, 40);
+    
+  Encrypted := TCryptoKit.AES256EncryptCBC(TestStr, FAESKey, FAESIV);
+  AssertTrue('Multi-block encryption should not be empty', Length(Encrypted) > 0);
+    
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Multi-block padding failed', 40, Length(Decrypted));
+  AssertEquals('Multi-block content mismatch', TestStr, Decrypted);
+end;
+{$R+}
+
+procedure TTestCaseCrypto.Test108_AES256CBCInvalidBase64;
+begin
+  try
+    TCryptoKit.AES256DecryptCBC('Invalid Base64!', FAESKey, FAESIV);
+    Fail('Should raise exception on invalid Base64 input');
+  except
+    on E: Exception do
+      ; // Expected exception
+  end;
+end;
+
+procedure TTestCaseCrypto.Test109_AES256CBCInvalidKey;
+var
+  InvalidKey: TAESKey;
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, FAESKey, FAESIV);
+  
+  // Try decrypting with a different key
+  FillChar(InvalidKey, SizeOf(InvalidKey), 0);
+  try
+    TCryptoKit.AES256DecryptCBC(Encrypted, InvalidKey, FAESIV);
+    Fail('Should raise EAESError when using invalid key');
+  except
+    on E: EAESError do
+      ; // Expected - decryption with wrong key should fail
+  end;
+end;
+
+// AES-256 CTR Tests
+
+procedure TTestCaseCrypto.Test120_AES256CTREncryption;
+var
+  Encrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  AssertTrue('Encrypted text should not be empty', Length(Encrypted) > 0);
+  AssertTrue('Encrypted text should be Base64 encoded', Encrypted <> FPlainText);
+end;
+
+procedure TTestCaseCrypto.Test121_AES256CTRDecryption;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted text should match original', FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test122_AES256CTRRoundTrip;
+const
+  TestData: array[1..3] of string = (
+    'Short text',
+    'Medium length text with some numbers 12345',
+    'A longer text that will span multiple AES blocks but requires no padding in CTR mode'
+  );
+var
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  for I := Low(TestData) to High(TestData) do
+  begin
+    Encrypted := TCryptoKit.AES256EncryptCTR(TestData[I], FAESKey, FAESIV);
+    Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+    AssertEquals(Format('Round trip failed for test case %d', [I]), 
+                TestData[I], Decrypted);
+  end;
+end;
+
+procedure TTestCaseCrypto.Test123_AES256CTREmptyString;
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR('', FAESKey, FAESIV);
+  AssertEquals('Encryption of empty string should return empty string', '', Encrypted);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR('', FAESKey, FAESIV);
+  AssertEquals('Decryption of empty string should return empty string', '', Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test124_AES256CTRUnicodeString;
+const
+  UnicodeText = '你好，世界！';
+var
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(UnicodeText, FAESKey, FAESIV);
+  AssertTrue('Encrypted Unicode text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted Unicode text should match original', UnicodeText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test125_AES256CTRLongString;
+var
+  LongText: string;
+  Encrypted, Decrypted: string;
+begin
+  LongText := GenerateLongString(1000);
+  Encrypted := TCryptoKit.AES256EncryptCTR(LongText, FAESKey, FAESIV);
+  AssertTrue('Encrypted long text should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted long text should match original', LongText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test126_AES256CTRBinaryData;
+var
+  BinaryData: string;
+  I: Integer;
+  Encrypted, Decrypted: string;
+begin
+  SetLength(BinaryData, 256);
+  for I := 0 to 255 do
+    BinaryData[I + 1] := Chr(I);
+    
+  Encrypted := TCryptoKit.AES256EncryptCTR(BinaryData, FAESKey, FAESIV);
+  AssertTrue('Encrypted binary data should not be empty', Length(Encrypted) > 0);
+  
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, FAESKey, FAESIV);
+  AssertEquals('Decrypted binary data should match original', BinaryData, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test127_AES256CTRStreamOperation;
+var
+  Parts: array[1..3] of string;
+  Encrypted: array[1..3] of string;
+  FullText, CombinedDecrypted: string;
+  I: Integer;
+begin
+  // Split text into parts to simulate streaming
+  Parts[1] := 'First part ';
+  Parts[2] := 'second part ';
+  Parts[3] := 'third part';
+  FullText := Parts[1] + Parts[2] + Parts[3];
+  
+  // Encrypt each part with same key/IV
+  for I := 1 to 3 do
+    Encrypted[I] := TCryptoKit.AES256EncryptCTR(Parts[I], FAESKey, FAESIV);
+  
+  // Decrypt combined parts
+  CombinedDecrypted := '';
+  for I := 1 to 3 do
+    CombinedDecrypted := CombinedDecrypted + 
+                        TCryptoKit.AES256DecryptCTR(Encrypted[I], FAESKey, FAESIV);
+  
+  AssertEquals('Stream operation should preserve data', FullText, CombinedDecrypted);
+end;
+
+procedure TTestCaseCrypto.Test128_AES256CTRInvalidBase64;
+begin
+  try
+    TCryptoKit.AES256DecryptCTR('Invalid Base64!', FAESKey, FAESIV);
+    Fail('Should raise exception on invalid Base64 input');
+  except
+    on E: Exception do
+      ; // Expected exception
+  end;
+end;
+
+procedure TTestCaseCrypto.Test129_AES256CTRInvalidKey;
+var
+  InvalidKey: TAESKey;
+  Encrypted, Decrypted: string;
+begin
+  Encrypted := TCryptoKit.AES256EncryptCTR(FPlainText, FAESKey, FAESIV);
+  
+  // Try decrypting with a different key
+  FillChar(InvalidKey, SizeOf(InvalidKey), 0);
+  Decrypted := TCryptoKit.AES256DecryptCTR(Encrypted, InvalidKey, FAESIV);
+  AssertTrue('Decryption with wrong key should not match original', 
+             FPlainText <> Decrypted);
+end;
+
+// Helper function tests (110-119)
+procedure TTestCaseCrypto.Test110_GenerateRandomKey;
+var
+  Key1, Key2: TAESKey;
+begin
+  // Generate two keys and verify they are different (random)
+  Key1 := TCryptoKit.GenerateRandomKey;
+  Key2 := TCryptoKit.GenerateRandomKey;
+  
+  // Verify key length
+  AssertEquals('Generated key should be 32 bytes', 32, SizeOf(Key1));
+  
+  // Verify keys are different (random)
+  AssertTrue('Generated keys should be different',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+  
+  // Verify key is not all zeros
+  FillChar(Key2, SizeOf(Key2), 0);
+  AssertTrue('Generated key should not be all zeros',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+end;
+
+procedure TTestCaseCrypto.Test111_GenerateIV;
+var
+  IV1, IV2: TAESBlock;
+begin
+  // Generate two IVs and verify they are different (random)
+  IV1 := TCryptoKit.GenerateIV;
+  IV2 := TCryptoKit.GenerateIV;
+  
+  // Verify IV length
+  AssertEquals('Generated IV should be 16 bytes', 16, SizeOf(IV1));
+  
+  // Verify IVs are different (random)
+  AssertTrue('Generated IVs should be different',
+    CompareMem(@IV1[0], @IV2[0], SizeOf(TAESBlock)) = False);
+  
+  // Verify IV is not all zeros
+  FillChar(IV2, SizeOf(IV2), 0);
+  AssertTrue('Generated IV should not be all zeros',
+    CompareMem(@IV1[0], @IV2[0], SizeOf(TAESBlock)) = False);
+end;
+
+procedure TTestCaseCrypto.Test112_DeriveKeyBasic;
+var
+  Key1, Key2: TAESKey;
+begin
+  // Same password and salt should produce same key
+  Key1 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  AssertTrue('Same password/salt should produce same key',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)));
+end;
+
+procedure TTestCaseCrypto.Test113_DeriveKeyDifferentPasswords;
+var
+  Key1, Key2: TAESKey;
+begin
+  // Different passwords should produce different keys
+  Key1 := TCryptoKit.DeriveKey('password1', 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('password2', 'salt123', 1000);
+  AssertTrue('Different passwords should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+end;
+
+procedure TTestCaseCrypto.Test114_DeriveKeyDifferentSalts;
+var
+  Key1, Key2: TAESKey;
+begin
+  // Different salts should produce different keys
+  Key1 := TCryptoKit.DeriveKey('password123', 'salt1', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', 'salt2', 1000);
+  AssertTrue('Different salts should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+end;
+
+procedure TTestCaseCrypto.Test115_DeriveKeyEmptyPassword;
+var
+  Key: TAESKey;
+begin
+  // Empty password should still produce a key
+  Key := TCryptoKit.DeriveKey('', 'salt123', 1000);
+  FillChar(FAESKey, SizeOf(FAESKey), 0);
+  AssertTrue('Empty password should not produce all-zero key',
+    CompareMem(@Key[0], @FAESKey[0], SizeOf(TAESKey)) = False);
+end;
+
+procedure TTestCaseCrypto.Test116_DeriveKeyEmptySalt;
+var
+  Key1, Key2: TAESKey;
+begin
+  // Empty salt should generate random salt internally
+  Key1 := TCryptoKit.DeriveKey('password123', '', 1000);
+  Key2 := TCryptoKit.DeriveKey('password123', '', 1000);
+  AssertTrue('Empty salt should produce different keys (random salt)',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
+end;
+
+procedure TTestCaseCrypto.Test117_DeriveKeyIterations;
+{$R-} // Disable range checking for array operations
+var
+  Password: string;
+  Salt: string;
+  Key1, Key2: TAESKey;
+  StartTime, EndTime: TDateTime;
+  Time1, Time2: Int64;
+  I: Integer;
+begin
+  Password := 'test_password';
+  Salt := 'test_salt_123456';
+
+  // Test that different iteration counts produce different keys
+  Key1 := TCryptoKit.DeriveKey(Password, Salt, 1000);
+  Key2 := TCryptoKit.DeriveKey(Password, Salt, 2000);
+  
+  AssertTrue('Keys with different iteration counts should be different',
+    not CompareMem(@Key1[0], @Key2[0], Length(Key1)));
+
+  // Test that more iterations take longer
+  StartTime := Now;
+  Key1 := TCryptoKit.DeriveKey(Password, Salt, 1000);
+  EndTime := Now;
+  Time1 := MilliSecondsBetween(EndTime, StartTime);
+
+  StartTime := Now;
+  Key2 := TCryptoKit.DeriveKey(Password, Salt, 10000);
+  EndTime := Now;
+  Time2 := MilliSecondsBetween(EndTime, StartTime);
+
+  AssertTrue('More iterations should take longer', Time2 > Time1);
+end;
+{$R+} // Re-enable range checking
+
+procedure TTestCaseCrypto.Test118_DeriveKeyWithEncryption;
+var
+  Key: TAESKey;
+  IV: TAESBlock;
+  Encrypted, Decrypted: string;
+begin
+  // Test derived key with actual encryption
+  Key := TCryptoKit.DeriveKey('password123', 'salt123', 1000);
+  IV := TCryptoKit.GenerateIV;
+  
+  Encrypted := TCryptoKit.AES256EncryptCBC(FPlainText, Key, IV);
+  Decrypted := TCryptoKit.AES256DecryptCBC(Encrypted, Key, IV);
+  
+  AssertEquals('Encryption with derived key should work', FPlainText, Decrypted);
+end;
+
+procedure TTestCaseCrypto.Test119_DeriveKeyUnicode;
+var
+  Key1, Key2: TAESKey;
+const
+  UnicodePassword = '你好，世界！';
+begin
+  // Unicode passwords should work
+  Key1 := TCryptoKit.DeriveKey(UnicodePassword, 'salt123', 1000);
+  Key2 := TCryptoKit.DeriveKey('Hello, World!', 'salt123', 1000);
+  AssertTrue('Unicode and ASCII passwords should produce different keys',
+    CompareMem(@Key1[0], @Key2[0], SizeOf(TAESKey)) = False);
 end;
 
 initialization

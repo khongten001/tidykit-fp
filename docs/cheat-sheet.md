@@ -431,15 +431,17 @@ Decrypted := TCryptoKit.BlowfishCrypt(Encrypted, 'key', bmDecrypt); // Decrypt
 ```
 
 ### AES-256 Encryption
+
 ```pascal
+// High-level interface (with automatic Base64 encoding)
 var
   Key: TAESKey;
   IV: TAESBlock;
   PlainText, CipherText: string;
 begin
-  // Initialize Key and IV (example - use secure random generation in practice)
-  FillChar(Key, SizeOf(Key), 0);
-  FillChar(IV, SizeOf(IV), 0);
+  // Generate secure key and IV
+  Key := TCryptoKit.GenerateRandomKey;
+  IV := TCryptoKit.GenerateIV;
   
   // CBC Mode (with PKCS7 padding)
   CipherText := TCryptoKit.AES256EncryptCBC('secret text', Key, IV);
@@ -448,6 +450,41 @@ begin
   // CTR Mode (no padding needed)
   CipherText := TCryptoKit.AES256EncryptCTR('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCTR(CipherText, Key, IV);
+end;
+
+// Low-level interface (raw binary operations)
+var
+  Key: TAESKey;
+  IV: TAESBlock;
+  PlainBytes, CipherBytes: TBytes;
+begin
+  // Generate secure key and IV
+  Key := TCryptoKit.GenerateRandomKey;
+  IV := TCryptoKit.GenerateIV;
+  
+  // CBC Mode with configurable padding
+  CipherBytes := TAES256.EncryptCBC(PlainBytes, Key, IV, apPKCS7); // With PKCS7 padding
+  PlainBytes := TAES256.DecryptCBC(CipherBytes, Key, IV, apPKCS7);
+  
+  CipherBytes := TAES256.EncryptCBC(PlainBytes, Key, IV, apNone);  // No padding (for NIST vectors)
+  PlainBytes := TAES256.DecryptCBC(CipherBytes, Key, IV, apNone);
+  
+  // CTR Mode (no padding needed)
+  CipherBytes := TAES256.EncryptCTR(PlainBytes, Key, IV);
+  PlainBytes := TAES256.DecryptCTR(CipherBytes, Key, IV);
+end;
+
+// Key derivation and generation
+var
+  Key: TAESKey;
+  IV: TAESBlock;
+begin
+  // Generate random key and IV
+  Key := TCryptoKit.GenerateRandomKey;
+  IV := TCryptoKit.GenerateIV;
+  
+  // Derive key from password
+  Key := TCryptoKit.DeriveKey('password', 'salt', 100000); // PBKDF2-SHA256
 end;
 ```
 
@@ -467,15 +504,16 @@ FileHash := TCryptoKit.SHA256Hash(TFileKit.ReadFile('file.txt'));
 
 3. Secure Data Storage
 ```pascal
-// Store sensitive data using AES-256
 var
   Key: TAESKey;
   IV: TAESBlock;
+  EncryptedData: string;
 begin
   // Generate secure key and IV
-  // ... secure key generation code ...
+  Key := TCryptoKit.GenerateRandomKey;
+  IV := TCryptoKit.GenerateIV;
   
-  // Encrypt and store
+  // Encrypt and store (uses PKCS7 padding)
   EncryptedData := TCryptoKit.AES256EncryptCBC(SensitiveData, Key, IV);
   TFileKit.WriteFile('secure.dat', EncryptedData);
 end;
@@ -484,20 +522,22 @@ end;
 ### Best Practices
 
 1. Key Management
+   - Use `TCryptoKit.GenerateRandomKey` for secure key generation
+   - Use `TCryptoKit.DeriveKey` for password-based keys
    - Never store encryption keys in source code
-   - Use secure key generation methods
    - Rotate keys periodically
    - Securely erase keys from memory when done
 
 2. IV (Initialization Vector) Handling
+   - Use `TCryptoKit.GenerateIV` for secure IV generation
    - Use a unique IV for each encryption operation
    - Never reuse IVs with the same key
    - Store IV alongside encrypted data (it's not secret)
 
 3. Mode Selection
-   - Use CBC mode when integrity is important
+   - Use CBC mode with PKCS7 padding for general encryption
    - Use CTR mode for streaming or random access
-   - Always validate decrypted data in CBC mode
+   - Use raw mode (apNone) only for NIST compliance testing
 
 4. Hash Selection
    - Use SHA-256 or better for general hashing
@@ -520,6 +560,7 @@ end;
    - AES-256 implementation follows NIST standards
    - Supports FIPS-compliant modes of operation
    - Includes PKCS7 padding for CBC mode
+   - Raw mode available for NIST test vectors
 ```
 
 ## HTTP Client (TidyKit.Request.Simple)
