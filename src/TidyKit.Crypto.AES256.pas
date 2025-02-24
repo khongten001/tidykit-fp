@@ -721,21 +721,16 @@ begin
   
   // Check and remove PKCS7 padding if present
   PaddingSize := Result[Length(Result) - 1];
-  if (PaddingSize > 0) and (PaddingSize <= 16) then
-  begin
-    // Only verify and remove padding if it's not block-aligned input
-    if PaddingSize < 16 then
-    begin
-      // Verify padding
-      for I := Length(Result) - PaddingSize to Length(Result) - 1 do
-        if Result[I] <> PaddingSize then
-          raise EAESError.Create('Invalid padding');
-      
-      SetLength(Result, Length(Result) - PaddingSize);
-    end;
-  end
-  else
+  if (PaddingSize = 0) or (PaddingSize > 16) then
     raise EAESError.Create('Invalid padding');
+    
+  // Verify all padding bytes match
+  for I := Length(Result) - PaddingSize to Length(Result) - 1 do
+    if Result[I] <> PaddingSize then
+      raise EAESError.Create('Invalid padding');
+      
+  // Remove padding after successful validation
+  SetLength(Result, Length(Result) - PaddingSize);
 end;
 
 {*******************************************************************************

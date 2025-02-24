@@ -460,69 +460,101 @@ end;
 class function TCryptoKit.AES256EncryptCBC(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   DataBytes, EncryptedBytes: TBytes;
+  I: Integer;
+  RawStr: string;
 begin
   if Length(Data) = 0 then
     Exit('');
     
+  // Convert string to bytes preserving all values
   SetLength(DataBytes, Length(Data));
-  Move(Data[1], DataBytes[0], Length(Data));
+  for I := 1 to Length(Data) do
+    DataBytes[I-1] := Byte(Data[I]);
     
+  // Encrypt the data
   EncryptedBytes := TAES256.EncryptCBC(DataBytes, Key, IV);
-  SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
-  Result := EncodeStringBase64(Result);
+  
+  // Convert encrypted bytes to raw string for Base64
+  SetLength(RawStr, Length(EncryptedBytes));
+  for I := 1 to Length(EncryptedBytes) do
+    RawStr[I] := Chr(EncryptedBytes[I-1]);
+  Result := EncodeStringBase64(RawStr);
 end;
 
 class function TCryptoKit.AES256DecryptCBC(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   EncryptedData, DecryptedBytes: TBytes;
   DecodedStr: string;
+  I: Integer;
 begin
   if Length(Base64Data) = 0 then
     Exit('');
     
+  // Decode Base64 to raw string first
   DecodedStr := DecodeStringBase64(Base64Data);
-  SetLength(EncryptedData, Length(DecodedStr));
-  Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
   
+  // Convert raw string to bytes
+  SetLength(EncryptedData, Length(DecodedStr));
+  for I := 1 to Length(DecodedStr) do
+    EncryptedData[I-1] := Byte(DecodedStr[I]);
+  
+  // Decrypt the data
   DecryptedBytes := TAES256.DecryptCBC(EncryptedData, Key, IV);
   
+  // Convert decrypted bytes back to string
   SetLength(Result, Length(DecryptedBytes));
-  if Length(DecryptedBytes) > 0 then
-    Move(DecryptedBytes[0], Result[1], Length(DecryptedBytes));
+  for I := 1 to Length(DecryptedBytes) do
+    Result[I] := Chr(DecryptedBytes[I-1]);
 end;
 
 class function TCryptoKit.AES256EncryptCTR(const Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   DataBytes, EncryptedBytes: TBytes;
+  I: Integer;
+  RawStr: string;
 begin
   if Length(Data) = 0 then
     Exit('');
     
+  // Convert string to bytes preserving all values
   SetLength(DataBytes, Length(Data));
-  Move(Data[1], DataBytes[0], Length(Data));
+  for I := 0 to Length(Data) - 1 do
+    DataBytes[I] := Byte(Data[I + 1]);
     
+  // Encrypt the data
   EncryptedBytes := TAES256.EncryptCTR(DataBytes, Key, IV);
-  SetString(Result, PChar(@EncryptedBytes[0]), Length(EncryptedBytes));
-  Result := EncodeStringBase64(Result);
+  
+  // Convert bytes to Base64 directly
+  SetLength(RawStr, Length(EncryptedBytes));
+  for I := 0 to Length(EncryptedBytes) - 1 do
+    RawStr[I + 1] := Chr(EncryptedBytes[I]);
+  Result := EncodeStringBase64(RawStr);
 end;
 
 class function TCryptoKit.AES256DecryptCTR(const Base64Data: string; const Key: TAESKey; const IV: TAESBlock): string;
 var
   EncryptedData, DecryptedBytes: TBytes;
   DecodedStr: string;
+  I: Integer;
 begin
   if Length(Base64Data) = 0 then
     Exit('');
     
+  // Decode Base64 to raw string first
   DecodedStr := DecodeStringBase64(Base64Data);
-  SetLength(EncryptedData, Length(DecodedStr));
-  Move(DecodedStr[1], EncryptedData[0], Length(DecodedStr));
   
+  // Convert raw string to bytes
+  SetLength(EncryptedData, Length(DecodedStr));
+  for I := 0 to Length(DecodedStr) - 1 do
+    EncryptedData[I] := Byte(DecodedStr[I + 1]);
+  
+  // Decrypt the data
   DecryptedBytes := TAES256.DecryptCTR(EncryptedData, Key, IV);
   
+  // Convert decrypted bytes back to string
   SetLength(Result, Length(DecryptedBytes));
-  if Length(DecryptedBytes) > 0 then
-    Move(DecryptedBytes[0], Result[1], Length(DecryptedBytes));
+  for I := 0 to Length(DecryptedBytes) - 1 do
+    Result[I + 1] := Chr(DecryptedBytes[I]);
 end;
 
 class procedure TCryptoKit.FillRandomBytes(var Buffer; Count: Integer);
