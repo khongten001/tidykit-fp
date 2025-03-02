@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fphttpclient, opensslsockets, base64,
-  fpjson, jsonparser, URIParser, HTTPDefs, TidyKit.Core;
+  URIParser, HTTPDefs, TidyKit.Core, TidyKit.JSON;
 
 type
   { Response record with automatic memory management }
@@ -15,15 +15,15 @@ type
   private
     FContent: string;
     FHeaders: string;
-    FJSON: TJSONData;  // This needs proper cleanup
+    FJSON: IJSONValue;  // Changed to IJSONValue interface
     
     function GetText: string;
-    function GetJSON: TJSONData;
+    function GetJSON: IJSONValue;  // Changed return type
   public
     StatusCode: Integer;
     
     property Text: string read GetText;
-    property JSON: TJSONData read GetJSON;
+    property JSON: IJSONValue read GetJSON;  // Changed property type
     
     { Management operators for automatic initialization/cleanup }
     
@@ -118,15 +118,14 @@ begin
   // Called automatically when a TResponse is created
   Response.FContent := '';
   Response.FHeaders := '';
-  Response.FJSON := nil;  // Will be created on-demand in GetJSON
+  Response.FJSON := nil;  // Interface will be created on-demand in GetJSON
   Response.StatusCode := 0;
 end;
 
 class operator TResponse.Finalize(var Response: TResponse);
 begin
   // Called automatically when a TResponse goes out of scope
-  if Assigned(Response.FJSON) then
-    Response.FJSON.Free;
+  // No need to free FJSON - interface reference counting handles cleanup
   Response.FJSON := nil;
 end;
 
@@ -135,18 +134,16 @@ begin
   Result := FContent;
 end;
 
-function TResponse.GetJSON: TJSONData;
-var
-  Parser: TJSONParser;
+function TResponse.GetJSON: IJSONValue;
 begin
   // Lazy initialization of JSON - only parse when needed
   if not Assigned(FJSON) and (FContent <> '') then
   begin
-    Parser := TJSONParser.Create(FContent);
     try
-      FJSON := Parser.Parse;  // Will be freed automatically in Finalize
-    finally
-      Parser.Free;
+      FJSON := TJSON.Parse(FContent);  // Use our JSON parser
+    except
+      on E: Exception do
+        raise ETidyKitException.Create('JSON Parse Error: ' + E.Message);
     end;
   end;
   Result := FJSON;

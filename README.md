@@ -110,6 +110,31 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Vector operations
   - ✅ All calculations use Double precision (64-bit) for accuracy
 
+- 🔄 **JSON Operations**
+  - Interface-based JSON manipulation with automatic memory management
+  - Property order preservation in JSON objects
+  - Full Unicode support
+    - Unicode escape sequence parsing (\uXXXX)
+    - UTF-8/16 character handling
+    - Control character escaping (\n, \r, \t, etc.)
+  - Comprehensive error handling with detailed messages
+  - Factory methods for easy value creation
+  - Support for all JSON data types
+    - Objects with ordered properties
+    - Arrays with type-safe elements
+    - Strings with proper escaping
+    - Numbers (both integer and floating-point)
+    - Booleans (true/false)
+    - Null (singleton implementation)
+  - Output formatting
+    - Pretty printing with configurable indentation
+    - Compact output for storage/transmission
+  - Memory safety
+    - Automatic reference counting through interfaces
+    - Safe singleton management for null values
+    - Proper cleanup of nested structures
+  - Thoroughly tested with 17 comprehensive test cases
+
 ## 💻 Installation
 
 1. Clone the repository:
@@ -128,6 +153,9 @@ uses
 
 // Option 2: Choose specific units based on your needs
 uses
+  // JSON functionality
+  TidyKit.JSON,              // All JSON functionality
+  
   // Math-related units
   TidyKit.Math,              // Base math types and operations
   TidyKit.Math.Stats,        // Statistical calculations
@@ -249,15 +277,29 @@ end;
 ```pascal
 var
   Response: TResponse;
+  UserData: IJSONObject;
+  ApiResponse: IJSONObject;
 begin
-  // Simple GET request
+  // Simple GET request with JSON response
   Response := Http.Get('https://api.example.com/data');
   if Response.StatusCode = 200 then
-    WriteLn(Response.Text);
+  begin
+    ApiResponse := Response.JSON.AsObject;
+    WriteLn('User ID: ', ApiResponse['id'].AsInteger);
+    WriteLn('Username: ', ApiResponse['username'].AsString);
+  end;
     
-  // POST with JSON
+  // POST with JSON data
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John Smith');
+  UserData.Add('email', 'john@example.com');
+  UserData.Add('age', 30);
+  
   Response := Http.PostJSON('https://api.example.com/users',
-    '{"name": "John", "email": "john@example.com"}');
+    UserData.ToString);
+    
+  if Response.StatusCode = 201 then
+    WriteLn('User created with ID: ', Response.JSON.AsObject['id'].AsString);
     
   // Download file with progress
   Response := Http.Get('https://example.com/large-file.zip');
@@ -413,10 +455,11 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
-- 📊 [Math Documentation](docs/TidyKit.Math.md)
-- 📂 [File System Documentation](docs/TidyKit.FS.md)
-- 🔐 [Crypto Documentation](Coming soon)
-- 🌐 [Network Documentation](docs/TidyKit.Request.md)
+- 📊 [Math ](docs/TidyKit.Math.md)
+- 📂 [File System](docs/TidyKit.FS.md)
+- 🔐 [Crypto](docs/TidyKit.Crypto.md)
+- 🌐 [Network](docs/TidyKit.Request.md)
+- 🔄 [JSON](docs/TidyKit.JSON.md)
 
 ## ✅ Testing
 

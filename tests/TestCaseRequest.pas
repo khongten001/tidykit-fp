@@ -6,8 +6,8 @@ unit TestCaseRequest;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, fpjson,
-  TidyKit.Core, TidyKit.Request;
+  Classes, SysUtils, fpcunit, testregistry,
+  TidyKit.Core, TidyKit.Request, TidyKit.JSON;
 
 type
   { TRequestSimpleTests }
@@ -48,13 +48,15 @@ end;
 procedure TRequestSimpleTests.Test02_SimplePost;
 var
   Response: TResponse;
+  FormData: IJSONObject;
 begin
   Response := Http.Post('https://httpbin.org/post', 'test=value');
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
-  AssertTrue('Form data should exist in response',
-    Assigned(Response.JSON.FindPath('form')) and
-    (Response.JSON.FindPath('form.test').AsString = 'value'));
+  
+  FormData := Response.JSON.AsObject['form'].AsObject;
+  AssertTrue('Form data should exist in response', FormData.Contains('test'));
+  AssertEquals('Form value should match', 'value', FormData['test'].AsString);
 end;
 
 procedure TRequestSimpleTests.Test03_SimplePut;
@@ -79,6 +81,7 @@ procedure TRequestSimpleTests.Test05_BuilderWithHeaders;
 var
   Response: TResponse;
   Request: THttpRequest;  // Initialize is called automatically
+  Headers: IJSONObject;
 begin
   Response := Request
     .Get
@@ -89,14 +92,17 @@ begin
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+  
+  Headers := Response.JSON.AsObject['headers'].AsObject;
   AssertTrue('Custom header should be echoed back',
-    Response.JSON.FindPath('headers.X-Custom-Header').AsString = 'test');
+    Headers['X-Custom-Header'].AsString = 'test');
 end;
 
 procedure TRequestSimpleTests.Test06_BuilderWithParams;
 var
   Response: TResponse;
   Request: THttpRequest;  // Initialize is called automatically
+  Args: IJSONObject;
 begin
   Response := Request
     .Get
@@ -107,11 +113,11 @@ begin
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
-  AssertTrue('Args should exist in response', Assigned(Response.JSON.FindPath('args')));
-  AssertTrue('Page param should be present',
-    Response.JSON.FindPath('args.page').AsString = '1');
-  AssertTrue('Limit param should be present',
-    Response.JSON.FindPath('args.limit').AsString = '10');
+  
+  Args := Response.JSON.AsObject['args'].AsObject;
+  AssertTrue('Args should exist in response', Assigned(Args));
+  AssertEquals('Page param should be present', '1', Args['page'].AsString);
+  AssertEquals('Limit param should be present', '10', Args['limit'].AsString);
 end;
 
 procedure TRequestSimpleTests.Test07_BuilderWithTimeout;
@@ -140,6 +146,7 @@ procedure TRequestSimpleTests.Test08_BuilderWithAuth;
 var
   Response: TResponse;
   Request: THttpRequest;  // Initialize is called automatically
+  Headers: IJSONObject;
 begin
   Response := Request
     .Get
@@ -149,43 +156,46 @@ begin
   
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
+  
+  Headers := Response.JSON.AsObject['headers'].AsObject;
   AssertTrue('Authorization header should exist',
-    Assigned(Response.JSON.FindPath('headers.Authorization')));
+    Headers.Contains('Authorization'));
 end;
 
 procedure TRequestSimpleTests.Test09_JSONRequest;
 var
   Response: TResponse;
+  JsonData: IJSONObject;
 begin
   Response := Http.PostJSON('https://httpbin.org/post',
     '{"name": "John", "age": 30}');
     
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
-  AssertTrue('JSON data should exist in response',
-    Response.JSON.FindPath('json.name').AsString = 'John');
-  AssertTrue('JSON data should exist in response',
-    Response.JSON.FindPath('json.age').AsInteger = 30);
+  
+  JsonData := Response.JSON.AsObject['json'].AsObject;
+  AssertEquals('JSON data should exist in response', 'John', JsonData['name'].AsString);
+  AssertEquals('JSON data should exist in response', 30, JsonData['age'].AsInteger);
 end;
 
 procedure TRequestSimpleTests.Test10_FormDataRequest;
 var
   Response: TResponse;
   Request: THttpRequest;  // Initialize is called automatically
+  FormData: IJSONObject;
 begin
   Response := Request
     .Post
     .URL('https://httpbin.org/post')
-    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
-    .WithData('field1=value1&field2=value2')
+    .WithData('name=John&age=30')
     .Send;
-  
+    
   AssertEquals('Status code should be 200', 200, Response.StatusCode);
   AssertTrue('Response should be valid JSON', Assigned(Response.JSON));
-  AssertTrue('Form field1 should be present',
-    Response.JSON.FindPath('form.field1').AsString = 'value1');
-  AssertTrue('Form field2 should be present',
-    Response.JSON.FindPath('form.field2').AsString = 'value2');
+  
+  FormData := Response.JSON.AsObject['form'].AsObject;
+  AssertEquals('Form data should exist in response', 'John', FormData['name'].AsString);
+  AssertEquals('Form data should exist in response', '30', FormData['age'].AsString);
 end;
 
 procedure TRequestSimpleTests.Test11_TryGetSuccess;
@@ -195,16 +205,17 @@ begin
   Result := Http.TryGet('https://httpbin.org/get');
   AssertTrue('Request should succeed', Result.Success);
   AssertEquals('Status code should be 200', 200, Result.Response.StatusCode);
-  AssertEquals('Error should be empty', '', Result.Error);
+  AssertTrue('Response should be valid JSON', Assigned(Result.Response.JSON));
+  AssertEquals('No error message expected', '', Result.Error);
 end;
 
 procedure TRequestSimpleTests.Test12_TryGetFailure;
 var
   Result: TRequestResult;
 begin
-  Result := Http.TryGet('invalid://url');
+  Result := Http.TryGet('https://nonexistent.example.com');
   AssertFalse('Request should fail', Result.Success);
-  AssertTrue('Error should not be empty', Result.Error <> '');
+  AssertTrue('Error message should not be empty', Result.Error <> '');
 end;
 
 initialization
