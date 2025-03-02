@@ -19,7 +19,10 @@ uses
   TidyKit.Math.Finance,
   TidyKit.Math.Trigonometry,
   TidyKit.Math.Stats,
-  TidyKit.Archive;
+  TidyKit.Archive,
+  TidyKit.Logging,
+  TidyKit.Logging.Console,
+  TidyKit.Logging.FileLog;
 
 type
   { Re-export the core types }
@@ -64,6 +67,14 @@ type
   { Re-export archive types }
   TArchiveKit = TidyKit.Archive.TArchiveKit;
 
+  { Re-export logging types }
+  TLogger = TidyKit.Logging.TLogger;
+  TLogLevel = TidyKit.Logging.TLogLevel;
+  TLogRecord = TidyKit.Logging.TLogRecord;
+  TLogDestination = TidyKit.Logging.TLogDestination;
+  TConsoleDestination = TidyKit.Logging.Console.TConsoleDestination;
+  TFileDestination = TidyKit.Logging.FileLog.TFileDestination;
+
 const
   { Re-export filesystem constants }
   fsNone = TidyKit.FS.fsNone;
@@ -93,6 +104,13 @@ const
   { Re-export crypto constants }
   bmEncrypt = TidyKit.Crypto.bmEncrypt;
   bmDecrypt = TidyKit.Crypto.bmDecrypt;
+
+  { Re-export log level constants }
+  llDebug = TidyKit.Logging.llDebug;
+  llInfo = TidyKit.Logging.llInfo;
+  llWarning = TidyKit.Logging.llWarning;
+  llError = TidyKit.Logging.llError;
+  llFatal = TidyKit.Logging.llFatal;
 
 type
   { Re-export the string types }
