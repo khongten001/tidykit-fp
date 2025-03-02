@@ -12,6 +12,7 @@ uses
   TidyKit.DateTime,
   TidyKit.Crypto,
   TidyKit.Crypto.AES256,
+  TidyKit.JSON,
   TidyKit.Request,
   TidyKit.Math,
   TidyKit.Math.Matrices,
@@ -33,6 +34,13 @@ type
   TSearchResult = TidyKit.FS.TSearchResult;
   TFilePathArray = TidyKit.FS.TFilePathArray;
   TDirectoryInfo = TidyKit.FS.TDirectoryInfo;
+
+  { Re-export the JSON types }
+  TJSON = TidyKit.JSON.TJSON;
+  IJSONValue = TidyKit.JSON.IJSONValue;
+  IJSONObject = TidyKit.JSON.IJSONObject;
+  IJSONArray = TidyKit.JSON.IJSONArray;
+  EJSONException = TidyKit.JSON.EJSONException;
 
   { Re-export the crypto types }
   TCryptoKit = TidyKit.Crypto.TCryptoKit;
