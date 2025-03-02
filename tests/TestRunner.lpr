@@ -9,7 +9,7 @@ uses
   //, TestCaseFS
   //, TestCaseString
   //, TestCaseCrypto
-  //, TestCaseRequest
+  , TestCaseRequest
   //, TestCaseMath
   //, TestCaseArchive
   //, TidyKit.Crypto.AES256.Test;
