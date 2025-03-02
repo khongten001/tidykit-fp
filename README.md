@@ -111,14 +111,29 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - ✅ All calculations use Double precision (64-bit) for accuracy
 
 - 🔄 **JSON Operations**
-  - Interface-based JSON manipulation
-  - Automatic memory management through ARC
-  - Full Unicode support with escape sequences
-  - Pretty printing and compact output
-  - Comprehensive error handling
-  - Factory methods for easy creation
+  - Interface-based JSON manipulation with automatic memory management
+  - Property order preservation in JSON objects
+  - Full Unicode support
+    - Unicode escape sequence parsing (\uXXXX)
+    - UTF-8/16 character handling
+    - Control character escaping (\n, \r, \t, etc.)
+  - Comprehensive error handling with detailed messages
+  - Factory methods for easy value creation
   - Support for all JSON data types
-  - Thoroughly tested implementation
+    - Objects with ordered properties
+    - Arrays with type-safe elements
+    - Strings with proper escaping
+    - Numbers (both integer and floating-point)
+    - Booleans (true/false)
+    - Null (singleton implementation)
+  - Output formatting
+    - Pretty printing with configurable indentation
+    - Compact output for storage/transmission
+  - Memory safety
+    - Automatic reference counting through interfaces
+    - Safe singleton management for null values
+    - Proper cleanup of nested structures
+  - Thoroughly tested with 17 comprehensive test cases
 
 ## 💻 Installation
 

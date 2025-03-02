@@ -162,6 +162,7 @@ IJSONObject = interface(IJSONValue)
   procedure SetValue(const Name: string; Value: IJSONValue);
   function GetCount: Integer;
   function GetNames: TStringArray;
+  function GetOrderedKeys: TStringArray;  // Returns keys in insertion order
   
   procedure Add(const Name: string; Value: IJSONValue); overload;
   procedure Add(const Name: string; const Value: string); overload;
@@ -257,4 +258,32 @@ Contributions are welcome! Please see the main TidyKit repository's CONTRIBUTING
 
 ## License
 
+This library is part of TidyKit and is available under the same license terms as the main project.
+
+## Implementation Details
+
+1. **Singleton Null Value**: The `TJSONNull` type is implemented as a singleton with proper reference counting to ensure memory safety and consistent null value representation throughout the application.
+
+2. **Property Order**: JSON object properties maintain their insertion order using a separate key list, ensuring consistent serialization order across operations.
+
+3. **Value Formatting**:
+   - Strings are properly escaped with support for control characters (\n, \r, \t, etc.)
+   - Numbers are formatted using locale-independent decimal points
+   - Boolean values are formatted as 'true' or 'false'
+   - Unicode characters are properly escaped in strings when needed
+
+4. **Memory Management**:
+   - All JSON values are reference-counted through interfaces
+   - Collections (objects and arrays) properly manage their item references
+   - The singleton null value has special handling to prevent cleanup issues
+
+5. **Error Handling**:
+   - The library includes error handling mechanisms for various scenarios, such as invalid JSON input or unexpected data types.
+   - Descriptive error messages are provided to help users understand and resolve issues.
+
+6. **Type Checking**:
+   - The library includes type checking mechanisms to ensure that operations are performed on the correct data types.
+   - For example, when accessing properties of JSON objects or arrays, the library checks whether the accessed value is of the expected type before returning it.
+
+7. **String Formatting**:
 This library is part of TidyKit and is available under the same license terms as the main project. 
