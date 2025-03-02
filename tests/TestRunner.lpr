@@ -12,7 +12,7 @@ uses
   , TestCaseRequest
   , TestCaseMath
   , TestCaseArchive
-  , TidyKit.Crypto.AES256.Test;
+  , TidyKit.Crypto.AES256.Test
   , TidyKit.JSON.Test;
 
 type

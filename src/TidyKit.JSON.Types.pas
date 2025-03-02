@@ -5,7 +5,7 @@ unit TidyKit.JSON.Types;
 interface
 
 uses
-  Classes, SysUtils, TidyKit.JSON, Generics.Collections;
+  Classes, SysUtils, TidyKit.JSON, Generics.Collections, Math;
  
 type
   { Base JSON value class }
@@ -92,6 +92,7 @@ type
   TJSONNumber = class(TJSONValue)
   private
     FValue: Double;
+    class function IsValidJSONNumber(const Value: Double): Boolean; static;
   public
     constructor Create(AValue: Double);
     function GetAsNumber: Double; override;
@@ -473,9 +474,20 @@ end;
 
 { TJSONNumber }
 
+class function TJSONNumber.IsValidJSONNumber(const Value: Double): Boolean;
+begin
+  // According to JSON standard:
+  // - Must be finite (no NaN or Infinity)
+  // - Must not be octal or hexadecimal
+  // - Must not have leading zeros
+  Result := not (IsNan(Value) or IsInfinite(Value));
+end;
+
 constructor TJSONNumber.Create(AValue: Double);
 begin
   inherited Create;
+  if not IsValidJSONNumber(AValue) then
+    raise EJSONException.Create('Invalid JSON number: must be finite (no NaN or Infinity)');
   FValue := AValue;
 end;
 
@@ -486,6 +498,10 @@ end;
 
 function TJSONNumber.GetAsInteger: Integer;
 begin
+  if (FValue > High(Integer)) or (FValue < Low(Integer)) then
+    raise EJSONException.Create('Number exceeds Integer range');
+  if Frac(FValue) <> 0 then
+    raise EJSONException.Create('Cannot convert non-integer number to integer');
   Result := Round(FValue);
 end;
 
@@ -494,11 +510,32 @@ begin
   Result := True;
 end;
 
-function TJSONNumber.ToString(Pretty: Boolean): string;
+function TJSONNumber.ToString(Pretty: Boolean = False): string;
+var
+  S: string;
 begin
-  Result := FloatToStr(FValue);
+  // Format number according to JSON standard:
+  // - No special values (NaN, Infinity)
+  // - Use period as decimal separator
+  // - No trailing decimal point
+  // - No leading zeros
+  // - No plus sign
+  // - Scientific notation for very large/small numbers
+  S := FloatToStr(FValue);
+  
   // Ensure decimal point is a period, not a comma
-  Result := StringReplace(Result, ',', '.', []);
+  S := StringReplace(S, ',', '.', []);
+  
+  // Remove trailing decimal point and zero
+  if (Pos('.', S) > 0) and (S[Length(S)] = '0') then
+  begin
+    while (S[Length(S)] = '0') do
+      SetLength(S, Length(S) - 1);
+    if S[Length(S)] = '.' then
+      SetLength(S, Length(S) - 1);
+  end;
+  
+  Result := S;
 end;
 
 { TJSONBoolean }

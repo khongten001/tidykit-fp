@@ -4,6 +4,44 @@ unit TidyKit.JSON;
 {$modeswitch advancedrecords}
 {$modeswitch typehelpers}
 
+// TidyKit.JSON - Standards-Compliant JSON Implementation
+//
+// This unit provides a JSON implementation that strictly conforms to:
+// - ECMA-404 (The JSON Data Interchange Syntax)
+// - RFC 8259 (The JavaScript Object Notation (JSON) Data Interchange Format)
+//
+// Standard Conformance:
+// - Numbers:
+//   * No leading zeros (except for 0)
+//   * Decimal point must be followed by digits
+//   * Scientific notation (e.g., 1.23e2)
+//   * No special values (NaN, Infinity)
+//   * No octal or hexadecimal
+//
+// - Strings:
+//   * Double quotes required
+//   * Full escape sequence support (\b, \f, \n, \r, \t, \", \\, \/, \uXXXX)
+//   * Proper surrogate pair handling
+//   * No unescaped control characters
+//
+// - Structural:
+//   * Objects use { } with "key": value pairs
+//   * Arrays use [ ] with comma-separated values
+//   * No trailing commas
+//   * No comments
+//
+// - Unicode:
+//   * Full UTF-16 support
+//   * Proper surrogate pair handling
+//   * Complete \u escape sequence support
+//
+// Extensions Beyond Standard:
+// - Property order preservation
+// - Pretty printing
+// - Type-safe interfaces
+// - Memory safety through ARC
+// - Detailed error messages
+
 interface
 
 uses

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry,
-  TidyKit.JSON, TidyKit.JSON.Types, TidyKit.JSON.Factory;
+  TidyKit.JSON, TidyKit.JSON.Types, TidyKit.JSON.Factory, Math;
 
 type
   TJSONTest = class(TTestCase)
@@ -28,6 +28,7 @@ type
     procedure Test15_Compact;
     procedure Test16_UnicodeString;
     procedure Test17_EscapeSequences;
+    procedure Test18_StrictNumberFormat;
   end;
 
 implementation
@@ -65,13 +66,30 @@ end;
 
 procedure TJSONTest.Test04_CreateNumber;
 var
-  Num: IJSONValue;
+  IntNum, FloatNum: IJSONValue;
 begin
-  Num := TJSON.Num(123.45);
-  AssertNotNull('Number should not be nil', Num);
-  AssertTrue('Value should be number', Num.IsNumber);
-  AssertEquals('Number value should match', 123.45, Num.AsNumber, 0.001);
-  AssertEquals('Integer value should round', 123, Num.AsInteger);
+  // Test integer number
+  IntNum := TJSON.Num(123);
+  AssertNotNull('Integer number should not be nil', IntNum);
+  AssertTrue('Integer value should be number', IntNum.IsNumber);
+  AssertEquals('Integer value should match', 123.0, IntNum.AsNumber, 0.001);
+  AssertEquals('Integer conversion should work', 123, IntNum.AsInteger);
+
+  // Test floating-point number
+  FloatNum := TJSON.Num(123.45);
+  AssertNotNull('Float number should not be nil', FloatNum);
+  AssertTrue('Float value should be number', FloatNum.IsNumber);
+  AssertEquals('Float value should match', 123.45, FloatNum.AsNumber, 0.001);
+  
+  // Verify that non-integer to integer conversion is not allowed
+  try
+    FloatNum.AsInteger;
+    Fail('Converting non-integer to integer should raise an exception');
+  except
+    on E: EJSONException do
+      AssertEquals('Error message should match',
+        'Cannot convert non-integer number to integer', E.Message);
+  end;
 end;
 
 procedure TJSONTest.Test05_CreateBoolean;
@@ -284,6 +302,110 @@ begin
   AssertEquals('Escape sequences should be decoded correctly',
     'Line1'#10'Line2'#9'Tabbed'#13#10'Windows',
     Value.AsObject['text'].AsString);
+end;
+
+procedure TJSONTest.Test18_StrictNumberFormat;
+var
+  Value: IJSONValue;
+  ExceptionRaised: Boolean;
+begin
+  // Valid numbers
+  Value := TJSON.Parse('123');
+  AssertEquals('Integer should parse correctly', 123, Value.AsInteger);
+  
+  Value := TJSON.Parse('-123');
+  AssertEquals('Negative integer should parse correctly', -123, Value.AsInteger);
+  
+  Value := TJSON.Parse('123.456');
+  AssertEquals('Float should parse correctly', 123.456, Value.AsNumber, 0.001);
+  
+  Value := TJSON.Parse('0.123');
+  AssertEquals('Decimal less than 1 should parse correctly', 0.123, Value.AsNumber, 0.001);
+  
+  Value := TJSON.Parse('-0.123');
+  AssertEquals('Negative decimal should parse correctly', -0.123, Value.AsNumber, 0.001);
+  
+  Value := TJSON.Parse('1.23e2');
+  AssertEquals('Scientific notation should parse correctly', 123.0, Value.AsNumber, 0.001);
+  
+  Value := TJSON.Parse('1.23e-2');
+  AssertEquals('Scientific notation with negative exponent should parse correctly', 0.0123, Value.AsNumber, 0.001);
+  
+  // Invalid numbers
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('01');  // Leading zero
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Leading zeros should not be allowed', ExceptionRaised);
+  
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('1.');  // Trailing decimal point
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Trailing decimal point should not be allowed', ExceptionRaised);
+  
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('1.e2');  // Missing decimal digits
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Missing decimal digits should not be allowed', ExceptionRaised);
+  
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('1e');  // Missing exponent
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Missing exponent should not be allowed', ExceptionRaised);
+  
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('.123');  // Missing leading zero
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Missing leading zero should not be allowed', ExceptionRaised);
+  
+  // Special values
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Num(Infinity);  // Infinity not allowed in JSON
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Infinity should not be allowed', ExceptionRaised);
+  
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Num(NaN);  // NaN not allowed in JSON
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('NaN should not be allowed', ExceptionRaised);
+  
+  // Integer range
+  ExceptionRaised := False;
+  try
+    Value := TJSON.Parse('1e100');  // Too large for Integer
+    Value.AsInteger;  // Should raise exception
+  except
+    on E: EJSONException do
+      ExceptionRaised := True;
+  end;
+  AssertTrue('Number too large for Integer should raise exception', ExceptionRaised);
 end;
 
 initialization

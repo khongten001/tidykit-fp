@@ -181,75 +181,116 @@ function TJSONScanner.ReadNumber: string;
 var
   C: Char;
   HasDecimal, HasExponent: Boolean;
+  DigitCount, ExponentDigits: Integer;
+  IsNegative, IsExponentNegative: Boolean;
 begin
   Result := '';
   HasDecimal := False;
   HasExponent := False;
+  DigitCount := 0;
+  ExponentDigits := 0;
+  IsNegative := False;
+  IsExponentNegative := False;
   
-  // Read minus sign if present
-  C := PeekChar;
-  if C = '-' then
+  // Handle negative sign
+  if PeekChar = '-' then
   begin
     Result := Result + ReadChar;
-    C := PeekChar;
+    IsNegative := True;
   end;
   
-  // Read integer part
-  if not IsDigit(C) then
-    raise EJSONException.Create('Invalid number format');
-    
+  // First digit must not be zero unless it's a decimal number
+  C := PeekChar;
   if C = '0' then
   begin
     Result := Result + ReadChar;
     C := PeekChar;
     if IsDigit(C) then
-      raise EJSONException.Create('Leading zeros not allowed');
+      raise EJSONException.Create('Leading zeros are not allowed in JSON numbers');
   end
-  else
+  else if IsDigit(C) then
+  begin
+    // Read integer part
     while IsDigit(C) do
     begin
       Result := Result + ReadChar;
+      Inc(DigitCount);
       C := PeekChar;
     end;
+  end
+  else
+    raise EJSONException.Create('Invalid number format: digit expected');
     
-  // Read decimal part
-  if C = '.' then
+  // Handle decimal point
+  if PeekChar = '.' then
   begin
-    HasDecimal := True;
     Result := Result + ReadChar;
-    C := PeekChar;
+    HasDecimal := True;
     
+    // Must have at least one digit after decimal point
+    C := PeekChar;
     if not IsDigit(C) then
       raise EJSONException.Create('Expected digit after decimal point');
       
+    // Read fractional part
     while IsDigit(C) do
     begin
       Result := Result + ReadChar;
+      Inc(DigitCount);
       C := PeekChar;
     end;
   end;
   
-  // Read exponent
+  // Handle exponent
+  C := PeekChar;
   if (C = 'e') or (C = 'E') then
   begin
-    HasExponent := True;
     Result := Result + ReadChar;
-    C := PeekChar;
+    HasExponent := True;
     
-    if (C = '+') or (C = '-') then
+    // Handle exponent sign
+    C := PeekChar;
+    if C = '+' then
+      Result := Result + ReadChar
+    else if C = '-' then
     begin
       Result := Result + ReadChar;
-      C := PeekChar;
+      IsExponentNegative := True;
     end;
     
+    // Must have at least one digit in exponent
+    C := PeekChar;
     if not IsDigit(C) then
       raise EJSONException.Create('Expected digit in exponent');
       
+    // Read exponent digits
     while IsDigit(C) do
     begin
       Result := Result + ReadChar;
+      Inc(ExponentDigits);
       C := PeekChar;
     end;
+  end;
+  
+  // Validate number format
+  if DigitCount = 0 then
+    raise EJSONException.Create('Number must contain at least one digit');
+    
+  if HasExponent and (ExponentDigits = 0) then
+    raise EJSONException.Create('Exponent must contain at least one digit');
+    
+  // Check if the resulting number is valid
+  try
+    if StrToFloat(Result) = 0 then
+    begin
+      if IsNegative then
+        Result := '-0'
+      else
+        Result := '0';
+    end;
+  except
+    on E: Exception do
+      raise EJSONException.Create('Invalid number format: ' + E.Message);
   end;
 end;
 
