@@ -285,6 +285,10 @@ The library includes 17 comprehensive test cases that verify its functionality:
 15. Test15_Compact: JSON compression
 16. Test16_UnicodeString: Unicode character handling
 17. Test17_EscapeSequences: Special character escape sequences
+18. Test18_StrictNumberFormat: Strict JSON number format compliance
+   - Validates correct number formats (integers, decimals, scientific notation)
+   - Verifies rejection of invalid formats (leading zeros, trailing decimals)
+   - Tests number range and precision handling
 
 ## Best Practices
 

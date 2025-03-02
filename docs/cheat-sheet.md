@@ -7,6 +7,12 @@ A comprehensive reference of TidyKit's features and usage examples.
 - [📋 Cheat Sheet](#-cheat-sheet)
   - [Table of Contents](#table-of-contents)
   - [🔄 JSON Operations](#-json-operations)
+    - [Creating Values](#creating-values)
+    - [Objects](#objects)
+    - [Arrays](#arrays)
+    - [Type Safety](#type-safety)
+    - [Parsing \& Formatting](#parsing--formatting)
+    - [Error Handling](#error-handling)
   - [📁File System Operations](#file-system-operations)
   - [🧵String operations](#string-operations)
   - [🕙 DateTime Operations](#-datetime-operations)
@@ -30,7 +36,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
     - [Using the Fluent Interface](#using-the-fluent-interface)
-    - [Error Handling](#error-handling)
+    - [Error Handling](#error-handling-1)
     - [Working with JSON](#working-with-json)
   - [📊 Math Operations](#-math-operations)
     - [Statistics (TStatsKit)](#statistics-tstatskit)
@@ -41,135 +47,84 @@ A comprehensive reference of TidyKit's features and usage examples.
 
 ## 🔄 JSON Operations
 
+### Creating Values
 ```pascal
-// Creating JSON values
-Obj := TJSON.Obj;                           // Create empty object
-Arr := TJSON.Arr;                           // Create empty array
-Str := TJSON.Str('Hello');                  // Create string value
-Num := TJSON.Num(123.45);                   // Create number value
-Int := TJSON.Int(123);                      // Create integer value
-Bool := TJSON.Bool(True);                   // Create boolean value
-Null := TJSON.Null;                         // Create null value (singleton)
+TJSON.Obj                    // Empty object: {}
+TJSON.Arr                    // Empty array: []
+TJSON.Str('text')           // String: "text"
+TJSON.Int(123)              // Integer: 123
+TJSON.Num(123.45)           // Number: 123.45
+TJSON.Bool(True)            // Boolean: true
+TJSON.Null                  // Null: null
+```
 
-// Working with objects
-Obj.Add('string', 'value');                 // Add string
-Obj.Add('number', 123);                     // Add integer
-Obj.Add('float', 123.45);                   // Add float
-Obj.Add('boolean', True);                   // Add boolean
-Obj.Add('null', TJSON.Null);               // Add null
-Obj.Add('object', TJSON.Obj);              // Add empty object
-Obj.Add('array', TJSON.Arr);               // Add empty array
+### Objects
+```pascal
+// Add values
+Obj.Add('str', 'value')     // Add string
+Obj.Add('num', 123)         // Add integer
+Obj.Add('dec', 123.45)      // Add decimal
+Obj.Add('bool', True)       // Add boolean
+Obj.Add('null', TJSON.Null) // Add null
 
-Value := Obj['key'];                        // Get value by key
-if Obj.Contains('key') then ...            // Check if key exists
-Obj.Remove('key');                         // Remove key
-Count := Obj.Count;                        // Get number of items
-Names := Obj.Names;                        // Get array of keys
-OrderedKeys := Obj.GetOrderedKeys;         // Get keys in insertion order
+// Access values
+Value := Obj['key']         // Get value
+Exists := Obj.Contains('key')
+Obj.Remove('key')           // Remove key
+Count := Obj.Count          // Number of items
+Keys := Obj.GetOrderedKeys  // Get keys in order
+```
 
-// Working with arrays
-Arr.Add('string');                         // Add string
-Arr.Add(123);                              // Add integer
-Arr.Add(123.45);                           // Add float
-Arr.Add(True);                             // Add boolean
-Arr.Add(TJSON.Null);                      // Add null
-Arr.Add(TJSON.Obj);                       // Add empty object
-Arr.Add(TJSON.Arr);                       // Add empty array
+### Arrays
+```pascal
+// Add values
+Arr.Add('text')            // Add string
+Arr.Add(123)               // Add integer
+Arr.Add(123.45)            // Add decimal
+Arr.Add(True)              // Add boolean
 
-Value := Arr[0];                           // Get value by index
-Arr.Delete(0);                             // Delete item
-Arr.Clear;                                 // Remove all items
-Count := Arr.Count;                        // Get number of items
+// Access values
+Value := Arr[0]            // Get value
+Arr.Delete(0)              // Delete item
+Arr.Clear                  // Remove all
+Count := Arr.Count         // Number of items
+```
 
-// Type checking and conversion
-if Value.IsString then
-  Str := Value.AsString;                   // Get as string
+### Type Safety
+```pascal
+// Safe type checking
+if Value.IsString then S := Value.AsString
 if Value.IsNumber then
 begin
-  Num := Value.AsNumber;                   // Get as float
-  Int := Value.AsInteger;                  // Get as integer (rounded)
-end;
-if Value.IsBoolean then
-  Bool := Value.AsBoolean;                 // Get as boolean
-if Value.IsObject then
-  Obj := Value.AsObject;                   // Get as object
-if Value.IsArray then
-  Arr := Value.AsArray;                    // Get as array
-if Value.IsNull then
-  WriteLn('Null value');                   // Check for null
+  if Frac(Value.AsNumber) = 0 then
+    I := Value.AsInteger   // Only for whole numbers
+  else
+    D := Value.AsNumber    // For any number
+end
+if Value.IsBoolean then B := Value.AsBoolean
+if Value.IsObject then O := Value.AsObject
+if Value.IsArray then A := Value.AsArray
+if Value.IsNull then ...  // Handle null
+```
 
-// Parsing JSON with error handling
+### Parsing & Formatting
+```pascal
+// Parse JSON
+Value := TJSON.Parse('{"key":"value"}')
+Success := TJSON.TryParse(JSON, Value)
+
+// Format JSON
+Pretty := Value.ToString(True)   // With indentation
+Compact := Value.ToString(False) // Without whitespace
+```
+
+### Error Handling
+```pascal
 try
-  Value := TJSON.Parse('{"key":"value"}');
+  Value := TJSON.Parse(JSON);
 except
   on E: EJSONException do
-    case True of
-      Pos('Expected {', E.Message) > 0:
-        WriteLn('Invalid object structure');
-      Pos('Expected "', E.Message) > 0:
-        WriteLn('Invalid property name');
-      Pos('Expected :', E.Message) > 0:
-        WriteLn('Missing colon after property name');
-      Pos('Expected ,', E.Message) > 0:
-        WriteLn('Missing comma between properties');
-      else
-        WriteLn('Parse error: ', E.Message);
-    end;
-end;
-
-// Safe parsing
-if TJSON.TryParse(JSON, Value) then
-  WriteLn('Parsed successfully')
-else
-  WriteLn('Invalid JSON');
-
-// Formatting
-Pretty := Value.ToString(True);             // With indentation
-Compact := Value.ToString(False);           // Without whitespace
-
-// Complex example with ordered properties
-var
-  Person: IJSONObject;
-  Address: IJSONObject;
-  Hobbies: IJSONArray;
-begin
-  Person := TJSON.Obj;
-  // Properties will be maintained in this order
-  Person.Add('id', 1);
-  Person.Add('name', 'John Smith');
-  Person.Add('age', 30);
-  Person.Add('active', True);
-  
-  Address := TJSON.Obj;
-  Address.Add('street', '123 Main St');
-  Address.Add('city', 'Springfield');
-  Address.Add('zipCode', '12345');
-  Person.Add('address', Address);
-  
-  Hobbies := TJSON.Arr;
-  Hobbies.Add('reading');
-  Hobbies.Add('cycling');
-  Person.Add('hobbies', Hobbies);
-  
-  // Properties will be output in the same order as added
-  WriteLn(Person.ToString(True));
-end;
-
-// Unicode handling
-JSON := '{"text":"\u0048\u0065\u006C\u006C\u006F"}';
-Value := TJSON.Parse(JSON);
-WriteLn(Value.AsObject['text'].AsString);   // Prints: Hello
-
-// Escape sequences
-JSON := '{"text":"Line1\nLine2\tTabbed\r\nWindows"}';
-Value := TJSON.Parse(JSON);
-WriteLn(Value.AsObject['text'].AsString);   // Properly escaped
-
-// Memory management (automatic through interfaces)
-begin
-  Obj := TJSON.Obj;
-  Obj.Add('key', 'value');
-  // No need to free anything - interface reference counting handles cleanup
+    // Handle JSON errors
 end;
 ```
 

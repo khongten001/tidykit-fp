@@ -455,10 +455,11 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
-- 📊 [Math Documentation](docs/TidyKit.Math.md)
-- 📂 [File System Documentation](docs/TidyKit.FS.md)
-- 🔐 [Crypto Documentation](Coming soon)
-- 🌐 [Network Documentation](docs/TidyKit.Request.md)
+- 📊 [Math ](docs/TidyKit.Math.md)
+- 📂 [File System](docs/TidyKit.FS.md)
+- 🔐 [Crypto](docs/TidyKit.Crypto.md)
+- 🌐 [Network](docs/TidyKit.Request.md)
+- 🔄 [JSON](docs/TidyKit.JSON.md)
 
 ## ✅ Testing
 
