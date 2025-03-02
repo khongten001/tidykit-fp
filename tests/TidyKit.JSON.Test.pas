@@ -11,28 +11,28 @@ uses
 type
   TJSONTest = class(TTestCase)
   published
-    procedure TestCreateEmptyObject;
-    procedure TestCreateEmptyArray;
-    procedure TestCreateString;
-    procedure TestCreateNumber;
-    procedure TestCreateBoolean;
-    procedure TestCreateNull;
-    procedure TestObjectAddAndGet;
-    procedure TestArrayAddAndGet;
-    procedure TestParseSimpleObject;
-    procedure TestParseSimpleArray;
-    procedure TestParseComplexObject;
-    procedure TestParseComplexArray;
-    procedure TestParseInvalidJSON;
-    procedure TestPrettyPrint;
-    procedure TestCompact;
-    procedure TestUnicodeString;
-    procedure TestEscapeSequences;
+    procedure Test01_CreateEmptyObject;
+    procedure Test02_CreateEmptyArray;
+    procedure Test03_CreateString;
+    procedure Test04_CreateNumber;
+    procedure Test05_CreateBoolean;
+    procedure Test06_CreateNull;
+    procedure Test07_ObjectAddAndGet;
+    procedure Test08_ArrayAddAndGet;
+    procedure Test09_ParseSimpleObject;
+    procedure Test10_ParseSimpleArray;
+    procedure Test11_ParseComplexObject;
+    procedure Test12_ParseComplexArray;
+    procedure Test13_ParseInvalidJSON;
+    procedure Test14_PrettyPrint;
+    procedure Test15_Compact;
+    procedure Test16_UnicodeString;
+    procedure Test17_EscapeSequences;
   end;
 
 implementation
 
-procedure TJSONTest.TestCreateEmptyObject;
+procedure TJSONTest.Test01_CreateEmptyObject;
 var
   Obj: IJSONObject;
 begin
@@ -42,7 +42,7 @@ begin
   AssertEquals('Empty object should serialize as {}', '{}', Obj.ToString(False));
 end;
 
-procedure TJSONTest.TestCreateEmptyArray;
+procedure TJSONTest.Test02_CreateEmptyArray;
 var
   Arr: IJSONArray;
 begin
@@ -52,7 +52,7 @@ begin
   AssertEquals('Empty array should serialize as []', '[]', Arr.ToString(False));
 end;
 
-procedure TJSONTest.TestCreateString;
+procedure TJSONTest.Test03_CreateString;
 var
   Str: IJSONValue;
 begin
@@ -63,7 +63,7 @@ begin
   AssertEquals('String should serialize with quotes', '"test"', Str.ToString(False));
 end;
 
-procedure TJSONTest.TestCreateNumber;
+procedure TJSONTest.Test04_CreateNumber;
 var
   Num: IJSONValue;
 begin
@@ -74,7 +74,7 @@ begin
   AssertEquals('Integer value should round', 123, Num.AsInteger);
 end;
 
-procedure TJSONTest.TestCreateBoolean;
+procedure TJSONTest.Test05_CreateBoolean;
 var
   Bool: IJSONValue;
 begin
@@ -85,7 +85,7 @@ begin
   AssertEquals('Boolean should serialize as true', 'true', Bool.ToString(False));
 end;
 
-procedure TJSONTest.TestCreateNull;
+procedure TJSONTest.Test06_CreateNull;
 var
   Null: IJSONValue;
 begin
@@ -95,7 +95,7 @@ begin
   AssertEquals('Null should serialize as null', 'null', Null.ToString(False));
 end;
 
-procedure TJSONTest.TestObjectAddAndGet;
+procedure TJSONTest.Test07_ObjectAddAndGet;
 var
   Obj: IJSONObject;
 begin
@@ -116,7 +116,7 @@ begin
   AssertNull('Removed item should return nil', Obj['number']);
 end;
 
-procedure TJSONTest.TestArrayAddAndGet;
+procedure TJSONTest.Test08_ArrayAddAndGet;
 var
   Arr: IJSONArray;
 begin
@@ -137,7 +137,7 @@ begin
   AssertTrue('Second item should now be boolean', Arr[1].IsBoolean);
 end;
 
-procedure TJSONTest.TestParseSimpleObject;
+procedure TJSONTest.Test09_ParseSimpleObject;
 var
   JSON: string;
   Value: IJSONValue;
@@ -152,7 +152,7 @@ begin
   AssertEquals('Value should match', 123, Value.AsObject['value'].AsInteger);
 end;
 
-procedure TJSONTest.TestParseSimpleArray;
+procedure TJSONTest.Test10_ParseSimpleArray;
 var
   JSON: string;
   Value: IJSONValue;
@@ -169,7 +169,7 @@ begin
   AssertTrue('Fourth item should be null', Value.AsArray[3].IsNull);
 end;
 
-procedure TJSONTest.TestParseComplexObject;
+procedure TJSONTest.Test11_ParseComplexObject;
 var
   JSON: string;
   Value: IJSONValue;
@@ -193,7 +193,7 @@ begin
     Obj['object'].AsObject['key'].AsString);
 end;
 
-procedure TJSONTest.TestParseComplexArray;
+procedure TJSONTest.Test12_ParseComplexArray;
 var
   JSON: string;
   Value: IJSONValue;
@@ -221,7 +221,7 @@ begin
     Arr[2].AsObject['key'].AsInteger);
 end;
 
-procedure TJSONTest.TestParseInvalidJSON;
+procedure TJSONTest.Test13_ParseInvalidJSON;
 var
   Success: Boolean;
   Value: IJSONValue;
@@ -235,7 +235,7 @@ begin
   AssertNull('Value should be nil on failure', Value);
 end;
 
-procedure TJSONTest.TestPrettyPrint;
+procedure TJSONTest.Test14_PrettyPrint;
 var
   JSON: string;
   Pretty: string;
@@ -249,7 +249,7 @@ begin
     Pos('  ', Pretty) > 0);
 end;
 
-procedure TJSONTest.TestCompact;
+procedure TJSONTest.Test15_Compact;
 var
   JSON: string;
   Compact: string;
@@ -261,7 +261,7 @@ begin
     '{"name":"test","array":[1,2,3]}', Compact);
 end;
 
-procedure TJSONTest.TestUnicodeString;
+procedure TJSONTest.Test16_UnicodeString;
 var
   JSON: string;
   Value: IJSONValue;
@@ -273,7 +273,7 @@ begin
     'Hello', Value.AsObject['text'].AsString);
 end;
 
-procedure TJSONTest.TestEscapeSequences;
+procedure TJSONTest.Test17_EscapeSequences;
 var
   JSON: string;
   Value: IJSONValue;
