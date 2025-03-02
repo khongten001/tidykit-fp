@@ -6,7 +6,9 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry,
-  TidyKit.JSON, TidyKit.JSON.Types, TidyKit.JSON.Factory, Math;
+  TidyKit,
+  // Alternatively, TidyKit.JSON,
+  Math;
 
 type
   TJSONTest = class(TTestCase)
