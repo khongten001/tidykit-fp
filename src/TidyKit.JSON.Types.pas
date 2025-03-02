@@ -32,6 +32,7 @@ type
   TJSONObject = class(TJSONValue, IJSONObject)
   private
     FItems: specialize TDictionary<string, IJSONValue>;
+    FKeys: specialize TList<string>;  // To maintain insertion order
     procedure ClearItems;
   public
     constructor Create;
@@ -50,6 +51,7 @@ type
     function IsObject: Boolean; override;
     function GetAsObject: IJSONObject; override;
     function ToString(Pretty: Boolean = False): string; override;
+    function GetOrderedKeys: TStringArray;
   end;
 
   { JSON array implementation }
@@ -184,7 +186,7 @@ end;
 
 function TJSONValue.IsNull: Boolean;
 begin
-  Result := False;
+  Result := Self is TJSONNull;
 end;
 
 function TJSONValue.ToString(Pretty: Boolean): string;
@@ -197,19 +199,25 @@ end;
 procedure TJSONObject.ClearItems;
 begin
   if Assigned(FItems) then
-    FItems.Clear;
+  begin
+    FItems.Clear;  // TDictionary will handle interface cleanup
+    if Assigned(FKeys) then
+      FKeys.Clear;
+  end;
 end;
 
 constructor TJSONObject.Create;
 begin
   inherited Create;
   FItems := specialize TDictionary<string, IJSONValue>.Create;
+  FKeys := specialize TList<string>.Create;
 end;
 
 destructor TJSONObject.Destroy;
 begin
   ClearItems;
   FreeAndNil(FItems);
+  FreeAndNil(FKeys);
   inherited Destroy;
 end;
 
@@ -223,6 +231,10 @@ procedure TJSONObject.SetValue(const Name: string; Value: IJSONValue);
 begin
   if Value = nil then
     Value := TJSONNull.Instance;
+    
+  if not FItems.ContainsKey(Name) then
+    FKeys.Add(Name);
+    
   FItems.AddOrSetValue(Name, Value);
 end;
 
@@ -233,18 +245,11 @@ end;
 
 function TJSONObject.GetNames: TStringArray;
 var
-  Keys: specialize TDictionary<string, IJSONValue>.TKeyCollection;
   I: Integer;
-  Key: string;
 begin
-  Keys := FItems.Keys;
-  SetLength(Result, Keys.Count);
-  I := 0;
-  for Key in Keys do
-  begin
-    Result[I] := Key;
-    Inc(I);
-  end;
+  SetLength(Result, FKeys.Count);
+  for I := 0 to FKeys.Count - 1 do
+    Result[I] := FKeys[I];
 end;
 
 procedure TJSONObject.Add(const Name: string; Value: IJSONValue);
@@ -274,7 +279,11 @@ end;
 
 procedure TJSONObject.Remove(const Name: string);
 begin
-  FItems.Remove(Name);
+  if FItems.ContainsKey(Name) then
+  begin
+    FItems.Remove(Name);
+    FKeys.Remove(Name);
+  end;
 end;
 
 function TJSONObject.Contains(const Name: string): Boolean;
@@ -304,12 +313,21 @@ begin
   end;
 end;
 
+function TJSONObject.GetOrderedKeys: TStringArray;
+var
+  I: Integer;
+begin
+  SetLength(Result, FKeys.Count);
+  for I := 0 to FKeys.Count - 1 do
+    Result[I] := FKeys[I];
+end;
+
 { TJSONArray implementation }
 
 procedure TJSONArray.ClearItems;
 begin
   if Assigned(FItems) then
-    FItems.Clear;
+    FItems.Clear;  // TList will handle interface cleanup
 end;
 
 constructor TJSONArray.Create;
@@ -519,7 +537,11 @@ end;
 class function TJSONNull.Instance: TJSONNull;
 begin
   if FInstance = nil then
+  begin
     FInstance := TJSONNull.Create;
+    // Prevent automatic cleanup of the singleton
+    FInstance._AddRef;
+  end;
   Result := FInstance;
 end;
 
@@ -537,6 +559,11 @@ initialization
   TJSONNull.FInstance := nil;
 
 finalization
-  FreeAndNil(TJSONNull.FInstance);
+  if Assigned(TJSONNull.FInstance) then
+  begin
+    // Release the extra reference we added
+    TJSONNull.FInstance._Release;
+    TJSONNull.FInstance := nil;
+  end;
 
 end. 
