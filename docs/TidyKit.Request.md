@@ -1,6 +1,6 @@
 # TidyKit.Request Documentation
 
-A lightweight, memory-safe HTTP client for Free Pascal that uses advanced records for automatic cleanup. This module provides a fluent interface for making HTTP requests with built-in memory management.
+A lightweight, memory-safe HTTP client for Free Pascal that uses advanced records for automatic cleanup. This module provides a fluent interface for making HTTP requests with built-in memory management and seamless JSON integration through TidyKit.JSON.
 
 ## Table of Contents
 
@@ -12,7 +12,7 @@ A lightweight, memory-safe HTTP client for Free Pascal that uses advanced record
   - [Memory Safety](#memory-safety)
   - [Basic Usage](#basic-usage)
     - [Simple GET Request](#simple-get-request)
-    - [POST with JSON](#post-with-json)
+    - [Working with JSON](#working-with-json)
     - [Using the Fluent Interface](#using-the-fluent-interface)
   - [Error Handling](#error-handling)
     - [Using Try-Pattern](#using-try-pattern)
@@ -32,7 +32,7 @@ A lightweight, memory-safe HTTP client for Free Pascal that uses advanced record
 - Zero-setup memory management using advanced records
 - Fluent interface for expressive request building
 - Support for common HTTP methods (GET, POST, PUT, DELETE, PATCH)
-- JSON and form data handling
+- Seamless JSON integration with TidyKit.JSON
 - Query parameters and custom headers
 - Basic authentication
 - Timeout configuration
@@ -47,13 +47,18 @@ This module implements a fluent interface pattern, which is a specific form of t
 ```pascal
 var
   Request: TRequestBuilder;  // Automatically initialized when declared
+  UserData: IJSONObject;
   Response: TResponse;
 begin
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John');
+  UserData.Add('email', 'john@example.com');
+
   Response := Request
     .Post                                // Chain HTTP method
     .URL('https://api.example.com')      // Chain URL
     .AddHeader('X-API-Key', 'your-key')  // Chain headers
-    .WithJSON('{"name": "John"}')        // Chain body
+    .WithJSON(UserData.ToString)         // Chain JSON body
     .Send;                               // Execute
 end;
 ```
@@ -85,6 +90,7 @@ This module uses Free Pascal's advanced records feature to provide automatic mem
 - Objects are automatically initialized when declared
 - Memory is automatically freed when variables go out of scope
 - Safe to use in try-except blocks - cleanup still happens if an exception occurs
+- JSON responses are managed through interface references
 
 ## Basic Usage
 
@@ -92,22 +98,40 @@ This module uses Free Pascal's advanced records feature to provide automatic mem
 ```pascal
 var
   Response: TResponse;
+  Data: IJSONObject;
 begin
   Response := Http.Get('https://api.example.com/data');
   if Response.StatusCode = 200 then
-    WriteLn(Response.Text);
+  begin
+    Data := Response.JSON.AsObject;
+    WriteLn('ID: ', Data['id'].AsInteger);
+    WriteLn('Name: ', Data['name'].AsString);
+  end;
 end;
 ```
 
-### POST with JSON
+### Working with JSON
 ```pascal
 var
   Response: TResponse;
+  UserData: IJSONObject;
 begin
+  // Create JSON request data
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John Smith');
+  UserData.Add('age', 30);
+  UserData.Add('email', 'john@example.com');
+
+  // Send JSON request
   Response := Http.PostJSON('https://api.example.com/users',
-    '{"name": "John", "age": 30}');
-  if Response.StatusCode = 200 then
-    WriteLn(Response.JSON.FormatJSON);
+    UserData.ToString);
+
+  // Handle JSON response
+  if Response.StatusCode = 201 then
+  begin
+    WriteLn('User created with ID: ', Response.JSON.AsObject['id'].AsString);
+    WriteLn('Created at: ', Response.JSON.AsObject['created_at'].AsString);
+  end;
 end;
 ```
 
@@ -116,25 +140,28 @@ end;
 var
   Request: TRequestBuilder;  // Automatically initialized when declared
   Response: TResponse;
+  UserData, ResponseData: IJSONObject;
 begin
+  // Create request JSON
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John');
+  UserData.Add('email', 'john@example.com');
+
   Response := Request
     .Post                                // Chain HTTP method
     .URL('https://api.example.com')      // Chain URL
     .AddHeader('X-API-Key', 'your-key')  // Chain headers
-    .WithJSON('{"name": "John"}')        // Chain body
+    .WithJSON(UserData.ToString)         // Chain JSON body
     .Send;                               // Execute
 
   if Response.StatusCode = 200 then
-    WriteLn(Response.Text);
+  begin
+    ResponseData := Response.JSON.AsObject;
+    WriteLn('Success: ', ResponseData['success'].AsBoolean);
+    WriteLn('Message: ', ResponseData['message'].AsString);
+  end;
 end;
 ```
-
-The fluent interface above makes the request construction both readable and maintainable:
-- The request is automatically initialized when declared
-- Each method call is chained to the next
-- The code reads like a natural language description
-- The state is built up step by step
-- All cleanup is handled automatically by Free Pascal's advanced records feature
 
 ## Error Handling
 
@@ -145,7 +172,10 @@ var
 begin
   Result := Http.TryGet('https://api.example.com/data');
   if Result.Success then
-    WriteLn(Result.Response.Text)
+  begin
+    WriteLn('Status: ', Result.Response.JSON.AsObject['status'].AsString);
+    WriteLn('Data: ', Result.Response.JSON.AsObject['data'].AsString);
+  end
   else
     WriteLn('Error: ', Result.Error);
 end;
@@ -158,7 +188,7 @@ end;
 TResponse = record
   StatusCode: Integer;
   property Text: string;              // Response body as text
-  property JSON: TJSONData;           // Response parsed as JSON
+  property JSON: IJSONValue;          // Response parsed as JSON
   
   // Memory management (called automatically)
   class operator Initialize(var Response: TResponse);  // Called when variable is created
@@ -219,7 +249,14 @@ The global `Http` constant of type `THttp` provides convenient one-liner methods
 var
   Request: TRequestBuilder;
   Response: TResponse;
+  UserData: IJSONObject;
+  CreatedUser: IJSONObject;
 begin
+  // Create request data
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John');
+  UserData.Add('email', 'john@example.com');
+
   Response := Request
     .Post
     .URL('https://api.example.com/users')
@@ -227,12 +264,16 @@ begin
     .AddHeader('Accept', 'application/json')
     .AddParam('version', '2.0')
     .AddParam('format', 'detailed')
-    .WithJSON('{"name": "John", "email": "john@example.com"}')
+    .WithJSON(UserData.ToString)
     .WithTimeout(5000)
     .Send;
 
   if Response.StatusCode = 201 then
-    WriteLn('User created: ', Response.JSON.FindPath('id').AsString);
+  begin
+    CreatedUser := Response.JSON.AsObject;
+    WriteLn('User created with ID: ', CreatedUser['id'].AsString);
+    WriteLn('Created at: ', CreatedUser['created_at'].AsString);
+  end;
 end;
 ```
 
@@ -241,6 +282,7 @@ end;
 var
   Request: TRequestBuilder;
   Response: TResponse;
+  SecureData: IJSONObject;
 begin
   Response := Request
     .Get
@@ -249,11 +291,10 @@ begin
     .WithTimeout(3000)
     .Send;
 
-  case Response.StatusCode of
-    200: WriteLn('Success: ', Response.Text);
-    401: WriteLn('Authentication failed');
-    403: WriteLn('Access denied');
-    else WriteLn('Error: ', Response.StatusCode);
+  if Response.StatusCode = 200 then
+  begin
+    SecureData := Response.JSON.AsObject;
+    WriteLn('Access granted to: ', SecureData['resource'].AsString);
   end;
 end;
 ```

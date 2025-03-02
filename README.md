@@ -277,15 +277,29 @@ end;
 ```pascal
 var
   Response: TResponse;
+  UserData: IJSONObject;
+  ApiResponse: IJSONObject;
 begin
-  // Simple GET request
+  // Simple GET request with JSON response
   Response := Http.Get('https://api.example.com/data');
   if Response.StatusCode = 200 then
-    WriteLn(Response.Text);
+  begin
+    ApiResponse := Response.JSON.AsObject;
+    WriteLn('User ID: ', ApiResponse['id'].AsInteger);
+    WriteLn('Username: ', ApiResponse['username'].AsString);
+  end;
     
-  // POST with JSON
+  // POST with JSON data
+  UserData := TJSON.Obj;
+  UserData.Add('name', 'John Smith');
+  UserData.Add('email', 'john@example.com');
+  UserData.Add('age', 30);
+  
   Response := Http.PostJSON('https://api.example.com/users',
-    '{"name": "John", "email": "john@example.com"}');
+    UserData.ToString);
+    
+  if Response.StatusCode = 201 then
+    WriteLn('User created with ID: ', Response.JSON.AsObject['id'].AsString);
     
   // Download file with progress
   Response := Http.Get('https://example.com/large-file.zip');
