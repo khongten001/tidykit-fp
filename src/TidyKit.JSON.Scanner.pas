@@ -19,6 +19,8 @@ type
     function IsNumberStart(C: Char): Boolean;
     function PeekChar: Char;
     function ReadChar: Char;
+    function ReadHexDigit: Integer;
+    function ReadUnicodeEscape: string;
     function ReadString: string;
     function ReadNumber: string;
     procedure SkipWhitespace;
@@ -70,6 +72,70 @@ begin
     Result := #0;
 end;
 
+function TJSONScanner.ReadHexDigit: Integer;
+var
+  C: Char;
+begin
+  C := ReadChar;
+  case C of
+    '0'..'9': Result := Ord(C) - Ord('0');
+    'a'..'f': Result := Ord(C) - Ord('a') + 10;
+    'A'..'F': Result := Ord(C) - Ord('A') + 10;
+    else
+      raise EJSONException.Create('Invalid hexadecimal digit: ' + C);
+  end;
+end;
+
+function TJSONScanner.ReadUnicodeEscape: string;
+var
+  CodePoint, HighSurrogate, LowSurrogate: Integer;
+  NextChar: Char;
+begin
+  // Read 4 hex digits
+  CodePoint := (ReadHexDigit shl 12) or
+               (ReadHexDigit shl 8) or
+               (ReadHexDigit shl 4) or
+               ReadHexDigit;
+
+  // Check for surrogate pair
+  if (CodePoint >= $D800) and (CodePoint <= $DBFF) then
+  begin
+    // High surrogate, expect low surrogate
+    HighSurrogate := CodePoint;
+    
+    // Expect \u
+    NextChar := ReadChar;
+    if NextChar <> '\' then
+      raise EJSONException.Create('Expected \u after high surrogate');
+    NextChar := ReadChar;
+    if NextChar <> 'u' then
+      raise EJSONException.Create('Expected \u after high surrogate');
+      
+    // Read low surrogate
+    LowSurrogate := (ReadHexDigit shl 12) or
+                    (ReadHexDigit shl 8) or
+                    (ReadHexDigit shl 4) or
+                    ReadHexDigit;
+                    
+    if (LowSurrogate < $DC00) or (LowSurrogate > $DFFF) then
+      raise EJSONException.Create('Invalid low surrogate');
+      
+    // Calculate final code point
+    CodePoint := $10000 + ((HighSurrogate - $D800) shl 10) or (LowSurrogate - $DC00);
+  end;
+  
+  // Convert to UTF-16 string
+  if CodePoint <= $FFFF then
+    Result := WideChar(CodePoint)
+  else
+  begin
+    // Split into surrogate pair
+    Dec(CodePoint, $10000);
+    Result := WideChar($D800 or (CodePoint shr 10)) +
+              WideChar($DC00 or (CodePoint and $3FF));
+  end;
+end;
+
 function TJSONScanner.ReadString: string;
 var
   C: Char;
@@ -94,11 +160,7 @@ begin
         'n': Result := Result + #10;
         'f': Result := Result + #12;
         'r': Result := Result + #13;
-        'u':
-        begin
-          // TODO: Handle Unicode escape sequences
-          raise EJSONException.Create('Unicode escape sequences not yet supported');
-        end;
+        'u': Result := Result + ReadUnicodeEscape;
         else
           raise EJSONException.Create('Invalid escape sequence: \' + C);
       end;
