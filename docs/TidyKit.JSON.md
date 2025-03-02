@@ -8,11 +8,11 @@ A user-friendly JSON library for Free Pascal with automatic reference counting (
 - Comprehensive JSON parsing and generation
 - Support for all JSON data types (objects, arrays, strings, numbers, booleans, null)
 - Pretty printing and compact output options
-- Full Unicode support
-- Proper handling of escape sequences
+- Full Unicode support with proper escape sequence handling
 - Error handling with descriptive messages
 - Easy-to-use factory methods
 - Compatible with Free Pascal 3.2.2
+- Thoroughly tested with 17 comprehensive test cases
 
 ## Installation
 
@@ -201,6 +201,28 @@ IJSONArray = interface(IJSONValue)
   property Count: Integer read GetCount;
 end;
 ```
+
+## Test Cases
+
+The library includes 17 comprehensive test cases that verify its functionality:
+
+1. Test01_CreateEmptyObject: Creating and verifying empty JSON objects
+2. Test02_CreateEmptyArray: Creating and verifying empty JSON arrays
+3. Test03_CreateString: String value creation and verification
+4. Test04_CreateNumber: Numeric value handling
+5. Test05_CreateBoolean: Boolean value handling
+6. Test06_CreateNull: Null value handling
+7. Test07_ObjectAddAndGet: Object property manipulation
+8. Test08_ArrayAddAndGet: Array element manipulation
+9. Test09_ParseSimpleObject: Basic object parsing
+10. Test10_ParseSimpleArray: Basic array parsing
+11. Test11_ParseComplexObject: Nested object parsing
+12. Test12_ParseComplexArray: Nested array parsing
+13. Test13_ParseInvalidJSON: Error handling for invalid JSON
+14. Test14_PrettyPrint: JSON formatting with indentation
+15. Test15_Compact: JSON compression
+16. Test16_UnicodeString: Unicode character handling
+17. Test17_EscapeSequences: Special character escape sequences
 
 ## Best Practices
 

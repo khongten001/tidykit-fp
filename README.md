@@ -110,6 +110,16 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Vector operations
   - ✅ All calculations use Double precision (64-bit) for accuracy
 
+- 🔄 **JSON Operations**
+  - Interface-based JSON manipulation
+  - Automatic memory management through ARC
+  - Full Unicode support with escape sequences
+  - Pretty printing and compact output
+  - Comprehensive error handling
+  - Factory methods for easy creation
+  - Support for all JSON data types
+  - Thoroughly tested implementation
+
 ## 💻 Installation
 
 1. Clone the repository:
@@ -128,6 +138,11 @@ uses
 
 // Option 2: Choose specific units based on your needs
 uses
+  // JSON-related units
+  TidyKit.JSON,              // Core JSON interfaces
+  TidyKit.JSON.Types,        // JSON value implementations
+  TidyKit.JSON.Factory,      // JSON factory methods
+  
   // Math-related units
   TidyKit.Math,              // Base math types and operations
   TidyKit.Math.Stats,        // Statistical calculations

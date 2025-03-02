@@ -6,8 +6,9 @@ A comprehensive reference of TidyKit's features and usage examples.
 
 - [📋 Cheat Sheet](#-cheat-sheet)
   - [Table of Contents](#table-of-contents)
-  - [📁File System Operations](#file-system-operations)
-  - [🧵String operations](#string-operations)
+  - [🔄 JSON Operations](#-json-operations)
+  - [📁 File System Operations](#file-system-operations)
+  - [🧵 String operations](#string-operations)
   - [🕙 DateTime Operations](#-datetime-operations)
     - [Basic Operations](#basic-operations)
     - [Component Access](#component-access)
@@ -37,6 +38,116 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
   - [📁 Archive Operations](#-archive-operations)
+
+## 🔄 JSON Operations
+
+```pascal
+// Creating JSON values
+Obj := TJSON.Obj;                           // Create empty object
+Arr := TJSON.Arr;                           // Create empty array
+Str := TJSON.Str('Hello');                  // Create string value
+Num := TJSON.Num(123.45);                   // Create number value
+Int := TJSON.Int(123);                      // Create integer value
+Bool := TJSON.Bool(True);                   // Create boolean value
+Null := TJSON.Null;                         // Create null value
+
+// Working with objects
+Obj.Add('string', 'value');                 // Add string
+Obj.Add('number', 123);                     // Add integer
+Obj.Add('float', 123.45);                   // Add float
+Obj.Add('boolean', True);                   // Add boolean
+Obj.Add('null', TJSON.Null);               // Add null
+Obj.Add('object', TJSON.Obj);              // Add empty object
+Obj.Add('array', TJSON.Arr);               // Add empty array
+
+Value := Obj['key'];                        // Get value by key
+if Obj.Contains('key') then ...            // Check if key exists
+Obj.Remove('key');                         // Remove key
+Count := Obj.Count;                        // Get number of items
+Names := Obj.Names;                        // Get array of keys
+
+// Working with arrays
+Arr.Add('string');                         // Add string
+Arr.Add(123);                              // Add integer
+Arr.Add(123.45);                           // Add float
+Arr.Add(True);                             // Add boolean
+Arr.Add(TJSON.Null);                      // Add null
+Arr.Add(TJSON.Obj);                       // Add empty object
+Arr.Add(TJSON.Arr);                       // Add empty array
+
+Value := Arr[0];                           // Get value by index
+Arr.Delete(0);                             // Delete item
+Arr.Clear;                                 // Remove all items
+Count := Arr.Count;                        // Get number of items
+
+// Type checking
+if Value.IsString then ...                 // Check if string
+if Value.IsNumber then ...                 // Check if number
+if Value.IsBoolean then ...               // Check if boolean
+if Value.IsObject then ...                // Check if object
+if Value.IsArray then ...                 // Check if array
+if Value.IsNull then ...                  // Check if null
+
+// Value conversion
+Str := Value.AsString;                     // Get as string
+Num := Value.AsNumber;                     // Get as float
+Int := Value.AsInteger;                    // Get as integer
+Bool := Value.AsBoolean;                   // Get as boolean
+Obj := Value.AsObject;                     // Get as object
+Arr := Value.AsArray;                      // Get as array
+
+// Parsing JSON
+Value := TJSON.Parse('{"key":"value"}');   // Parse JSON string
+if TJSON.TryParse(JSON, Value) then ...   // Try parse with error handling
+
+// Formatting JSON
+Pretty := TJSON.PrettyPrint(JSON);         // Format with indentation
+Compact := TJSON.Compact(JSON);            // Remove whitespace
+
+// Complex example
+var
+  Person: IJSONObject;
+  Address: IJSONObject;
+  Hobbies: IJSONArray;
+begin
+  // Create person object
+  Person := TJSON.Obj;
+  Person.Add('name', 'John Smith');
+  Person.Add('age', 30);
+  
+  // Add address object
+  Address := TJSON.Obj;
+  Address.Add('street', '123 Main St');
+  Address.Add('city', 'Springfield');
+  Person.Add('address', Address);
+  
+  // Add hobbies array
+  Hobbies := TJSON.Arr;
+  Hobbies.Add('reading');
+  Hobbies.Add('cycling');
+  Person.Add('hobbies', Hobbies);
+  
+  // Convert to JSON string
+  WriteLn(Person.ToString(True)); // Pretty print
+end;
+
+// Error handling
+try
+  Value := TJSON.Parse(InvalidJSON);
+except
+  on E: EJSONException do
+    WriteLn('Error: ', E.Message);
+end;
+
+// Unicode and escape sequences
+JSON := '{"text":"\u0048\u0065\u006C\u006C\u006F"}';
+Value := TJSON.Parse(JSON);
+WriteLn(Value.AsObject['text'].AsString); // Prints: Hello
+
+JSON := '{"text":"Line1\nLine2\tTabbed"}';
+Value := TJSON.Parse(JSON);
+WriteLn(Value.AsObject['text'].AsString); // Handles escapes
+```
 
 ## 📁File System Operations
 
