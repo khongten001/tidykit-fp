@@ -153,10 +153,8 @@ uses
 
 // Option 2: Choose specific units based on your needs
 uses
-  // JSON-related units
-  TidyKit.JSON,              // Core JSON interfaces
-  TidyKit.JSON.Types,        // JSON value implementations
-  TidyKit.JSON.Factory,      // JSON factory methods
+  // JSON functionality
+  TidyKit.JSON,              // All JSON functionality
   
   // Math-related units
   TidyKit.Math,              // Base math types and operations

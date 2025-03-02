@@ -19,13 +19,16 @@ A user-friendly JSON library for Free Pascal with automatic reference counting (
 The TidyKit.JSON library is part of the TidyKit package. To use it in your project:
 
 1. Add the TidyKit source directory to your project's search path
-2. Add the following units to your uses clause:
+2. Add the following unit to your uses clause:
    ```pascal
    uses
-     TidyKit.JSON,         // Core JSON interfaces
-     TidyKit.JSON.Types,   // JSON value implementations
-     TidyKit.JSON.Factory; // Factory methods (TJSON)
+     TidyKit.JSON;  // All JSON functionality
    ```
+
+That's it! The TidyKit.JSON unit provides everything you need for working with JSON, including:
+- All JSON interfaces (IJSONValue, IJSONObject, IJSONArray)
+- The TJSON factory class for creating and parsing JSON
+- Exception handling through EJSONException
 
 ## Quick Start
 
