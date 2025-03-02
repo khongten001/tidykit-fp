@@ -4,7 +4,7 @@ program json_example;
 
 uses
   Classes, SysUtils,
-  TidyKit.JSON, TidyKit.JSON.Types, TidyKit.JSON.Factory;
+  TidyKit.JSON;
 
 procedure DemonstrateCreation;
 var

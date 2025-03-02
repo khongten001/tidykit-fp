@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fphttpclient, opensslsockets, base64,
-  URIParser, HTTPDefs, TidyKit.Core, TidyKit.JSON, TidyKit.JSON.Factory;
+  URIParser, HTTPDefs, TidyKit.Core, TidyKit.JSON;
 
 type
   { Response record with automatic memory management }
