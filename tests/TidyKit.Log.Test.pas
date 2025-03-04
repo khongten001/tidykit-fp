@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, fpcunit, testregistry, TypInfo,
   TidyKit.Log, TidyKit.Log.Targets;
 
+var
+  TestLogger: ILogger; 
+
 type
   { Test target that stores log entries in memory }
   TMemoryTarget = class(TInterfacedObject, ILogTarget)
@@ -196,7 +199,7 @@ end;
 
 procedure TLogTest.Test01_CreateLogger;
 begin
-  WriteLn('Test01_CreateLogger is starting...');
+  TestLogger.Info('Test01_CreateLogger is starting...');
   AssertNotNull('Logger should not be nil', FLogger);
   FLogger.Info('Test message');
   WaitForLogging;
@@ -207,12 +210,12 @@ procedure TLogTest.Test02a_DebugLevel;
 var
   LogEntry: string;
 begin
-  WriteLn('Test02a_DebugLevel is starting...');
+  TestLogger.Info('Test02a_DebugLevel is starting...');
   FLogger.Debug('Debug message');
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
   LogEntry := FMemoryTarget.GetEntry(0);
-  WriteLn('Debug test - Log entry: ', LogEntry);
+  TestLogger.Debug('Debug test - Log entry: %s', [LogEntry]);
   AssertTrue('Debug level should be logged', Pos('DEBUG', LogEntry) > 0);
 end;
 
@@ -220,18 +223,18 @@ procedure TLogTest.Test02b_InfoLevel;
 var
   LogEntry: string;
 begin
-  WriteLn('Test02b_InfoLevel is starting...');
+  TestLogger.Info('Test02b_InfoLevel is starting...');
   FLogger.Info('Info message');
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
   LogEntry := FMemoryTarget.GetEntry(0);
-  WriteLn('Info test - Log entry: ', LogEntry);
+  TestLogger.Debug('Info test - Log entry: %s', [LogEntry]);
   AssertTrue('Info level should be logged', Pos('INFO', LogEntry) > 0);
 end;
 
 procedure TLogTest.Test02c_WarningLevel;
 begin
-  WriteLn('Test02c_WarningLevel is starting...');
+  TestLogger.Info('Test02c_WarningLevel is starting...');
   FLogger.Warning('Warning message');
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
@@ -240,7 +243,7 @@ end;
 
 procedure TLogTest.Test02d_ErrorLevel;
 begin
-  WriteLn('Test02d_ErrorLevel is starting...');
+  TestLogger.Info('Test02d_ErrorLevel is starting...');
   FLogger.Error('Error message');
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
@@ -249,7 +252,7 @@ end;
 
 procedure TLogTest.Test02e_FatalLevel;
 begin
-  WriteLn('Test02e_FatalLevel is starting...');
+  TestLogger.Info('Test02e_FatalLevel is starting...');
   FLogger.Fatal('Fatal message');
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
@@ -258,7 +261,7 @@ end;
 
 procedure TLogTest.Test03_FormattedMessages;
 begin
-  WriteLn('Test03_FormattedMessages is starting...');
+  TestLogger.Info('Test03_FormattedMessages is starting...');
   FLogger.Info('Value: %d, String: %s', [42, 'test']);
   WaitForLogging;
   AssertEquals('One log entry should be written', 1, FMemoryTarget.GetEntryCount);
@@ -270,7 +273,7 @@ procedure TLogTest.Test04a_BelowMinimumLevel;
 var
   Logger: ILogger;
 begin
-  WriteLn('Test04a_BelowMinimumLevel is starting...');
+  TestLogger.Info('Test04a_BelowMinimumLevel is starting...');
   Logger := TLogKit.Create
     .AddTarget(FMemoryTarget)
     .SetMinLevel(llWarning)
@@ -287,7 +290,7 @@ procedure TLogTest.Test04b_AboveMinimumLevel;
 var
   Logger: ILogger;
 begin
-  WriteLn('Test04b_AboveMinimumLevel is starting...');
+  TestLogger.Info('Test04b_AboveMinimumLevel is starting...');
   Logger := TLogKit.Create
     .AddTarget(FMemoryTarget)
     .SetMinLevel(llWarning)
@@ -303,7 +306,7 @@ procedure TLogTest.Test05_EnableDisable;
 var
   Logger: ILogger;
 begin
-  WriteLn('Test05_EnableDisable is starting...');
+  TestLogger.Info('Test05_EnableDisable is starting...');
   Logger := TLogKit.Create
     .AddTarget(FMemoryTarget)
     .Enable;
@@ -323,7 +326,7 @@ var
   SecondTarget: TMemoryTarget;
   Logger: ILogger;
 begin
-  WriteLn('Test06_MultipleTargets is starting...');
+  TestLogger.Info('Test06_MultipleTargets is starting...');
   SecondTarget := TMemoryTarget.Create;
   try
     Logger := TLogKit.Create
@@ -347,7 +350,7 @@ var
   ThreadCount: Integer;
   Threads: array of TThread;
 begin
-  WriteLn('Test07_ThreadSafeQueue is starting...');
+  TestLogger.Info('Test07_ThreadSafeQueue is starting...');
   ThreadCount := 5;
   SetLength(Threads, ThreadCount);
   
@@ -370,7 +373,7 @@ var
   Logger: ILogger;
   Target: TFileTarget;
 begin
-  WriteLn('Test08_FileTarget is starting...');
+  TestLogger.Info('Test08_FileTarget is starting...');
   if FileExists(FTestFilePath) then
     DeleteFile(FTestFilePath);
     
@@ -398,7 +401,7 @@ procedure TLogTest.Test09_ConsoleTarget;
 var
   Logger: ILogger;
 begin
-  WriteLn('Test09_ConsoleTarget is starting...');
+  TestLogger.Info('Test09_ConsoleTarget is starting...');
   Logger := TLogKit.Create
     .AddTarget(TConsoleTarget.Create)
     .Enable;
@@ -414,7 +417,7 @@ var
   I: Integer;
   BaseFile: string;
 begin
-  WriteLn('Test10_LogRotation is starting...');
+  TestLogger.Info('Test10_LogRotation is starting...');
   BaseFile := GetTestFilePath('rotation.log');
   
   if FileExists(BaseFile) then
@@ -432,17 +435,18 @@ begin
     for I := 1 to 10 do
     begin
       Logger.Info('Test message with some padding to force rotation %d', [I]);
+      Target.Flush;  // Force flush after each message
       WaitForLogging;
-      Target.Flush;
     end;
-      
-    WaitForLogging;
-    Target.Flush;
     
+    // Release logger first
     Logger := nil;
-    Target := nil;
-    
     WaitForLogging;
+    
+    // Then release target
+    Target := nil;
+    WaitForLogging;
+    
     AssertTrue('Original log file should exist', FileExists(BaseFile));
   finally
     if FileExists(BaseFile) then
@@ -461,7 +465,7 @@ var
   Target: TConsoleTarget;
   Entry: TLogEntry;
 begin
-  WriteLn('Test11_ConsoleColors is starting...');
+  TestLogger.Info('Test11_ConsoleColors is starting...');
   Target := TConsoleTarget.Create;
   try
     Target.EnableColors;
@@ -484,7 +488,7 @@ procedure TLogTest.Test12_FactoryFunctions;
 var
   Logger: ILogger;
 begin
-  WriteLn('Test12_FactoryFunctions is starting...');
+  TestLogger.Info('Test12_FactoryFunctions is starting...');
   Logger := FileLogger('factory.log');
   AssertNotNull('FileLogger should create logger', Logger);
   Logger := nil;
@@ -503,7 +507,7 @@ procedure TLogTest.Test13_CategorySupport;
 var
   Entry: TLogEntry;
 begin
-  WriteLn('Test13_CategorySupport is starting...');
+  TestLogger.Info('Test13_CategorySupport is starting...');
   Entry.Level := llInfo;
   Entry.Message := 'Test message';
   Entry.TimeStamp := Now;
@@ -523,7 +527,7 @@ var
   Entry: TLogEntry;
   Success: Boolean;
 begin
-  WriteLn('Test14_ThreadSafety is starting...');
+  TestLogger.Info('Test14_ThreadSafety is starting...');
   Queue := TThreadSafeQueue.Create(2);
   try
     Entry.Message := 'Test';
@@ -555,36 +559,47 @@ var
   Logger, Logger2: ILogger;
   Target: TMemoryTarget;
 begin
-  WriteLn('Test15_MemoryManagement is starting...');
+  TestLogger.Info('Test15_MemoryManagement is starting...');
   Target := TMemoryTarget.Create;
   try
     Logger := TLogKit.Create
       .AddTarget(Target)
       .Enable;
       
-    Logger2 := Logger;
+    Logger2 := Logger;  // Create second reference
     
     Logger.Info('Test message');
     WaitForLogging;
     AssertEquals('First message should be logged', 1, Target.GetEntryCount);
     
+    // Clear first reference
     Logger := nil;
-    WaitForLogging;  // Wait for any pending operations
+    WaitForLogging;
     
+    // Use second reference
     Logger2.Info('Second message');
     WaitForLogging;
     AssertEquals('Both messages should be logged', 2, Target.GetEntryCount);
     
+    // Clear second reference
     Logger2 := nil;
-    WaitForLogging;  // Wait for any pending operations before freeing target
+    WaitForLogging;
   finally
-    FLogger := nil;  // Ensure main logger is released
-    FMemoryTarget := nil;  // Ensure main target is released
-    WaitForLogging;  // Final wait for cleanup
+    // Clear main logger and target
+    FLogger := nil;
+    FMemoryTarget := nil;
+    WaitForLogging;
+    
+    // Finally free the target
     Target.Free;
   end;
 end;
 
 initialization
+  TestLogger := ConsoleLogger;
   RegisterTest(TLogTest);
+  
+finalization
+  TestLogger := nil;
+
 end.

@@ -151,6 +151,8 @@ begin
     RenameFile(FFilename, FFilename + '.1');
 
   FCurrentSize := 0;
+  // Reopen the file after rotation
+  EnsureFileOpen;
 end;
 
 function TFileTarget.GetName: string;
