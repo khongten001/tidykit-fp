@@ -28,209 +28,345 @@ uses
 
 ## Basic Usage
 
-### File Logger
-
+### Quick Start
 ```pascal
 var
-  Log: ILogger;
+  Logger: ILogger;
 begin
-  Log := FileLogger('application.log');
-  Log.Info('Application started');
-  Log.Debug('Configuration loaded: %s', ['config.ini']);
-  // Logger automatically freed when it goes out of scope
-end;
-```
-
-### Console Logger
-
-```pascal
-var
-  Log: ILogger;
-begin
-  Log := ConsoleLogger;
-  Log.Info('Starting process');
-  Log.Warning('Resource usage high');
-  // Logger automatically freed when it goes out of scope
-end;
-```
-
-### Multi-Target Logger
-
-```pascal
-var
-  Log: ILogger;
-begin
-  Log := MultiLogger
-    .AddTarget(TFileTarget.Create('app.log').SetMaxSize(1024 * 1024))
-    .AddTarget(TConsoleTarget.Create.EnableColors)
-    .SetMinLevel(llDebug)
+  // Console logging
+  Logger := ConsoleLogger;
+  Logger.Info('Application started');
+  Logger.Warning('Resource usage high');
+  
+  // File logging
+  Logger := FileLogger('app.log');
+  Logger.Info('Starting process');
+  Logger.Debug('Config loaded: %s', ['config.ini']);
+  
+  // Multi-target logging
+  Logger := MultiLogger
+    .AddTarget(TFileTarget.Create('app.log'))
+    .AddTarget(TConsoleTarget.Create)
     .Enable;
-
-  Log.Info('Logging to both file and console');
-  // Logger automatically freed when it goes out of scope
+  Logger.Info('Logging to both file and console');
 end;
 ```
 
-## Log Levels
+### Log Levels
 
-The module supports five log levels:
+The module supports five log levels, from lowest to highest priority:
 
-- `llDebug`: Detailed information for debugging
-- `llInfo`: General information about program execution
-- `llWarning`: Potentially harmful situations
-- `llError`: Error events that might still allow the application to continue
-- `llFatal`: Severe errors that prevent proper program execution
+```pascal
+// Debug: Detailed information for troubleshooting
+Logger.Debug('Connection pool size: %d', [Pool.Size]);
 
-## File Target Features
+// Info: General operational messages
+Logger.Info('Server started on port %d', [Port]);
 
-### Log Rotation
+// Warning: Potential issues that aren't errors
+Logger.Warning('High memory usage: %d MB', [MemUsage]);
 
-The file target supports automatic log rotation based on file size:
+// Error: Error conditions that allow continued operation
+Logger.Error('Failed to connect to %s: %s', [Server, E.Message]);
+
+// Fatal: Severe errors that prevent proper execution
+Logger.Fatal('Database connection lost - shutting down');
+```
+
+### Formatted Messages
+
+```pascal
+// Simple string formatting
+Logger.Info('User %s logged in from %s', [Username, IPAddress]);
+
+// Number formatting
+Logger.Info('Memory usage: %.2f MB', [GetMemoryUsage / 1024 / 1024]);
+
+// Multiple parameters
+Logger.Info('Session %d: User=%s, Role=%s, Status=%s',
+  [SessionID, User, Role, Status]);
+```
+
+## Advanced Usage
+
+### Custom Configuration
+
+```pascal
+var
+  Logger: ILogger;
+  LogKit: TLogKit;
+begin
+  // Create with direct reference for configuration
+  LogKit := TLogKit.Create;
+  Logger := LogKit;  // Interface takes ownership
+  
+  // Configure multiple aspects
+  LogKit.AddTarget(TFileTarget.Create('app.log')
+         .SetMaxSize(50 * 1024 * 1024)
+         .SetRotateCount(10))
+       .AddTarget(TConsoleTarget.Create
+         .EnableColors)
+       .SetMinLevel(llWarning)
+       .Enable;
+       
+  // Use interface for logging
+  Logger.Warning('Important message');
+  
+  // Proper cleanup
+  LogKit.Shutdown;
+  Logger := nil;
+  LogKit := nil;
+end;
+```
+
+### File Rotation
 
 ```pascal
 var
   Target: TFileTarget;
+  Logger: ILogger;
 begin
-  Target := TFileTarget.Create('app.log')
-    .SetMaxSize(10 * 1024 * 1024)  // 10 MB
-    .SetRotateCount(5);            // Keep 5 backup files
+  // Create file target with rotation
+  Target := TFileTarget.Create('app.log');
+  Target.SetMaxSize(10 * 1024 * 1024)  // 10MB
+        .SetRotateCount(5);             // Keep 5 backups
+  
+  // When size limit is reached:
+  // - app.log -> app.log.1
+  // - app.log.1 -> app.log.2
+  // - etc...
+  
+  Logger := TLogKit.Create
+    .AddTarget(Target)
+    .Enable;
+    
+  // Log until rotation occurs
+  for I := 1 to 1000000 do
+    Logger.Info('Log message %d', [I]);
 end;
 ```
 
-When the log file reaches the specified size:
-1. Current file is renamed to `app.log.1`
-2. Previous backup files are shifted (`.1` becomes `.2`, etc.)
-3. Oldest backup file is deleted if it exceeds `RotateCount`
-4. A new empty log file is created
+### Thread Safety
 
-## Console Target Features
-
-### Colored Output
-
-The console target supports colored output based on log level:
-
-- Debug: Cyan
-- Info: White
-- Warning: Yellow
-- Error: Red
-- Fatal: Magenta
-
-Colors can be enabled or disabled:
+The logging system is designed to be thread-safe by default:
 
 ```pascal
 var
-  Target: TConsoleTarget;
+  Logger: ILogger;
+  Threads: array[1..5] of TThread;
 begin
-  Target := TConsoleTarget.Create
-    .EnableColors;   // or .DisableColors
+  Logger := ConsoleLogger;
+  
+  // Create multiple logging threads
+  for I := 1 to 5 do
+    Threads[I] := TThread.CreateAnonymousThread(
+      procedure
+      var
+        J: Integer;
+      begin
+        for J := 1 to 1000 do
+          Logger.Info('Thread %d: Message %d', [I, J]);
+      end
+    );
+    
+  // Start all threads
+  for I := 1 to 5 do
+    Threads[I].Start;
+    
+  // Wait for completion
+  for I := 1 to 5 do
+    Threads[I].WaitFor;
 end;
 ```
 
-## Thread Safety
+### Custom Targets
 
-The logging module is designed to be thread-safe:
+Creating a custom log target:
 
-- Log entries are queued in a thread-safe buffer (capacity: 1000 entries)
-- A background thread processes the queue and writes to targets
-- Synchronized queue operations using critical sections
-- Buffer overflow protection prevents memory issues
+```pascal
+type
+  TDatabaseTarget = class(TInterfacedObject, ILogTarget)
+  private
+    FConnection: TSQLConnection;
+    FLock: TCriticalSection;
+  public
+    constructor Create(const AConnectionString: string);
+    destructor Destroy; override;
+    
+    { ILogTarget implementation }
+    function GetName: string;
+    procedure WriteLog(const AEntry: TLogEntry);
+    procedure Flush;
+  end;
+
+constructor TDatabaseTarget.Create(const AConnectionString: string);
+begin
+  inherited Create;
+  FConnection := TSQLConnection.Create(AConnectionString);
+  FLock := TCriticalSection.Create;
+end;
+
+destructor TDatabaseTarget.Destroy;
+begin
+  FLock.Free;
+  FConnection.Free;
+  inherited;
+end;
+
+procedure TDatabaseTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  FLock.Enter;
+  try
+    FConnection.ExecuteSQL(
+      'INSERT INTO Logs (Level, Message, TimeStamp, ThreadID) ' +
+      'VALUES (?, ?, ?, ?)',
+      [Ord(AEntry.Level), AEntry.Message, 
+       AEntry.TimeStamp, AEntry.ThreadID]
+    );
+  finally
+    FLock.Leave;
+  end;
+end;
+```
 
 ## Memory Management
 
-The module uses interface-based reference counting for automatic memory management:
+### Interface-Based Design
 
-- No manual `Free` calls needed
-- Resources are automatically cleaned up
-- No memory leaks
-- Thread-safe cleanup
-
-## Performance Considerations
-
-1. Log entries are buffered and processed asynchronously
-2. File operations are batched for better performance
-3. Lock-free queue minimizes thread contention
-4. Automatic log rotation prevents unbounded file growth
-
-## Message Categories
-
-The logging system supports categorized messages:
+The logging system uses interfaces for automatic memory management:
 
 ```pascal
+procedure UseLogger;
 var
-  Entry: TLogEntry;
+  Logger: ILogger;         // Interface - automatically managed
+  Target: ILogTarget;      // Interface - automatically managed
 begin
-  Entry.Level := llInfo;
-  Entry.Message := 'Database connection established';
-  Entry.Category := 'Database';
-  Target.WriteLog(Entry);
+  Logger := ConsoleLogger;
+  Target := TFileTarget.Create('app.log');
+  
+  Logger.Info('Message');
+  // Both Logger and Target automatically freed when they go out of scope
 end;
 ```
 
-Categories allow you to:
-- Group related messages
-- Filter logs by component or subsystem
-- Add context to log entries
-- Improve log analysis and debugging
+### Direct References
 
-## Example Program
+When you need to access implementation-specific methods:
 
-See `log_example.pas` in the project root for a complete example demonstrating all features.
+```pascal
+var
+  Logger: ILogger;
+  LogKit: TLogKit;
+  Target: ILogTarget;
+  FileTarget: TFileTarget;
+begin
+  // Create objects
+  LogKit := TLogKit.Create;
+  Logger := LogKit;  // Interface takes ownership
+  
+  FileTarget := TFileTarget.Create('app.log');
+  Target := FileTarget;  // Interface takes ownership
+  
+  // Use implementation methods
+  FileTarget.SetMaxSize(10 * 1024 * 1024);
+  LogKit.AddTarget(Target);
+  LogKit.Enable;
+  
+  // Use interface for logging
+  Logger.Info('Message');
+  
+  // Cleanup
+  LogKit.Shutdown;
+  Logger := nil;
+  LogKit := nil;
+  Target := nil;
+  FileTarget := nil;
+end;
+```
 
-## Best Practices
+## Error Handling
 
-1. Use appropriate log levels:
-   - Debug for detailed troubleshooting
-   - Info for general operational events
-   - Warning for potential issues
-   - Error for actual problems
-   - Fatal for severe failures
+### Logging Exceptions
 
-2. Include relevant context in log messages:
-   - Timestamps are added automatically
-   - Thread IDs are included
-   - Add transaction IDs or user IDs when relevant
+```pascal
+procedure ProcessData;
+begin
+  try
+    // Complex operation
+    DoSomethingRisky;
+  except
+    on E: EDatabaseError do
+    begin
+      Logger.Error('Database error: %s', [E.Message]);
+      raise;  // Re-raise if needed
+    end;
+    on E: Exception do
+    begin
+      Logger.Fatal('Unexpected error: %s', [E.Message]);
+      raise;
+    end;
+  end;
+end;
+```
 
-3. Use formatted messages for better readability:
-   ```pascal
-   Log.Info('User %s logged in from %s', [Username, IPAddress]);
-   ```
+### Target Error Handling
 
-4. Configure appropriate log rotation for production:
-   ```pascal
-   Target := TFileTarget.Create('app.log')
-     .SetMaxSize(50 * 1024 * 1024)  // 50 MB
-     .SetRotateCount(10);           // Keep 10 backups
-   ```
+Log targets should handle errors gracefully:
 
-5. Handle logging errors gracefully:
-   ```pascal
-   try
-     // Application code
-   except
-     on E: Exception do
-       Log.Error('Error processing request: %s', [E.Message]);
-   end;
-   ```
+```pascal
+procedure TFileTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  try
+    // Attempt to write log
+    EnsureFileOpen;
+    WriteLn(FFile, FormatLogEntry(AEntry));
+    Flush;
+  except
+    // Silently continue - don't let logging errors
+    // affect the main application
+  end;
+end;
+```
 
-## Contributing
+## Performance Optimization
 
-1. Follow the Free Pascal coding style
-2. Maintain thread safety in new features
-3. Add appropriate documentation
-4. Include unit tests for new functionality
-5. Submit pull requests with clear descriptions
+### Minimum Log Levels
 
-## License
+```pascal
+// Only process Warning and above
+Logger := TLogKit.Create
+  .SetMinLevel(llWarning)
+  .Enable;
 
-This module is part of the TidyKit library and is available under the same license terms as the main project.
+Logger.Debug('Not processed');  // Skipped
+Logger.Info('Not processed');   // Skipped
+Logger.Warning('Processed');    // Logged
+Logger.Error('Processed');      // Logged
+```
+
+### Efficient Formatting
+
+```pascal
+// WRONG: String concatenation
+Logger.Info('User ' + Username + ' logged in from ' + IPAddress);
+
+// CORRECT: Format string
+Logger.Info('User %s logged in from %s', [Username, IPAddress]);
+
+// WRONG: Complex calculation in all cases
+Logger.Debug('Memory stats: %s', [CalculateComplexStats]);
+
+// CORRECT: Only calculate if needed
+if Logger.IsDebugEnabled then
+  Logger.Debug('Memory stats: %s', [CalculateComplexStats]);
+```
 
 ## Testing
 
 ### Memory Target
 
-The `TMemoryTarget` class is provided for testing purposes. It stores log entries in memory, making it easy to verify logging behavior in unit tests:
-
 ```pascal
+procedure TestLogging;
 var
   Target: TMemoryTarget;
   Logger: ILogger;
@@ -242,25 +378,26 @@ begin
       .Enable;
       
     Logger.Info('Test message');
+    Logger.Warning('Test warning');
     
-    AssertEquals(1, Target.GetEntryCount);
+    AssertEquals(2, Target.GetEntryCount);
     AssertTrue(Pos('INFO', Target.GetEntry(0)) > 0);
+    AssertTrue(Pos('WARNING', Target.GetEntry(1)) > 0);
   finally
     Target.Free;
   end;
 end;
 ```
 
-The memory target is not intended for production use - it's specifically designed for testing scenarios where you need to:
-- Verify log message content
-- Check log levels
-- Count logged messages
-- Test message formatting
-- Avoid file system or console dependencies
+## Best Practices
 
-## Performance Considerations
-
-1. Log entries are buffered and processed asynchronously
-2. File operations are batched for better performance
-3. Lock-free queue minimizes thread contention
-4. Automatic log rotation prevents unbounded file growth 
+1. Use interface references by default
+2. Set appropriate minimum log levels in production
+3. Include context in log messages
+4. Use formatted messages instead of concatenation
+5. Handle target errors gracefully
+6. Follow proper cleanup sequences
+7. Test logging in multi-threaded scenarios
+8. Consider log rotation for long-running applications
+9. Use categories for better log organization
+10. Include timestamps and thread IDs in production logs 

@@ -44,6 +44,33 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
   - [📁 Archive Operations](#-archive-operations)
+  - [Logging Operations](#logging-operations)
+    - [Basic Logging](#basic-logging)
+      - [1. Console Logger](#1-console-logger)
+      - [2. File Logger](#2-file-logger)
+      - [3. Log Levels](#3-log-levels)
+      - [4. Formatted Messages](#4-formatted-messages)
+    - [Advanced Usage](#advanced-usage)
+      - [1. Custom Configuration](#1-custom-configuration)
+      - [2. Multiple Targets](#2-multiple-targets)
+      - [3. File Rotation](#3-file-rotation)
+    - [Memory Management](#memory-management)
+      - [1. Interface References](#1-interface-references)
+      - [2. Cleanup Sequence](#2-cleanup-sequence)
+      - [3. NEVER Do This](#3-never-do-this)
+    - [Thread Safety](#thread-safety)
+      - [1. Thread-Safe Logging](#1-thread-safe-logging)
+      - [2. Custom Target Thread Safety](#2-custom-target-thread-safety)
+    - [Error Handling](#error-handling-2)
+      - [1. Log Errors](#1-log-errors)
+      - [2. Target Errors](#2-target-errors)
+    - [Best Practices](#best-practices-1)
+- [TidyKit.Log Quick Reference](#tidykitlog-quick-reference)
+  - [Basic Logging](#basic-logging-1)
+  - [Memory Management](#memory-management-1)
+  - [Configuration](#configuration)
+  - [Thread Safety](#thread-safety-1)
+  - [Error Handling](#error-handling-3)
 
 ## 🔄 JSON Operations
 
@@ -947,4 +974,308 @@ TArchiveKit.CompressToTar('sourcedir', 'archive.tar', True);          // Create 
 TArchiveKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create TAR with only .txt files
 TArchiveKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
 TArchiveKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
+```
+
+## Logging Operations
+
+### Basic Logging
+
+#### 1. Console Logger
+```pascal
+var
+  Logger: ILogger;
+begin
+  Logger := ConsoleLogger;
+  Logger.Info('Hello, World!');
+end;
+```
+
+#### 2. File Logger
+```pascal
+var
+  Logger: ILogger;
+begin
+  Logger := FileLogger('app.log');
+  Logger.Info('Application started');
+end;
+```
+
+#### 3. Log Levels
+```pascal
+Logger.Debug('Debug info');
+Logger.Info('Information');
+Logger.Warning('Warning message');
+Logger.Error('Error occurred');
+Logger.Fatal('Fatal error');
+```
+
+#### 4. Formatted Messages
+```pascal
+Logger.Info('Count: %d, Name: %s', [42, 'Test']);
+```
+
+### Advanced Usage
+
+#### 1. Custom Configuration
+```pascal
+var
+  Logger: ILogger;
+  LogKit: TLogKit;
+begin
+  // Create with direct reference
+  LogKit := TLogKit.Create;
+  Logger := LogKit;  // Interface takes ownership
+  
+  // Configure
+  LogKit.AddTarget(TFileTarget.Create('app.log'))
+       .SetMinLevel(llWarning)
+       .Enable;
+       
+  // Use
+  Logger.Warning('Important message');
+  
+  // Cleanup
+  LogKit.Shutdown;
+  Logger := nil;
+  LogKit := nil;
+end;
+```
+
+#### 2. Multiple Targets
+```pascal
+LogKit.AddTarget(TFileTarget.Create('app.log'))
+     .AddTarget(TConsoleTarget.Create)
+     .Enable;
+```
+
+#### 3. File Rotation
+```pascal
+var
+  Target: TFileTarget;
+begin
+  Target := TFileTarget.Create('app.log');
+  Target.SetMaxSize(10 * 1024 * 1024)  // 10MB
+        .SetRotateCount(5);            // Keep 5 backups
+  
+  LogKit.AddTarget(Target).Enable;
+end;
+```
+
+### Memory Management
+
+#### 1. Interface References
+```pascal
+var
+  Logger: ILogger;
+  Target: ILogTarget;
+  Kit: TLogKit;
+```
+
+#### 2. Cleanup Sequence
+```pascal
+// 1. Shutdown
+LogKit.Shutdown;
+
+// 2. Clear references in order
+Logger := nil;
+LogKit := nil;
+Target := nil;
+```
+
+#### 3. NEVER Do This
+```pascal
+// DON'T: Type cast interface
+TLogKit(Logger).AddTarget(Target);
+
+// DON'T: Manual free
+Logger.Free;  // WRONG!
+Target.Free;  // WRONG!
+
+// DON'T: Keep only direct reference
+var
+  Logger: TLogKit;  // WRONG!
+```
+
+### Thread Safety
+
+#### 1. Thread-Safe Logging
+```pascal
+// Safe in any thread
+Logger.Info('Message from thread');
+```
+
+#### 2. Custom Target Thread Safety
+```pascal
+type
+  TMyTarget = class(TInterfacedObject, ILogTarget)
+  private
+    FLock: TCriticalSection;
+  public
+    constructor Create;
+    destructor Destroy; override;
+    procedure WriteLog(const AEntry: TLogEntry);
+  end;
+
+procedure TMyTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  FLock.Enter;
+  try
+    // Thread-safe write
+  finally
+    FLock.Leave;
+  end;
+end;
+```
+
+### Error Handling
+
+#### 1. Log Errors
+```pascal
+try
+  // Some code
+except
+  on E: Exception do
+    Logger.Error('Error: %s', [E.Message]);
+end;
+```
+
+#### 2. Target Errors
+```pascal
+type
+  TMyTarget = class(TInterfacedObject, ILogTarget)
+  public
+    procedure WriteLog(const AEntry: TLogEntry);
+  end;
+
+procedure TMyTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  try
+    // Risky operation
+  except
+    // Silently continue - don't raise in logging
+  end;
+end;
+```
+
+### Best Practices
+
+1. Use interface references by default
+2. Keep direct references only when needed
+3. Always call Shutdown before clearing references
+4. Use appropriate log levels
+5. Implement thread-safe custom targets
+6. Handle target errors gracefully
+7. Use formatted messages for complex output
+8. Consider log rotation for long-running apps
+
+# TidyKit.Log Quick Reference
+
+## Basic Logging
+```pascal
+// Quick console logging
+Logger := ConsoleLogger;
+Logger.Info('Message');
+
+// Quick file logging
+Logger := FileLogger('app.log');
+Logger.Info('Message');
+
+// Log levels
+Logger.Debug('Debug info');
+Logger.Info('Info message');
+Logger.Warning('Warning');
+Logger.Error('Error');
+Logger.Fatal('Fatal');
+
+// Format strings
+Logger.Info('Count: %d', [42]);
+```
+
+## Memory Management
+```pascal
+// CORRECT: Interface vars
+var
+  Logger: ILogger;
+  Target: ILogTarget;
+
+// CORRECT: Cleanup order
+LogKit.Shutdown;
+Logger := nil;
+LogKit := nil;
+Target := nil;
+
+// WRONG: Never do these
+TLogKit(Logger).AddTarget(Target);  // No type casting
+Logger.Free;                        // No manual free
+var Logger: TLogKit;               // No direct class vars
+```
+
+## Configuration
+```pascal
+// Basic setup
+Logger := TLogKit.Create
+  .AddTarget(TFileTarget.Create('app.log'))
+  .Enable;
+
+// Multiple targets
+Logger := TLogKit.Create
+  .AddTarget(TFileTarget.Create('app.log'))
+  .AddTarget(TConsoleTarget.Create)
+  .Enable;
+
+// Set minimum level
+Logger := TLogKit.Create
+  .SetMinLevel(llWarning)
+  .Enable;
+
+// File rotation
+Target := TFileTarget.Create('app.log')
+  .SetMaxSize(10 * 1024 * 1024)  // 10MB
+  .SetRotateCount(5);            // 5 backups
+```
+
+## Thread Safety
+```pascal
+// Thread-safe by default
+Logger.Info('Safe in any thread');
+
+// Custom target thread safety
+type
+  TMyTarget = class(TInterfacedObject, ILogTarget)
+  private
+    FLock: TCriticalSection;
+  public
+    procedure WriteLog(const AEntry: TLogEntry);
+  end;
+
+procedure TMyTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  FLock.Enter;
+  try
+    // Write log
+  finally
+    FLock.Leave;
+  end;
+end;
+```
+
+## Error Handling
+```pascal
+// Log exceptions
+try
+  // Code
+except
+  on E: Exception do
+    Logger.Error('Error: %s', [E.Message]);
+end;
+
+// Silent target errors
+procedure TMyTarget.WriteLog(const AEntry: TLogEntry);
+begin
+  try
+    // Write log
+  except
+    // Silently continue
+  end;
+end;
 ```
