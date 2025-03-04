@@ -460,6 +460,7 @@ For detailed documentation, see:
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔄 [JSON](docs/TidyKit.JSON.md)
+- 📝 [Logger](docs/TidyKit.Log.md)
 
 ## ✅ Testing
 

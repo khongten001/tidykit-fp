@@ -61,6 +61,19 @@ const
   DEFAULT_MAX_SIZE = 10 * 1024 * 1024;  { 10 MB }
   DEFAULT_ROTATE_COUNT = 5;
 
+{ Helper functions }
+
+function GetLogLevelString(ALevel: TLogLevel): string;
+begin
+  case ALevel of
+    llDebug: Result := 'DEBUG';
+    llInfo: Result := 'INFO';
+    llWarning: Result := 'WARNING';
+    llError: Result := 'ERROR';
+    llFatal: Result := 'FATAL';
+  end;
+end;
+
 { TFileTarget implementation }
 
 constructor TFileTarget.Create(const AFilename: string);
@@ -169,7 +182,7 @@ begin
 
   LogLine := Format('[%s] [%s] [%d] %s',
     [FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', AEntry.TimeStamp),
-     GetEnumName(TypeInfo(TLogLevel), Ord(AEntry.Level)),
+     GetLogLevelString(AEntry.Level),
      AEntry.ThreadID,
      AEntry.Message]);
 
@@ -263,7 +276,7 @@ var
 begin
   LogLine := Format('[%s] [%s] [%d] %s'#13#10,
     [FormatDateTime('yyyy-mm-dd hh:nn:ss.zzz', AEntry.TimeStamp),
-     GetEnumName(TypeInfo(TLogLevel), Ord(AEntry.Level)),
+     GetLogLevelString(AEntry.Level),
      AEntry.ThreadID,
      AEntry.Message]);
 
