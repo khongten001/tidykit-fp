@@ -12,6 +12,7 @@ The TidyKit.Log module provides a powerful, flexible, and easy-to-use logging sy
 - Fluent interface for easy configuration
 - Support for formatted messages
 - Multiple log levels (Debug, Info, Warning, Error, Fatal)
+- Category-based logging support
 
 ## Installation
 
@@ -127,11 +128,11 @@ end;
 
 ## Thread Safety
 
-The logging module is designed to be thread-safe and non-blocking:
+The logging module is designed to be thread-safe:
 
-- Log entries are queued in a thread-safe buffer
+- Log entries are queued in a thread-safe buffer (capacity: 1000 entries)
 - A background thread processes the queue and writes to targets
-- Queue operations are lock-free for high performance
+- Synchronized queue operations using critical sections
 - Buffer overflow protection prevents memory issues
 
 ## Memory Management
@@ -150,9 +151,30 @@ The module uses interface-based reference counting for automatic memory manageme
 3. Lock-free queue minimizes thread contention
 4. Automatic log rotation prevents unbounded file growth
 
+## Message Categories
+
+The logging system supports categorized messages:
+
+```pascal
+var
+  Entry: TLogEntry;
+begin
+  Entry.Level := llInfo;
+  Entry.Message := 'Database connection established';
+  Entry.Category := 'Database';
+  Target.WriteLog(Entry);
+end;
+```
+
+Categories allow you to:
+- Group related messages
+- Filter logs by component or subsystem
+- Add context to log entries
+- Improve log analysis and debugging
+
 ## Example Program
 
-See `examples/log_example.pas` for a complete example demonstrating all features.
+See `log_example.pas` in the project root for a complete example demonstrating all features.
 
 ## Best Practices
 
