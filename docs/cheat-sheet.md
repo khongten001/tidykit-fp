@@ -1228,10 +1228,21 @@ Logger := TLogKit.Create
   .SetMinLevel(llWarning)
   .Enable;
 
-// File rotation
-Target := TFileTarget.Create('app.log')
-  .SetMaxSize(10 * 1024 * 1024)  // 10MB
-  .SetRotateCount(5);            // 5 backups
+// File rotation (complete setup)
+var
+  Target: TFileTarget;
+  Logger: ILogger;
+begin
+  // Configure target
+  Target := TFileTarget.Create('app.log')
+    .SetMaxSize(10 * 1024 * 1024)  // 10MB
+    .SetRotateCount(5);            // 5 backups
+
+  // Create and enable logger with target
+  Logger := TLogKit.Create
+    .AddTarget(Target)
+    .Enable;
+end;
 ```
 
 ## Thread Safety
