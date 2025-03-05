@@ -14,6 +14,12 @@
 - **Custom DateTime Format**: Configurable timestamp format
 - **Thread-Safe**: Basic thread safety through file open/close on each write
 - **Error Handling**: Robust error recovery to prevent logging failures from crashing applications
+- **Log Level Filtering**: Filter out messages below a specified level
+- **Format String Support**: Convenient format string overloads for all log methods
+- **Method Chaining**: Fluent API for configuration methods
+- **Default Log File Paths**: Automatic creation of log directories and files
+- **Simple One-Line Setup**: Set up the logger with a single method call
+- **Category Support**: Group logs by categories for better organization
 
 ## Getting Started
 
@@ -42,6 +48,52 @@ Logger.Error('This is an error');
 Logger.Fatal('This is a fatal error');
 ```
 
+### Quick Setup (One-Line)
+
+```pascal
+// Create a default logger with console and file logging
+TLogger.CreateDefaultLogger();
+
+// Or with custom settings
+TLogger.CreateDefaultLogger([ldConsole, ldFile], 'myapp.log', llInfo);
+```
+
+### Method Chaining
+
+```pascal
+// Configure multiple settings with method chaining
+Logger
+  .SetLogDestinations([ldConsole, ldFile])
+  .SetMinLogLevel(llInfo)
+  .SetDateTimeFormat('yyyy-mm-dd hh:nn');
+  
+// Then add a log file
+Logger.AddLogFile('application.log');
+```
+
+### Category-Based Logging
+
+```pascal
+var
+  UILogger, DBLogger, NetworkLogger: TLogContext;
+begin
+  // Create different contexts for different parts of the application
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  NetworkLogger := Logger.CreateContext('Network');
+  
+  // Log with categories
+  UILogger.Info('Application window created');
+  DBLogger.Info('Connected to database');
+  NetworkLogger.Warning('Connection latency high');
+  
+  // Use format strings with categories
+  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
+  
+  // No need to free context objects - they are automatically managed
+end;
+```
+
 ## API Reference
 
 ### Functions
@@ -63,11 +115,13 @@ end;
 
 #### Properties and Configuration
 
-##### `procedure SetLogDestinations(ADestinations: TLogDestinations)`
+##### `function SetLogDestinations(ADestinations: TLogDestinations): TLogger`
 
 Sets the active log destinations. Can be a set of:
 - `ldConsole`: Log to console (stdout)
 - `ldFile`: Log to file(s)
+
+Returns the logger instance for method chaining.
 
 ```pascal
 // Log to console only
@@ -80,9 +134,10 @@ Logger.SetLogDestinations([ldConsole, ldFile]);
 Logger.SetLogDestinations([]);
 ```
 
-##### `procedure SetDateTimeFormat(const AFormat: string)`
+##### `function SetDateTimeFormat(const AFormat: string): TLogger`
 
 Sets the datetime format string used for timestamps in log messages.
+Returns the logger instance for method chaining.
 
 ```pascal
 // Default format
@@ -90,6 +145,19 @@ Logger.SetDateTimeFormat('yyyy-mm-dd hh:nn:ss.zzz');
 
 // Custom format
 Logger.SetDateTimeFormat('yyyy-mm-dd hh:nn');
+```
+
+##### `function SetMinLogLevel(ALevel: TLogLevel): TLogger`
+
+Sets the minimum log level. Messages below this level will be filtered out.
+Returns the logger instance for method chaining.
+
+```pascal
+// Only show Info level and above
+Logger.SetMinLogLevel(llInfo);
+
+// Show all messages including Debug
+Logger.SetMinLogLevel(llDebug);
 ```
 
 ##### `function AddLogFile(const AFileName: string; AMaxSize: Int64 = 25 * 1024 * 1024): Integer`
@@ -110,12 +178,44 @@ begin
 end;
 ```
 
+##### `function AddDefaultLogFile(const ABaseName: string = 'application'; AMaxSize: Int64 = 25 * 1024 * 1024): Integer`
+
+Adds a log file with a default path in a 'logs' subdirectory of the application.
+Returns the index of the added log file.
+- `ABaseName`: Base name for the log file (default 'application')
+- `AMaxSize`: Maximum file size in bytes (default 25MB)
+
+```pascal
+var
+  LogIndex: Integer;
+begin
+  // Creates logs/application.log in the application directory
+  LogIndex := Logger.AddDefaultLogFile();
+  
+  // Creates logs/system.log
+  LogIndex := Logger.AddDefaultLogFile('system');
+end;
+```
+
 ##### `procedure CloseLogFiles`
 
 Closes all log files and clears the log file list.
 
 ```pascal
 Logger.CloseLogFiles;
+```
+
+##### `function GetInstanceID: Int64`
+
+Returns the unique identifier of the current logger instance. This can be used to track logger instances across resets.
+
+```pascal
+var
+  CurrentID: Int64;
+begin
+  CurrentID := Logger.GetInstanceID;
+  WriteLn('Current logger instance ID: ', CurrentID);
+end;
 ```
 
 #### Logging Methods
@@ -147,11 +247,28 @@ Logs a message with Error level.
 
 Logs a message with Fatal level.
 
+#### Format String Overloads
+
+##### `procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1)`
+
+Logs a formatted message with Debug level.
+- `AFormat`: Format string
+- `AArgs`: Arguments for the format string
+- `AFileIndex`: Optional specific log file index
+
+```pascal
+Logger.DebugFmt('Processing item %d of %d', [CurrentItem, TotalItems]);
+```
+
+##### `procedure InfoFmt, WarningFmt, ErrorFmt, FatalFmt`
+
+Similar to DebugFmt but for different log levels.
+
 #### Singleton Management
 
 ##### `class function GetInstance: TLogger`
 
-Returns the singleton instance of the TLogger class. This is the method called by the `Logger` function.
+Returns the singleton instance of the TLogger class. This is the method called by the `Logger` function. Each logger instance has a unique identifier accessible via `GetInstanceID`.
 
 ##### `class procedure ResetInstance`
 
@@ -161,6 +278,50 @@ Resets (destroys and recreates) the singleton instance. Useful for testing or wh
 // Reset the logger instance
 TLogger.ResetInstance;
 ```
+
+##### `class function CreateDefaultLogger(ADestinations: TLogDestinations = [ldConsole, ldFile]; const ALogFileName: string = ''; AMinLogLevel: TLogLevel = llDebug): TLogger`
+
+Creates a default logger instance with the specified settings. This is a convenience method for quick setup.
+- `ADestinations`: Log destinations (default console and file)
+- `ALogFileName`: Custom log file name (if empty, a default log file will be created)
+- `AMinLogLevel`: Minimum log level (default Debug)
+
+```pascal
+// Create a default logger
+TLogger.CreateDefaultLogger();
+
+// Create a custom logger
+TLogger.CreateDefaultLogger([ldFile], 'myapp.log', llWarning);
+```
+
+#### Category Support
+
+##### `function CreateContext(const ACategory: string): TLogContext`
+
+Creates a new logging context with the specified category name.
+- `ACategory`: Name of the category
+
+The returned `TLogContext` object is reference-counted and automatically managed by the logger. No manual cleanup is required.
+
+```pascal
+var
+  DBLogger: TLogContext;
+begin
+  DBLogger := Logger.CreateContext('Database');
+  DBLogger.Info('Connected to database');
+  // Logs: [Database] Connected to database
+  
+  // No need to free the context - it's automatically managed
+end;
+```
+
+### TLogContext Class
+
+The TLogContext class provides category-based logging. Each logging method automatically prefixes log messages with the category name. Context objects are automatically managed by the logger and do not need to be freed manually.
+
+#### Logging Methods
+
+All the same logging methods as TLogger (Debug, Info, Warning, Error, Fatal) plus the format string overloads (DebugFmt, InfoFmt, etc.).
 
 ## Log Levels
 
@@ -237,13 +398,53 @@ begin
 end;
 ```
 
+### Using Method Chaining and Format Strings
+
+```pascal
+Logger
+  .SetLogDestinations([ldConsole, ldFile])
+  .SetMinLogLevel(llInfo)
+  .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss');
+
+Logger.AddDefaultLogFile('application');
+
+// Use format string
+Logger.InfoFmt('User %s logged in from %s', ['john_doe', '192.168.1.10']);
+```
+
+### Using Category-Based Logging
+
+```pascal
+var
+  UILogger, DBLogger, NetworkLogger: TLogContext;
+begin
+  // Create different contexts for different parts of the application
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  NetworkLogger := Logger.CreateContext('Network');
+  
+  // Log with categories
+  UILogger.Info('Application window created');
+  DBLogger.Info('Connected to database');
+  NetworkLogger.Warning('Connection latency high');
+  
+  // Use format strings with categories
+  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
+  
+  // No need to free context objects - they are automatically managed
+end;
+```
+
 ## Best Practices
 
 1. **Initialization**: Set up the logger early in your application initialization
-2. **Error Handling**: The logger contains internal error handling to prevent crashes, but it's good practice to check file operation results
-3. **Log Levels**: Use appropriate log levels for different message types
-4. **File Rotation**: Set realistic maximum file sizes to prevent excessive disk usage
-5. **Cleanup**: Call `CloseLogFiles` when shutting down to ensure proper cleanup
+2. **Log Levels**: Use appropriate log levels and set minimum log level based on your deployment environment (e.g., Debug for development, Info or Warning for production)
+3. **Categories**: Use categories to organize logs from different parts of your application
+4. **Format Strings**: Use format string overloads instead of manually concatenating strings
+5. **Method Chaining**: Use method chaining to configure the logger with a clean, fluent syntax
+6. **Default Log Paths**: Use AddDefaultLogFile for simple setup
+7. **Cleanup**: Call `CloseLogFiles` when shutting down to ensure proper cleanup
+8. **Contexts**: Create logger contexts for different components of your application - they are automatically managed and don't need to be freed
 
 ## Limitations
 

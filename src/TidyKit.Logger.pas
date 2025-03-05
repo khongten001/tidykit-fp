@@ -24,13 +24,20 @@ type
     Stream: TFileStream;
   end;
 
+  { Forward declaration for TLogContext }
+  TLogContext = class;
+
   { TLogger class }
   TLogger = class
   private
     FLogDestinations: TLogDestinations;
     FLogFiles: array of TLogFile;
     FFormatDateTime: string;
+    FMinLogLevel: TLogLevel;
+    FContexts: TList; // List to track created contexts
+    FInstanceID: Int64; // Unique identifier for this instance
     class var FInstance: TLogger;
+    class var FNextInstanceID: Int64; // Counter for generating unique IDs
     
     procedure SetConsoleColor(ALogLevel: TLogLevel);
     procedure ResetConsoleColor;
@@ -38,9 +45,13 @@ type
     function GetLogLevelStr(ALogLevel: TLogLevel): string;
     procedure InitLogFile(var ALogFile: TLogFile);
     procedure WriteToFile(var ALogFile: TLogFile; const AMessage: string);
+    procedure FreeContexts; // New method to free all contexts
   public
     constructor Create;
     destructor Destroy; override;
+    
+    { Instance identification }
+    function GetInstanceID: Int64;
     
     { Logging methods }
     procedure Log(const AMessage: string; ALogLevel: TLogLevel = llInfo; const AFileIndex: Integer = -1);
@@ -50,16 +61,60 @@ type
     procedure Error(const AMessage: string; const AFileIndex: Integer = -1);
     procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1);
     
-    { Configuration methods }
-    procedure SetLogDestinations(ADestinations: TLogDestinations);
-    procedure SetDateTimeFormat(const AFormat: string);
+    { Format string overloads }
+    procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    
+    { Configuration methods with method chaining }
+    function SetLogDestinations(ADestinations: TLogDestinations): TLogger;
+    function SetDateTimeFormat(const AFormat: string): TLogger;
+    function SetMinLogLevel(ALevel: TLogLevel): TLogger;
     function AddLogFile(const AFileName: string; AMaxSize: Int64 = 25 * 1024 * 1024): Integer;
+    function AddDefaultLogFile(const ABaseName: string = 'application'; AMaxSize: Int64 = 25 * 1024 * 1024): Integer;
     procedure CloseLogFiles;
+    
+    { Category support }
+    function CreateContext(const ACategory: string): TLogContext;
     
     { Singleton access }
     class function GetInstance: TLogger;
     class procedure ResetInstance;
+    
+    { Simple one-line setup }
+    class function CreateDefaultLogger(ADestinations: TLogDestinations = [ldConsole, ldFile]; 
+      const ALogFileName: string = ''; AMinLogLevel: TLogLevel = llDebug): TLogger;
   end;
+
+{ TLogContext class for category-based logging }
+TLogContext = class
+private
+  FLogger: TLogger;
+  FCategory: string;
+  FRefCount: Integer;  // Reference count
+public
+  constructor Create(ALogger: TLogger; const ACategory: string);
+  destructor Destroy; override;
+  
+  { Reference counting methods }
+  function AddRef: Integer;
+  function Release: Integer;
+  
+  procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);
+  procedure Info(const AMessage: string; const AFileIndex: Integer = -1);
+  procedure Warning(const AMessage: string; const AFileIndex: Integer = -1);
+  procedure Error(const AMessage: string; const AFileIndex: Integer = -1);
+  procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1);
+  
+  { Format string overloads }
+  procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+  procedure InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+  procedure WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+  procedure ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+  procedure FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+end;
 
 { Global access function }
 function Logger: TLogger;
@@ -68,7 +123,9 @@ implementation
 
 function Logger: TLogger;
 begin
+  WriteLn('Logger function called');
   Result := TLogger.GetInstance;
+  WriteLn('Logger function returning instance at address: ', IntToStr(PtrInt(Result)));
 end;
 
 { TLogger }
@@ -78,11 +135,18 @@ begin
   inherited Create;
   FLogDestinations := [ldConsole];
   FFormatDateTime := 'yyyy-mm-dd hh:nn:ss.zzz';
+  FMinLogLevel := llDebug; // Default to most verbose
+  FContexts := TList.Create; // Initialize context list
+  FInstanceID := FNextInstanceID;
+  Inc(FNextInstanceID);
+  WriteLn('TLogger.Create: Created new instance with ID: ', IntToStr(FInstanceID));
 end;
 
 destructor TLogger.Destroy;
 begin
   CloseLogFiles;
+  FreeContexts; // Release all contexts before destroying logger
+  FContexts.Free;
   inherited Destroy;
 end;
 
@@ -235,6 +299,10 @@ var
   F: file;
   NeedRotation: Boolean;
 begin
+  // Skip logging if below minimum log level
+  if ALogLevel < FMinLogLevel then
+    Exit;
+    
   LogMessage := Format('[%s] [%s] %s',
     [FormatDateTime(FFormatDateTime, Now),
      GetLogLevelStr(ALogLevel),
@@ -345,18 +413,53 @@ begin
   Log(AMessage, llFatal, AFileIndex);
 end;
 
-procedure TLogger.SetLogDestinations(ADestinations: TLogDestinations);
+// Format string overloads
+procedure TLogger.DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+begin
+  Debug(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogger.InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+begin
+  Info(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogger.WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+begin
+  Warning(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogger.ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+begin
+  Error(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogger.FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+begin
+  Fatal(Format(AFormat, AArgs), AFileIndex);
+end;
+
+// Method chaining configuration
+function TLogger.SetLogDestinations(ADestinations: TLogDestinations): TLogger;
 begin
   // If disabling file logging, close all files
   if (ldFile in FLogDestinations) and not (ldFile in ADestinations) then
     CloseLogFiles;
     
   FLogDestinations := ADestinations;
+  Result := Self;
 end;
 
-procedure TLogger.SetDateTimeFormat(const AFormat: string);
+function TLogger.SetDateTimeFormat(const AFormat: string): TLogger;
 begin
   FFormatDateTime := AFormat;
+  Result := Self;
+end;
+
+function TLogger.SetMinLogLevel(ALevel: TLogLevel): TLogger;
+begin
+  FMinLogLevel := ALevel;
+  Result := Self;
 end;
 
 function TLogger.AddLogFile(const AFileName: string; AMaxSize: Int64): Integer;
@@ -379,6 +482,19 @@ begin
   Result := High(FLogFiles);
 end;
 
+function TLogger.AddDefaultLogFile(const ABaseName: string = 'application'; AMaxSize: Int64 = 25 * 1024 * 1024): Integer;
+var
+  LogDir, LogPath: string;
+begin
+  LogDir := IncludeTrailingPathDelimiter(ExtractFilePath(ParamStr(0)) + 'logs');
+  LogPath := LogDir + ABaseName + '.log';
+  
+  // Ensure log directory exists
+  ForceDirectories(LogDir);
+  
+  Result := AddLogFile(LogPath, AMaxSize);
+end;
+
 procedure TLogger.CloseLogFiles;
 var
   i: Integer;
@@ -394,28 +510,177 @@ begin
   SetLength(FLogFiles, 0);
 end;
 
+function TLogger.CreateContext(const ACategory: string): TLogContext;
+begin
+  Result := TLogContext.Create(Self, ACategory);
+  Result.AddRef; // AddRef for the reference we're returning
+  FContexts.Add(Result); // Track the context
+end;
+
 class function TLogger.GetInstance: TLogger;
 begin
+  WriteLn('GetInstance: FInstance address before check: ', IntToStr(PtrInt(FInstance)));
   if FInstance = nil then
+  begin
     FInstance := TLogger.Create;
+    WriteLn('GetInstance: Created new instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
+  end
+  else
+    WriteLn('GetInstance: Returning existing instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
   Result := FInstance;
 end;
 
 class procedure TLogger.ResetInstance;
+var
+  OldInstanceID: Int64;
 begin
+  WriteLn('ResetInstance: FInstance address before: ', IntToStr(PtrInt(FInstance)));
   if FInstance <> nil then
   begin
+    OldInstanceID := FInstance.FInstanceID;
     FInstance.CloseLogFiles;
+    FInstance.FreeContexts; // Free all contexts
     FInstance.Free;
     FInstance := nil;
+    WriteLn('ResetInstance: FInstance has been set to nil (destroyed ID: ', IntToStr(OldInstanceID), ')');
+  end;
+  WriteLn('ResetInstance: FInstance address after: ', IntToStr(PtrInt(FInstance)));
+end;
+
+class function TLogger.CreateDefaultLogger(ADestinations: TLogDestinations; 
+  const ALogFileName: string; AMinLogLevel: TLogLevel): TLogger;
+begin
+  ResetInstance;
+  Result := GetInstance;
+  Result.SetLogDestinations(ADestinations).SetMinLogLevel(AMinLogLevel);
+  
+  if (ldFile in ADestinations) then
+  begin
+    if ALogFileName <> '' then
+      Result.AddLogFile(ALogFileName)
+    else
+      Result.AddDefaultLogFile;
   end;
 end;
 
+procedure TLogger.FreeContexts;
+var
+  i: Integer;
+begin
+  if Assigned(FContexts) then
+  begin
+    for i := FContexts.Count - 1 downto 0 do
+    begin
+      if Assigned(FContexts[i]) then
+        TLogContext(FContexts[i]).Release;
+    end;
+    FContexts.Clear;
+  end;
+end;
+
+{ TLogContext }
+
+constructor TLogContext.Create(ALogger: TLogger; const ACategory: string);
+begin
+  FLogger := ALogger;
+  FCategory := ACategory;
+  FRefCount := 0; // Start with 0, AddRef will be called explicitly
+end;
+
+destructor TLogContext.Destroy;
+begin
+  // Remove from logger's list if still there
+  if Assigned(FLogger) and Assigned(FLogger.FContexts) then
+    FLogger.FContexts.Remove(Self);
+  inherited Destroy;
+end;
+
+function TLogContext.AddRef: Integer;
+begin
+  Inc(FRefCount);
+  Result := FRefCount;
+end;
+
+function TLogContext.Release: Integer;
+begin
+  Dec(FRefCount);
+  Result := FRefCount;
+  if Result <= 0 then
+  begin
+    // Don't immediately free here to avoid issues if Release is called from within a method
+    // Schedule for destruction instead
+    Result := 0; // Ensure we don't get negative values
+    Free;
+  end;
+end;
+
+procedure TLogContext.Debug(const AMessage: string; const AFileIndex: Integer);
+begin
+  FLogger.Debug(Format('[%s] %s', [FCategory, AMessage]), AFileIndex);
+end;
+
+procedure TLogContext.Info(const AMessage: string; const AFileIndex: Integer);
+begin
+  FLogger.Info(Format('[%s] %s', [FCategory, AMessage]), AFileIndex);
+end;
+
+procedure TLogContext.Warning(const AMessage: string; const AFileIndex: Integer);
+begin
+  FLogger.Warning(Format('[%s] %s', [FCategory, AMessage]), AFileIndex);
+end;
+
+procedure TLogContext.Error(const AMessage: string; const AFileIndex: Integer);
+begin
+  FLogger.Error(Format('[%s] %s', [FCategory, AMessage]), AFileIndex);
+end;
+
+procedure TLogContext.Fatal(const AMessage: string; const AFileIndex: Integer);
+begin
+  FLogger.Fatal(Format('[%s] %s', [FCategory, AMessage]), AFileIndex);
+end;
+
+procedure TLogContext.DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer);
+begin
+  Debug(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogContext.InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer);
+begin
+  Info(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogContext.WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer);
+begin
+  Warning(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogContext.ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer);
+begin
+  Error(Format(AFormat, AArgs), AFileIndex);
+end;
+
+procedure TLogContext.FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer);
+begin
+  Fatal(Format(AFormat, AArgs), AFileIndex);
+end;
+
+function TLogger.GetInstanceID: Int64;
+begin
+  Result := FInstanceID;
+end;
+
 initialization
+  WriteLn('TidyKit.Logger initialization: Setting FInstance to nil');
   TLogger.FInstance := nil;
+  TLogger.FNextInstanceID := 1; // Initialize the instance ID counter
 
 finalization
+  WriteLn('TidyKit.Logger finalization: FInstance address: ', IntToStr(PtrInt(TLogger.FInstance)));
   if TLogger.FInstance <> nil then
+  begin
+    WriteLn('TidyKit.Logger finalization: Freeing FInstance');
     TLogger.FInstance.Free;
+    WriteLn('TidyKit.Logger finalization: FInstance freed');
+  end;
 
 end. 

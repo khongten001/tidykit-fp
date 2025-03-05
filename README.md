@@ -135,6 +135,21 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Proper cleanup of nested structures
   - Thoroughly tested with 17 comprehensive test cases
 
+- 📝 **Logging Operations**
+  - Easy to use logging system with multiple output destinations
+  - Configurable log levels (Debug, Info, Warning, Error, Fatal)
+  - Console and file output with automatic coloring
+  - File rotation based on size
+  - Category-based logging for better organization
+  - Automatic context management with reference counting
+  - Format string support for convenient message formatting
+  - Thread-safety considerations for multi-threaded applications
+  - Singleton pattern with unique instance tracking
+  - Method chaining for fluent configuration
+  - Error recovery to prevent logging failures from crashing the application
+  - Default log directory creation
+  - Thoroughly tested with 34 comprehensive test cases
+
 ## 💻 Installation
 
 1. Clone the repository:
@@ -155,6 +170,9 @@ uses
 uses
   // JSON functionality
   TidyKit.JSON,              // All JSON functionality
+  
+  // Logging functionality
+  TidyKit.Logger,            // Easy to use logging system
   
   // Math-related units
   TidyKit.Math,              // Base math types and operations

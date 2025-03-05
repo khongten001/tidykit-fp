@@ -43,6 +43,11 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
+  - [📝 Logging Operations](#-logging-operations)
+    - [Basic Logging](#basic-logging)
+    - [Configuration](#configuration)
+    - [Category-Based Logging](#category-based-logging)
+    - [Instance Management](#instance-management)
   - [📁 Archive Operations](#-archive-operations)
 
 ## 🔄 JSON Operations
@@ -930,6 +935,83 @@ ChordLen := TTrigKit.ChordLength(R, Angle);  // Length of chord
 // Vector operations
 Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
 Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
+```
+
+## 📝 Logging Operations
+
+### Basic Logging
+```pascal
+// Get logger instance
+var
+  Log: TLogger;
+begin
+  Log := Logger;
+  
+  // Log messages with different levels
+  Log.Debug('This is a debug message');
+  Log.Info('This is an informational message');
+  Log.Warning('This is a warning');
+  Log.Error('This is an error');
+  Log.Fatal('This is a fatal error');
+  
+  // Log with format strings
+  Log.InfoFmt('Processing item %d of %d', [CurrentItem, TotalItems]);
+end;
+```
+
+### Configuration
+```pascal
+// One-line setup
+TLogger.CreateDefaultLogger;  // Default setup with console and file
+
+// Custom setup
+TLogger.CreateDefaultLogger([ldConsole, ldFile], 'myapp.log', llInfo);
+
+// Configure with method chaining
+Logger
+  .SetLogDestinations([ldConsole, ldFile])
+  .SetMinLogLevel(llInfo)
+  .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss');
+  
+// Add log files
+LogIndex := Logger.AddLogFile('app.log');
+LogIndex := Logger.AddDefaultLogFile('system');
+
+// Close log files
+Logger.CloseLogFiles;
+```
+
+### Category-Based Logging
+```pascal
+var
+  UILog, DBLog, NetLog: TLogContext;
+begin
+  // Create contextualized loggers
+  UILog := Logger.CreateContext('UI');
+  DBLog := Logger.CreateContext('DB');
+  NetLog := Logger.CreateContext('Network');
+  
+  // Log with categories
+  UILog.Info('Window created');      // Outputs: [UI] Window created
+  DBLog.Info('Connected to DB');     // Outputs: [DB] Connected to DB
+  NetLog.Warning('High latency');    // Outputs: [Network] High latency
+  
+  // No need to free contexts - they're automatically managed
+end;
+```
+
+### Instance Management
+```pascal
+// Get instance ID (unique for each logger instance)
+ID := Logger.GetInstanceID;
+
+// Reset the logger instance (creates a new logger)
+TLogger.ResetInstance;
+
+// The instance ID will be different after reset
+NewID := Logger.GetInstanceID;
+if NewID <> ID then
+  WriteLn('Logger instance was reset');
 ```
 
 ## 📁 Archive Operations
