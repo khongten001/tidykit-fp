@@ -2,11 +2,44 @@ program LoggerExample;
 
 {$mode objfpc}{$H+}
 
+(*******************************************************************************
+ * TidyKit.Logger Example Program
+ *
+ * This example program demonstrates how to use TidyKit.Logger through a series
+ * of practical examples. The examples progress from basic to advanced usage,
+ * showing you step-by-step how to use the logger effectively.
+ *
+ * To run this example:
+ * 1. Compile this program using Free Pascal Compiler
+ * 2. Execute the resulting binary
+ * 3. Follow the console output to see how each feature works
+ *
+ * Each example is self-contained and includes clear comments explaining what
+ * is happening and why you would use a particular feature.
+ *******************************************************************************)
+
+(*******************************************************************************
+ * NOTE ABOUT TLogger.ResetInstance:
+ * 
+ * This example program uses TLogger.ResetInstance frequently to ensure each
+ * demo starts with a fresh logger configuration. In a real application, you
+ * would typically call ResetInstance much less frequently - usually only when:
+ * - Making major configuration changes
+ * - Transitioning between application phases
+ * - Cleaning up resources at shutdown
+ * - Ensuring isolation between test cases
+ *******************************************************************************)
+
 uses
   SysUtils,
   Classes,
   TidyKit.Logger;
 
+//------------------------------------------------------------------------------
+// HELPER PROCEDURES
+//------------------------------------------------------------------------------
+
+// Displays a section header to organize the console output
 procedure ShowHeader(const AMessage: string);
 begin
   WriteLn;
@@ -15,64 +48,393 @@ begin
   WriteLn('--------------------------------------------------');
 end;
 
+// Displays a subsection header for related examples
+procedure ShowSubHeader(const AMessage: string);
+begin
+  WriteLn;
+  WriteLn(' * ', AMessage, ' *');
+  WriteLn;
+end;
+
+//------------------------------------------------------------------------------
+// BASIC EXAMPLES - Start here if you're new to TidyKit.Logger
+//------------------------------------------------------------------------------
+
+// This demo shows the simplest way to get started with TidyKit.Logger
 procedure DemoQuickStart;
 begin
-  ShowHeader('Quick Start Demo');
+  ShowHeader('QUICK START - The Simplest Way to Use TidyKit.Logger');
   
-  // Reset instance
+  // Step 1: Reset any existing logger (for demo purposes only)
   TLogger.ResetInstance;
   
-  // One-line setup for console and file logging
+  // Step 2: One-line setup - Configure logger for both console and file output
+  // This is usually the first thing you do in your application's initialization
   TLogger.CreateConsoleAndFileLogger('quickstart.log', llInfo);
-  WriteLn('Logger created with one-line setup method');
+  WriteLn('Logger created with one-line setup - ready to use immediately');
   
-  // Use the logger immediately
-  Logger.Info('Application started');
-  Logger.Warning('Disk space is low: %d%% remaining', [5]);
-  Logger.Error('Failed to save file: %s', ['Access denied']);
+  // Step 3: Use the global Logger function to log messages
+  Logger.Info('Application started');                         // Basic message
+  Logger.Warning('Disk space is low: %d%% remaining', [5]);   // With formatting
+  Logger.Error('Failed to save file: %s', ['Access denied']); // With error details
   
-  // Clean up
+  // Step 4: Clean up when finished (important!)
+  WriteLn('Closing log files...');
   Logger.CloseLogFiles;
+  
+  // For this example only: clean up the log file we created
   if FileExists('quickstart.log') then
     DeleteFile('quickstart.log');
 end;
 
-procedure DemoPerformanceTiming;
-var
-  Timer: ITimedOperation;
-  i: Integer;
+// This demo shows how to use different log levels and when to use each one
+procedure DemoBasicLogging;
 begin
-  ShowHeader('Performance Timing Demo');
+  ShowHeader('BASIC LOGGING - Using Different Log Levels');
   
-  // Reset instance
+  // Reset logger and configure it for console output with Debug level
   TLogger.ResetInstance;
   Logger.SetLogDestinations([ldConsole]);
+  Logger.SetMinLogLevel(llDebug);
   
-  // Create a timed operation
-  Timer := Logger.TimedBlock('Data processing operation');
+  // Demonstrate different log levels
+  ShowSubHeader('Log Levels (All showing with llDebug minimum level)');
+  Logger.Debug('DEBUG: Detailed information for development/troubleshooting');
+  Logger.Info('INFO: General information about normal operation');
+  Logger.Warning('WARNING: Something unusual that might need attention');
+  Logger.Error('ERROR: Something failed but execution can continue');
+  Logger.Fatal('FATAL: Critical error that might cause program termination');
+
+  // Demonstrate format string usage for including variable data
+  ShowSubHeader('Including Variables in Log Messages');
+  Logger.DebugFmt('Processing item %d of %d: "%s"', [1, 10, 'Example Item']);
   
-  // Simulate work
-  WriteLn('Performing work...');
-  for i := 1 to 5 do
-  begin
-    Sleep(100); // Simulate work
-    Write('.');
-  end;
+  // Show how minimum log level filtering works
+  ShowSubHeader('Minimum Log Level Filtering');
+  WriteLn('Setting minimum log level to WARNING...');
+  Logger.SetMinLogLevel(llWarning);
+  
+  WriteLn('These messages WILL appear (WARNING and above):');
+  Logger.Warning('A warning message');
+  Logger.Error('An error message');
+  Logger.Fatal('A fatal message');
+  
   WriteLn;
+  WriteLn('These messages will NOT appear (below WARNING):');
+  Logger.Debug('A debug message - filtered out');
+  Logger.Info('An info message - filtered out');
   
-  // Timer will automatically log when it goes out of scope
-  WriteLn('Timer will log completion message when it goes out of scope');
+  // Reset to show all messages for subsequent demos
+  Logger.SetMinLogLevel(llDebug);
 end;
 
-procedure DemoStructuredLogging;
+// This demo shows how to use category-based logging to organize your logs
+procedure DemoCategoryBasedLogging;
 begin
-  ShowHeader('Structured Logging Demo');
+  ShowHeader('CATEGORY-BASED LOGGING - Organizing Logs by Component');
+  
+  // Reset and configure logger
+  TLogger.ResetInstance;
+  Logger.SetLogDestinations([ldConsole]);
+  
+  ShowSubHeader('Creating Category Loggers');
+  WriteLn('Creating specialized loggers for UI, Database, and Network categories');
+  
+  // Create specialized loggers for different categories
+  var
+    UILogger: TLogContext;
+    DBLogger: TLogContext;
+    NetworkLogger: TLogContext;
+  begin
+    // Each context logger automatically adds the category name to all messages
+    UILogger := Logger.CreateContext('UI');
+    DBLogger := Logger.CreateContext('Database');
+    NetworkLogger := Logger.CreateContext('Network');
+    
+    // Each category logger adds its category name to the message
+    UILogger.Info('Application window created');       // Shows: [UI] Application window created
+    DBLogger.Info('Connected to database');            // Shows: [Database] Connected to database
+    NetworkLogger.Warning('Network latency high: 350ms'); // Shows: [Network] Network latency high: 350ms
+    
+    // Use format strings with categories
+    DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
+    NetworkLogger.InfoFmt('Received %d bytes from %s', [1024, '192.168.1.10']);
+    
+    // No need to free context objects - they are automatically managed
+    WriteLn('Note: Context objects are automatically managed by the logger');
+  end;
+  
+  ShowSubHeader('Direct Category Logging');
+  WriteLn('Logging with categories without creating TLogContext objects:');
+  
+  // Alternative: Use direct category methods without creating context objects
+  Logger.InfoWithCategory('System', 'System initialization complete');
+  Logger.ErrorWithCategory('Security', 'Invalid login attempt from IP: 192.168.1.100');
+end;
+
+// This demo shows how to log to files instead of or in addition to the console
+procedure DemoFileLogging;
+begin
+  ShowHeader('FILE LOGGING - Writing Logs to Files');
+  
+  // Reset and configure logger for file output only
+  TLogger.ResetInstance;
+  Logger.SetLogDestinations([ldFile]);
+  
+  // Create a log file in the current directory
+  var
+    LogFilePath: string;
+    LogIndex: Integer;
+    FileContents: TStringList;
+  begin
+    LogFilePath := 'example.log';
+    if FileExists(LogFilePath) then
+      DeleteFile(LogFilePath);
+      
+    // Add a log file and get its index
+    LogIndex := Logger.AddLogFile(LogFilePath);
+    WriteLn('Created log file: ', LogFilePath);
+    
+    // Write some log messages to the file
+    Logger.Info('Starting file logging demo');
+    Logger.Warning('This is a test warning - written to file only');
+    Logger.ErrorFmt('Error code: %d - %s', [404, 'Not Found']);
+    
+    // Close log files to ensure all content is written
+    Logger.CloseLogFiles;
+    
+    // Display log file contents to see what was written
+    if FileExists(LogFilePath) then
+    begin
+      WriteLn('Log file contents:');
+      WriteLn('-----------------');
+      
+      FileContents := TStringList.Create;
+      try
+        FileContents.LoadFromFile(LogFilePath);
+        WriteLn(FileContents.Text);
+      finally
+        FileContents.Free;
+      end;
+      
+      WriteLn('-----------------');
+    end
+    else
+      WriteLn('Error: Log file not found!');
+  end;
+end;
+
+//------------------------------------------------------------------------------
+// INTERMEDIATE EXAMPLES - Once you understand the basics
+//------------------------------------------------------------------------------
+
+// This demo shows how to measure the performance of operations
+procedure DemoPerformanceTiming;
+begin
+  ShowHeader('PERFORMANCE TIMING - Measuring Operation Duration');
+  
+  // Reset instance and configure
+  TLogger.ResetInstance;
+  Logger.SetLogDestinations([ldConsole]);
+  
+  // Create a timed operation block
+  ShowSubHeader('Basic Timing Block');
+  WriteLn('Creating a timer that will log when it goes out of scope...');
+  
+  var
+    Timer: ITimedOperation;
+    i: Integer;
+  begin
+    // Start the timer - this logs the beginning of the operation
+    Timer := Logger.TimedBlock('Data processing operation');
+    
+    // Simulate work
+    WriteLn('Performing work...');
+    for i := 1 to 5 do
+    begin
+      Sleep(100); // Simulate work
+      Write('.');
+    end;
+    WriteLn;
+    
+    // When Timer goes out of scope at the end of this block,
+    // it automatically logs completion with duration
+    WriteLn('Timer will log completion message when it goes out of scope');
+  end;
+  
+  ShowSubHeader('Nested Timing Blocks');
+  WriteLn('You can nest timing blocks for more detailed performance analysis:');
+  
+  var
+    OuterTimer: ITimedOperation;
+    InnerTimer: ITimedOperation;
+  begin
+    OuterTimer := Logger.TimedBlock('Outer operation');
+    
+    // Simulate some initial work
+    Sleep(100);
+    
+    // Create a nested timer
+    InnerTimer := Logger.TimedBlock('Inner operation');
+    Sleep(200); // Simulate inner work
+    
+    // InnerTimer logs completion here (when it goes out of scope)
+    
+    // More outer work
+    Sleep(100);
+    
+    // OuterTimer logs completion here (when it goes out of scope)
+  end;
+end;
+
+// This demo shows how to use method chaining for fluent configuration
+procedure DemoMethodChaining;
+begin
+  ShowHeader('METHOD CHAINING - Configuring with Fluent Syntax');
+  
+  // Reset instance
+  TLogger.ResetInstance;
+  
+  // Configure with method chaining
+  // This allows you to configure multiple settings in a single statement
+  WriteLn('Configuring logger with method chaining...');
+  Logger
+    .SetLogDestinations([ldConsole])
+    .SetMinLogLevel(llInfo)
+    .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss')
+    .SetFormat('[%time] [%level] %message');
+    
+  WriteLn('Logger configured with method chaining');
+  Logger.Info('Using custom datetime format');
+  Logger.Warning('All settings configured in one fluent statement');
+end;
+
+// This demo shows how to improve performance with batch logging
+procedure DemoBatchLogging;
+begin
+  ShowHeader('BATCH LOGGING - Improving Performance for Multiple Messages');
   
   // Reset instance
   TLogger.ResetInstance;
   Logger.SetLogDestinations([ldConsole]);
   
-  // Log structured data
+  var
+    i: Integer;
+    StartTime: TDateTime;
+    EndTime: TDateTime;
+  begin
+    // First, log messages individually (slower)
+    ShowSubHeader('Individual Logging (Slower)');
+    WriteLn('Logging 10 messages individually:');
+    
+    StartTime := Now;
+    for i := 1 to 10 do
+      Logger.Info('Individual log message #' + IntToStr(i));
+    EndTime := Now;
+    
+    WriteLn(Format('Time taken: %.6f seconds', 
+      [(EndTime - StartTime) * 24 * 60 * 60]));
+      
+    // Then, log messages in batch (faster)
+    ShowSubHeader('Batch Logging (Faster)');
+    WriteLn('Logging 10 messages in batch:');
+    
+    StartTime := Now;
+    Logger.BeginBatch;
+    try
+      for i := 1 to 10 do
+        Logger.Info('Batch log message #' + IntToStr(i));
+    finally
+      Logger.EndBatch; // Writes all messages at once
+    end;
+    EndTime := Now;
+    
+    WriteLn(Format('Time taken: %.6f seconds', 
+      [(EndTime - StartTime) * 24 * 60 * 60]));
+    
+    WriteLn('Note: The performance difference becomes more significant');
+    WriteLn('      with larger numbers of messages or when writing to files.');
+  end;
+end;
+
+// This demo shows how to use factory methods to create specialized loggers
+procedure DemoFactoryMethods;
+begin
+  ShowHeader('FACTORY METHODS - Creating Specialized Loggers');
+  
+  var
+    ConsoleLogger: TLogger;
+    FileLogger: TLogger;
+    BothLogger: TLogger;
+    DebugLogger: TLogger;
+    AuditLogger: TLogger;
+  begin
+    // Various factory methods for different use cases
+    
+    ShowSubHeader('Basic Logger Types');
+    WriteLn('Creating console-only logger with Debug level...');
+    ConsoleLogger := TLogger.CreateConsoleLogger(llDebug);
+    ConsoleLogger.Debug('This is a console-only debug message');
+    
+    WriteLn('Creating file-only logger with Info level...');
+    FileLogger := TLogger.CreateFileLogger('file_only.log', llInfo);
+    FileLogger.Info('This is a file-only info message');
+    FileLogger.Debug('This debug message should NOT appear in the file');
+    
+    WriteLn('Creating console and file logger...');
+    BothLogger := TLogger.CreateConsoleAndFileLogger('console_and_file.log', llWarning);
+    BothLogger.Warning('This warning should appear in console and file');
+    BothLogger.Info('This info message should NOT appear anywhere');
+    
+    ShowSubHeader('Specialized Logger Types');
+    WriteLn('Creating debug logger (shows file and line information)...');
+    DebugLogger := TLogger.CreateDebugLogger;
+    DebugLogger.Debug('This debug message includes source file location');
+    
+    WriteLn('Creating audit logger (for security events)...');
+    AuditLogger := TLogger.CreateAuditLogger('audit.log');
+    AuditLogger.Info('User logged in: admin');
+    AuditLogger.Warning('Failed login attempt: unknown_user');
+    
+    // Clean up
+    WriteLn('Cleaning up log files...');
+    FileLogger.CloseLogFiles;
+    BothLogger.CloseLogFiles;
+    DebugLogger.CloseLogFiles;
+    AuditLogger.CloseLogFiles;
+    
+    if FileExists('file_only.log') then
+      DeleteFile('file_only.log');
+      
+    if FileExists('console_and_file.log') then
+      DeleteFile('console_and_file.log');
+      
+    if FileExists('audit.log') then
+      DeleteFile('audit.log');
+      
+    if FileExists('debug.log') then
+      DeleteFile('debug.log');
+  end;
+end;
+
+//------------------------------------------------------------------------------
+// ADVANCED EXAMPLES - For more complex logging needs
+//------------------------------------------------------------------------------
+
+// This demo shows how to log structured data with key-value pairs
+procedure DemoStructuredLogging;
+begin
+  ShowHeader('STRUCTURED LOGGING - Logging Key-Value Data');
+  
+  // Reset instance
+  TLogger.ResetInstance;
+  Logger.SetLogDestinations([ldConsole]);
+  
+  // Show how to log structured data with key-value pairs
+  ShowSubHeader('Key-Value Pair Logging');
+  WriteLn('Logging structured data for a user login event:');
+  
+  // Log structured data as key-value pairs
   Logger.LogStructured(llInfo, 'User login', [
     NameValuePair('username', 'john_doe'),
     NameValuePair('ip_address', '192.168.1.10'),
@@ -80,275 +442,109 @@ begin
     NameValuePair('attempt', 3)
   ]);
   
+  WriteLn('Logging structured data for a database query:');
   Logger.LogStructured(llWarning, 'Database query slow', [
     NameValuePair('query', 'SELECT * FROM large_table'),
     NameValuePair('duration_ms', 1250),
     NameValuePair('rows_returned', 5000)
   ]);
+  
+  // Show type-specific value logging
+  ShowSubHeader('Type-Specific Value Logging');
+  WriteLn('Logging values with their native types:');
+  
+  Logger.LogValue('user_count', 42, llInfo);
+  Logger.LogValue('temperature', 98.6, llInfo);
+  Logger.LogValue('is_active', True, llInfo);
+  Logger.LogValue('username', 'john_doe', llInfo);
 end;
 
-procedure DemoFactoryMethods;
-var
-  ConsoleLogger, FileLogger, BothLogger: TLogger;
-begin
-  ShowHeader('Factory Methods Demo');
-  
-  // Create different types of loggers
-  WriteLn('Creating console-only logger with Debug level...');
-  ConsoleLogger := TLogger.CreateConsoleLogger(llDebug);
-  ConsoleLogger.Debug('This is a console-only debug message');
-  
-  WriteLn('Creating file-only logger with Info level...');
-  FileLogger := TLogger.CreateFileLogger('file_only.log', llInfo);
-  FileLogger.Info('This is a file-only info message');
-  FileLogger.Debug('This debug message should NOT appear in the file');
-  
-  WriteLn('Creating console and file logger...');
-  BothLogger := TLogger.CreateConsoleAndFileLogger('console_and_file.log', llWarning);
-  BothLogger.Warning('This warning should appear in console and file');
-  BothLogger.Info('This info message should NOT appear anywhere');
-  
-  // Clean up
-  FileLogger.CloseLogFiles;
-  BothLogger.CloseLogFiles;
-  
-  if FileExists('file_only.log') then
-    DeleteFile('file_only.log');
-    
-  if FileExists('console_and_file.log') then
-    DeleteFile('console_and_file.log');
-end;
-
-procedure DemoBatchLogging;
-var
-  i: Integer;
-begin
-  ShowHeader('Batch Logging Demo');
-  
-  // Reset instance
-  TLogger.ResetInstance;
-  Logger.SetLogDestinations([ldConsole]);
-  
-  WriteLn('Logging 10 messages individually:');
-  for i := 1 to 10 do
-    Logger.Info('Individual log message #' + IntToStr(i));
-    
-  WriteLn;
-  WriteLn('Logging 10 messages in batch:');
-  
-  Logger.BeginBatch;
-  try
-    for i := 1 to 10 do
-      Logger.Info('Batch log message #' + IntToStr(i));
-  finally
-    Logger.EndBatch; // Writes all messages at once
-  end;
-  
-  WriteLn('Batch of 10 messages was written all at once');
-end;
-
-procedure DemoBasicLogging;
-begin
-  ShowHeader('Basic Logging Demo');
-  
-  // First, make sure we're starting fresh
-  TLogger.ResetInstance;
-  
-  // Configure logger for console output
-  Logger.SetLogDestinations([ldConsole]);
-  Logger.SetMinLogLevel(llDebug);
-  
-  // Demonstrate different log levels
-  Logger.Debug('This is a DEBUG message - detailed debugging information');
-  Logger.Info('This is an INFO message - general information about program flow');
-  Logger.Warning('This is a WARNING message - potential issue that might need attention');
-  Logger.Error('This is an ERROR message - something went wrong but execution continues');
-  Logger.Fatal('This is a FATAL message - critical error that might cause termination');
-
-  // Demonstrate format string usage
-  Logger.DebugFmt('Processing item %d of %d: "%s"', [1, 10, 'Example Item']);
-  
-  // Show effect of minimum log level
-  WriteLn;
-  WriteLn('Setting minimum log level to WARNING...');
-  Logger.SetMinLogLevel(llWarning);
-  
-  WriteLn('These messages should appear:');
-  Logger.Warning('This warning message should appear');
-  Logger.Error('This error message should appear');
-  Logger.Fatal('This fatal message should appear');
-  
-  WriteLn('These messages should NOT appear:');
-  Logger.Debug('This debug message should not appear');
-  Logger.Info('This info message should not appear');
-end;
-
-procedure DemoFileLogging;
-var
-  LogFilePath: string;
-  LogIndex: Integer;
-  FileContents: TStringList;
-begin
-  ShowHeader('File Logging Demo');
-  
-  // Reset and configure logger for file output
-  TLogger.ResetInstance;
-  Logger.SetLogDestinations([ldFile]);
-  
-  // Create a log file in the current directory
-  LogFilePath := 'example.log';
-  if FileExists(LogFilePath) then
-    DeleteFile(LogFilePath);
-    
-  LogIndex := Logger.AddLogFile(LogFilePath);
-  WriteLn('Created log file: ', LogFilePath);
-  
-  // Write some log messages
-  Logger.Info('Starting file logging demo');
-  Logger.Warning('This is a test warning');
-  Logger.ErrorFmt('Error code: %d - %s', [404, 'Not Found']);
-  
-  // Close log files to ensure all content is written
-  Logger.CloseLogFiles;
-  
-  // Display log file contents
-  if FileExists(LogFilePath) then
-  begin
-    WriteLn('Log file contents:');
-    WriteLn('-----------------');
-    
-    FileContents := TStringList.Create;
-    try
-      FileContents.LoadFromFile(LogFilePath);
-      WriteLn(FileContents.Text);
-    finally
-      FileContents.Free;
-    end;
-    
-    WriteLn('-----------------');
-  end
-  else
-    WriteLn('Error: Log file not found!');
-end;
-
-procedure DemoCategoryBasedLogging;
-var
-  UILogger, DBLogger, NetworkLogger: TLogContext;
-begin
-  ShowHeader('Category-Based Logging Demo');
-  
-  // Reset and configure logger
-  TLogger.ResetInstance;
-  Logger.SetLogDestinations([ldConsole]);
-  
-  // Create specialized loggers for different categories
-  UILogger := Logger.CreateContext('UI');
-  DBLogger := Logger.CreateContext('Database');
-  NetworkLogger := Logger.CreateContext('Network');
-  
-  // Use category-specific logging
-  UILogger.Info('Application window created');
-  DBLogger.Info('Connected to database');
-  NetworkLogger.Warning('Network latency high: 350ms');
-  
-  // Use format strings with categories
-  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
-  NetworkLogger.InfoFmt('Received %d bytes from %s', [1024, '192.168.1.10']);
-  
-  // No need to free context objects - they are automatically managed
-  WriteLn('Context objects are automatically managed by the logger');
-end;
-
-procedure DemoMethodChaining;
-begin
-  ShowHeader('Method Chaining Demo');
-  
-  // Reset instance
-  TLogger.ResetInstance;
-  
-  // Configure with method chaining
-  Logger
-    .SetLogDestinations([ldConsole])
-    .SetMinLogLevel(llInfo)
-    .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss');
-    
-  WriteLn('Logger configured with method chaining');
-  Logger.Info('Using custom datetime format');
-  Logger.Warning('All in one fluent configuration');
-end;
-
+// This demo shows how to manage logger instances
 procedure DemoInstanceManagement;
-var
-  FirstID, SecondID: Int64;
 begin
-  ShowHeader('Instance Management Demo');
+  ShowHeader('INSTANCE MANAGEMENT - Working with Logger Instances');
   
   // Reset to start fresh
   TLogger.ResetInstance;
   
   // Get the instance ID of the current logger
-  FirstID := Logger.GetInstanceID;
-  WriteLn('First logger instance ID: ', FirstID);
+  var
+    FirstID: Int64;
+    SecondID: Int64;
+  begin
+    FirstID := Logger.GetInstanceID;
+    WriteLn('First logger instance ID: ', FirstID);
+    
+    // Log something with first instance
+    Logger.Info('Using first logger instance');
+    
+    // Reset the instance - this destroys the current instance and creates a new one
+    WriteLn('Resetting logger instance...');
+    TLogger.ResetInstance;
+    
+    // Get the new instance ID
+    SecondID := Logger.GetInstanceID;
+    WriteLn('Second logger instance ID: ', SecondID);
+    
+    // Log something with new instance
+    Logger.Info('Using second logger instance');
+    
+    // Verify instance has changed
+    if FirstID <> SecondID then
+      WriteLn('SUCCESS: Logger instance was changed (', FirstID, ' -> ', SecondID, ')')
+    else
+      WriteLn('ERROR: Logger instance did not change!');
+  end;
   
-  // Log something
-  Logger.Info('Using first logger instance');
-  
-  // Reset the instance
-  WriteLn('Resetting logger instance...');
-  TLogger.ResetInstance;
-  
-  // Get the new instance ID
-  SecondID := Logger.GetInstanceID;
-  WriteLn('Second logger instance ID: ', SecondID);
-  
-  // Log something with new instance
-  Logger.Info('Using second logger instance');
-  
-  // Verify instance has changed
-  if FirstID <> SecondID then
-    WriteLn('SUCCESS: Logger instance was changed (', FirstID, ' -> ', SecondID, ')')
-  else
-    WriteLn('ERROR: Logger instance did not change!');
+  ShowSubHeader('When to Use Instance Management');
+  WriteLn('Use instance management when:');
+  WriteLn('1. You need to completely reconfigure the logger');
+  WriteLn('2. You want to clear all sinks and start fresh');
+  WriteLn('3. During testing to ensure isolation between test cases');
 end;
 
+// This demo shows how the logger handles and recovers from errors
 procedure DemoErrorRecovery;
-var
-  InvalidPath: string;
-  ValidPath: string;
 begin
-  ShowHeader('Error Recovery Demo');
+  ShowHeader('ERROR RECOVERY - How the Logger Handles Errors');
   
   // Reset instance
   TLogger.ResetInstance;
   
   // Try to log to an invalid location
-  InvalidPath := '/invalid/directory/that/does/not/exist/error.log';
-  Logger.SetLogDestinations([ldConsole, ldFile]);
-  
-  WriteLn('Attempting to add invalid log file: ', InvalidPath);
-  try
-    Logger.AddLogFile(InvalidPath);
-    WriteLn('NOTE: If you see this message, the logger recovered from the error');
-  except
-    on E: Exception do
-      WriteLn('ERROR: ', E.Message);
+  var
+    InvalidPath: string;
+    ValidPath: string;
+  begin
+    InvalidPath := '/invalid/directory/that/does/not/exist/error.log';
+    Logger.SetLogDestinations([ldConsole, ldFile]);
+    
+    WriteLn('Attempting to add invalid log file: ', InvalidPath);
+    try
+      Logger.AddLogFile(InvalidPath);
+      WriteLn('NOTE: If you see this message, the logger recovered from the error');
+    except
+      on E: Exception do
+        WriteLn('ERROR: ', E.Message);
+    end;
+    
+    // Now let's log to a valid location
+    ValidPath := 'valid.log';
+    WriteLn('Adding valid log file: ', ValidPath);
+    Logger.AddLogFile(ValidPath);
+    Logger.Info('This message should be logged to both console and file');
+    Logger.CloseLogFiles;
+    
+    // Clean up
+    if FileExists(ValidPath) then
+      DeleteFile(ValidPath);
   end;
-  
-  // Now let's log to a valid location
-  ValidPath := 'valid.log';
-  WriteLn('Adding valid log file: ', ValidPath);
-  Logger.AddLogFile(ValidPath);
-  Logger.Info('This message should be logged to both console and file');
-  Logger.CloseLogFiles;
-  
-  // Clean up
-  if FileExists(ValidPath) then
-    DeleteFile(ValidPath);
 end;
 
+// This demo shows the default logger setup (simplest way to get started)
 procedure DemoDefaultLoggerSetup;
 begin
-  ShowHeader('Default Logger Setup Demo');
+  ShowHeader('DEFAULT LOGGER SETUP - One-Line Configuration');
   
   // Reset instance
   TLogger.ResetInstance;
@@ -358,32 +554,67 @@ begin
   WriteLn('Default logger created with console output only');
   
   Logger.Info('This info message should appear');
-  Logger.Debug('This debug message should NOT appear');
+  Logger.Debug('This debug message should NOT appear (below minimum level)');
   
   // Clean up
   Logger.CloseLogFiles;
 end;
 
-// Main program
+//------------------------------------------------------------------------------
+// MAIN PROGRAM
+//------------------------------------------------------------------------------
+
 begin
   WriteLn('TidyKit.Logger Demo Application');
   WriteLn('==============================');
+  WriteLn('This program demonstrates how to use TidyKit.Logger effectively.');
+  WriteLn('The examples progress from basic to advanced usage.');
+  WriteLn;
+  WriteLn('Press Enter after each demo to continue to the next one...');
 
   try
-    // New demos
+    //----------------------------------------------------------------------
+    // BASIC DEMOS - Start here for beginners
+    //----------------------------------------------------------------------
     DemoQuickStart;
-    DemoPerformanceTiming;
-    DemoStructuredLogging;
-    DemoFactoryMethods;
-    DemoBatchLogging;
+    ReadLn;
     
-    // Original demos
     DemoBasicLogging;
-    DemoFileLogging;
+    ReadLn;
+    
     DemoCategoryBasedLogging;
+    ReadLn;
+    
+    DemoFileLogging;
+    ReadLn;
+    
+    //----------------------------------------------------------------------
+    // INTERMEDIATE DEMOS - More advanced features
+    //----------------------------------------------------------------------
+    DemoPerformanceTiming;
+    ReadLn;
+    
     DemoMethodChaining;
+    ReadLn;
+    
+    DemoBatchLogging;
+    ReadLn;
+    
+    DemoFactoryMethods;
+    ReadLn;
+    
+    //----------------------------------------------------------------------
+    // ADVANCED DEMOS - For more complex logging needs
+    //----------------------------------------------------------------------
+    DemoStructuredLogging;
+    ReadLn;
+    
     DemoInstanceManagement;
+    ReadLn;
+    
     DemoErrorRecovery;
+    ReadLn;
+    
     DemoDefaultLoggerSetup;
     
     // Clean up

@@ -1011,14 +1011,15 @@ begin
   Logger.CloseLogFiles;  // Closes files and flushes any pending messages
 end;
 
-// IMPORTANT: What happens if you forget to call CloseLogFiles()?
-// - The logger will attempt to flush and close files when the application terminates
-// - However, for guaranteed data integrity, always close log files explicitly
-// - Consider using try-finally blocks to ensure files are closed even if exceptions occur
+// Program shutdown best practices:
+// - CloseLogFiles is sufficient for normal program termination
+// - ResetInstance is NOT required at program shutdown
+// - The logger will automatically clean up when your application terminates
+// - For guaranteed data integrity, explicitly call CloseLogFiles
 try
-  // Your logging code here
+  // Your application code
 finally
-  Logger.CloseLogFiles;
+  Logger.CloseLogFiles;  // This is sufficient for cleanup
 end;
 ```
 
@@ -1110,6 +1111,12 @@ Logger.LoadConfiguration('logger.ini');
 // Instance management
 ID := Logger.GetInstanceID;  // Get unique ID of current logger instance
 TLogger.ResetInstance;       // Destroy and recreate singleton instance
+
+// When to use ResetInstance:
+// 1. Complete reconfiguration - when you need totally different settings
+// 2. Between test cases - ensures test isolation
+// 3. Application phase changes - switching from init to runtime logging
+// 4. Final cleanup - to release ALL logger resources
 
 // Error recovery - logger attempts to handle errors gracefully
 try

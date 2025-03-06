@@ -4,6 +4,24 @@
 
 `TidyKit.Logger` is a lightweight, flexible logging component for Free Pascal applications. It provides formatted log messages with timestamps, log levels, and multiple output destinations including console and file-based logging.
 
+## Target Audience
+
+TidyKit.Logger is designed for:
+
+- **Pascal developers** seeking a modern, straightforward logging solution
+- **Developers who value simplicity** but need powerful logging capabilities
+- **Applications ranging from small tools to complex systems**
+
+You can expect:
+- Easy setup with minimal code (one-line initialization for common scenarios)
+- Flexible output options (console, files, or custom sinks)
+- Both basic and advanced features in a consistent API
+
+You won't find:
+- Complex hierarchical logger trees (like in Python's logging)
+- Overwhelming configuration options
+- Thread-focused optimizations (though basic thread safety is included)
+
 ## Quick Start Guide
 
 This step-by-step guide will help you get started with TidyKit.Logger:
@@ -689,7 +707,27 @@ Returns the singleton instance of the TLogger class. This is the method called b
 
 ##### `class procedure ResetInstance`
 
-Resets (destroys and recreates) the singleton instance.
+Resets (destroys and recreates) the singleton instance. This method:
+- Destroys the current logger instance completely
+- Automatically closes any open log files as part of cleanup
+- Creates a new logger instance with default settings
+- Clears all previously configured sinks, files, and settings
+
+This is useful when you need to:
+- Completely reconfigure the logger with different settings
+- Ensure all resources are released during application shutdown
+- Create a clean logger state for a new phase of your application
+- Reset between test cases to ensure isolation
+
+```pascal
+// Start with default configuration
+Logger.Info('Using initial configuration');
+
+// Completely reset and reconfigure differently
+TLogger.ResetInstance;
+TLogger.CreateConsoleLogger(llDebug);
+Logger.Info('Using new configuration after reset');
+```
 
 #### Category Support
 
@@ -954,7 +992,7 @@ The `CloseLogFiles()` method is crucial for proper resource management when usin
 
 #### What Happens If You Forget to Call CloseLogFiles()?
 
-If you forget to call `CloseLogFiles()`, TidyKit.Logger includes several safeguards:
+If you forget to call `CloseLogFiles`, TidyKit.Logger includes several safeguards:
 
 1. **Automatic Flushing**: The logger generally flushes data after each write operation, so most log messages will be written to disk even without explicit closing.
 
@@ -1010,9 +1048,184 @@ begin
 end;
 ```
 
+### Program Shutdown: CloseLogFiles vs. ResetInstance
+
+When shutting down your application, you might wonder whether you need to call `ResetInstance` or if `CloseLogFiles` is sufficient. Here's the guidance:
+
+#### What You Need to Know
+
+1. **CloseLogFiles is sufficient** for normal program termination:
+   ```pascal
+   try
+     // Your application logic
+   finally
+     // This is all you need for clean shutdown
+     Logger.CloseLogFiles;
+   end;
+   ```
+
+2. **ResetInstance is NOT required** at program shutdown:
+   - The Pascal runtime automatically destroys all global objects when your program terminates
+   - During this destruction, the logger's destructor automatically closes any open log files
+   - Using `ResetInstance` at shutdown is unnecessary and redundant
+
+3. **Automatic Cleanup Safeguards**:
+   - Even if you forget to call `CloseLogFiles`, the logger includes safeguards:
+     - The destructor will attempt to close files during application termination
+     - Most data will be flushed during normal logging operations
+
+4. **Best Practice**:
+   - Always explicitly call `CloseLogFiles` in a finally block for guaranteed data integrity
+   - Reserve `ResetInstance` for specific scenarios (configuration changes, testing, etc.)
+   - Use the simplest approach that meets your needs
+
+## Understanding Instance Management
+
+### When and Why to Use ResetInstance
+
+The `TLogger.ResetInstance` method is a powerful but sometimes misunderstood feature of TidyKit.Logger. It completely destroys the current logger instance and creates a new one with default settings. Here's when you might want to use it:
+
+#### Appropriate Use Cases
+
+1. **Testing Scenarios**: When writing tests that need isolation between test cases:
+   ```pascal
+   procedure TestLogging;
+   begin
+     // Setup for this specific test
+     TLogger.ResetInstance;
+     TLogger.CreateMemorySink(100); // For this test only
+     
+     // Test code...
+     
+     // Clean up after test
+     TLogger.ResetInstance;
+   end;
+   ```
+
+2. **Major Configuration Changes**: When you need to drastically change the logger's configuration:
+   ```pascal
+   // Development mode configuration
+   TLogger.CreateConsoleLogger(llDebug);
+   // ... development code ...
+   
+   // Switch to production mode
+   TLogger.ResetInstance;
+   TLogger.CreateFileLogger('production.log', llWarning);
+   ```
+
+3. **Application Phase Changes**: When transitioning between major application phases:
+   ```pascal
+   // Initialization phase logging
+   TLogger.CreateConsoleLogger(llDebug);
+   // ... initialization code ...
+   
+   // Runtime phase with different logging needs
+   TLogger.ResetInstance;
+   TLogger.CreateConsoleAndFileLogger('runtime.log', llInfo);
+   ```
+
+4. **Memory/Resource Cleanup**: When you need to ensure all logger resources are released:
+   ```pascal
+   procedure ShutdownApplication;
+   begin
+     // Log shutdown message
+     Logger.Info('Application shutting down');
+     
+     // Release all logger resources
+     TLogger.ResetInstance;
+   end;
+   ```
+
+#### When NOT to Use ResetInstance
+
+You generally don't need to use `ResetInstance` for:
+
+1. **Simple configuration changes**: Use the setter methods like `SetMinLogLevel` or `SetFormat` instead
+2. **Adding log files or sinks**: Use `AddLogFile` or `AddSink` methods
+3. **Routine logging operations**: The logger manages its own state effectively
+
+#### ResetInstance vs. CloseLogFiles
+
+- `CloseLogFiles`: Closes log files but keeps the logger instance and configuration intact
+- `ResetInstance`: Completely destroys the logger instance (including closing files) and creates a new default instance
+
+For most applications, using `CloseLogFiles` during shutdown is sufficient. Use `ResetInstance` only when you need a complete logger reset. 
+
 ## Limitations
 
 1. The logger is primarily designed for single-process applications.
 2. While basic file operations are thread-safe, heavy multi-threaded use might benefit from additional synchronization.
 3. The batch mode is not thread-safe. Use it in single-threaded contexts or provide your own synchronization.
-4. Some features might not be compatible with all Pascal compilers or platforms. Adjust as needed for your environment. 
+4. Some features might not be compatible with all Pascal compilers or platforms. Adjust as needed for your environment.
+
+## Understanding Instance Management
+
+### When and Why to Use ResetInstance
+
+The `TLogger.ResetInstance` method is a powerful but sometimes misunderstood feature of TidyKit.Logger. It completely destroys the current logger instance and creates a new one with default settings. Here's when you might want to use it:
+
+#### Appropriate Use Cases
+
+1. **Testing Scenarios**: When writing tests that need isolation between test cases:
+   ```pascal
+   procedure TestLogging;
+   begin
+     // Setup for this specific test
+     TLogger.ResetInstance;
+     TLogger.CreateMemorySink(100); // For this test only
+     
+     // Test code...
+     
+     // Clean up after test
+     TLogger.ResetInstance;
+   end;
+   ```
+
+2. **Major Configuration Changes**: When you need to drastically change the logger's configuration:
+   ```pascal
+   // Development mode configuration
+   TLogger.CreateConsoleLogger(llDebug);
+   // ... development code ...
+   
+   // Switch to production mode
+   TLogger.ResetInstance;
+   TLogger.CreateFileLogger('production.log', llWarning);
+   ```
+
+3. **Application Phase Changes**: When transitioning between major application phases:
+   ```pascal
+   // Initialization phase logging
+   TLogger.CreateConsoleLogger(llDebug);
+   // ... initialization code ...
+   
+   // Runtime phase with different logging needs
+   TLogger.ResetInstance;
+   TLogger.CreateConsoleAndFileLogger('runtime.log', llInfo);
+   ```
+
+4. **Memory/Resource Cleanup**: When you need to ensure all logger resources are released:
+   ```pascal
+   procedure ShutdownApplication;
+   begin
+     // Log shutdown message
+     Logger.Info('Application shutting down');
+     
+     // Release all logger resources
+     TLogger.ResetInstance;
+   end;
+   ```
+
+#### When NOT to Use ResetInstance
+
+You generally don't need to use `ResetInstance` for:
+
+1. **Simple configuration changes**: Use the setter methods like `SetMinLogLevel` or `SetFormat` instead
+2. **Adding log files or sinks**: Use `AddLogFile` or `AddSink` methods
+3. **Routine logging operations**: The logger manages its own state effectively
+
+#### ResetInstance vs. CloseLogFiles
+
+- `CloseLogFiles`: Closes log files but keeps the logger instance and configuration intact
+- `ResetInstance`: Completely destroys the logger instance (including closing files) and creates a new default instance
+
+For most applications, using `CloseLogFiles` during shutdown is sufficient. Use `ResetInstance` only when you need a complete logger reset. 
