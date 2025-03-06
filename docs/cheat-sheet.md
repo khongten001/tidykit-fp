@@ -44,7 +44,8 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
   - [📝 Logging Operations](#-logging-operations)
-    - [Basic Use](#basic-use)
+    - [Getting Started with TidyKit.Logger](#getting-started-with-tidykitlogger)
+    - [Common Scenarios](#common-scenarios)
     - [Advanced Use](#advanced-use)
   - [📁 Archive Operations](#-archive-operations)
 
@@ -937,31 +938,117 @@ Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
 
 ## 📝 Logging Operations
 
-### Basic Use
+### Getting Started with TidyKit.Logger
+
 ```pascal
-// Simple one-line setup
+// STEP 1: Choose how to set up your logger
+
+// Option A: Use the global logger singleton (recommended for most applications)
+uses
+  TidyKit.Logger;
+  
+// Set up once at application startup
 TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
 
-// Log messages with different levels
-Logger.Debug('This is a debug message');
-Logger.Info('This is an informational message');
-Logger.Warning('This is a warning');
-Logger.Error('This is an error');
-Logger.Fatal('This is a fatal error');
+// Then use anywhere in your code through the Logger function
+Logger.Info('Application started');
 
-// Log with format strings (both styles supported)
-Logger.InfoFmt('Processing item %d of %d', [CurrentItem, TotalItems]);
-Logger.Info('Processing item %d of %d', [CurrentItem, TotalItems]);
 
-// Create category-based loggers for better organization
+// Option B: Create your own logger instance (for specialized components)
+var
+  ComponentLogger: TLogger;
+begin
+  ComponentLogger := TLogger.CreateFileLogger('component.log', llDebug);
+  ComponentLogger.Debug('Component initialized');
+end;
+
+
+// STEP 2: Choose the appropriate log level based on the information
+Logger.Debug('Detailed debug info - only for development');     // Use during development
+Logger.Info('Normal operational messages');                     // General information
+Logger.Warning('Something unusual happened');                   // Potential issues
+Logger.Error('An operation failed');                            // Recoverable errors
+Logger.Fatal('Critical error - application cannot continue');   // Critical failures
+
+
+// STEP 3: Include variables in log messages (two equivalent styles)
+Logger.InfoFmt('User %s logged in from %s', ['john', '192.168.1.10']);  // Format style
+Logger.Info('User %s logged in from %s', ['john', '192.168.1.10']);     // Same result
+
+
+// STEP 4: Organize logs by component/feature (optional)
 var
   UILogger, DBLogger: TLogContext;
 begin
+  // Create context loggers for different parts of your application
   UILogger := Logger.CreateContext('UI');
   DBLogger := Logger.CreateContext('DB');
   
+  // Log with categories (automatically includes the category name)
   UILogger.Info('Window created');      // Outputs: [UI] Window created
   DBLogger.Warning('Slow query');       // Outputs: [DB] Slow query
+end;
+
+
+// STEP 5: Measure operation performance (optional)
+procedure ProcessData;
+var
+  Timer: ITimedOperation;
+begin
+  // Create a timer that logs when it goes out of scope
+  Timer := Logger.TimedBlock('Data processing');
+  
+  // Do your work...
+  // When this procedure ends, it logs something like:
+  // "Data processing completed in 235ms"
+end;
+
+
+// STEP 6: Clean up when finished (important!)
+procedure Shutdown;
+begin
+  Logger.Info('Application shutting down');
+  Logger.CloseLogFiles;  // Closes files and flushes any pending messages
+end;
+```
+
+### Common Scenarios
+
+```pascal
+// FOR DEVELOPMENT: Include detailed debug information
+TLogger.CreateConsoleLogger(llDebug);
+Logger.Debug('Connection status: %d, buffer size: %d', [status, size]);
+
+// FOR PRODUCTION: Filter out debug noise
+TLogger.CreateConsoleAndFileLogger('app.log', llInfo);
+Logger.SetMinLogLevel(llWarning);  // Only show warnings and above
+
+// FOR TROUBLESHOOTING: Show file and line information
+TLogger.CreateDebugLogger;  // Special logger that includes source file info
+Logger.Debug('Variable value: %d', [value]);  // Shows file:line in output
+
+// FOR SECURITY EVENTS: Track login attempts, permission changes, etc.
+AuditLogger := TLogger.CreateAuditLogger('security.log');
+AuditLogger.Warning('Failed login attempt for user %s from %s', [username, ip]);
+
+// FOR HIGH-VOLUME LOGGING: Use batch mode for performance
+Logger.BeginBatch;
+try
+  for i := 1 to 1000 do
+    Logger.Info('Processing item ' + IntToStr(i));
+finally
+  Logger.EndBatch;  // Writes all messages at once for better performance
+end;
+
+// FOR TESTING: Capture logs in memory
+var
+  MemSink: TMemorySink;
+begin
+  MemSink := TMemorySink.Create(100);  // Keep last 100 messages
+  Logger.AddSink(MemSink);
+  
+  // Later, retrieve messages for assertions
+  Assert(MemSink.GetMessages.Count > 0);
 end;
 ```
 
@@ -974,27 +1061,16 @@ Logger
   .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss')
   .SetFormat('[%time] [%level] %message');
   
+// Custom message format patterns
+Logger.SetFormat('[%time] [%level] %message');                    // Default format
+Logger.SetFormat('[%time] [%level] [%category] %message');        // With category
+Logger.SetFormat('[%time] [%level] [%file:%line] %message');      // With source location
+Logger.SetFormat('[%time] [%level] [Thread %threadid] %message'); // With thread ID
+
 // Add log files with size limits
-LogIndex := Logger.AddLogFile('app.log', 25 * 1024 * 1024);  // 25MB limit
-LogIndex := Logger.AddDefaultLogFile('system');  // Creates logs/system.log
-
-// Time operations and log their duration
-var
-  Timer: ITimedOperation;
-begin
-  Timer := Logger.TimedBlock('Data processing');
-  // ... perform long operation ...
-  // Timer automatically logs completion with duration when it goes out of scope
-end;
-
-// Batch logging for better performance
-Logger.BeginBatch;
-try
-  for i := 1 to 1000 do
-    Logger.Info('Processing item ' + IntToStr(i));
-finally
-  Logger.EndBatch; // Writes all messages at once
-end;
+LogIndex := Logger.AddLogFile('app.log', 25 * 1024 * 1024);      // 25MB limit
+LogIndex := Logger.AddDefaultLogFile('system');                   // Creates logs/system.log
+LogIndex := Logger.AddDefaultLogFile('errors', 5 * 1024 * 1024); // 5MB error log
 
 // Structured logging with key-value pairs
 Logger.LogStructured(llInfo, 'User login', [
@@ -1004,22 +1080,34 @@ Logger.LogStructured(llInfo, 'User login', [
   NameValuePair('attempt', 3)
 ]);
 
-// Direct category logging without context objects
-Logger.InfoWithCategory('UI', 'Window created');
-Logger.ErrorWithCategory('Database', 'Connection failed');
+// Type-specific value logging
+Logger.LogValue('count', 42, llInfo);            // Integer value
+Logger.LogValue('temperature', 98.6, llInfo);    // Double value
+Logger.LogValue('is_active', True, llInfo);      // Boolean value
+Logger.LogValue('username', 'john_doe', llInfo); // String value
 
 // Custom sink management
 Logger.AddSink(TConsoleSink.Create);
 Logger.AddSink(TFileSink.Create('app.log'));
 Logger.AddSink(TRotatingFileSink.Create('app.log', 1024*1024, 5)); // 1MB, keep 5 files
+Logger.AddSink(TDailyFileSink.Create('app.log'));                  // Rotates daily
+Logger.AddSink(TMemorySink.Create(100));                           // Keep last 100 messages
 
 // Configuration from environment or file
-Logger.ConfigureFromEnvironment;
+Logger.ConfigureFromEnvironment;  // LOGGER_LEVEL, LOGGER_DESTINATIONS, etc.
 Logger.LoadConfiguration('logger.ini');
 
 // Instance management
-ID := Logger.GetInstanceID;
-TLogger.ResetInstance;
+ID := Logger.GetInstanceID;  // Get unique ID of current logger instance
+TLogger.ResetInstance;       // Destroy and recreate singleton instance
+
+// Error recovery - logger attempts to handle errors gracefully
+try
+  Logger.AddLogFile('/invalid/path/file.log');  // Will handle error and continue
+except
+  on E: Exception do
+    WriteLn('Error handled: ', E.Message);
+end;
 ```
 
 ## 📁 Archive Operations

@@ -6,68 +6,191 @@
 
 ## Quick Start Guide
 
-### One-Line Setup
+This step-by-step guide will help you get started with TidyKit.Logger:
 
-The simplest way to start using TidyKit.Logger is with one of the factory methods:
+### Step 1: Include the Logger Unit
 
 ```pascal
 uses
   TidyKit.Logger;
+```
 
-// Console and file logging with Info level
+### Step 2: Choose Your Setup Approach
+
+There are two main ways to use the logger:
+
+#### Option A: Global Logger (Recommended for Most Applications)
+
+```pascal
+// Set up once at application startup
 TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
 
-// Now you can start logging immediately
+// Then use anywhere in your code through the Logger function
 Logger.Info('Application started');
 ```
 
-### Basic Logging
+This approach provides easy access throughout your application without passing logger instances.
 
-```pascal
-// Log messages with different levels
-Logger.Debug('Detailed information for troubleshooting'); // Only shown if minimum level is Debug
-Logger.Info('Normal operational messages');
-Logger.Warning('Something might be wrong');
-Logger.Error('Something failed but application can continue');
-Logger.Fatal('Critical error, application cannot continue');
-
-// Log with format strings (both styles supported)
-Logger.InfoFmt('User %s logged in from %s', ['john', '192.168.1.10']);
-Logger.Info('User %s logged in from %s', ['john', '192.168.1.10']); // Same result
-```
-
-### Category-Based Logging
-
-Organize your logs by component or feature:
+#### Option B: Individual Logger Instances (For Specialized Components)
 
 ```pascal
 var
-  UILogger, DBLogger: TLogContext;
+  MyLogger: TLogger;
 begin
-  // Create loggers for different parts of your application
-  UILogger := Logger.CreateContext('UI');
-  DBLogger := Logger.CreateContext('DB');
+  // Create a logger instance for this specific component
+  MyLogger := TLogger.CreateFileLogger('component.log', llDebug);
   
-  // Log with categories
-  UILogger.Info('Window created');      // Outputs: [UI] Window created
-  DBLogger.Warning('Slow query');       // Outputs: [DB] Slow query
-  
-  // No need to free context objects - they're automatically managed
+  // Use your specific logger
+  MyLogger.Debug('Component initialized');
 end;
 ```
 
-### Measuring Performance
+This approach gives you more control with separate configurations for different parts of your application.
 
-Easily track how long operations take:
+### Step 3: Log Messages
+
+Choose the appropriate log level based on the message importance:
 
 ```pascal
-procedure ImportData;
+// Development-time detailed information
+Logger.Debug('Database connection string: %s', [connectionString]);
+
+// General operational information
+Logger.Info('User %s logged in successfully', [username]);
+
+// Potential issue that might need attention
+Logger.Warning('Disk space below 10%% on drive %s', [driveLetter]);
+
+// Error that allows operation to continue
+Logger.Error('Could not save preferences: %s', [errorMessage]);
+
+// Critical error that requires application termination
+Logger.Fatal('Database connection lost, cannot continue');
+```
+
+### Step 4: Organize by Category (Optional)
+
+Group logs by component or functionality:
+
+```pascal
+var
+  UILogger, NetworkLogger: TLogContext;
+begin
+  // Create dedicated loggers for different areas
+  UILogger := Logger.CreateContext('UI');
+  NetworkLogger := Logger.CreateContext('Network');
+  
+  // Use category loggers - category name added automatically
+  UILogger.Info('Main form created');
+  NetworkLogger.Warning('Connection timeout, retrying...');
+end;
+```
+
+### Step 5: Measure Performance (Optional)
+
+Track how long operations take:
+
+```pascal
+procedure ImportLargeFile(const Filename: string);
 var
   Timer: ITimedOperation;
 begin
-  Timer := Logger.TimedBlock('Data import');
-  // ... perform operation ...
-  // Timer automatically logs completion with duration when it goes out of scope
+  // Create a timer that will log when it goes out of scope
+  Timer := Logger.TimedBlock('Importing ' + Filename);
+  
+  // Your operation code here
+  // ...
+  
+  // When this procedure ends, it logs something like:
+  // "Importing data.csv completed in: 1.25s"
+end;
+```
+
+### Step 6: Clean Up
+
+Always close log files when shutting down your application:
+
+```pascal
+procedure Shutdown;
+begin
+  Logger.Info('Application shutting down');
+  Logger.CloseLogFiles;  // Important: ensures all data is written
+end;
+```
+
+## Common Scenarios
+
+Here are some common logging scenarios and how to handle them:
+
+### Development and Debugging
+
+```pascal
+// Show all details including debug messages
+TLogger.CreateConsoleLogger(llDebug);
+
+// Include technical details useful for debugging
+Logger.Debug('Connection status: %d, buffer size: %d', [connStatus, bufferSize]);
+```
+
+### Production Environment
+
+```pascal
+// Log to file with reduced noise
+TLogger.CreateFileLogger('application.log', llInfo);
+
+// Or even more restrictive
+Logger.SetMinLogLevel(llWarning);  // Only show warnings, errors and fatal messages
+```
+
+### Troubleshooting Specific Issues
+
+```pascal
+// Use the special debug logger that shows source code locations
+TLogger.CreateDebugLogger;
+
+// Output will include file and line information
+Logger.Debug('Current value: %d', [someVariable]);
+// Shows: [2023-04-15 14:30:22.123] [DEBUG] [myunit.pas:45] Current value: 42
+```
+
+### Security Event Auditing
+
+```pascal
+// Create a dedicated logger for security events
+AuditLogger := TLogger.CreateAuditLogger('security_audit.log');
+
+// Log security-related events
+AuditLogger.Warning('Failed login attempt for user %s from %s', [username, ipAddress]);
+AuditLogger.Info('Permission changed for resource %s by user %s', [resourceName, adminName]);
+```
+
+### High-Volume Logging
+
+```pascal
+// Use batch mode to improve performance when logging many messages
+Logger.BeginBatch;
+try
+  for i := 1 to 1000 do
+    Logger.Info('Processing item ' + IntToStr(i));
+finally
+  Logger.EndBatch;  // Flushes all messages at once
+end;
+```
+
+### Automated Testing
+
+```pascal
+// Capture logs in memory for verification in tests
+var
+  MemSink: TMemorySink;
+begin
+  MemSink := TMemorySink.Create(100);  // Keep last 100 messages
+  Logger.AddSink(MemSink);
+  
+  // Run your test code...
+  
+  // Verify logging behavior
+  Assert(MemSink.GetMessages.Text.Contains('Expected message'));
 end;
 ```
 
@@ -262,6 +385,46 @@ class function CreateDebugLogger: TLogger;
 class function CreateAuditLogger(const AFilename: string): TLogger;
 class function CreateDefaultLogger(ADestinations: TLogDestinations = [ldConsole, ldFile]; 
   const ALogFileName: string = ''; AMinLogLevel: TLogLevel = llDebug): TLogger;
+```
+
+These factory methods provide simplified one-line initialization for common logging scenarios:
+
+- `CreateConsoleLogger`: Creates a logger that outputs to the console only with the specified minimum log level.
+- `CreateFileLogger`: Creates a logger that outputs to the specified file only with the specified minimum log level.
+- `CreateConsoleAndFileLogger`: Creates a logger that outputs to both console and the specified file with the specified minimum log level.
+- `CreateDebugLogger`: Creates a specialized logger for debugging with the following features:
+  - Sets the minimum log level to Debug
+  - Uses a format that includes file and line information (`[%time] [%level] [%file:%line] %message`)
+  - Outputs to the console for immediate feedback
+  - Creates a debug.log file in the logs directory
+  - Ideal for development and troubleshooting
+- `CreateAuditLogger`: Creates a specialized logger for security audit trails with the following features:
+  - Sets the minimum log level to Info to capture important events only
+  - Uses a detailed timestamp format with milliseconds
+  - Creates a dedicated log file (specified by AFilename)
+  - Sets up file rotation to preserve audit history
+  - Designed for security event tracking and compliance
+- `CreateDefaultLogger`: Creates a logger with custom destinations, file name, and log level.
+
+Examples:
+
+```pascal
+// Create a debug logger for development
+var
+  Logger: TLogger;
+begin
+  Logger := TLogger.CreateDebugLogger;
+  Logger.Debug('Variable value: %d', [SomeValue]);  // Will show file and line info
+end;
+
+// Create an audit logger for security events
+var
+  AuditLog: TLogger;
+begin
+  AuditLog := TLogger.CreateAuditLogger('security_audit.log');
+  AuditLog.Info('User %s logged in from %s', [Username, IPAddress]);
+  AuditLog.Warning('Failed login attempt for user %s from %s', [Username, IPAddress]);
+end;
 ```
 
 #### Properties and Configuration
