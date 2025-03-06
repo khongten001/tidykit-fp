@@ -1010,6 +1010,16 @@ begin
   Logger.Info('Application shutting down');
   Logger.CloseLogFiles;  // Closes files and flushes any pending messages
 end;
+
+// IMPORTANT: What happens if you forget to call CloseLogFiles()?
+// - The logger will attempt to flush and close files when the application terminates
+// - However, for guaranteed data integrity, always close log files explicitly
+// - Consider using try-finally blocks to ensure files are closed even if exceptions occur
+try
+  // Your logging code here
+finally
+  Logger.CloseLogFiles;
+end;
 ```
 
 ### Common Scenarios

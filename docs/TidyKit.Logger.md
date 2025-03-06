@@ -118,6 +118,17 @@ begin
 end;
 ```
 
+For guaranteed cleanup even with exceptions, use try-finally:
+
+```pascal
+try
+  // Your application logic with logging
+  Logger.Info('Application working...');
+finally
+  Logger.CloseLogFiles;  // This will be called even if exceptions occur
+end;
+```
+
 ## Common Scenarios
 
 Here are some common logging scenarios and how to handle them:
@@ -935,7 +946,69 @@ Logger.AddSink(TEmailSink.Create('admin@example.com', 'Error Report'));
 
 9. **Configure from Environment**: Use environment variables for configuration to easily adjust settings in different environments.
 
-10. **Clean Up Resources**: Call `CloseLogFiles` when shutting down your application.
+10. **Always Close Log Files**: Call `CloseLogFiles` when shutting down your application to ensure all data is properly written to disk.
+
+### Handling CloseLogFiles() Properly
+
+The `CloseLogFiles()` method is crucial for proper resource management when using file-based logging. Here's what you need to know:
+
+#### What Happens If You Forget to Call CloseLogFiles()?
+
+If you forget to call `CloseLogFiles()`, TidyKit.Logger includes several safeguards:
+
+1. **Automatic Flushing**: The logger generally flushes data after each write operation, so most log messages will be written to disk even without explicit closing.
+
+2. **Instance Cleanup**: When a logger instance is destroyed (such as when your application terminates), it will attempt to close any open log files as part of its cleanup.
+
+3. **ResetInstance Cleanup**: Calling `TLogger.ResetInstance()` also triggers cleanup of the previous instance, including closing any open log files.
+
+#### Why You Should Still Call CloseLogFiles() Explicitly
+
+Despite these safeguards, it's still best practice to call `CloseLogFiles()` explicitly for these reasons:
+
+1. **Guaranteed Data Integrity**: Ensures all buffered data is immediately written to disk, preventing potential data loss if the application crashes.
+
+2. **Resource Management**: Releases file handles promptly, which is important in systems with limited resources.
+
+3. **File Unlocking**: Releases locks on log files, allowing other processes to access them immediately.
+
+#### Recommended Patterns for Proper Cleanup
+
+1. **Use try-finally Blocks**:
+```pascal
+try
+  // Setup logger and use it
+  TLogger.CreateConsoleAndFileLogger('app.log', llInfo);
+  // ... logging operations
+finally
+  Logger.CloseLogFiles;  // Always executed, even if exceptions occur
+end;
+```
+
+2. **Create Application Lifecycle Methods**:
+```pascal
+procedure InitLogging;
+begin
+  TLogger.CreateConsoleAndFileLogger('app.log', llInfo);
+  Logger.Info('Application started');
+end;
+
+procedure ShutdownLogging;
+begin
+  Logger.Info('Application shutting down');
+  Logger.CloseLogFiles;
+end;
+```
+
+3. **For Long-Running Applications**: Consider periodic file closing and reopening to ensure data is written:
+```pascal
+// Every hour, close and reopen log files
+if HourChanged then
+begin
+  Logger.CloseLogFiles;
+  Logger.AddLogFile('application.log', True);  // Reopen, append mode
+end;
+```
 
 ## Limitations
 

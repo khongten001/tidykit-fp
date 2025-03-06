@@ -481,6 +481,13 @@ begin
   // ... perform long operation ...
   // Timer automatically logs completion with duration when it goes out of scope
 end;
+
+// IMPORTANT: Always close log files when shutting down
+try
+  // Your application logic with logging...
+finally
+  Logger.CloseLogFiles;  // Ensures all data is written to disk
+end;
 ```
 
 ## 📖 System Requirements
