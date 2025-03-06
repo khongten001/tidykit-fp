@@ -22,6 +22,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [📐 Trigonometric Operations](#-trigonometric-operations)
     - [💰 Financial Operations](#-financial-operations)
     - [📦 Archive Operations](#-archive-operations)
+    - [📝 Logging Operations](#-logging-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
     - [Theoretical Compatibility](#theoretical-compatibility)
@@ -140,6 +141,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - Configurable log levels (Debug, Info, Warning, Error, Fatal)
   - Console and file output with automatic coloring
   - File rotation based on size
+  - Multiple log file support
   - Category-based logging for better organization
   - Automatic context management with reference counting
   - Format string support for convenient message formatting
@@ -148,6 +150,13 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - Method chaining for fluent configuration
   - Error recovery to prevent logging failures from crashing the application
   - Default log directory creation
+  - Extensible sink architecture with built-in implementations
+  - Pattern-based message formatting
+  - Structured logging for key-value data
+  - Performance timing capabilities
+  - Batch logging for improved performance
+  - Environment and file-based configuration
+  - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
 ## 💻 Installation
@@ -441,6 +450,39 @@ begin
 end;
 ```
 
+### 📝 Logging Operations
+```pascal
+// Simple one-line setup for console and file logging
+TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+
+// Log messages with different levels
+Logger.Debug('Processing started'); // Only shown if minimum level is Debug
+Logger.Info('User %s logged in', ['JohnDoe']);
+Logger.Warning('Disk space is low: %d%% remaining', [5]);
+Logger.Error('Failed to save file: %s', ['Access denied']);
+Logger.Fatal('Application crashed: %s', ['Segmentation fault']);
+
+// Create category-based loggers for better organization
+var
+  UILogger, DBLogger: TLogContext;
+begin
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  
+  UILogger.Info('Window created');
+  DBLogger.Warning('Slow query detected: %s', ['SELECT * FROM large_table']);
+end;
+
+// Time operations and log their duration
+var
+  Timer: ITimedOperation;
+begin
+  Timer := Logger.TimedBlock('Data processing');
+  // ... perform long operation ...
+  // Timer automatically logs completion with duration when it goes out of scope
+end;
+```
+
 ## 📖 System Requirements
 
 ### Tested Environments
@@ -473,11 +515,12 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
-- 📊 [Math ](docs/TidyKit.Math.md)
+- 📊 [Math](docs/TidyKit.Math.md)
 - 📂 [File System](docs/TidyKit.FS.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔄 [JSON](docs/TidyKit.JSON.md)
+- 📝 [Logger](docs/TidyKit.Logger.md)
 
 ## ✅ Testing
 

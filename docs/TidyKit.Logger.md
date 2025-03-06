@@ -4,6 +4,73 @@
 
 `TidyKit.Logger` is a lightweight, flexible logging component for Free Pascal applications. It provides formatted log messages with timestamps, log levels, and multiple output destinations including console and file-based logging.
 
+## Quick Start Guide
+
+### One-Line Setup
+
+The simplest way to start using TidyKit.Logger is with one of the factory methods:
+
+```pascal
+uses
+  TidyKit.Logger;
+
+// Console and file logging with Info level
+TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+
+// Now you can start logging immediately
+Logger.Info('Application started');
+```
+
+### Basic Logging
+
+```pascal
+// Log messages with different levels
+Logger.Debug('Detailed information for troubleshooting'); // Only shown if minimum level is Debug
+Logger.Info('Normal operational messages');
+Logger.Warning('Something might be wrong');
+Logger.Error('Something failed but application can continue');
+Logger.Fatal('Critical error, application cannot continue');
+
+// Log with format strings (both styles supported)
+Logger.InfoFmt('User %s logged in from %s', ['john', '192.168.1.10']);
+Logger.Info('User %s logged in from %s', ['john', '192.168.1.10']); // Same result
+```
+
+### Category-Based Logging
+
+Organize your logs by component or feature:
+
+```pascal
+var
+  UILogger, DBLogger: TLogContext;
+begin
+  // Create loggers for different parts of your application
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  
+  // Log with categories
+  UILogger.Info('Window created');      // Outputs: [UI] Window created
+  DBLogger.Warning('Slow query');       // Outputs: [DB] Slow query
+  
+  // No need to free context objects - they're automatically managed
+end;
+```
+
+### Measuring Performance
+
+Easily track how long operations take:
+
+```pascal
+procedure ImportData;
+var
+  Timer: ITimedOperation;
+begin
+  Timer := Logger.TimedBlock('Data import');
+  // ... perform operation ...
+  // Timer automatically logs completion with duration when it goes out of scope
+end;
+```
+
 ## Features
 
 - **Log Levels**: Debug, Info, Warning, Error, and Fatal levels with appropriate console colors
@@ -20,42 +87,54 @@
 - **Default Log File Paths**: Automatic creation of log directories and files
 - **Simple One-Line Setup**: Set up the logger with a single method call
 - **Category Support**: Group logs by categories for better organization
+- **Extensible Sink Architecture**: Easily add custom output destinations
+- **Pattern-Based Formatting**: Customize log message format with patterns
+- **Structured Logging**: Log structured data as key-value pairs
+- **Performance Timing**: Measure and log operation durations
+- **Batch Logging**: Batch multiple log messages for better performance
+- **Configuration Options**: Load settings from environment variables or config files
+- **Specialized Logger Types**: Purpose-built loggers for specific scenarios
 
-## Getting Started
+## Advanced Usage
 
-### Installation
-
-Add the `TidyKit.Logger.pas` unit to your project. Make sure to include it in your uses clause:
+### Simplified Initialization
 
 ```pascal
-uses
-  // other units...
-  TidyKit.Logger;
+// Create different types of pre-configured loggers
+var
+  ConsoleLogger: TLogger;
+  FileLogger: TLogger;
+  BothLogger: TLogger;
+  DebugLogger: TLogger;
+  AuditLogger: TLogger;
+begin
+  // Console-only logger with minimum level Debug
+  ConsoleLogger := TLogger.CreateConsoleLogger(llDebug);
+  
+  // File-only logger with Info level
+  FileLogger := TLogger.CreateFileLogger('application.log', llInfo);
+  
+  // Console and file logger
+  BothLogger := TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+  
+  // Debug logger with special format showing file and line
+  DebugLogger := TLogger.CreateDebugLogger;
+  
+  // Audit logger for security events
+  AuditLogger := TLogger.CreateAuditLogger('audit.log');
+end;
 ```
 
-### Basic Usage
+### Structured Logging
 
 ```pascal
-// Get logger instance
-Logger.SetLogDestinations([ldConsole, ldFile]);
-Logger.AddLogFile('application.log');
-
-// Log messages with different levels
-Logger.Debug('This is a debug message');
-Logger.Info('This is an informational message');
-Logger.Warning('This is a warning');
-Logger.Error('This is an error');
-Logger.Fatal('This is a fatal error');
-```
-
-### Quick Setup (One-Line)
-
-```pascal
-// Create a default logger with console and file logging
-TLogger.CreateDefaultLogger();
-
-// Or with custom settings
-TLogger.CreateDefaultLogger([ldConsole, ldFile], 'myapp.log', llInfo);
+// Log structured data
+Logger.LogStructured(llInfo, 'User login', [
+  NameValuePair('username', 'john_doe'),
+  NameValuePair('ip_address', '192.168.1.10'),
+  NameValuePair('success', True),
+  NameValuePair('attempt', 3)
+]);
 ```
 
 ### Method Chaining
@@ -65,33 +144,83 @@ TLogger.CreateDefaultLogger([ldConsole, ldFile], 'myapp.log', llInfo);
 Logger
   .SetLogDestinations([ldConsole, ldFile])
   .SetMinLogLevel(llInfo)
-  .SetDateTimeFormat('yyyy-mm-dd hh:nn');
+  .SetDateTimeFormat('yyyy-mm-dd hh:nn')
+  .SetFormat('[%time] [%level] %message');
   
 // Then add a log file
 Logger.AddLogFile('application.log');
 ```
 
-### Category-Based Logging
+### Custom Message Format
 
 ```pascal
-var
-  UILogger, DBLogger, NetworkLogger: TLogContext;
-begin
-  // Create different contexts for different parts of the application
-  UILogger := Logger.CreateContext('UI');
-  DBLogger := Logger.CreateContext('DB');
-  NetworkLogger := Logger.CreateContext('Network');
-  
-  // Log with categories
-  UILogger.Info('Application window created');
-  DBLogger.Info('Connected to database');
-  NetworkLogger.Warning('Connection latency high');
-  
-  // Use format strings with categories
-  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
-  
-  // No need to free context objects - they are automatically managed
+// Set custom message format pattern
+Logger.SetFormat('[%time] [%level] [%file:%line] %message');
+
+// Available pattern tokens:
+// %time - Formatted timestamp
+// %level - Log level
+// %message - Log message
+// %category - Log category (if any)
+// %file - Source file (if available)
+// %line - Line number (if available)
+```
+
+### Batch Logging
+
+```pascal
+// Batch multiple messages for better performance
+Logger.BeginBatch;
+try
+  for i := 1 to 1000 do
+    Logger.Info('Processing item ' + IntToStr(i));
+finally
+  Logger.EndBatch; // Writes all messages at once
 end;
+```
+
+### Extensible Sink Architecture
+
+```pascal
+// Use built-in sinks
+Logger.AddSink(TConsoleSink.Create);
+Logger.AddSink(TFileSink.Create('app.log'));
+Logger.AddSink(TRotatingFileSink.Create('app.log', 1024*1024, 5)); // 1MB, keep 5 files
+Logger.AddSink(TDailyFileSink.Create('app.log')); // Rotates daily
+Logger.AddSink(TMemorySink.Create(100)); // Keep last 100 messages in memory
+```
+
+### Direct Category Logging
+
+```pascal
+// Log with categories without creating context objects
+Logger.InfoWithCategory('UI', 'Window created');
+Logger.ErrorWithCategory('Database', 'Connection failed');
+```
+
+### Configuration
+
+```pascal
+// Load from environment variables
+Logger.ConfigureFromEnvironment;
+// Environment variables:
+// LOGGER_DESTINATIONS (CONSOLE,FILE)
+// LOGGER_LEVEL (DEBUG,INFO,WARNING,ERROR,FATAL)
+// LOGGER_DATETIME_FORMAT
+// LOGGER_FORMAT_PATTERN
+// LOGGER_DEFAULT_FILE
+// LOGGER_MAX_FILE_SIZE
+
+// Load from configuration file
+Logger.LoadConfiguration('logger.ini');
+// Example file format:
+// [Logger]
+// Destinations=Console,File
+// MinLevel=Info
+// DateTimeFormat=yyyy-mm-dd hh:nn:ss.zzz
+// FormatPattern=[%time] [%level] %message
+// DefaultLogFile=application.log
+// MaxFileSize=26214400
 ```
 
 ## API Reference
@@ -111,7 +240,29 @@ begin
 end;
 ```
 
+#### Helper Functions
+
+```pascal
+// Create name-value pairs for structured logging
+function NameValuePair(const AName: string; const AValue: string): TNameValuePair; overload;
+function NameValuePair(const AName: string; AValue: Integer): TNameValuePair; overload;
+function NameValuePair(const AName: string; AValue: Boolean): TNameValuePair; overload;
+function NameValuePair(const AName: string; AValue: Double): TNameValuePair; overload;
+```
+
 ### TLogger Class
+
+#### Factory Methods (Simplified Initialization)
+
+```pascal
+class function CreateConsoleLogger(AMinLevel: TLogLevel = llDebug): TLogger;
+class function CreateFileLogger(const AFilename: string; AMinLevel: TLogLevel = llDebug): TLogger;
+class function CreateConsoleAndFileLogger(const AFilename: string; AMinLevel: TLogLevel = llDebug): TLogger;
+class function CreateDebugLogger: TLogger;
+class function CreateAuditLogger(const AFilename: string): TLogger;
+class function CreateDefaultLogger(ADestinations: TLogDestinations = [ldConsole, ldFile]; 
+  const ALogFileName: string = ''; AMinLogLevel: TLogLevel = llDebug): TLogger;
+```
 
 #### Properties and Configuration
 
@@ -160,6 +311,26 @@ Logger.SetMinLogLevel(llInfo);
 Logger.SetMinLogLevel(llDebug);
 ```
 
+##### `function SetFormat(const APattern: string): TLogger`
+
+Sets the message format pattern. Available tokens:
+- `%time`: Formatted timestamp
+- `%level`: Log level
+- `%message`: Log message
+- `%category`: Log category (if any)
+- `%file`: Source file (if available)
+- `%line`: Line number (if available)
+
+Returns the logger instance for method chaining.
+
+```pascal
+// Default format
+Logger.SetFormat('[%time] [%level] %message');
+
+// Custom format with file and line info
+Logger.SetFormat('[%time] [%level] [%file:%line] %message');
+```
+
 ##### `function AddLogFile(const AFileName: string; AMaxSize: Int64 = 25 * 1024 * 1024): Integer`
 
 Adds a log file to the logger. Returns the index of the added log file.
@@ -205,6 +376,27 @@ Closes all log files and clears the log file list.
 Logger.CloseLogFiles;
 ```
 
+##### `function AddSink(ASink: ILogSink): TLogger`
+
+Adds a custom sink for log output. Returns the logger instance for method chaining.
+
+```pascal
+var
+  Sink: ILogSink;
+begin
+  Sink := TFileSink.Create('app.log');
+  Logger.AddSink(Sink);
+end;
+```
+
+##### `procedure RemoveSink(ASink: ILogSink)`
+
+Removes a previously added sink.
+
+##### `procedure ClearSinks`
+
+Removes all sinks.
+
 ##### `function GetInstanceID: Int64`
 
 Returns the unique identifier of the current logger instance. This can be used to track logger instances across resets.
@@ -220,138 +412,215 @@ end;
 
 #### Logging Methods
 
-##### `procedure Log(const AMessage: string; ALogLevel: TLogLevel = llInfo; const AFileIndex: Integer = -1)`
-
-Main logging method. Logs a message with the specified level and optionally to a specific file index.
-- `AMessage`: The message to log
-- `ALogLevel`: The log level (default Info)
-- `AFileIndex`: Optional specific log file index (default -1, all files)
-
-##### `procedure Debug(const AMessage: string; const AFileIndex: Integer = -1)`
-
-Logs a message with Debug level.
-
-##### `procedure Info(const AMessage: string; const AFileIndex: Integer = -1)`
-
-Logs a message with Info level.
-
-##### `procedure Warning(const AMessage: string; const AFileIndex: Integer = -1)`
-
-Logs a message with Warning level.
-
-##### `procedure Error(const AMessage: string; const AFileIndex: Integer = -1)`
-
-Logs a message with Error level.
-
-##### `procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1)`
-
-Logs a message with Fatal level.
-
-#### Format String Overloads
-
-##### `procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1)`
-
-Logs a formatted message with Debug level.
-- `AFormat`: Format string
-- `AArgs`: Arguments for the format string
-- `AFileIndex`: Optional specific log file index
+##### Standard Logging
 
 ```pascal
-Logger.DebugFmt('Processing item %d of %d', [CurrentItem, TotalItems]);
+procedure Log(const AMessage: string; ALogLevel: TLogLevel = llInfo; const AFileIndex: Integer = -1);
+procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Info(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Warning(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Error(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1);
 ```
 
-##### `procedure InfoFmt, WarningFmt, ErrorFmt, FatalFmt`
+##### Format String Overloads (Original Style)
 
-Similar to DebugFmt but for different log levels.
+```pascal
+procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+```
+
+##### Format String Overloads (Streamlined)
+
+```pascal
+procedure Debug(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Info(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Warning(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Error(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Fatal(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+```
+
+##### Type-Specific Logging
+
+```pascal
+procedure LogValue(const AName: string; const AValue: Integer; ALevel: TLogLevel = llInfo);
+procedure LogValue(const AName: string; const AValue: Boolean; ALevel: TLogLevel = llInfo);
+procedure LogValue(const AName: string; const AValue: Double; ALevel: TLogLevel = llInfo);
+procedure LogValue(const AName: string; const AValue: string; ALevel: TLogLevel = llInfo);
+```
+
+##### Structured Logging
+
+```pascal
+procedure LogStructured(ALevel: TLogLevel; const AMessage: string; const AFields: array of TNameValuePair);
+```
+
+##### Direct Category Logging
+
+```pascal
+procedure LogWithCategory(const ACategory: string; ALevel: TLogLevel; const AMessage: string);
+procedure DebugWithCategory(const ACategory, AMessage: string);
+procedure InfoWithCategory(const ACategory, AMessage: string);
+procedure WarningWithCategory(const ACategory, AMessage: string);
+procedure ErrorWithCategory(const ACategory, AMessage: string);
+procedure FatalWithCategory(const ACategory, AMessage: string);
+```
+
+#### Performance and Batching
+
+##### `function TimedBlock(const AName: string): ITimedOperation`
+
+Creates a timed operation block that logs start and end times with duration.
+
+```pascal
+var
+  Timer: ITimedOperation;
+begin
+  Timer := Logger.TimedBlock('File processing');
+  // ... do work ...
+  // When Timer goes out of scope, it logs completion time and duration
+end;
+```
+
+##### `procedure BeginBatch`
+
+Starts batch mode. Messages are stored but not actually logged until EndBatch is called.
+
+##### `procedure EndBatch`
+
+Ends batch mode and processes all stored messages.
+
+#### Configuration
+
+##### `procedure Configure(const AConfig: TLoggerConfig)`
+
+Configures the logger with the specified settings.
+
+##### `procedure ConfigureFromEnvironment`
+
+Configures the logger based on environment variables.
+
+##### `procedure LoadConfiguration(const AConfigFile: string)`
+
+Loads logger configuration from a file.
 
 #### Singleton Management
 
 ##### `class function GetInstance: TLogger`
 
-Returns the singleton instance of the TLogger class. This is the method called by the `Logger` function. Each logger instance has a unique identifier accessible via `GetInstanceID`.
+Returns the singleton instance of the TLogger class. This is the method called by the `Logger` function.
 
 ##### `class procedure ResetInstance`
 
-Resets (destroys and recreates) the singleton instance. Useful for testing or when complete reset is needed.
-
-```pascal
-// Reset the logger instance
-TLogger.ResetInstance;
-```
-
-##### `class function CreateDefaultLogger(ADestinations: TLogDestinations = [ldConsole, ldFile]; const ALogFileName: string = ''; AMinLogLevel: TLogLevel = llDebug): TLogger`
-
-Creates a default logger instance with the specified settings. This is a convenience method for quick setup.
-- `ADestinations`: Log destinations (default console and file)
-- `ALogFileName`: Custom log file name (if empty, a default log file will be created)
-- `AMinLogLevel`: Minimum log level (default Debug)
-
-```pascal
-// Create a default logger
-TLogger.CreateDefaultLogger();
-
-// Create a custom logger
-TLogger.CreateDefaultLogger([ldFile], 'myapp.log', llWarning);
-```
+Resets (destroys and recreates) the singleton instance.
 
 #### Category Support
 
 ##### `function CreateContext(const ACategory: string): TLogContext`
 
 Creates a new logging context with the specified category name.
-- `ACategory`: Name of the category
-
-The returned `TLogContext` object is reference-counted and automatically managed by the logger. No manual cleanup is required.
-
-```pascal
-var
-  DBLogger: TLogContext;
-begin
-  DBLogger := Logger.CreateContext('Database');
-  DBLogger.Info('Connected to database');
-  // Logs: [Database] Connected to database
-  
-  // No need to free the context - it's automatically managed
-end;
-```
 
 ### TLogContext Class
 
-The TLogContext class provides category-based logging. Each logging method automatically prefixes log messages with the category name. Context objects are automatically managed by the logger and do not need to be freed manually.
+The TLogContext class provides category-based logging. Each logging method automatically prefixes log messages with the category name.
 
-#### Logging Methods
+```pascal
+procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Info(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Warning(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Error(const AMessage: string; const AFileIndex: Integer = -1);
+procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1);
 
-All the same logging methods as TLogger (Debug, Info, Warning, Error, Fatal) plus the format string overloads (DebugFmt, InfoFmt, etc.).
+// Original format string methods
+procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+procedure FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
 
-## Log Levels
-
-The logger supports the following log levels, in order of increasing severity:
-
-1. **Debug** (`llDebug`): Detailed information for debugging purposes
-2. **Info** (`llInfo`): General informational messages about application progress
-3. **Warning** (`llWarning`): Potential issues that aren't errors but might need attention
-4. **Error** (`llError`): Error conditions that don't stop the application
-5. **Fatal** (`llFatal`): Critical errors that may cause the application to terminate
-
-Each log level has an associated color when displayed in the console:
-- Debug: Gray
-- Info: White (default)
-- Warning: Yellow
-- Error: Red
-- Fatal: White text on red background
-
-## Log File Rotation
-
-When a log file reaches its maximum size limit, it is automatically rotated. The rotation process:
-
-1. Renames the current log file by appending a timestamp to its name
-2. Creates a new empty log file with the original name
-3. Continues logging to the new file
-
-Example of rotated file names:
+// Streamlined format string methods
+procedure Debug(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Info(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Warning(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Error(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+procedure Fatal(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
 ```
-application.log          # Current log file
-application_20250305_123045.log  # Rotated log file with timestamp
+
+### Built-in Sinks
+
+TidyKit.Logger comes with several built-in sink implementations:
+
+#### `TConsoleSink`
+
+Writes log messages to the console with colored output based on log level.
+
+```pascal
+var
+  Sink: ILogSink;
+begin
+  Sink := TConsoleSink.Create;
+  Logger.AddSink(Sink);
+end;
+```
+
+#### `TFileSink`
+
+Writes log messages to a file, with optional size-based rotation.
+
+```pascal
+var
+  Sink: ILogSink;
+begin
+  Sink := TFileSink.Create('app.log', 10 * 1024 * 1024); // 10MB max
+  Logger.AddSink(Sink);
+end;
+```
+
+#### `TRotatingFileSink`
+
+Extends TFileSink with the ability to keep a limited number of rotated files.
+
+```pascal
+var
+  Sink: ILogSink;
+begin
+  // 5MB max size, keep up to 10 old files
+  Sink := TRotatingFileSink.Create('app.log', 5 * 1024 * 1024, 10);
+  Logger.AddSink(Sink);
+end;
+```
+
+#### `TDailyFileSink`
+
+Creates a new log file each day with the date in the filename.
+
+```pascal
+var
+  Sink: ILogSink;
+begin
+  Sink := TDailyFileSink.Create('app.log');
+  Logger.AddSink(Sink);
+  // Creates files like: app_20250301.log, app_20250302.log, etc.
+end;
+```
+
+#### `TMemorySink`
+
+Keeps log messages in memory for later retrieval.
+
+```pascal
+var
+  Sink: TMemorySink;
+begin
+  Sink := TMemorySink.Create(100); // Keep last 100 messages
+  Logger.AddSink(Sink);
+  
+  // Later, retrieve messages
+  Memo1.Lines.Assign(Sink.GetMessages);
+end;
 ```
 
 ## Examples
@@ -361,8 +630,8 @@ application_20250305_123045.log  # Rotated log file with timestamp
 ```pascal
 procedure InitLogger;
 begin
-  Logger.SetLogDestinations([ldConsole, ldFile]);
-  Logger.AddLogFile(ExtractFilePath(ParamStr(0)) + 'app.log');
+  // Easy one-line setup
+  TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
   Logger.Info('Application started');
 end;
 
@@ -373,85 +642,141 @@ begin
 end;
 ```
 
-### Logging to Multiple Files
+### Logging with Custom Format
 
 ```pascal
+TLogger.CreateConsoleLogger(llDebug);
+Logger.SetFormat('[%time] [%level] [Thread %threadid] %message');
+```
+
+### Performance Monitoring
+
+```pascal
+procedure ProcessFiles(const APath: string);
 var
-  GeneralLogIndex, ErrorLogIndex: Integer;
+  Timer: ITimedOperation;
+  Files: TStringList;
+  i: Integer;
 begin
-  Logger.SetLogDestinations([ldFile]);
+  Timer := Logger.TimedBlock('File processing');
   
-  // General log for all messages
-  GeneralLogIndex := Logger.AddLogFile('general.log');
-  
-  // Error log for errors only
-  ErrorLogIndex := Logger.AddLogFile('errors.log');
-  
-  // Log to general log
-  Logger.Info('This goes to the general log');
-  
-  // Log to error log only
-  Logger.Error('This is an error', ErrorLogIndex);
-  
-  // Log to both
-  Logger.Fatal('This is a critical error');
+  Files := TStringList.Create;
+  try
+    FindAllFiles(APath, '*.txt', Files);
+    Logger.Info('Found %d files to process', [Files.Count]);
+    
+    for i := 0 to Files.Count - 1 do
+    begin
+      Logger.Debug('Processing file: %s', [Files[i]]);
+      // Process file...
+    end;
+  finally
+    Files.Free;
+  end;
+  // Timer automatically logs completion when it goes out of scope
 end;
 ```
 
-### Using Method Chaining and Format Strings
+### High-Volume Logging with Batching
 
 ```pascal
-Logger
-  .SetLogDestinations([ldConsole, ldFile])
-  .SetMinLogLevel(llInfo)
-  .SetDateTimeFormat('yyyy-mm-dd hh:nn:ss');
-
-Logger.AddDefaultLogFile('application');
-
-// Use format string
-Logger.InfoFmt('User %s logged in from %s', ['john_doe', '192.168.1.10']);
+procedure ProcessLargeDataset(const ADataset: TDataset);
+begin
+  Logger.BeginBatch;
+  try
+    while not ADataset.EOF do
+    begin
+      Logger.Debug('Processing record %d', [ADataset.RecNo]);
+      // Process record
+      ADataset.Next;
+    end;
+  finally
+    Logger.EndBatch; // Writes all messages at once
+  end;
+end;
 ```
 
-### Using Category-Based Logging
+### Creating Custom Sinks
 
 ```pascal
-var
-  UILogger, DBLogger, NetworkLogger: TLogContext;
+type
+  TEmailSink = class(TInterfacedObject, ILogSink)
+  private
+    FRecipient: string;
+    FSubject: string;
+    FMessages: TStringList;
+  public
+    constructor Create(const ARecipient, ASubject: string);
+    destructor Destroy; override;
+    procedure Write(const AFormattedMessage: string; ALevel: TLogLevel);
+    procedure Flush;
+  end;
+
+constructor TEmailSink.Create(const ARecipient, ASubject: string);
 begin
-  // Create different contexts for different parts of the application
-  UILogger := Logger.CreateContext('UI');
-  DBLogger := Logger.CreateContext('DB');
-  NetworkLogger := Logger.CreateContext('Network');
-  
-  // Log with categories
-  UILogger.Info('Application window created');
-  DBLogger.Info('Connected to database');
-  NetworkLogger.Warning('Connection latency high');
-  
-  // Use format strings with categories
-  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
-  
-  // No need to free context objects - they are automatically managed
+  inherited Create;
+  FRecipient := ARecipient;
+  FSubject := ASubject;
+  FMessages := TStringList.Create;
 end;
+
+destructor TEmailSink.Destroy;
+begin
+  Flush; // Send any remaining messages
+  FMessages.Free;
+  inherited;
+end;
+
+procedure TEmailSink.Write(const AFormattedMessage: string; ALevel: TLogLevel);
+begin
+  // Only store errors and fatal errors
+  if ALevel >= llError then
+    FMessages.Add(AFormattedMessage);
+    
+  // Send immediately for fatal errors
+  if ALevel = llFatal then
+    Flush;
+end;
+
+procedure TEmailSink.Flush;
+begin
+  if FMessages.Count > 0 then
+  begin
+    // Send email with FMessages.Text as body
+    // ...email sending code...
+    FMessages.Clear;
+  end;
+end;
+
+// Usage:
+Logger.AddSink(TEmailSink.Create('admin@example.com', 'Error Report'));
 ```
 
 ## Best Practices
 
-1. **Initialization**: Set up the logger early in your application initialization
-2. **Log Levels**: Use appropriate log levels and set minimum log level based on your deployment environment (e.g., Debug for development, Info or Warning for production)
-3. **Categories**: Use categories to organize logs from different parts of your application
-4. **Format Strings**: Use format string overloads instead of manually concatenating strings
-5. **Method Chaining**: Use method chaining to configure the logger with a clean, fluent syntax
-6. **Default Log Paths**: Use AddDefaultLogFile for simple setup
-7. **Cleanup**: Call `CloseLogFiles` when shutting down to ensure proper cleanup
-8. **Contexts**: Create logger contexts for different components of your application - they are automatically managed and don't need to be freed
+1. **Use Appropriate Log Levels**: Debug for detailed troubleshooting, Info for general progress, Warning for potential issues, Error for failures, Fatal for critical problems.
+
+2. **Set Appropriate Minimum Log Level**: Use Debug during development, Info or Warning in production to reduce noise and improve performance.
+
+3. **Use Category Logging**: Organize logs by component or feature using category contexts or direct category methods.
+
+4. **Choose Appropriate Sinks**: Console for development, file-based for production, possibly with rotation settings to manage disk space.
+
+5. **Use Structured Logging**: For machine-readable logs or when integrating with log analysis tools, use structured logging with field data.
+
+6. **Use Performance Timing**: Track operation durations to identify bottlenecks.
+
+7. **Use Batch Logging**: When logging large numbers of messages in a loop, use batch mode to improve performance.
+
+8. **Add Context**: Include relevant context in log messages to make troubleshooting easier.
+
+9. **Configure from Environment**: Use environment variables for configuration to easily adjust settings in different environments.
+
+10. **Clean Up Resources**: Call `CloseLogFiles` when shutting down your application.
 
 ## Limitations
 
-1. The logger is primarily designed for single-process applications
-2. While basic file operations are thread-safe, heavy multi-threaded use might benefit from additional synchronization
-3. The file rotation is based on size checks before each write, not continuous monitoring
-
-## Contributing
-
-We welcome contributions to the TidyKit.Logger component. Please feel free to submit bug reports, feature requests, or pull requests. 
+1. The logger is primarily designed for single-process applications.
+2. While basic file operations are thread-safe, heavy multi-threaded use might benefit from additional synchronization.
+3. The batch mode is not thread-safe. Use it in single-threaded contexts or provide your own synchronization.
+4. Some features might not be compatible with all Pascal compilers or platforms. Adjust as needed for your environment. 
