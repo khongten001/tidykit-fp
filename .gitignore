@@ -7,6 +7,7 @@
 *.rst
 *.rsj
 *.dbg
+*.log
 
 # Lazarus backup files
 *.bak
