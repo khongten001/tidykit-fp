@@ -381,7 +381,14 @@ begin
   CloseLogFiles;
   FreeContexts; // Release all contexts before destroying logger
   FContexts.Free;
-  FSinks := nil; // Interface list will be freed automatically
+  
+  // Explicitly free FSinks instead of just setting to nil
+  if Assigned(FSinks) then
+  begin
+    FSinks.Clear; // Clear all interfaces first
+    FSinks.Free;  // Then free the list itself
+  end;
+  
   FBatchBuffer.Free;
   inherited Destroy;
 end;
@@ -808,8 +815,15 @@ begin
   if FInstance <> nil then
   begin
     OldInstanceID := FInstance.FInstanceID;
+    
+    // Make sure all resources are properly released
     FInstance.CloseLogFiles;
     FInstance.FreeContexts; // Free all contexts
+    
+    // Clear all sinks before destroying
+    if Assigned(FInstance.FSinks) then
+      FInstance.FSinks.Clear;
+    
     FInstance.Free;
     FInstance := nil;
     WriteLn('ResetInstance: FInstance has been set to nil (destroyed ID: ', IntToStr(OldInstanceID), ')');
