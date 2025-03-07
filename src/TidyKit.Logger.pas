@@ -585,7 +585,7 @@ begin
   begin
     SetConsoleColor(ALogLevel);
     
-    if ENABLE_CONSOLE_LOG then WriteLn(LogMessage);
+    WriteLn(LogMessage);
     
     ResetConsoleColor;
   end;
