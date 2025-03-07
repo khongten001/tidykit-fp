@@ -130,21 +130,46 @@ end;
 
 // This demo shows how to use category-based logging to organize your logs
 procedure DemoCategoryBasedLogging;
+var
+  UILogger: ILogContext;
+  DBLogger: ILogContext;
+  NetworkLogger: ILogContext;
 begin
   ShowHeader('CATEGORY-BASED LOGGING - Organizing Logs by Component');
   
-  // Reset and configure logger
+  // Reset the logger to start fresh
   TLogger.ResetInstance;
-  Logger.SetLogDestinations([ldConsole]);
   
-  ShowSubHeader('Creating Category Loggers');
-  WriteLn('Creating specialized loggers for UI, Database, and Network categories');
+  // Create a basic console logger
+  TLogger.CreateConsoleLogger(llDebug);
+  
+  WriteLn('Creating category loggers for different parts of the application...');
   
   // Create specialized loggers for different categories
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('Database');
+  NetworkLogger := Logger.CreateContext('Network');
+  
+  // Each category logger adds its category name to the message
+  UILogger.Info('Application window created');       // Shows: [UI] Application window created
+  DBLogger.Info('Connected to database');            // Shows: [Database] Connected to database
+  NetworkLogger.Warning('Network latency high: 350ms'); // Shows: [Network] Network latency high: 350ms
+  
+  // Use format strings with categories
+  DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
+  NetworkLogger.InfoFmt('Received %d bytes from %s', [1024, '192.168.1.10']);
+  
+  // No need to manually release contexts - they will be automatically freed
+  // when they go out of scope thanks to interface reference counting
+end;
+
+// This demo shows how to log to files instead of or in addition to the console
+procedure DemoFileLogging;
+begin
   var
-    UILogger: TLogContext;
-    DBLogger: TLogContext;
-    NetworkLogger: TLogContext;
+    UILogger: ILogContext;
+    DBLogger: ILogContext;
+    NetworkLogger: ILogContext;
   begin
     // Each context logger automatically adds the category name to all messages
     UILogger := Logger.CreateContext('UI');
@@ -160,12 +185,12 @@ begin
     DBLogger.ErrorFmt('Query failed: %s', ['Syntax error in SQL statement']);
     NetworkLogger.InfoFmt('Received %d bytes from %s', [1024, '192.168.1.10']);
     
-    // No need to free context objects - they are automatically managed
-    WriteLn('Note: Context objects are automatically managed by the logger');
+    // No need to free context objects - they are automatically managed by interface reference counting
+    WriteLn('Note: Context objects are automatically managed by interface reference counting');
   end;
   
   ShowSubHeader('Direct Category Logging');
-  WriteLn('Logging with categories without creating TLogContext objects:');
+  WriteLn('Logging with categories without creating ILogContext objects:');
   
   // Alternative: Use direct category methods without creating context objects
   Logger.InfoWithCategory('System', 'System initialization complete');

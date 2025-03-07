@@ -19,7 +19,8 @@ uses
   TidyKit.Math.Finance,
   TidyKit.Math.Trigonometry,
   TidyKit.Math.Stats,
-  TidyKit.Archive;
+  TidyKit.Archive,
+  TidyKit.Logger;
 
 type
   { Re-export the core types }
@@ -64,6 +65,18 @@ type
   { Re-export archive types }
   TArchiveKit = TidyKit.Archive.TArchiveKit;
 
+  { Re-export the logger types }
+  TLogLevel = TidyKit.Logger.TLogLevel;
+  TLogDestination = TidyKit.Logger.TLogDestination;
+  TLogDestinations = TidyKit.Logger.TLogDestinations;
+  TLogContext = TidyKit.Logger.TLogContext;
+  ILogContext = TidyKit.Logger.ILogContext;
+  TLogger = TidyKit.Logger.TLogger;
+  ILogSink = TidyKit.Logger.ILogSink;
+  ITimedOperation = TidyKit.Logger.ITimedOperation;
+  TNameValuePair = TidyKit.Logger.TNameValuePair;
+  TLoggerConfig = TidyKit.Logger.TLoggerConfig;
+
 const
   { Re-export filesystem constants }
   fsNone = TidyKit.FS.fsNone;
@@ -94,6 +107,15 @@ const
   bmEncrypt = TidyKit.Crypto.bmEncrypt;
   bmDecrypt = TidyKit.Crypto.bmDecrypt;
 
+  { Re-export logger constants }
+  ldConsole = TidyKit.Logger.ldConsole;
+  ldFile = TidyKit.Logger.ldFile;
+  llDebug = TidyKit.Logger.llDebug;
+  llInfo = TidyKit.Logger.llInfo;
+  llWarning = TidyKit.Logger.llWarning;
+  llError = TidyKit.Logger.llError;
+  llFatal = TidyKit.Logger.llFatal;
+
 type
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
@@ -112,9 +134,40 @@ var
   { Re-export HTTP constants }
   Http: THttp;
 
+function Logger: TLogger;
+function NameValuePair(const AName: string; const AValue: string): TNameValuePair;
+function NameValuePair(const AName: string; AValue: Integer): TNameValuePair;
+function NameValuePair(const AName: string; AValue: Boolean): TNameValuePair;
+function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
+
 implementation
 
 initialization
   Http := Default(THttp);
+
+function Logger: TLogger;
+begin
+  Result := TidyKit.Logger.Logger;
+end;
+
+function NameValuePair(const AName: string; const AValue: string): TNameValuePair;
+begin
+  Result := TidyKit.Logger.NameValuePair(AName, AValue);
+end;
+
+function NameValuePair(const AName: string; AValue: Integer): TNameValuePair;
+begin
+  Result := TidyKit.Logger.NameValuePair(AName, AValue);
+end;
+
+function NameValuePair(const AName: string; AValue: Boolean): TNameValuePair;
+begin
+  Result := TidyKit.Logger.NameValuePair(AName, AValue);
+end;
+
+function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
+begin
+  Result := TidyKit.Logger.NameValuePair(AName, AValue);
+end;
 
 end. 

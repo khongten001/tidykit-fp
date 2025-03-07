@@ -76,6 +76,31 @@ type
   { Forward declaration for TLogContext }
   TLogContext = class;
 
+  { Interface for category-based logging with automatic reference counting }
+  ILogContext = interface
+    ['{A8F7B2E5-D3C4-4F12-9A6B-8E7D5F1E0A9C}']
+    
+    procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);
+    procedure Info(const AMessage: string; const AFileIndex: Integer = -1);
+    procedure Warning(const AMessage: string; const AFileIndex: Integer = -1);
+    procedure Error(const AMessage: string; const AFileIndex: Integer = -1);
+    procedure Fatal(const AMessage: string; const AFileIndex: Integer = -1);
+    
+    { Format string overloads }
+    procedure DebugFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure InfoFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure WarningFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure ErrorFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    procedure FatalFmt(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1);
+    
+    { New format string overloads (streamlined syntax) }
+    procedure Debug(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+    procedure Info(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+    procedure Warning(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+    procedure Error(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+    procedure Fatal(const AFormat: string; const AArgs: array of const; const AFileIndex: Integer = -1); overload;
+  end;
+
   { TLogger class }
   TLogger = class
   private
@@ -172,7 +197,7 @@ type
     procedure ClearSinks;
     
     { Category support }
-    function CreateContext(const ACategory: string): TLogContext;
+    function CreateContext(const ACategory: string): ILogContext;
     
     { Global configuration }
     procedure LoadConfiguration(const AConfigFile: string);
@@ -194,18 +219,13 @@ type
   end;
 
 { TLogContext class for category-based logging }
-TLogContext = class
+TLogContext = class(TInterfacedObject, ILogContext)
 private
   FLogger: TLogger;
   FCategory: string;
-  FRefCount: Integer;  // Reference count
 public
   constructor Create(ALogger: TLogger; const ACategory: string);
   destructor Destroy; override;
-  
-  { Reference counting methods }
-  function AddRef: Integer;
-  function Release: Integer;
   
   procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);
   procedure Info(const AMessage: string; const AFileIndex: Integer = -1);
@@ -792,10 +812,9 @@ begin
   SetLength(FLogFiles, 0);
 end;
 
-function TLogger.CreateContext(const ACategory: string): TLogContext;
+function TLogger.CreateContext(const ACategory: string): ILogContext;
 begin
   Result := TLogContext.Create(Self, ACategory);
-  Result.AddRef; // AddRef for the reference we're returning
   FContexts.Add(Result); // Track the context
 end;
 
@@ -860,11 +879,8 @@ var
 begin
   if Assigned(FContexts) then
   begin
-    for i := FContexts.Count - 1 downto 0 do
-    begin
-      if Assigned(FContexts[i]) then
-        TLogContext(FContexts[i]).Release;
-    end;
+    // With interfaces, we just need to clear the list
+    // The interfaces will be automatically released when their references are removed
     FContexts.Clear;
   end;
 end;
@@ -873,9 +889,9 @@ end;
 
 constructor TLogContext.Create(ALogger: TLogger; const ACategory: string);
 begin
+  inherited Create;
   FLogger := ALogger;
   FCategory := ACategory;
-  FRefCount := 0; // Start with 0, AddRef will be called explicitly
 end;
 
 destructor TLogContext.Destroy;
@@ -884,25 +900,6 @@ begin
   if Assigned(FLogger) and Assigned(FLogger.FContexts) then
     FLogger.FContexts.Remove(Self);
   inherited Destroy;
-end;
-
-function TLogContext.AddRef: Integer;
-begin
-  Inc(FRefCount);
-  Result := FRefCount;
-end;
-
-function TLogContext.Release: Integer;
-begin
-  Dec(FRefCount);
-  Result := FRefCount;
-  if Result <= 0 then
-  begin
-    // Don't immediately free here to avoid issues if Release is called from within a method
-    // Schedule for destruction instead
-    Result := 0; // Ensure we don't get negative values
-    Free;
-  end;
 end;
 
 procedure TLogContext.Debug(const AMessage: string; const AFileIndex: Integer);

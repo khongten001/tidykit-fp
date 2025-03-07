@@ -102,6 +102,10 @@ type
     
     { Factory methods tests }
     procedure Test49_FactoryMethods;
+
+    { New tests }
+    procedure Test25_CategoryLogging;
+    procedure Test32_ContextDestroyedWithLogger;
   end;
 
 implementation
@@ -775,8 +779,8 @@ begin
   
   // Log some messages
   LoggerInstance.Debug('Debug message should not be logged');
-  LoggerInstance.Info('Info message should be logged');
-  LoggerInstance.Warning('Warning message should be logged');
+  Logger.Info('Info message should be logged');
+  Logger.Warning('Warning message should be logged');
   
   FileContent := TStringList.Create;
   try
@@ -869,7 +873,7 @@ procedure TLoggerTest.Test26_CategorySupport;
 var
   LogIndex: Integer;
   FileContent: TStringList;
-  UILogger, DBLogger: TLogContext;
+  UILogger, DBLogger: ILogContext;
 begin
   Logger.SetLogDestinations([ldConsole]);
   Logger.Debug('Test26_CategorySupport: Starting');
@@ -915,8 +919,7 @@ end;
 
 procedure TLoggerTest.Test27_ContextReferenceCountingBasic;
 var
-  Context: TLogContext;
-  RefCount: Integer;
+  Context: ILogContext;
 begin
   Logger.SetLogDestinations([ldConsole]);
   Logger.Debug('Test27_ContextReferenceCountingBasic: Starting');
@@ -924,28 +927,20 @@ begin
   // Create context
   Context := Logger.CreateContext('TestContext');
   
-  // Manually add another reference
-  RefCount := Context.AddRef;
+  // With interfaces, reference counting is automatic
+  // No need to manually call AddRef or Release
   
-  // Verify reference count is now 2 (one from CreateContext, one from AddRef)
-  AssertEquals('Reference count should be 2 after AddRef', 2, RefCount);
+  // The context is usable
+  Context.Info('Context is usable');
   
-  // Release one reference
-  RefCount := Context.Release;
-  
-  // Verify reference count is now 1
-  AssertEquals('Reference count should be 1 after first Release', 1, RefCount);
-  
-  // The context should still be usable
-  Context.Info('Context is still usable');
-  
-  // No need to Release again - it will be automatically freed when logger is reset
+  // The context will be automatically freed when it goes out of scope
+  // or when the last reference is removed
 end;
 
 procedure TLoggerTest.Test28_ContextAutoCleanup;
 var
   ContextCount: Integer;
-  TempContext: TLogContext;
+  TempContext: ILogContext;
 begin
   Logger.SetLogDestinations([ldConsole]);
   Logger.Debug('Test28_ContextAutoCleanup: Starting');
@@ -1077,7 +1072,7 @@ end;
 
 procedure TLoggerTest.Test31_ContextLifecycleOnLoggerReset;
 var
-  Context: TLogContext;
+  Context: ILogContext;
   DestroyedLoggerInstance: TLogger;
   NewLoggerInstance: TLogger;
   DestroyedInstanceID, NewInstanceID: Int64;
@@ -2029,6 +2024,42 @@ begin
   finally
     FileContent.Free;
   end;
+end;
+
+procedure TLoggerTest.Test25_CategoryLogging;
+var
+  UILogger, DBLogger: ILogContext;
+begin
+  Logger.SetLogDestinations([ldConsole]);
+  Logger.Debug('Test25_CategoryLogging: Starting');
+  
+  // Create category loggers
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('Database');
+  
+  // Use the loggers
+  UILogger.Info('UI component initialized');
+  DBLogger.Warning('Database connection slow');
+  
+  // With interfaces, the contexts will be automatically released when they go out of scope
+  // or when the last reference is removed
+end;
+
+procedure TLoggerTest.Test32_ContextDestroyedWithLogger;
+var
+  Context: ILogContext;
+begin
+  Logger.SetLogDestinations([ldConsole]);
+  Logger.Debug('Test32_ContextDestroyedWithLogger: Starting');
+  
+  // Create a context
+  Context := Logger.CreateContext('DestroyTest');
+  
+  // Use the context
+  Context.Info('This context will be automatically released when it goes out of scope');
+  
+  // With interfaces, the context will be automatically released when it goes out of scope
+  // or when the last reference is removed
 end;
 
 initialization

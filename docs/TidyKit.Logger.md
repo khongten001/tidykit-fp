@@ -92,7 +92,7 @@ Group logs by component or functionality:
 
 ```pascal
 var
-  UILogger, NetworkLogger: TLogContext;
+  UILogger, NetworkLogger: ILogContext;
 begin
   // Create dedicated loggers for different areas
   UILogger := Logger.CreateContext('UI');
@@ -731,13 +731,13 @@ Logger.Info('Using new configuration after reset');
 
 #### Category Support
 
-##### `function CreateContext(const ACategory: string): TLogContext`
+##### `function CreateContext(const ACategory: string): ILogContext`
 
 Creates a new logging context with the specified category name.
 
-### TLogContext Class
+### ILogContext Interface
 
-The TLogContext class provides category-based logging. Each logging method automatically prefixes log messages with the category name.
+The ILogContext interface provides category-based logging with automatic reference counting. Each logging method automatically prefixes log messages with the category name.
 
 ```pascal
 procedure Debug(const AMessage: string; const AFileIndex: Integer = -1);

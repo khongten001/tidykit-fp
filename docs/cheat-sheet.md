@@ -978,15 +978,14 @@ Logger.Info('User %s logged in from %s', ['john', '192.168.1.10']);     // Same 
 
 // STEP 4: Organize logs by component/feature (optional)
 var
-  UILogger, DBLogger: TLogContext;
+  UILogger, DBLogger: ILogContext;
 begin
-  // Create context loggers for different parts of your application
+  // Create category-based loggers for better organization
   UILogger := Logger.CreateContext('UI');
   DBLogger := Logger.CreateContext('DB');
   
-  // Log with categories (automatically includes the category name)
-  UILogger.Info('Window created');      // Outputs: [UI] Window created
-  DBLogger.Warning('Slow query');       // Outputs: [DB] Slow query
+  UILogger.Info('Window created');
+  DBLogger.Warning('Slow query detected: %s', ['SELECT * FROM large_table']);
 end;
 
 

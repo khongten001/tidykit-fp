@@ -464,7 +464,7 @@ Logger.Fatal('Application crashed: %s', ['Segmentation fault']);
 
 // Create category-based loggers for better organization
 var
-  UILogger, DBLogger: TLogContext;
+  UILogger, DBLogger: ILogContext;
 begin
   UILogger := Logger.CreateContext('UI');
   DBLogger := Logger.CreateContext('DB');
