@@ -9,6 +9,9 @@ uses
   {$IFDEF WINDOWS}, Windows {$ENDIF}
   {$IFDEF UNIX}, BaseUnix {$ENDIF};
 
+const
+  ENABLE_CONSOLE_LOG = False; // Set to True to enable console output, False to disable
+
 type
   { Log level enumeration }
   TLogLevel = (llDebug, llInfo, llWarning, llError, llFatal);
@@ -561,7 +564,9 @@ begin
   if ldConsole in FLogDestinations then
   begin
     SetConsoleColor(ALogLevel);
-    WriteLn(LogMessage);
+    
+    if ENABLE_CONSOLE_LOG then WriteLn(LogMessage);
+    
     ResetConsoleColor;
   end;
 
@@ -796,14 +801,14 @@ end;
 
 class function TLogger.GetInstance: TLogger;
 begin
-  WriteLn('GetInstance: FInstance address before check: ', IntToStr(PtrInt(FInstance)));
+  if ENABLE_CONSOLE_LOG then WriteLn('GetInstance: FInstance address before check: ', IntToStr(PtrInt(FInstance)));
   if FInstance = nil then
   begin
     FInstance := TLogger.Create;
-    WriteLn('GetInstance: Created new instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
+    if ENABLE_CONSOLE_LOG then WriteLn('GetInstance: Created new instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
   end
   else
-    WriteLn('GetInstance: Returning existing instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
+    if ENABLE_CONSOLE_LOG then WriteLn('GetInstance: Returning existing instance, address: ', IntToStr(PtrInt(FInstance)), ', ID: ', IntToStr(FInstance.FInstanceID));
   Result := FInstance;
 end;
 
@@ -811,7 +816,7 @@ class procedure TLogger.ResetInstance;
 var
   OldInstanceID: Int64;
 begin
-  WriteLn('ResetInstance: FInstance address before: ', IntToStr(PtrInt(FInstance)));
+  if ENABLE_CONSOLE_LOG then WriteLn('ResetInstance: FInstance address before: ', IntToStr(PtrInt(FInstance)));
   if FInstance <> nil then
   begin
     OldInstanceID := FInstance.FInstanceID;
@@ -826,9 +831,11 @@ begin
     
     FInstance.Free;
     FInstance := nil;
-    WriteLn('ResetInstance: FInstance has been set to nil (destroyed ID: ', IntToStr(OldInstanceID), ')');
+
+    if ENABLE_CONSOLE_LOG then WriteLn('ResetInstance: FInstance has been set to nil (destroyed ID: ', IntToStr(OldInstanceID), ')');
   end;
-  WriteLn('ResetInstance: FInstance address after: ', IntToStr(PtrInt(FInstance)));
+
+  if ENABLE_CONSOLE_LOG then WriteLn('ResetInstance: FInstance address after: ', IntToStr(PtrInt(FInstance)));
 end;
 
 class function TLogger.CreateDefaultLogger(ADestinations: TLogDestinations; 
