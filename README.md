@@ -22,6 +22,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [📐 Trigonometric Operations](#-trigonometric-operations)
     - [💰 Financial Operations](#-financial-operations)
     - [📦 Archive Operations](#-archive-operations)
+    - [📝 Logging Operations](#-logging-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
     - [Theoretical Compatibility](#theoretical-compatibility)
@@ -135,6 +136,29 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Proper cleanup of nested structures
   - Thoroughly tested with 17 comprehensive test cases
 
+- 📝 **Logging Operations**
+  - Easy to use logging system with multiple output destinations
+  - Configurable log levels (Debug, Info, Warning, Error, Fatal)
+  - Console and file output with automatic coloring
+  - File rotation based on size
+  - Multiple log file support
+  - Category-based logging for better organization
+  - Automatic context management with reference counting
+  - Format string support for convenient message formatting
+  - Thread-safety considerations for multi-threaded applications
+  - Singleton pattern with unique instance tracking
+  - Method chaining for fluent configuration
+  - Error recovery to prevent logging failures from crashing the application
+  - Default log directory creation
+  - Extensible sink architecture with built-in implementations
+  - Pattern-based message formatting
+  - Structured logging for key-value data
+  - Performance timing capabilities
+  - Batch logging for improved performance
+  - Environment and file-based configuration
+  - Specialized logger factory methods
+  - Thoroughly tested with 34 comprehensive test cases
+
 ## 💻 Installation
 
 1. Clone the repository:
@@ -155,6 +179,9 @@ uses
 uses
   // JSON functionality
   TidyKit.JSON,              // All JSON functionality
+  
+  // Logging functionality
+  TidyKit.Logger,            // Easy to use logging system
   
   // Math-related units
   TidyKit.Math,              // Base math types and operations
@@ -423,6 +450,46 @@ begin
 end;
 ```
 
+### 📝 Logging Operations
+```pascal
+// Simple one-line setup for console and file logging
+TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+
+// Log messages with different levels
+Logger.Debug('Processing started'); // Only shown if minimum level is Debug
+Logger.Info('User %s logged in', ['JohnDoe']);
+Logger.Warning('Disk space is low: %d%% remaining', [5]);
+Logger.Error('Failed to save file: %s', ['Access denied']);
+Logger.Fatal('Application crashed: %s', ['Segmentation fault']);
+
+// Create category-based loggers for better organization
+var
+  UILogger, DBLogger: ILogContext;
+begin
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  
+  UILogger.Info('Window created');
+  DBLogger.Warning('Slow query detected: %s', ['SELECT * FROM large_table']);
+end;
+
+// Time operations and log their duration
+var
+  Timer: ITimedOperation;
+begin
+  Timer := Logger.TimedBlock('Data processing');
+  // ... perform long operation ...
+  // Timer automatically logs completion with duration when it goes out of scope
+end;
+
+// IMPORTANT: Always close log files when shutting down
+try
+  // Your application logic with logging...
+finally
+  Logger.CloseLogFiles;  // Ensures all data is written to disk
+end;
+```
+
 ## 📖 System Requirements
 
 ### Tested Environments
@@ -455,11 +522,12 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
-- 📊 [Math ](docs/TidyKit.Math.md)
+- 📊 [Math](docs/TidyKit.Math.md)
 - 📂 [File System](docs/TidyKit.FS.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔄 [JSON](docs/TidyKit.JSON.md)
+- 📝 [Logger](docs/TidyKit.Logger.md)
 
 ## ✅ Testing
 
