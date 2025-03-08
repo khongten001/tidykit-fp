@@ -48,6 +48,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Scenarios](#common-scenarios)
     - [Advanced Use](#advanced-use)
   - [📁 Archive Operations](#-archive-operations)
+  - [🛠️ Error Handling](#-error-handling)
 
 ## 🔄 JSON Operations
 
@@ -1142,3 +1143,94 @@ TArchiveKit.CompressToTar('sourcedir', 'archive.tar', True, '*.txt'); // Create 
 TArchiveKit.DecompressFromTar('archive.tar', 'destdir');              // Extract all files
 TArchiveKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract only .txt files
 ```
+
+## 🛠️ Error Handling
+
+TidyKit uses module-specific exception classes for better error granularity:
+
+```pascal
+// Core exception (base class)
+try
+  // Generic operations
+except
+  on E: ETidyKitException do
+    // Handle general TidyKit errors
+end;
+
+// Module-specific exceptions
+try
+  // JSON operations
+  JsonValue := TJSON.Parse(JsonStr);
+except
+  on E: EJSONException do
+    // Handle JSON-specific errors
+end;
+
+try
+  // File operations
+  TFileKit.CopyFile(Source, Dest);
+except
+  on E: EFileSystemError do
+    // Handle filesystem-specific errors
+end;
+
+try
+  // Matrix operations
+  InvertedMatrix := TMatrixKit.Inverse(Matrix);
+except
+  on E: EMatrixError do
+    // Handle matrix-specific errors (e.g., singular matrix)
+end;
+
+try
+  // Statistical operations
+  Mean := TStatsKit.Mean(Data);
+except
+  on E: EStatsError do
+    // Handle statistics-specific errors (e.g., empty dataset)
+end;
+
+try
+  // Financial operations
+  IRR := TFinanceKit.InternalRateOfReturn(Investment, CashFlows);
+except
+  on E: EFinanceError do
+    // Handle finance-specific errors (e.g., convergence failure)
+end;
+
+try
+  // Cryptographic operations
+  Encrypted := TCryptoKit.AES256EncryptCBC(Data, Key, IV);
+except
+  on E: ECryptoError do
+    // Handle general crypto errors
+  on E: EAESError do
+    // Handle AES-specific errors
+end;
+
+try
+  // HTTP operations
+  Response := Http.Get(URL);
+except
+  on E: ERequestError do
+    // Handle HTTP-specific errors
+end;
+
+try
+  // Archive operations
+  TArchiveKit.CompressToZip(Path, ZipFile);
+except
+  on E: EArchiveError do
+    // Handle archive-specific errors
+end;
+
+try
+  // Logger operations
+  Logger.Info('Message');
+except
+  on E: ELoggerException do
+    // Handle logger-specific errors
+end;
+```
+
+This modular approach makes error handling more precise and maintainable.

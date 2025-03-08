@@ -583,7 +583,39 @@ All math operations include appropriate error checking:
 - Undefined mathematical operations
 - Out of range values
 
-Errors are raised using standard Pascal exceptions with descriptive messages.
+Each math submodule has its own dedicated exception class to allow for more specific error handling:
+
+- `EMatrixError`: For errors in matrix operations (TidyKit.Math.Matrices)
+  ```pascal
+  try
+    Result := TMatrixKit.Inverse(Matrix);
+  except
+    on E: EMatrixError do
+      // Handle matrix-specific errors
+  end;
+  ```
+
+- `EStatsError`: For errors in statistical calculations (TidyKit.Math.Stats)
+  ```pascal
+  try
+    Mean := TStatsKit.Mean(Data);
+  except
+    on E: EStatsError do
+      // Handle statistics-specific errors (e.g., empty datasets)
+  end;
+  ```
+
+- `EFinanceError`: For errors in financial calculations (TidyKit.Math.Finance)
+  ```pascal
+  try
+    IRR := TFinanceKit.InternalRateOfReturn(InitialInvestment, CashFlows);
+  except
+    on E: EFinanceError do
+      // Handle finance-specific errors (e.g., convergence failures)
+  end;
+  ```
+
+This modular approach to error handling allows you to catch and handle errors specific to each mathematical domain while still maintaining a consistent error handling pattern across the library.
 
 ## Performance Considerations
 

@@ -203,16 +203,26 @@ end;
 
 ## Error Handling
 
-The unit uses exceptions to report errors. Always wrap operations in try-except blocks:
+The TidyKit.FS module uses a dedicated exception class, `EFileSystemError`, for file system-related errors. This allows you to specifically catch file system errors while letting other types of exceptions propagate as normal.
 
 ```pascal
 try
   TFileKit.CopyFile('source.txt', 'dest.txt');
 except
-  on E: ETidyKitException do
-    WriteLn('Error: ', E.Message);
+  on E: EFileSystemError do
+    WriteLn('File System Error: ', E.Message);
+  on E: Exception do
+    WriteLn('Other Error: ', E.Message);
 end;
 ```
+
+Specific errors that might be raised include:
+- File not found
+- Access denied
+- Invalid path
+- Directory not empty
+- Disk full
+- Symbolic link creation failures
 
 ## Best Practices
 

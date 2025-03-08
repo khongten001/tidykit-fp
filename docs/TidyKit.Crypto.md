@@ -162,23 +162,34 @@ Decrypted := TCryptoKit.XORCrypt(Encrypted, 'key');
 
 ## Error Handling
 
+The TidyKit.Crypto module uses dedicated exception classes for different types of cryptographic errors:
+
+- `ECryptoError`: General cryptographic errors (random number generation, key management, etc.)
+- `EAESError`: Specific to AES encryption/decryption operations
+
+This allows you to catch specific types of errors:
+
 ```pascal
 try
   CipherText := TCryptoKit.AES256EncryptCBC(PlainText, Key, IV);
 except
   on E: EAESError do
-    // Handle encryption errors (invalid key length, etc.)
+    // Handle AES-specific encryption errors (invalid key length, etc.)
+  on E: ECryptoError do
+    // Handle general cryptography errors (random number generation, etc.)
   on E: Exception do
-    // Handle other errors
+    // Handle other types of errors
 end;
 
 try
   PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
 except
   on E: EAESError do
-    // Handle decryption errors (invalid padding, etc.)
+    // Handle AES-specific decryption errors (invalid padding, etc.)
+  on E: ECryptoError do
+    // Handle general cryptography errors
   on E: Exception do
-    // Handle other errors
+    // Handle other types of errors
 end;
 ```
 
@@ -365,18 +376,22 @@ try
   CipherText := TCryptoKit.AES256EncryptCBC(PlainText, Key, IV);
 except
   on E: EAESError do
-    // Handle encryption errors
+    // Handle AES-specific encryption errors (invalid key length, etc.)
+  on E: ECryptoError do
+    // Handle general cryptography errors (random number generation, etc.)
   on E: Exception do
-    // Handle other errors
+    // Handle other types of errors
 end;
 
 try
   PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
 except
   on E: EAESError do
-    // Handle decryption errors (including padding errors)
+    // Handle AES-specific decryption errors (invalid padding, etc.)
+  on E: ECryptoError do
+    // Handle general cryptography errors
   on E: Exception do
-    // Handle other errors
+    // Handle other types of errors
 end;
 ```
 
