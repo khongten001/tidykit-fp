@@ -134,16 +134,16 @@ var
   { Re-export HTTP constants }
   Http: THttp;
 
-function Logger: TLogger;
+// Name-value pair functions
 function NameValuePair(const AName: string; const AValue: string): TNameValuePair;
 function NameValuePair(const AName: string; AValue: Integer): TNameValuePair;
 function NameValuePair(const AName: string; AValue: Boolean): TNameValuePair;
 function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 
-implementation
+// Logger singleton accessor
+function Logger: TLogger;
 
-initialization
-  Http := Default(THttp);
+implementation
 
 function Logger: TLogger;
 begin
@@ -169,5 +169,8 @@ function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 begin
   Result := TidyKit.Logger.NameValuePair(AName, AValue);
 end;
+
+initialization
+  Http := Default(THttp);
 
 end. 

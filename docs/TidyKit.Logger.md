@@ -8,7 +8,7 @@
 
 TidyKit.Logger is designed for:
 
-- **Pascal developers** seeking a modern, straightforward logging solution
+- **Free Pascal developers** seeking a modern, straightforward logging solution
 - **Developers who value simplicity** but need powerful logging capabilities
 - **Applications ranging from small tools to complex systems**
 

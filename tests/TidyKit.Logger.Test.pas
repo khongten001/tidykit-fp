@@ -1,12 +1,17 @@
 unit TidyKit.Logger.Test;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry,
-  TidyKit.Logger;
+  Classes
+ ,SysUtils
+ ,fpcunit
+ ,testregistry
+ ,TidyKit.Logger // Alternative
+ ,TidyKit;
+
 
 type
   TLoggerTest = class(TTestCase)

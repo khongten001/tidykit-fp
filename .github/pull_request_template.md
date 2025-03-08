@@ -28,6 +28,14 @@ Please delete options that are not relevant.
 
 Please describe the tests that you ran to verify your changes.
 
+- [ ] Did you add / update existing test files? If so list addition / udpated files here:
+  - ...
+  - ...
+- [ ] Did it compile with the test runner?
+- [ ] Did you run the following command after compilation (in `test/`)? If not, please modify.
+
 ```pascal
-// Add test code here if applicable
+./TestRunner.exe -a --format=plain
 ``` 
+
+- [ ] Did you pass all test?
