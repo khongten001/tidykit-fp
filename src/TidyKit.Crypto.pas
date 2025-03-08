@@ -66,6 +66,10 @@ uses
 {$ENDIF}
   ;
 
+type
+  { Exception class for cryptographic operations }
+  ECryptoError = class(Exception);
+
 const
 {$IFDEF MSWINDOWS}
   PROV_RSA_FULL = 1;
@@ -549,12 +553,12 @@ begin
     
   PaddingSize := DecryptedBytes[Length(DecryptedBytes) - 1];
   if (PaddingSize = 0) or (PaddingSize > 16) then
-    raise EAESError.Create('Invalid padding');
+    raise ECryptoError.Create('Invalid padding');
     
   // Verify all padding bytes match
   for I := Length(DecryptedBytes) - PaddingSize to Length(DecryptedBytes) - 1 do
     if DecryptedBytes[I] <> PaddingSize then
-      raise EAESError.Create('Invalid padding');
+      raise ECryptoError.Create('Invalid padding');
   
   // Convert decrypted bytes back to string, removing padding
   SetLength(Result, Length(DecryptedBytes) - PaddingSize);
@@ -618,10 +622,10 @@ var
   hProv: THandle;
 begin
   if not CryptoAcquireContext(hProv, nil, nil, PROV_RSA_FULL, CRYPT_VERIFYCONTEXT) then
-    raise Exception.Create('Failed to acquire crypto context');
+    raise ECryptoError.Create('Failed to acquire crypto context');
   try
     if not CryptoGenRandom(hProv, Count, @Buffer) then
-      raise Exception.Create('Failed to generate random bytes');
+      raise ECryptoError.Create('Failed to generate random bytes');
   finally
     CryptoReleaseContext(hProv, 0);
   end;

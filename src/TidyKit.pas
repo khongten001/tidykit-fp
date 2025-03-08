@@ -35,6 +35,7 @@ type
   TSearchResult = TidyKit.FS.TSearchResult;
   TFilePathArray = TidyKit.FS.TFilePathArray;
   TDirectoryInfo = TidyKit.FS.TDirectoryInfo;
+  EFileSystemError = TidyKit.FS.EFileSystemError;
 
   { Re-export the JSON types }
   TJSON = TidyKit.JSON.TJSON;
@@ -48,12 +49,14 @@ type
   TBlowfishMode = TidyKit.Crypto.TBlowfishMode;
   TAESKey = TidyKit.Crypto.TAESKey;
   TAESBlock = TidyKit.Crypto.TAESBlock;
+  ECryptoError = TidyKit.Crypto.ECryptoError;
 
   { Re-export the request types }
   TResponse = TidyKit.Request.TResponse;
   THttpRequest = TidyKit.Request.THttpRequest;
   TRequestResult = TidyKit.Request.TRequestResult;
   THttp = TidyKit.Request.THttp;
+  ERequestError = TidyKit.Request.ERequestError;
 
   { Re-export math types }
   TMatrix = TidyKit.Math.TMatrix;
@@ -61,9 +64,13 @@ type
   TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
   TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
   TStatsKit = TidyKit.Math.Stats.TStatsKit;
+  EMatrixError = TidyKit.Math.Matrices.EMatrixError;
+  EStatsError = TidyKit.Math.Stats.EStatsError;
+  EFinanceError = TidyKit.Math.Finance.EFinanceError;
 
   { Re-export archive types }
   TArchiveKit = TidyKit.Archive.TArchiveKit;
+  EArchiveError = TidyKit.Archive.EArchiveError;
 
   { Re-export the logger types }
   TLogLevel = TidyKit.Logger.TLogLevel;
@@ -76,6 +83,7 @@ type
   ITimedOperation = TidyKit.Logger.ITimedOperation;
   TNameValuePair = TidyKit.Logger.TNameValuePair;
   TLoggerConfig = TidyKit.Logger.TLoggerConfig;
+  ELoggerException = TidyKit.Logger.ELoggerException;
 
 const
   { Re-export filesystem constants }

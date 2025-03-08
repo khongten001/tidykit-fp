@@ -9,6 +9,9 @@ uses
   Classes, SysUtils, Math, TidyKit.Math, Generics.Collections;
 
 type
+  { Exception class for statistical operations }
+  EStatsError = class(Exception);
+
   { Descriptive statistics record }
   TDescriptiveStats = record
     N: Integer;
@@ -125,26 +128,29 @@ implementation
 class function TStatsKit.Mean(const Data: TDoubleArray): Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate mean of empty array');
+    raise EStatsError.Create('Cannot calculate mean of empty array');
+    
   Result := Sum(Data) / Length(Data);
 end;
 
 class function TStatsKit.Median(const Data: TDoubleArray): Double;
 var
   SortedData: TDoubleArray;
-  Mid: Integer;
+  Middle: Integer;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate median of empty array');
+    raise EStatsError.Create('Cannot calculate median of empty array');
     
+  // Copy and sort the data
   SortedData := Copy(Data);
   Sort(SortedData);
   
-  Mid := Length(SortedData) div 2;
+  // Find the median
+  Middle := Length(SortedData) div 2;
   if Length(SortedData) mod 2 = 0 then
-    Result := (SortedData[Mid - 1] + SortedData[Mid]) / 2
+    Result := (SortedData[Middle - 1] + SortedData[Middle]) / 2
   else
-    Result := SortedData[Mid];
+    Result := SortedData[Middle];
 end;
 
 class function TStatsKit.Mode(const Data: TDoubleArray): Double;
@@ -154,7 +160,7 @@ var
   CurrentValue: Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate mode of empty array');
+    raise EStatsError.Create('Cannot calculate mode of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -189,7 +195,7 @@ var
   SortedData: TDoubleArray;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate range of empty array');
+    raise EStatsError.Create('Cannot calculate range of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -203,7 +209,7 @@ var
 begin
   N := Length(Data);
   if N < 2 then
-    raise Exception.Create('Cannot calculate variance with less than 2 values');
+    raise EStatsError.Create('Cannot calculate variance with less than 2 values');
     
   M := Mean(Data);
   SumSq := 0;
@@ -219,7 +225,7 @@ var
   I: Integer;
 begin
   if Length(Data) < 2 then
-    raise Exception.Create('Cannot calculate standard deviation with less than 2 values');
+    raise EStatsError.Create('Cannot calculate standard deviation with less than 2 values');
     
   M := Mean(Data);
   S2 := 0;
@@ -237,7 +243,7 @@ var
 begin
   N := Length(Data);
   if N < 2 then
-    raise Exception.Create('Cannot calculate sample variance with less than 2 values');
+    raise EStatsError.Create('Cannot calculate sample variance with less than 2 values');
     
   M := Mean(Data);
   SumSq := 0;
@@ -260,7 +266,7 @@ var
 begin
   N := Length(Data);
   if N < 3 then
-    raise Exception.Create('Cannot calculate skewness with less than 3 values');
+    raise EStatsError.Create('Cannot calculate skewness with less than 3 values');
     
   M := Mean(Data);
   S := StandardDeviation(Data);
@@ -281,7 +287,7 @@ var
 begin
   N := Length(Data);
   if N < 4 then
-    raise Exception.Create('Cannot calculate kurtosis with less than 4 values');
+    raise EStatsError.Create('Cannot calculate kurtosis with less than 4 values');
     
   M := Mean(Data);
   S := SampleStandardDeviation(Data);
@@ -303,11 +309,11 @@ var
   Fraction: Double;
 begin
   if (P < 0) or (P > 100) then
-    raise Exception.Create('Percentile must be between 0 and 100');
+    raise EStatsError.Create('Percentile must be between 0 and 100');
     
   N := Length(Data);
   if N = 0 then
-    raise Exception.Create('Cannot calculate percentile of empty array');
+    raise EStatsError.Create('Cannot calculate percentile of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -345,9 +351,9 @@ var
 begin
   N := Length(X);
   if N <> Length(Y) then
-    raise Exception.Create('Arrays must have equal length for Pearson correlation');
+    raise EStatsError.Create('Arrays must have equal length for Pearson correlation');
   if N < 2 then
-    raise Exception.Create('Cannot calculate correlation with less than 2 values');
+    raise EStatsError.Create('Cannot calculate correlation with less than 2 values');
     
   MeanX := Mean(X);
   MeanY := Mean(Y);
@@ -432,9 +438,9 @@ var
 begin
   N := Length(X);
   if N <> Length(Y) then
-    raise Exception.Create('Arrays must have equal length for Spearman correlation');
+    raise EStatsError.Create('Arrays must have equal length for Spearman correlation');
   if N < 2 then
-    raise Exception.Create('Cannot calculate correlation with less than 2 values');
+    raise EStatsError.Create('Cannot calculate correlation with less than 2 values');
   
   // Get ranks for both arrays
   RankX := GetRanks(X);
@@ -453,7 +459,7 @@ var
 begin
   N := Length(X);
   if (N <> Length(Y)) or (N < 2) then
-    raise Exception.Create('Arrays must have equal length and at least 2 elements');
+    raise EStatsError.Create('Arrays must have equal length and at least 2 elements');
     
   MeanX := Mean(X);
   MeanY := Mean(Y);
@@ -468,7 +474,7 @@ end;
 class function TStatsKit.ZScore(const Value, AMean, StdDev: Double): Double;
 begin
   if StdDev = 0 then
-    raise Exception.Create('Standard deviation cannot be zero');
+    raise EStatsError.Create('Standard deviation cannot be zero');
   Result := (Value - AMean) / StdDev;
 end;
 
@@ -481,7 +487,7 @@ begin
   S := StandardDeviation(Data);
   
   if S = 0 then
-    raise Exception.Create('Cannot standardize data with zero standard deviation');
+    raise EStatsError.Create('Cannot standardize data with zero standard deviation');
     
   for I := 0 to High(Data) do
     Data[I] := ZScore(Data[I], M, S);
@@ -543,7 +549,7 @@ var
   SortedData: TDoubleArray;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate descriptive statistics of empty array');
+    raise EStatsError.Create('Cannot calculate descriptive statistics of empty array');
 
   Result.N := Length(Data);
   Result.Mean := Mean(Data);
@@ -574,11 +580,11 @@ var
   LogSum: Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate geometric mean of empty array');
+    raise EStatsError.Create('Cannot calculate geometric mean of empty array');
     
   for I := 0 to High(Data) do
     if Data[I] <= 0 then
-      raise Exception.Create('Geometric mean requires positive values');
+      raise EStatsError.Create('Geometric mean requires positive values');
       
   LogSum := 0;
   for I := 0 to High(Data) do
@@ -593,18 +599,18 @@ var
   ReciprocalSum: Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate harmonic mean of empty array');
+    raise EStatsError.Create('Cannot calculate harmonic mean of empty array');
     
   ReciprocalSum := 0;
   for I := 0 to High(Data) do
   begin
     if Data[I] <= 0 then
-      raise Exception.Create('Harmonic mean requires positive values');
+      raise EStatsError.Create('Harmonic mean requires positive values');
     ReciprocalSum := ReciprocalSum + 1 / Data[I];  // Simple division
   end;
   
   if ReciprocalSum = 0 then
-    raise Exception.Create('Cannot calculate harmonic mean when sum of reciprocals is zero');
+    raise EStatsError.Create('Cannot calculate harmonic mean when sum of reciprocals is zero');
     
   Result := Length(Data) / ReciprocalSum;  // Simple division
 end;
@@ -617,10 +623,10 @@ var
   TrimmedSum: Double;
 begin
   if (Percent < 0) or (Percent >= 50) then
-    raise Exception.Create('Trim percentage must be between 0 and 50');
+    raise EStatsError.Create('Trim percentage must be between 0 and 50');
     
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate trimmed mean of empty array');
+    raise EStatsError.Create('Cannot calculate trimmed mean of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -644,10 +650,10 @@ var
   WinsorizedSum: Double;
 begin
   if (Percent < 0) or (Percent >= 50) then
-    raise Exception.Create('Winsorization percentage must be between 0 and 50');
+    raise EStatsError.Create('Winsorization percentage must be between 0 and 50');
     
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate Winsorized mean of empty array');
+    raise EStatsError.Create('Cannot calculate Winsorized mean of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -671,7 +677,7 @@ end;
 class function TStatsKit.StandardErrorOfMean(const Data: TDoubleArray): Double;
 begin
   if Length(Data) < 2 then
-    raise Exception.Create('Cannot calculate SEM with less than 2 values');
+    raise EStatsError.Create('Cannot calculate SEM with less than 2 values');
     
   Result := SampleStandardDeviation(Data) / Sqrt(Length(Data));
 end;
@@ -681,11 +687,11 @@ var
   M, S: Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate CV of empty array');
+    raise EStatsError.Create('Cannot calculate CV of empty array');
     
   M := Mean(Data);
   if M = 0 then
-    raise Exception.Create('Cannot calculate CV when mean is zero');
+    raise EStatsError.Create('Cannot calculate CV when mean is zero');
     
   S := StandardDeviation(Data);
   Result := (S / Abs(M)) * 100;  // Simple percentage calculation
@@ -698,7 +704,7 @@ var
   I: Integer;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate MAD of empty array');
+    raise EStatsError.Create('Cannot calculate MAD of empty array');
     
   M := Median(Data);
   SetLength(Deviations, Length(Data));  // Initialize the array
@@ -723,7 +729,7 @@ var
   Weight: Double;
 begin
   if Length(Data) = 0 then
-    raise Exception.Create('Cannot calculate Huber M-estimator of empty array');
+    raise EStatsError.Create('Cannot calculate Huber M-estimator of empty array');
     
   M := Median(Data);
   MAD := MedianAbsoluteDeviation(Data);
@@ -790,7 +796,7 @@ var
   DF: Integer;
 begin
   if (Length(X) < 2) or (Length(Y) < 2) then
-    raise Exception.Create('T-test requires at least 2 values in each group');
+    raise EStatsError.Create('T-test requires at least 2 values in each group');
     
   NX := Length(X);
   NY := Length(Y);
@@ -803,12 +809,12 @@ begin
   PooledVar := ((NX - 1) * VarX + (NY - 1) * VarY) / (NX + NY - 2);
   
   if PooledVar <= 0 then
-    raise Exception.Create('Invalid pooled variance for T-test calculation');
+    raise EStatsError.Create('Invalid pooled variance for T-test calculation');
     
   SE := Sqrt(PooledVar * (1.0/NX + 1.0/NY));
   
   if SE = 0 then
-    raise Exception.Create('Cannot calculate T-statistic with zero standard error');
+    raise EStatsError.Create('Cannot calculate T-statistic with zero standard error');
     
   Result := (MeanX - MeanY) / SE;
   
@@ -848,7 +854,7 @@ begin
   NX := Length(X);
   NY := Length(Y);
   if (NX < 2) or (NY < 2) then
-    raise Exception.Create('Mann-Whitney U test requires at least 2 values in each group');
+    raise EStatsError.Create('Mann-Whitney U test requires at least 2 values in each group');
     
   // Initialize managed type
   SetLength(AllData, NX + NY);
@@ -943,7 +949,7 @@ var
 begin
   N := Length(Data);
   if N < 5 then
-    raise Exception.Create('K-S test requires at least 5 values');
+    raise EStatsError.Create('K-S test requires at least 5 values');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -981,7 +987,7 @@ var
 begin
   N := Length(Data);
   if (N < 3) or (N > 50) then
-    raise Exception.Create('Shapiro-Wilk test requires 3-50 values');
+    raise EStatsError.Create('Shapiro-Wilk test requires 3-50 values');
     
   SortedData := Copy(Data);
   Sort(SortedData);
@@ -1022,7 +1028,7 @@ var
   PooledSD: Double;
 begin
   if (Length(X) < 2) or (Length(Y) < 2) then
-    raise Exception.Create('Cohen''s d requires at least 2 values in each group');
+    raise EStatsError.Create('Cohen''s d requires at least 2 values in each group');
     
   MeanX := Mean(X);
   MeanY := Mean(Y);
@@ -1053,7 +1059,7 @@ var
   I, NPos, NNeg, N: Integer;
 begin
   if Length(X) <> Length(Y) then
-    raise Exception.Create('Sign test requires equal length arrays');
+    raise EStatsError.Create('Sign test requires equal length arrays');
     
   NPos := 0;
   NNeg := 0;
@@ -1068,7 +1074,7 @@ begin
   
   N := NPos + NNeg;
   if N = 0 then
-    raise Exception.Create('Sign test requires at least one non-zero difference');
+    raise EStatsError.Create('Sign test requires at least one non-zero difference');
     
   // Return proportion of positive differences
   Result := NPos / N;
@@ -1091,7 +1097,7 @@ var
   TempRank: Double;
 begin
   if Length(X) <> Length(Y) then
-    raise Exception.Create('Wilcoxon test requires equal length arrays');
+    raise EStatsError.Create('Wilcoxon test requires equal length arrays');
     
   // Calculate differences and absolute values
   N := 0;
@@ -1109,7 +1115,7 @@ begin
   SetLength(Differences, N);
   
   if N = 0 then
-    raise Exception.Create('Wilcoxon test requires at least one non-zero difference');
+    raise EStatsError.Create('Wilcoxon test requires at least one non-zero difference');
     
   // Sort by absolute value
   for I := 0 to N - 2 do
@@ -1168,7 +1174,7 @@ var
   Concordant, Discordant: Integer;
 begin
   if Length(X) <> Length(Y) then
-    raise Exception.Create('Kendall''s tau requires equal length arrays');
+    raise EStatsError.Create('Kendall''s tau requires equal length arrays');
     
   Concordant := 0;
   Discordant := 0;
@@ -1199,11 +1205,11 @@ var
   Fraction: Double;
 begin
   if (Q < 0) or (Q > 1) then
-    raise Exception.Create('Quantile must be between 0 and 1');
+    raise EStatsError.Create('Quantile must be between 0 and 1');
     
   N := Length(Data);
   if N = 0 then
-    raise Exception.Create('Cannot calculate quantile of empty array');
+    raise EStatsError.Create('Cannot calculate quantile of empty array');
     
   SortedData := Copy(Data);
   Sort(SortedData);

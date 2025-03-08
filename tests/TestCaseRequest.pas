@@ -135,7 +135,7 @@ begin
       .WithTimeout(1)
       .Send;
   except
-    on E: ETidyKitException do
+    on E: ERequestError do
       ExceptionRaised := True;
   end;
   
