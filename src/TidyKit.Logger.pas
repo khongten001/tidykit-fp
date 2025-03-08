@@ -585,9 +585,19 @@ begin
   begin
     SetConsoleColor(ALogLevel);
     
-    WriteLn(LogMessage);
-    
-    ResetConsoleColor;
+    // For FATAL level on UNIX systems, we need special handling to avoid color bleeding
+    {$IFDEF UNIX}
+    if ALogLevel = llFatal then
+    begin
+      Write(LogMessage);
+      ResetConsoleColor;
+      WriteLn;
+    end else
+    {$ENDIF}
+    begin
+      WriteLn(LogMessage);
+      ResetConsoleColor;
+    end;
   end;
 
   // Process sinks

@@ -558,6 +558,100 @@ uses
       DeleteFile(ValidPath);
   end;
 
+  // This demo shows how to save and load logger configurations from INI files
+  procedure DemoConfigFileHandling;
+  var
+    ConfigFile: string;
+    ConfigList: TStringList;
+    LogFilePath: string;
+    FileContents: TStringList;
+  begin
+    ShowHeader('CONFIGURATION FILE HANDLING - Saving and Loading Logger Settings');
+
+    // Reset instance
+    TLogger.ResetInstance;
+    
+    // Create a configuration file in the current directory
+    ConfigFile := 'logger_config.ini';
+    ConfigList := TStringList.Create;
+    try
+      // Define configuration section for the logger
+      ConfigList.Add('[Logger]');
+      ConfigList.Add('Destinations=Console,File');
+      ConfigList.Add('MinLevel=Warning');
+      ConfigList.Add('DateTimeFormat=yyyy-mm-dd hh:nn:ss');
+      ConfigList.Add('FormatPattern=[%time] [%level] %message');
+      ConfigList.Add('DefaultLogFile=config_example.log');
+      ConfigList.Add('MaxFileSize=1048576'); // 1MB
+
+      // Save the configuration file
+      WriteLn('Creating logger configuration file: ', ConfigFile);
+      ConfigList.SaveToFile(ConfigFile);
+      WriteLn('Configuration file contents:');
+      WriteLn('--------------------------');
+      WriteLn(ConfigList.Text);
+      WriteLn('--------------------------');
+    finally
+      ConfigList.Free;
+    end;
+
+    // Load the configuration
+    WriteLn('Loading configuration from file...');
+    TLogger.ResetInstance;
+    Logger.LoadConfiguration(ConfigFile);
+    
+    // Demonstrate that configuration was applied
+    WriteLn('Showing that configuration was applied:');
+    WriteLn('1. Only WARNING and higher messages should appear (due to MinLevel=Warning)');
+    Logger.Debug('This DEBUG message should be filtered out');
+    Logger.Info('This INFO message should be filtered out');
+    Logger.Warning('This WARNING message should appear');
+    Logger.Error('This ERROR message should appear');
+    
+    // Define the log file path based on the configuration
+    LogFilePath := 'config_example.log';
+    
+    // Close log files to ensure all data is written
+    Logger.CloseLogFiles;
+    
+    // Display log file contents to see what was written
+    if FileExists(LogFilePath) then
+    begin
+      WriteLn('Log file contents (note that Debug and Info messages are filtered out):');
+      WriteLn('--------------------------');
+
+      FileContents := TStringList.Create;
+      try
+        FileContents.LoadFromFile(LogFilePath);
+        WriteLn(FileContents.Text);
+      finally
+        FileContents.Free;
+      end;
+
+      WriteLn('--------------------------');
+    end
+    else
+      WriteLn('Warning: Expected log file not found at: ', LogFilePath);
+
+    // Demonstrate environment variable configuration (just mentioned, not actually used)
+    WriteLn;
+    WriteLn('Note: You can also configure the logger using environment variables:');
+    WriteLn('  LOGGER_DESTINATIONS=CONSOLE,FILE');
+    WriteLn('  LOGGER_LEVEL=WARNING');
+    WriteLn('  LOGGER_DATETIME_FORMAT=yyyy-mm-dd hh:nn:ss');
+    WriteLn('  LOGGER_FORMAT_PATTERN=[%time] [%level] %message');
+    WriteLn('  LOGGER_DEFAULT_FILE=env_var_example.log');
+    WriteLn('  LOGGER_MAX_FILE_SIZE=1048576');
+    WriteLn('To apply environment variables, use: Logger.ConfigureFromEnvironment');
+
+    // Clean up
+    Logger.CloseLogFiles;
+    if FileExists(ConfigFile) then
+      DeleteFile(ConfigFile);
+    if FileExists(LogFilePath) then
+      DeleteFile(LogFilePath);
+  end;
+
   // This demo shows the default logger setup (simplest way to get started)
   procedure DemoDefaultLoggerSetup;
   begin
@@ -630,6 +724,9 @@ begin
     ReadLn;
 
     DemoErrorRecovery;
+    ReadLn;
+    
+    DemoConfigFileHandling;
     ReadLn;
 
     DemoDefaultLoggerSetup;
