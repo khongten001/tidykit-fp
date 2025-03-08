@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, Math, TidyKit.Math;
 
 type
+  { Exception class for financial operations }
+  EFinanceError = class(Exception);
+
   { Option type for Black-Scholes model }
   TOptionType = (otCall, otPut);
 
@@ -428,7 +431,7 @@ end;
 class function TFinanceKit.PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double;
 begin
   if APeriods < 0 then
-    raise Exception.Create('Number of periods must be non-negative');
+    raise EFinanceError.Create('Number of periods must be non-negative');
   if Abs(ARate) < 1E-10 then
     Result := AFutureValue
   else
@@ -450,7 +453,7 @@ var
   Numerator, Denominator, PowerTerm: Double;
 begin
   if APeriods <= 0 then
-    raise Exception.Create('Number of periods must be positive');
+    raise EFinanceError.Create('Number of periods must be positive');
     
   if Abs(ARate) < 1E-10 then
     Result := SimpleRoundTo(APresentValue / APeriods, -ADecimals)
@@ -469,7 +472,7 @@ var
   NPV, Divisor: Double;
 begin
   if Length(ACashFlows) = 0 then
-    raise Exception.Create('Cash flows array cannot be empty');
+    raise EFinanceError.Create('Cash flows array cannot be empty');
     
   // NPV = -Initial + Σ(CFt / (1+r)^t)
   NPV := -AInitialInvestment;
@@ -496,7 +499,7 @@ var
   HasPositive, HasNegative: Boolean;
 begin
   if Length(ACashFlows) = 0 then
-    raise Exception.Create('Cash flows array cannot be empty');
+    raise EFinanceError.Create('Cash flows array cannot be empty');
     
   // Check if IRR calculation is possible
   HasPositive := False;
@@ -510,7 +513,7 @@ begin
   end;
   
   if not (HasPositive and HasNegative) then
-    raise Exception.Create('Cash flows must have both positive and negative values for IRR calculation');
+    raise EFinanceError.Create('Cash flows must have both positive and negative values for IRR calculation');
     
   Rate := 0.1; // Initial guess
   LastRate := 0.05; // Start with a different rate
@@ -553,7 +556,7 @@ begin
   until (Abs(NPV) < TOLERANCE) or (Iteration >= MAX_ITERATIONS);
   
   if Iteration >= MAX_ITERATIONS then
-    raise Exception.Create('IRR calculation did not converge');
+    raise EFinanceError.Create('IRR calculation did not converge');
     
   Result := SimpleRoundTo(Rate, -ADecimals);  // Round to ADecimals decimals
 end;
@@ -568,9 +571,9 @@ var
   Rate: Double;
 begin
   if (ALife <= 0) or (APeriod <= 0) or (APeriod > ALife) then
-    raise Exception.Create('Invalid life or period parameters');
+    raise EFinanceError.Create('Invalid life or period parameters');
   if ACost <= ASalvage then
-    raise Exception.Create('Cost must be greater than salvage value');
+    raise EFinanceError.Create('Cost must be greater than salvage value');
     
   Rate := 2.0 / ALife;  // Double declining balance rate
   Result := SimpleRoundTo(ACost * Rate * Power(1 - Rate, APeriod - 1), -ADecimals);  // Round to ADecimals decimals
@@ -595,7 +598,7 @@ var
   I: Integer;
 begin
   if (APeriodsPerYear <= 0) or (AYearsToMaturity < 0) then
-    raise Exception.Create('Invalid periods or maturity parameters');
+    raise EFinanceError.Create('Invalid periods or maturity parameters');
     
   TotalPeriods := APeriodsPerYear * AYearsToMaturity;
   CouponPayment := (AFaceValue * ACouponRate) / APeriodsPerYear;
@@ -627,7 +630,7 @@ var
   InitialGuess: Double;
 begin
   if (APeriodsPerYear <= 0) or (AYearsToMaturity < 0) then
-    raise Exception.Create('Invalid periods or maturity parameters');
+    raise EFinanceError.Create('Invalid periods or maturity parameters');
     
   TotalPeriods := APeriodsPerYear * AYearsToMaturity;
   CouponPayment := (AFaceValue * ACouponRate) / APeriodsPerYear;
@@ -672,7 +675,7 @@ begin
   until (Abs(PriceDiff) < TOLERANCE) or (Iteration >= MAX_ITERATIONS);
   
   if Iteration >= MAX_ITERATIONS then
-    raise Exception.Create('Yield calculation did not converge');
+    raise EFinanceError.Create('Yield calculation did not converge');
     
   Result := SimpleRoundTo(Yield, -ADecimals);
 end;
@@ -684,7 +687,7 @@ var
   Balance, PaymentAmount, InterestPayment, PrincipalPayment: Double;
 begin
   if ANumberOfPayments <= 0 then
-    raise Exception.Create('Number of payments must be positive');
+    raise EFinanceError.Create('Number of payments must be positive');
     
   SetLength(Result, ANumberOfPayments);
   Balance := ALoanAmount;
@@ -710,7 +713,7 @@ var
   CompoundFactor: Double;
 begin
   if ACompoundingsPerYear <= 0 then
-    raise Exception.Create('Number of compounding periods must be positive');
+    raise EFinanceError.Create('Number of compounding periods must be positive');
     
   if Abs(ANominalRate) < 1E-10 then
     Result := 0
@@ -730,7 +733,7 @@ var
   PVCashFlow: Double;
 begin
   if (APeriodsPerYear <= 0) or (AYearsToMaturity < 0) then
-    raise Exception.Create('Invalid periods or maturity parameters');
+    raise EFinanceError.Create('Invalid periods or maturity parameters');
     
   TotalPeriods := APeriodsPerYear * AYearsToMaturity;
   CouponPayment := (AFaceValue * ACouponRate) / APeriodsPerYear;
@@ -764,10 +767,10 @@ class function TFinanceKit.BreakEvenUnits(const AFixedCosts, APricePerUnit, AVar
   const ADecimals: Integer = 4): Double;
 begin
   if Abs(APricePerUnit - AVariableCostPerUnit) < 1E-10 then
-    raise Exception.Create('Price per unit must be different from variable cost per unit');
+    raise EFinanceError.Create('Price per unit must be different from variable cost per unit');
     
   if APricePerUnit <= AVariableCostPerUnit then
-    raise Exception.Create('Price per unit must be greater than variable cost per unit for break-even to exist');
+    raise EFinanceError.Create('Price per unit must be greater than variable cost per unit for break-even to exist');
     
   Result := SimpleRoundTo(AFixedCosts / (APricePerUnit - AVariableCostPerUnit), -ADecimals);
 end;
@@ -776,10 +779,10 @@ class function TFinanceKit.BreakEvenRevenue(const AFixedCosts, APricePerUnit, AV
   const ADecimals: Integer = 4): Double;
 begin
   if Abs(APricePerUnit) < 1E-10 then
-    raise Exception.Create('Price per unit must be non-zero');
+    raise EFinanceError.Create('Price per unit must be non-zero');
     
   if APricePerUnit <= AVariableCostPerUnit then
-    raise Exception.Create('Price per unit must be greater than variable cost per unit for break-even to exist');
+    raise EFinanceError.Create('Price per unit must be greater than variable cost per unit for break-even to exist');
     
   Result := SimpleRoundTo(AFixedCosts / (1 - AVariableCostPerUnit/APricePerUnit), -ADecimals);
 end;
@@ -790,11 +793,11 @@ var
   TotalValue, EquityWeight: Double;
 begin
   if (ATaxRate < 0) or (ATaxRate > 1) then
-    raise Exception.Create('Tax rate must be between 0 and 1');
+    raise EFinanceError.Create('Tax rate must be between 0 and 1');
     
   TotalValue := AEquityValue + ADebtValue;
   if Abs(TotalValue) < 1E-10 then
-    raise Exception.Create('Total firm value must be non-zero');
+    raise EFinanceError.Create('Total firm value must be non-zero');
     
   // Calculate weights ensuring they sum to exactly 1
   EquityWeight := AEquityValue / TotalValue;
@@ -810,9 +813,9 @@ class function TFinanceKit.CAPM(const ARiskFreeRate, ABeta, AExpectedMarketRetur
   const ADecimals: Integer = 4): Double;
 begin
   if ABeta < -10 then  // Reasonable limit for beta
-    raise Exception.Create('Beta value is unreasonably low');
+    raise EFinanceError.Create('Beta value is unreasonably low');
   if ABeta > 10 then   // Reasonable limit for beta
-    raise Exception.Create('Beta value is unreasonably high');
+    raise EFinanceError.Create('Beta value is unreasonably high');
     
   Result := SimpleRoundTo(ARiskFreeRate + ABeta * (AExpectedMarketReturn - ARiskFreeRate), -ADecimals);
 end;
@@ -821,10 +824,10 @@ class function TFinanceKit.GordonGrowthModel(const ACurrentDividend, AGrowthRate
   const ADecimals: Integer = 4): Double;
 begin
   if AGrowthRate >= ARequiredReturn then
-    raise Exception.Create('Growth rate must be less than required return rate');
+    raise EFinanceError.Create('Growth rate must be less than required return rate');
     
   if Abs(ARequiredReturn - AGrowthRate) < 1E-10 then
-    raise Exception.Create('Required return must be significantly different from growth rate');
+    raise EFinanceError.Create('Required return must be significantly different from growth rate');
     
   Result := SimpleRoundTo(ACurrentDividend * (1 + AGrowthRate) / (ARequiredReturn - AGrowthRate), -ADecimals);
 end;
@@ -835,7 +838,7 @@ var
   WorkingCapital: Double;
 begin
   if Abs(ACurrentLiabilities) < 1E-10 then
-    raise Exception.Create('Current liabilities must be non-zero');
+    raise EFinanceError.Create('Current liabilities must be non-zero');
     
   // Current Ratio
   Result.CurrentRatio := SimpleRoundTo(ACurrentAssets / ACurrentLiabilities, -ADecimals);
@@ -858,9 +861,9 @@ class function TFinanceKit.LeverageRatios(const ATotalDebt, ATotalAssets, ATotal
   AEBIT, AInterestExpense: Double; const ADecimals: Integer = 4): TLeverageRatios;
 begin
   if Abs(ATotalAssets) < 1E-10 then
-    raise Exception.Create('Total assets must be non-zero');
+    raise EFinanceError.Create('Total assets must be non-zero');
   if Abs(ATotalEquity) < 1E-10 then
-    raise Exception.Create('Total equity must be non-zero');
+    raise EFinanceError.Create('Total equity must be non-zero');
     
   // Debt Ratio
   Result.DebtRatio := SimpleRoundTo(ATotalDebt / ATotalAssets, -ADecimals);
@@ -887,11 +890,11 @@ var
   ND1, ND2: Double;
 begin
   if ATimeToMaturity <= 0 then
-    raise Exception.Create('Time to maturity must be positive');
+    raise EFinanceError.Create('Time to maturity must be positive');
   if AVolatility <= 0 then
-    raise Exception.Create('Volatility must be positive');
+    raise EFinanceError.Create('Volatility must be positive');
   if (ASpotPrice <= 0) or (AStrikePrice <= 0) then
-    raise Exception.Create('Prices must be positive');
+    raise EFinanceError.Create('Prices must be positive');
     
   // Precalculate common terms
   VolSqrtT := AVolatility * Sqrt(ATimeToMaturity);
@@ -958,11 +961,11 @@ class function TFinanceKit.DuPontAnalysis(const ANetIncome, ASales, ATotalAssets
   const ADecimals: Integer = 4): TDuPontAnalysis;
 begin
   if Abs(ASales) < 1E-10 then
-    raise Exception.Create('Sales must be non-zero');
+    raise EFinanceError.Create('Sales must be non-zero');
   if Abs(ATotalAssets) < 1E-10 then
-    raise Exception.Create('Total assets must be non-zero');
+    raise EFinanceError.Create('Total assets must be non-zero');
   if Abs(ATotalEquity) < 1E-10 then
-    raise Exception.Create('Total equity must be non-zero');
+    raise EFinanceError.Create('Total equity must be non-zero');
     
   // Calculate components
   Result.ProfitMargin := SimpleRoundTo(ANetIncome / ASales, -ADecimals);
@@ -982,7 +985,7 @@ var
   ContributionMargin, EBIT, TotalRevenue, TotalVariableCosts: Double;
 begin
   if APricePerUnit <= AVariableCostPerUnit then
-    raise Exception.Create('Price must be greater than variable cost');
+    raise EFinanceError.Create('Price must be greater than variable cost');
     
   ContributionMargin := APricePerUnit - AVariableCostPerUnit;
   TotalRevenue := AQuantity * APricePerUnit;
@@ -1006,9 +1009,9 @@ class function TFinanceKit.ProfitabilityRatios(const ARevenue, ACOGS, AEBIT, ANe
   ATotalAssets, ACurrentLiabilities: Double; const ADecimals: Integer = 4): TProfitabilityRatios;
 begin
   if Abs(ARevenue) < 1E-10 then
-    raise Exception.Create('Revenue must be non-zero');
+    raise EFinanceError.Create('Revenue must be non-zero');
   if Abs(ATotalAssets) < 1E-10 then
-    raise Exception.Create('Total assets must be non-zero');
+    raise EFinanceError.Create('Total assets must be non-zero');
     
   // Gross Margin
   Result.GrossMargin := SimpleRoundTo((ARevenue - ACOGS) / ARevenue, -ADecimals);

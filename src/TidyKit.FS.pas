@@ -627,6 +627,10 @@ type
     class function CountMatches(const Directory, Pattern: string): Integer; static;
   end;
 
+type
+  { Exception class for file system operations }
+  EFileSystemError = class(Exception);
+
 
 
 implementation
@@ -983,7 +987,7 @@ begin
         if GetSize(ADestPath) = GetSize(ASourcePath) then
           SysUtils.DeleteFile(ASourcePath)
         else
-          raise ETidyKitException.Create('Move operation failed: Size mismatch after copy');
+          raise EFileSystemError.Create('Move operation failed: Size mismatch after copy');
       end;
     end;
   end;
@@ -1787,7 +1791,7 @@ begin
     WriteTextFile(Result, ''); // Create empty file
   end
   else
-    raise ETidyKitException.Create('Failed to create GUID for temporary file');
+    raise EFileSystemError.Create('Failed to create GUID for temporary file');
 end;
 
 class function TFileKit.CreateTempDirectory(const APrefix: string = ''): string;
@@ -1807,7 +1811,7 @@ begin
     CreateDirectory(Result);
   end
   else
-    raise ETidyKitException.Create('Failed to create GUID for temporary directory');
+    raise EFileSystemError.Create('Failed to create GUID for temporary directory');
 end;
 
 class function TFileKit.IsTextFile(const APath: string): Boolean;
@@ -2058,7 +2062,7 @@ begin
       else
         ErrorMsg := SysErrorMessage(ErrorCode);
     end;
-    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    raise EFileSystemError.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   {$ENDIF}
   {$IFDEF UNIX}
@@ -2077,7 +2081,7 @@ begin
       else
         ErrorMsg := SysErrorMessage(ErrorCode);
     end;
-    raise ETidyKitException.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    raise EFileSystemError.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   {$ENDIF}
 end;
@@ -2090,21 +2094,21 @@ var
 {$ENDIF}
 begin
   if not IsSymLink(ALinkPath) then
-    raise ETidyKitException.Create('Path is not a symbolic link');
+    raise EFileSystemError.Create('Path is not a symbolic link');
     
   {$IFDEF WINDOWS}
   if not Windows.DeleteFile(PChar(ALinkPath)) then
   begin
     ErrorCode := GetLastError;
     ErrorMsg := SysErrorMessage(ErrorCode);
-    raise ETidyKitException.CreateFmt('Failed to delete symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   {$ENDIF}
   {$IFDEF UNIX}
   if fpUnlink(PChar(ALinkPath)) <> 0 then
   begin
     ErrorMsg := SysErrorMessage(fpgeterrno);
-    raise ETidyKitException.CreateFmt('Failed to delete symbolic link: %s', [ErrorMsg]);
+    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s', [ErrorMsg]);
   end;
   {$ENDIF}
 end;
@@ -2146,7 +2150,7 @@ begin
   Result := '';
   
   if not IsSymLink(ALinkPath) then
-    raise ETidyKitException.Create('Path is not a symbolic link');
+    raise EFileSystemError.Create('Path is not a symbolic link');
     
   {$IFDEF WINDOWS}
   Handle := CreateFile(PChar(ALinkPath), 
@@ -2160,7 +2164,7 @@ begin
   begin
     ErrorCode := GetLastError;
     ErrorMsg := SysErrorMessage(ErrorCode);
-    raise ETidyKitException.CreateFmt('Failed to open symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    raise EFileSystemError.CreateFmt('Failed to open symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   
   try
@@ -2174,7 +2178,7 @@ begin
     begin
       ErrorCode := GetLastError;
       ErrorMsg := SysErrorMessage(ErrorCode);
-      raise ETidyKitException.CreateFmt('Failed to get reparse point data: %s (Error %d)', [ErrorMsg, ErrorCode]);
+      raise EFileSystemError.CreateFmt('Failed to get reparse point data: %s (Error %d)', [ErrorMsg, ErrorCode]);
     end;
     
     if Buffer.ReparseTag = IO_REPARSE_TAG_SYMLINK then
@@ -2218,7 +2222,7 @@ begin
       Result := ExpandFileName(Result);
     end
     else
-      raise ETidyKitException.Create('Not a valid symbolic link');
+      raise EFileSystemError.Create('Not a valid symbolic link');
   finally
     CloseHandle(Handle);
   end;
@@ -2228,13 +2232,13 @@ begin
   if BytesRead <= 0 then
   begin
     ErrorMsg := SysErrorMessage(fpgeterrno);
-    raise ETidyKitException.CreateFmt('Failed to resolve symbolic link: %s', [ErrorMsg]);
+    raise EFileSystemError.CreateFmt('Failed to resolve symbolic link: %s', [ErrorMsg]);
   end;
   SetString(Result, Buffer, BytesRead);
   {$ENDIF}
   
   if Result = '' then
-    raise ETidyKitException.Create('Failed to resolve symbolic link: Empty result');
+    raise EFileSystemError.Create('Failed to resolve symbolic link: Empty result');
     
   // Normalize the path
   Result := NormalizePath(Result);
@@ -2377,7 +2381,7 @@ var
   IsEmpty: Boolean;
 begin
   if not DirectoryExists(Path) then
-    raise ETidyKitException.CreateFmt('Directory does not exist: %s', [Path]);
+    raise EFileSystemError.CreateFmt('Directory does not exist: %s', [Path]);
     
   IsEmpty := True;  // Assume empty until we find a non-special entry
   
@@ -2399,7 +2403,7 @@ begin
     end;
   except
     on E: Exception do
-      raise ETidyKitException.CreateFmt('Error checking if directory is empty: %s', [E.Message]);
+      raise EFileSystemError.CreateFmt('Error checking if directory is empty: %s', [E.Message]);
   end;
 end;
 
@@ -2604,7 +2608,7 @@ var
 begin
   Result := 0;
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
   try
@@ -2633,7 +2637,7 @@ var
 begin
   Result := '';
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
   try
@@ -2657,7 +2661,7 @@ var
 begin
   Result := '';
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   Lines := TStringList.Create;
   try
@@ -2674,7 +2678,7 @@ var
   FileStream: TFileStream;
 begin
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
   try
@@ -2695,7 +2699,7 @@ begin
   Result := False;
   Content := '';
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   if SearchText = '' then
     Exit(True);
@@ -2728,7 +2732,7 @@ begin
   Result := True;  // Assume binary by default
   
   if not FileExists(FilePath) then
-    raise ETidyKitException.CreateFmt('File does not exist: %s', [FilePath]);
+    raise EFileSystemError.CreateFmt('File does not exist: %s', [FilePath]);
     
   FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
   try
@@ -2915,7 +2919,7 @@ begin
   else if FileExists(File2) then
     Result := File2
   else
-    raise ETidyKitException.Create('Both files do not exist');
+    raise EFileSystemError.Create('Both files do not exist');
 end;
 
 class function TFileKit.GetFileDifferences(const File1, File2: string): TStringArray;

@@ -10,6 +10,9 @@ uses
   URIParser, HTTPDefs, TidyKit.Core, TidyKit.JSON;
 
 type
+  { Exception class for HTTP request operations }
+  ERequestError = class(Exception);
+
   { Response record with automatic memory management }
   TResponse = record
   private
@@ -143,7 +146,7 @@ begin
       FJSON := TJSON.Parse(FContent);  // Use our JSON parser
     except
       on E: Exception do
-        raise ETidyKitException.Create('JSON Parse Error: ' + E.Message);
+        raise ERequestError.Create('JSON Parse Error: ' + E.Message);
     end;
   end;
   Result := FJSON;
@@ -335,7 +338,7 @@ begin
         Result.FHeaders := '';
         Result.FJSON := nil;
         Result.StatusCode := 0;
-        raise ETidyKitException.Create('HTTP Request Error: ' + E.Message);
+        raise ERequestError.Create('HTTP Request Error: ' + E.Message);
       end;
     end;
     

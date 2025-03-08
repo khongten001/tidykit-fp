@@ -8,6 +8,9 @@ uses
   Classes, SysUtils, zipper, libtar, TidyKit.FS, TidyKit.Core, StrUtils;
 
 type
+  { Exception class for archive operations }
+  EArchiveError = class(Exception);
+
   { TArchiveKit
     -----------
     A toolkit for file compression and archiving operations.
@@ -143,14 +146,14 @@ begin
   begin
     if DEBUG_MODE then
       WriteLn('DecompressFromZip: Failed to create destination directory');
-    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
+    raise EArchiveError.CreateFmt('Failed to create directory: %s', [DestDir]);
   end;
   
   if not FileExists(AZipPath) then
   begin
     if DEBUG_MODE then
       WriteLn('DecompressFromZip: ZIP file not found');
-    raise ETidyKitException.CreateFmt('ZIP file not found: %s', [AZipPath]);
+    raise EArchiveError.CreateFmt('ZIP file not found: %s', [AZipPath]);
   end;
   
   UnZipper := TUnZipper.Create;
@@ -313,14 +316,14 @@ begin
   begin
     if DEBUG_MODE then
       WriteLn('DecompressFromTar: Failed to create destination directory');
-    raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DestDir]);
+    raise EArchiveError.CreateFmt('Failed to create directory: %s', [DestDir]);
   end;
   
   if not FileExists(ATarPath) then
   begin
     if DEBUG_MODE then
       WriteLn('DecompressFromTar: TAR file not found');
-    raise ETidyKitException.CreateFmt('TAR file not found: %s', [ATarPath]);
+    raise EArchiveError.CreateFmt('TAR file not found: %s', [ATarPath]);
   end;
   
   // Create TAR archive directly with filename
@@ -358,7 +361,7 @@ begin
         begin
           if DEBUG_MODE then
             WriteLn('DecompressFromTar: Failed to create directory');
-          raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
+          raise EArchiveError.CreateFmt('Failed to create directory: %s', [DirToCreate]);
         end;
         
         Continue;  // Skip to next entry
@@ -383,7 +386,7 @@ begin
           begin
             if DEBUG_MODE then
               WriteLn('DecompressFromTar: Failed to create directory for file');
-            raise ETidyKitException.CreateFmt('Failed to create directory: %s', [DirToCreate]);
+            raise EArchiveError.CreateFmt('Failed to create directory: %s', [DirToCreate]);
           end;
             
           try
@@ -395,7 +398,7 @@ begin
             begin
               if DEBUG_MODE then
                 WriteLn('DecompressFromTar: Failed to extract file - ', E.Message);
-              raise ETidyKitException.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
+              raise EArchiveError.CreateFmt('Failed to extract file %s: %s', [DirRec.Name, E.Message]);
             end;
           end;
         end

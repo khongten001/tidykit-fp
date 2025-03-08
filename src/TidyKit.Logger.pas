@@ -13,6 +13,9 @@ const
   ENABLE_CONSOLE_LOG = False; // Set to True to enable console output, False to disable
 
 type
+  { Exception class for Logger operations }
+  ELoggerException = class(Exception);
+  
   { Log level enumeration }
   TLogLevel = (llDebug, llInfo, llWarning, llError, llFatal);
   
@@ -514,7 +517,7 @@ begin
     end;
   except
     on E: Exception do
-      raise Exception.CreateFmt('Failed to initialize log file %s: %s', [ALogFile.FileName, E.Message]);
+      raise ELoggerException.CreateFmt('Failed to initialize log file %s: %s', [ALogFile.FileName, E.Message]);
   end;
 end;
 
