@@ -9,8 +9,8 @@ uses
  ,SysUtils
  ,fpcunit
  ,testregistry
- ,TidyKit.Logger // Alternative
- ,TidyKit;
+ //, Tidykit  // Alternative
+ ,TidyKit.Logger;
 
 
 type
