@@ -165,7 +165,25 @@ end;
 
 ## Error Handling
 
+The TidyKit.Request module uses a dedicated exception class, `ERequestError`, for handling HTTP-related errors. This allows you to specifically catch HTTP request errors while letting other types of exceptions propagate as normal.
+
+```pascal
+try
+  Response := Http.Get('https://api.example.com/data');
+  // Use the response...
+except
+  on E: ERequestError do
+    // Handle HTTP-specific errors (timeouts, connection problems, etc.)
+    WriteLn('HTTP Error: ', E.Message);
+  on E: Exception do
+    // Handle other types of errors
+    WriteLn('General Error: ', E.Message);
+end;
+```
+
 ### Using Try-Pattern
+For a more functional approach, you can use the built-in Try-pattern methods that handle exceptions for you:
+
 ```pascal
 var
   Result: TRequestResult;
@@ -178,7 +196,6 @@ begin
   end
   else
     WriteLn('Error: ', Result.Error);
-end;
 ```
 
 ## API Reference
