@@ -154,7 +154,7 @@ TFileKit.DeleteFiles('temp_dir', '*.tmp');                 // Delete all .tmp fi
 // Directory operations
 TFileKit.CreateDirectory('new_dir');                       // Create directory
 TFileKit.DeleteDirectory('old_dir', True);                 // Delete directory (True = recursive)
-TFileKit.EnsureDirectory('path/to/file.txt');             // Create all parent directories
+TFileKit.EnsureDirectory('path/to/file.txt');              // Create all parent directories
 
 // File listing with sorting options
 Files := TFileKit.ListFiles('.', '*', False);              // List files in current dir
@@ -188,64 +188,64 @@ if TFileKit.IsAbsolutePath('C:\file.txt') then ...        // Check if path is ab
 // Path analysis
 CommonPath := TFileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib');  // Returns '/usr/local'
 RelPath := TFileKit.GetRelativePath('/usr/share', '/usr/local/bin');       // Returns '../local/bin'
-if TFileKit.IsSubPath('/usr/local', '/usr/local/bin') then ...            // Check if path is subpath
+if TFileKit.IsSubPath('/usr/local', '/usr/local/bin') then ...             // Check if path is subpath
 
 // File information
-if TFileKit.Exists('file.txt') then ...                   // Check file exists
-if TFileKit.DirectoryExists('dir') then ...               // Check directory exists
-Size := TFileKit.GetSize('file.txt');                     // Get file size
-Time := TFileKit.GetCreationTime('file.txt');             // Get creation time
-Time := TFileKit.GetLastAccessTime('file.txt');           // Get last access time
-Time := TFileKit.GetLastWriteTime('file.txt');            // Get last write time
-Attrs := TFileKit.GetAttributes('file.txt');              // Get file attributes
-if TFileKit.IsTextFile('file.txt') then ...              // Check if text file
-Encoding := TFileKit.GetFileEncoding('file.txt');         // Get file encoding
-if TFileKit.IsEmptyDirectory('dir') then ...             // Check if directory is empty
+if TFileKit.Exists('file.txt') then ...                 // Check file exists
+if TFileKit.DirectoryExists('dir') then ...             // Check directory exists
+Size := TFileKit.GetSize('file.txt');                   // Get file size
+Time := TFileKit.GetCreationTime('file.txt');           // Get creation time
+Time := TFileKit.GetLastAccessTime('file.txt');         // Get last access time
+Time := TFileKit.GetLastWriteTime('file.txt');          // Get last write time
+Attrs := TFileKit.GetAttributes('file.txt');            // Get file attributes
+if TFileKit.IsTextFile('file.txt') then ...             // Check if text file
+Encoding := TFileKit.GetFileEncoding('file.txt');       // Get file encoding
+if TFileKit.IsEmptyDirectory('dir') then ...            // Check if directory is empty
 
 // Search operations
-Results := TFileKit.SearchFiles('.', '*.txt', True);      // Search files recursively
-Results := TFileKit.SearchFilesIn('dir', '*.txt', True);  // Search in specific dir
-File := TFileKit.FindLastModifiedFile('.', '*.txt');      // Find newest file
-File := TFileKit.FindFirstModifiedFile('.', '*.txt');     // Find oldest file
-File := TFileKit.FindLargestFile('.', '*.txt');           // Find largest file
-File := TFileKit.FindSmallestFile('.', '*.txt');          // Find smallest file
+Results := TFileKit.SearchFiles('.', '*.txt', True);    // Search files recursively
+Results := TFileKit.SearchFilesIn('dir', '*.txt', True);// Search in specific dir
+File := TFileKit.FindLastModifiedFile('.', '*.txt');    // Find newest file
+File := TFileKit.FindFirstModifiedFile('.', '*.txt');   // Find oldest file
+File := TFileKit.FindLargestFile('.', '*.txt');         // Find largest file
+File := TFileKit.FindSmallestFile('.', '*.txt');        // Find smallest file
 
 // System directories
-Dir := TFileKit.GetUserDir;                               // Get user directory
-Dir := TFileKit.GetCurrentDir;                            // Get current directory
-Dir := TFileKit.GetTempDir;                               // Get temp directory
+Dir := TFileKit.GetUserDir;                             // Get user directory
+Dir := TFileKit.GetCurrentDir;                          // Get current directory
+Dir := TFileKit.GetTempDir;                             // Get temp directory
 
 // Temporary files
-TempFile := TFileKit.CreateTempFile('prefix_');           // Create temp file
-TempDir := TFileKit.CreateTempDirectory('prefix_');       // Create temp directory
+TempFile := TFileKit.CreateTempFile('prefix_');         // Create temp file
+TempDir := TFileKit.CreateTempDirectory('prefix_');     // Create temp directory
 
 // Symbolic link operations
-TFileKit.CreateSymLink('target.txt', 'link.txt');         // Create file symlink
-TFileKit.CreateSymLink('target_dir', 'link_dir', True);   // Create directory symlink
-TFileKit.DeleteSymLink('link.txt');                       // Delete symlink
-Path := TFileKit.ResolveSymLink('link.txt');              // Get target path
-if TFileKit.IsSymLink('link.txt') then ...               // Check if path is symlink
+TFileKit.CreateSymLink('target.txt', 'link.txt');       // Create file symlink
+TFileKit.CreateSymLink('target_dir', 'link_dir', True); // Create directory symlink
+TFileKit.DeleteSymLink('link.txt');                     // Delete symlink
+Path := TFileKit.ResolveSymLink('link.txt');            // Get target path
+if TFileKit.IsSymLink('link.txt') then ...              // Check if path is symlink
 
 // File locking
-if TFileKit.LockFile('file.txt') then                    // Lock file
+if TFileKit.LockFile('file.txt') then                   // Lock file
 try
   // Work with file
 finally
-  TFileKit.UnlockFile('file.txt');                       // Unlock file
+  TFileKit.UnlockFile('file.txt');                      // Unlock file
 end;
 if TFileKit.IsFileLocked('file.txt') then ...           // Check if file is locked
 
 // File validation and sanitization
-if TFileKit.IsValidFileName('file.txt') then ...         // Check if filename is valid
-Name := TFileKit.SanitizeFileName('file*.txt');          // Sanitize filename
-Path := TFileKit.MakeValidPath('/path//to/./file');      // Make path valid
-if TFileKit.IsPathTooLong('very/long/path') then ...     // Check if path is too long
+if TFileKit.IsValidFileName('file.txt') then ...        // Check if filename is valid
+Name := TFileKit.SanitizeFileName('file*.txt');         // Sanitize filename
+Path := TFileKit.MakeValidPath('/path//to/./file');     // Make path valid
+if TFileKit.IsPathTooLong('very/long/path') then ...    // Check if path is too long
 
 // Directory information
-Info := TFileKit.GetDirectoryInfo('dir');                // Get directory statistics
-WriteLn('Files: ', Info.FileCount);                      // Number of files
-WriteLn('Directories: ', Info.DirectoryCount);           // Number of subdirectories
-WriteLn('Total size: ', Info.TotalSize);                 // Total size in bytes
+Info := TFileKit.GetDirectoryInfo('dir');               // Get directory statistics
+WriteLn('Files: ', Info.FileCount);                     // Number of files
+WriteLn('Directories: ', Info.DirectoryCount);          // Number of subdirectories
+WriteLn('Total size: ', Info.TotalSize);                // Total size in bytes
 WriteLn('Oldest file: ', Info.OldestFile);              // Name of oldest file
 WriteLn('Newest file: ', Info.NewestFile);              // Name of newest file
 WriteLn('Largest file: ', Info.LargestFile);            // Name of largest file
@@ -338,12 +338,18 @@ Str := TStringKit.ReplaceRegEx(Text, Pattern, Replace);   // Replace using regex
 // Simple Replacement
 Str := TStringKit.ReplaceText(Text, Old, New);            // Replace all occurrences
 
-// ---------- Formatting ----------
+// ---------- Formatting and Conversion ----------
 
 // Number Formatting
 Str := TStringKit.FormatNumber(1234);                     // Format to "1,234"
 Str := TStringKit.FormatFloat(1234.56, 2, '.', ',');      // Format to "1,234.56"
 Str := TStringKit.FormatFileSize(1048576);                // Format to "1.00 MB"
+
+// Number Conversions
+Roman := TStringKit.ToRoman(1984);                        // Convert to Roman numerals (MCMLXXXIV)
+Num := TStringKit.FromRoman('MMXXIV');                    // Convert from Roman numerals (2024)
+Ordinal := TStringKit.ToOrdinal(21);                      // Convert to ordinal (21st)
+Words := TStringKit.NumberToWords(42);                    // Convert to words (forty-two)
 
 // ---------- String Similarity and Distance ----------
 
@@ -380,13 +386,17 @@ NGrams := TStringKit.GenerateNGrams(Text, 2);          // Generate bigrams
 
 // ---------- Encoding/Decoding ----------
 
-// HTML Encoding
+// HTML and URL Encoding
 Encoded := TStringKit.HTMLEncode('<div>');             // HTML encoding
 Decoded := TStringKit.HTMLDecode('&lt;div&gt;');       // HTML decoding
-
-// URL Encoding
 Encoded := TStringKit.URLEncode('a b');                // URL encoding (a+b)
 Decoded := TStringKit.URLDecode('a+b');                // URL decoding
+
+// Base64 and Hex Encoding
+Base64 := TStringKit.Base64Encode('Hello World!');       // Base64 encoding (SGVsbG8gV29ybGQh)
+Original := TStringKit.Base64Decode('SGVsbG8gV29ybGQh'); // Base64 decoding
+HexStr := TStringKit.HexEncode('abc');                   // Hex encoding (616263)
+Original := TStringKit.HexDecode('616263');              // Hex decoding
 ```
 
 ## 🕙 DateTime Operations

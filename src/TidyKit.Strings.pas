@@ -745,6 +745,82 @@ type
       Returns:
         The decoded string. }
     class function URLDecode(const Text: string): string; static;
+    
+    { -------------------- Number Conversions -------------------- }
+    
+    { Converts an integer to a Roman numeral string.
+      
+      Parameters:
+        Value - The integer to convert (must be between 1 and 3999).
+        
+      Returns:
+        The Roman numeral representation or empty string if out of range. }
+    class function ToRoman(Value: Integer): string; static;
+    
+    { Converts a Roman numeral string to an integer.
+      
+      Parameters:
+        RomanNumeral - The Roman numeral string to convert.
+        
+      Returns:
+        The integer value or 0 if invalid. }
+    class function FromRoman(const RomanNumeral: string): Integer; static;
+    
+    { Converts an integer to its ordinal text form.
+      
+      Parameters:
+        Value - The integer to convert.
+        
+      Returns:
+        The ordinal text (e.g., '1st', '2nd', '3rd', '42nd'). }
+    class function ToOrdinal(Value: Integer): string; static;
+    
+    { Converts a number to its word representation.
+      
+      Parameters:
+        Value - The number to convert.
+        
+      Returns:
+        The number as words (e.g., 'forty-two' for 42). }
+    class function NumberToWords(Value: Int64): string; static;
+    
+    { -------------------- Encoding/Decoding Functions -------------------- }
+    
+    { Encodes a string to Base64.
+      
+      Parameters:
+        Text - The string to encode.
+        
+      Returns:
+        The Base64-encoded string. }
+    class function Base64Encode(const Text: string): string; static;
+    
+    { Decodes a Base64 string.
+      
+      Parameters:
+        Base64Text - The Base64 string to decode.
+        
+      Returns:
+        The decoded string. }
+    class function Base64Decode(const Base64Text: string): string; static;
+    
+    { Converts a string to hexadecimal representation.
+      
+      Parameters:
+        Text - The string to convert.
+        
+      Returns:
+        The hexadecimal representation. }
+    class function HexEncode(const Text: string): string; static;
+    
+    { Converts a hexadecimal string back to its original form.
+      
+      Parameters:
+        HexText - The hexadecimal string to convert.
+        
+      Returns:
+        The original string. }
+    class function HexDecode(const HexText: string): string; static;
   end;
 
 implementation
@@ -2197,6 +2273,409 @@ begin
       Result := Result + Text[I];
       
     Inc(I);
+  end;
+end;
+
+class function TStringKit.ToRoman(Value: Integer): string;
+const
+  RomanDigits: array[1..13] of string = (
+    'M', 'CM', 'D', 'CD', 'C', 'XC', 'L', 'XL', 'X', 'IX', 'V', 'IV', 'I');
+  RomanValues: array[1..13] of Integer = (
+    1000, 900, 500, 400, 100, 90, 50, 40, 10, 9, 5, 4, 1);
+var
+  I: Integer;
+  Num: Integer;
+begin
+  Result := '';
+  
+  // Roman numerals can only represent numbers from 1 to 3999
+  if (Value < 1) or (Value > 3999) then
+    Exit;
+  
+  Num := Value;
+  I := 1;
+  
+  while (Num > 0) and (I <= 13) do
+  begin
+    while Num >= RomanValues[I] do
+    begin
+      Result := Result + RomanDigits[I];
+      Num := Num - RomanValues[I];
+    end;
+    Inc(I);
+  end;
+end;
+
+class function TStringKit.FromRoman(const RomanNumeral: string): Integer;
+const
+  RomanDigits: array[1..7] of Char = ('I', 'V', 'X', 'L', 'C', 'D', 'M');
+  RomanValues: array[1..7] of Integer = (1, 5, 10, 50, 100, 500, 1000);
+var
+  I, J, Value: Integer;
+  PrevValue, CurrValue: Integer;
+  UpperRoman: string;
+begin
+  Result := 0;
+  
+  // Empty string has no value
+  if RomanNumeral = '' then
+    Exit;
+  
+  // Convert to uppercase for processing
+  UpperRoman := UpperCase(RomanNumeral);
+  
+  // Validate that all characters are valid Roman numerals
+  for I := 1 to Length(UpperRoman) do
+  begin
+    Value := 0;
+    for J := 1 to 7 do
+      if UpperRoman[I] = RomanDigits[J] then
+      begin
+        Value := RomanValues[J];
+        Break;
+      end;
+      
+    if Value = 0 then
+      Exit(0); // Invalid character found
+  end;
+  
+  // Process the Roman numeral from right to left
+  PrevValue := 0;
+  for I := Length(UpperRoman) downto 1 do
+  begin
+    CurrValue := 0;
+    for J := 1 to 7 do
+      if UpperRoman[I] = RomanDigits[J] then
+      begin
+        CurrValue := RomanValues[J];
+        Break;
+      end;
+      
+    if CurrValue >= PrevValue then
+      Result := Result + CurrValue
+    else
+      Result := Result - CurrValue;
+      
+    PrevValue := CurrValue;
+  end;
+end;
+
+class function TStringKit.ToOrdinal(Value: Integer): string;
+var
+  LastDigit, LastTwoDigits: Integer;
+begin
+  // Convert the number to string first
+  Result := IntToStr(Value);
+  
+  // Get the last digit and last two digits
+  LastDigit := Abs(Value) mod 10;
+  LastTwoDigits := Abs(Value) mod 100;
+  
+  // Apply the appropriate suffix based on rules
+  if (LastTwoDigits >= 11) and (LastTwoDigits <= 13) then
+    Result := Result + 'th'
+  else
+    case LastDigit of
+      1: Result := Result + 'st';
+      2: Result := Result + 'nd';
+      3: Result := Result + 'rd';
+      else Result := Result + 'th';
+    end;
+end;
+
+class function TStringKit.NumberToWords(Value: Int64): string;
+
+  // Helper function to convert numbers less than 1000 to words
+  function NumberToWordsLessThan1000(Num: Integer): string;
+  const
+    Units: array[0..19] of string = (
+      'zero', 'one', 'two', 'three', 'four', 'five', 'six', 'seven', 'eight', 'nine',
+      'ten', 'eleven', 'twelve', 'thirteen', 'fourteen', 'fifteen', 'sixteen',
+      'seventeen', 'eighteen', 'nineteen');
+    Tens: array[2..9] of string = (
+      'twenty', 'thirty', 'forty', 'fifty', 'sixty', 'seventy', 'eighty', 'ninety');
+  var
+    Hundreds, TensUnits: Integer;
+  begin
+    Result := '';
+    
+    if Num = 0 then
+      Exit('zero');
+      
+    // Handle hundreds
+    Hundreds := Num div 100;
+    if Hundreds > 0 then
+    begin
+      Result := Units[Hundreds] + ' hundred';
+      Num := Num mod 100;
+      if Num > 0 then
+        Result := Result + ' and ';
+    end;
+    
+    // Handle tens and units
+    if Num > 0 then
+    begin
+      if Num < 20 then
+        Result := Result + Units[Num]
+      else
+      begin
+        TensUnits := Num mod 10;
+        Result := Result + Tens[Num div 10];
+        if TensUnits > 0 then
+          Result := Result + '-' + Units[TensUnits];
+      end;
+    end;
+  end;
+
+var
+  Num: Int64;
+  IsNegative: Boolean;
+  Billions, Millions, Thousands, Remainder: Int64;
+begin
+  Result := '';
+  
+  // Handle zero separately
+  if Value = 0 then
+    Exit('zero');
+    
+  // Handle negative numbers
+  IsNegative := Value < 0;
+  Num := Abs(Value);
+  
+  // Handle billions (for values that go into billions)
+  Billions := Num div 1000000000;
+  if Billions > 0 then
+  begin
+    Result := NumberToWordsLessThan1000(Billions) + ' billion';
+    Num := Num mod 1000000000;
+    if Num > 0 then
+      Result := Result + ' ';
+  end;
+  
+  // Handle millions
+  Millions := Num div 1000000;
+  if Millions > 0 then
+  begin
+    Result := Result + NumberToWordsLessThan1000(Millions) + ' million';
+    Num := Num mod 1000000;
+    if Num > 0 then
+      Result := Result + ' ';
+  end;
+  
+  // Handle thousands
+  Thousands := Num div 1000;
+  if Thousands > 0 then
+  begin
+    Result := Result + NumberToWordsLessThan1000(Thousands) + ' thousand';
+    Num := Num mod 1000;
+    if Num > 0 then
+      Result := Result + ' ';
+  end;
+  
+  // Handle the remainder (less than 1000)
+  Remainder := Num;
+  if Remainder > 0 then
+  begin
+    // Add 'and' for British-style if there's already something in the result
+    if (Result <> '') and ((Remainder < 100) or ((Value > 1000) and (Value < 2000))) then
+      Result := Result + 'and ';
+    Result := Result + NumberToWordsLessThan1000(Remainder);
+  end;
+  
+  // Add 'negative' for negative numbers
+  if IsNegative then
+    Result := 'negative ' + Result;
+end;
+
+class function TStringKit.Base64Encode(const Text: string): string;
+const
+  Base64Chars: string = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/';
+var
+  I, J: Integer;
+  Bytes: array of Byte;
+  B1, B2, B3: Byte;
+  EncodedLen: Integer;
+begin
+  Result := '';
+  if Text = '' then
+    Exit;
+    
+  // Convert string to byte array
+  SetLength(Bytes, Length(Text));
+  for I := 1 to Length(Text) do
+    Bytes[I-1] := Ord(Text[I]);
+    
+  // Calculate encoded length (must be multiple of 4)
+  EncodedLen := ((Length(Bytes) + 2) div 3) * 4;
+  SetLength(Result, EncodedLen);
+  
+  // Process input in 3-byte chunks
+  I := 0;
+  J := 1;
+  while I < Length(Bytes) do
+  begin
+    // Get next 3 bytes (or fewer at the end)
+    B1 := Bytes[I];
+    Inc(I);
+    
+    if I < Length(Bytes) then
+      B2 := Bytes[I]
+    else
+      B2 := 0;
+    Inc(I);
+    
+    if I < Length(Bytes) then
+      B3 := Bytes[I]
+    else
+      B3 := 0;
+    Inc(I);
+    
+    // Encode to 4 characters
+    Result[J] := Base64Chars[(B1 shr 2) + 1];
+    Result[J+1] := Base64Chars[(((B1 and $03) shl 4) or (B2 shr 4)) + 1];
+    
+    if I - 2 > Length(Bytes) then
+      Result[J+2] := '='
+    else
+      Result[J+2] := Base64Chars[(((B2 and $0F) shl 2) or (B3 shr 6)) + 1];
+      
+    if I - 1 > Length(Bytes) then
+      Result[J+3] := '='
+    else
+      Result[J+3] := Base64Chars[(B3 and $3F) + 1];
+      
+    Inc(J, 4);
+  end;
+end;
+
+class function TStringKit.Base64Decode(const Base64Text: string): string;
+const
+  Base64DecodeTable: array[#0..#127] of SmallInt = (
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 0-15
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,  // 16-31
+    -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1, 63,  // 32-47
+    52, 53, 54, 55, 56, 57, 58, 59, 60, 61, -1, -1, -1, -1, -1, -1,  // 48-63
+    -1,  0,  1,  2,  3,  4,  5,  6,  7,  8,  9, 10, 11, 12, 13, 14,  // 64-79
+    15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, -1, -1, -1, -1, -1,  // 80-95
+    -1, 26, 27, 28, 29, 30, 31, 32, 33, 34, 35, 36, 37, 38, 39, 40,  // 96-111
+    41, 42, 43, 44, 45, 46, 47, 48, 49, 50, 51, -1, -1, -1, -1, -1   // 112-127
+  );
+var
+  I, J, BytesLen: Integer;
+  Bytes: array of Byte;
+  C1, C2, C3, C4: SmallInt;
+  InputLen: Integer;
+  CleanInput: string;
+begin
+  Result := '';
+  
+  // Remove any non-base64 characters (including whitespace)
+  CleanInput := '';
+  for I := 1 to Length(Base64Text) do
+    if (Base64Text[I] in ['A'..'Z', 'a'..'z', '0'..'9', '+', '/', '=']) then
+      CleanInput := CleanInput + Base64Text[I];
+  
+  InputLen := Length(CleanInput);
+  if InputLen = 0 then
+    Exit;
+  
+  // Base64 string must be multiple of 4 in length
+  if InputLen mod 4 <> 0 then
+    Exit;
+  
+  // Calculate decoded length (3 bytes for every 4 chars, adjusted for padding)
+  BytesLen := (InputLen div 4) * 3;
+  if CleanInput[InputLen] = '=' then Dec(BytesLen);
+  if CleanInput[InputLen-1] = '=' then Dec(BytesLen);
+  
+  SetLength(Bytes, BytesLen);
+  
+  // Process input in 4-char chunks
+  I := 1;
+  J := 0;
+  while I <= InputLen do
+  begin
+    // Get 4 characters and convert to values
+    C1 := Base64DecodeTable[CleanInput[I]];
+    C2 := Base64DecodeTable[CleanInput[I+1]];
+    
+    if (CleanInput[I+2] = '=') then
+      C3 := -1
+    else
+      C3 := Base64DecodeTable[CleanInput[I+2]];
+      
+    if (CleanInput[I+3] = '=') then
+      C4 := -1
+    else
+      C4 := Base64DecodeTable[CleanInput[I+3]];
+    
+    // Invalid character found
+    if (C1 < 0) or (C2 < 0) or ((C3 < 0) and (CleanInput[I+2] <> '=')) or
+       ((C4 < 0) and (CleanInput[I+3] <> '=')) then
+      Exit;
+    
+    // Decode the 4 characters into 1-3 bytes
+    if J < BytesLen then
+      Bytes[J] := ((C1 shl 2) or (C2 shr 4)) and $FF;
+    Inc(J);
+    
+    if (C3 >= 0) and (J < BytesLen) then
+      Bytes[J] := ((C2 shl 4) or (C3 shr 2)) and $FF;
+    Inc(J);
+    
+    if (C4 >= 0) and (J < BytesLen) then
+      Bytes[J] := ((C3 shl 6) or C4) and $FF;
+    Inc(J);
+    
+    Inc(I, 4);
+  end;
+  
+  // Convert byte array back to string
+  SetLength(Result, Length(Bytes));
+  for I := 0 to Length(Bytes) - 1 do
+    Result[I+1] := Chr(Bytes[I]);
+end;
+
+class function TStringKit.HexEncode(const Text: string): string;
+var
+  I: Integer;
+begin
+  Result := '';
+  for I := 1 to Length(Text) do
+    Result := Result + IntToHex(Ord(Text[I]), 2);
+end;
+
+class function TStringKit.HexDecode(const HexText: string): string;
+var
+  I, CharCode: Integer;
+  HexPair: string;
+begin
+  Result := '';
+  
+  // Validate that we have an even number of hex characters
+  if (Length(HexText) mod 2 <> 0) then
+    Exit;
+  
+  I := 1;
+  while I < Length(HexText) do
+  begin
+    HexPair := Copy(HexText, I, 2);
+    
+    // Skip non-hex characters
+    if not MatchesPattern(HexPair, '^[0-9A-Fa-f]{2}$') then
+    begin
+      Inc(I);
+      Continue;
+    end;
+    
+    try
+      CharCode := StrToInt('$' + HexPair);
+      Result := Result + Chr(CharCode);
+    except
+      // Ignore invalid hex pairs
+    end;
+    
+    Inc(I, 2);
   end;
 end;
 
