@@ -7,7 +7,7 @@ uses
   , consoletestrunner
   , TestCaseDateTime
   , TestCaseFS
-  , TestCaseString
+  , TidyKit.Strings.Test
   , TestCaseCrypto
   , TestCaseRequest
   , TestCaseMath
