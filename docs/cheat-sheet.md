@@ -393,8 +393,10 @@ Encoded := TStringKit.URLEncode('a b');                // URL encoding (a+b)
 Decoded := TStringKit.URLDecode('a+b');                // URL decoding
 
 // Base64 and Hex Encoding
-Base64 := TStringKit.Base64Encode('Hello World!');       // Base64 encoding (SGVsbG8gV29ybGQh)
-Original := TStringKit.Base64Decode('SGVsbG8gV29ybGQh'); // Base64 decoding
+// Note: Base64 functions have been removed from TStringKit - use TCryptoKit instead
+// TCryptoKit.Base64Encode('Hello World!');            // Base64 encoding (SGVsbG8gV29ybGQh)
+// TCryptoKit.Base64Decode('SGVsbG8gV29ybGQh');        // Base64 decoding
+
 HexStr := TStringKit.HexEncode('abc');                   // Hex encoding (616263)
 Original := TStringKit.HexDecode('616263');              // Hex decoding
 ```

@@ -103,8 +103,6 @@ type
     procedure Test67_ToOrdinal;
     procedure Test68_NumberToWords;
     // More Encoding/Decoding Functions
-    procedure Test69_Base64Encode;
-    procedure Test70_Base64Decode;
     procedure Test71_HexEncode;
     procedure Test72_HexDecode;
   end;
@@ -1165,75 +1163,6 @@ begin
   AssertEquals('-1 should convert correctly', 'negative one', TStringKit.NumberToWords(-1));
   // The actual implementation behaves differently for negative numbers (doesn't include 'and')
   AssertEquals('-1234 should convert correctly', 'negative one thousand two hundred and thirty-four', TStringKit.NumberToWords(-1234));
-end;
-
-procedure TStringTests.Test69_Base64Encode;
-begin
-  // Test basic encoding
-  AssertEquals('Empty string should encode to empty string',
-    '', TStringKit.Base64Encode(''));
-    
-  AssertEquals('Basic encoding should work correctly',
-    'SGVsbG8gV29ybGQh', TStringKit.Base64Encode('Hello World!'));
-    
-  // Test special characters
-  AssertEquals('Special characters should encode correctly',
-    'U3BlY2lhbCAkJF4mIENoYXJhY3RlcnMA', TStringKit.Base64Encode('Special $$^& Characters'));
-    
-  // Test binary data
-  AssertEquals('Binary data with null bytes should encode correctly',
-    'AAECAwQF', TStringKit.Base64Encode(#0#1#2#3#4#5));
-    
-  // Test padding
-  // The implementation uses different padding than standard Base64
-  AssertEquals('One-byte padding should be handled correctly',
-    'YQA=', TStringKit.Base64Encode('a'));
-    
-  // The implementation uses 'YWIA' instead of 'YWI=' for two-byte input
-  AssertEquals('Two-byte padding should be handled correctly',
-    'YWIA', TStringKit.Base64Encode('ab'));
-    
-  AssertEquals('Three-byte (no padding) should be handled correctly',
-    'YWJj', TStringKit.Base64Encode('abc'));
-end;
-
-procedure TStringTests.Test70_Base64Decode;
-begin
-  // Test basic decoding
-  AssertEquals('Empty string should decode to empty string',
-    '', TStringKit.Base64Decode(''));
-    
-  AssertEquals('Basic decoding should work correctly',
-    'Hello World!', TStringKit.Base64Decode('SGVsbG8gV29ybGQh'));
-    
-  // Test special characters
-  AssertEquals('Special characters should decode correctly',
-    'Special $$^& Characters', TStringKit.Base64Decode('U3BlY2lhbCAkJF4mIENoYXJhY3RlcnM='));
-    
-  // Test binary data
-  AssertEquals('Binary data with null bytes should decode correctly',
-    #0#1#2#3#4#5, TStringKit.Base64Decode('AAECAwQF'));
-    
-  // Test padding
-  AssertEquals('One-byte padding should be handled correctly',
-    'a', TStringKit.Base64Decode('YQ=='));
-    
-  AssertEquals('Two-byte padding should be handled correctly',
-    'ab', TStringKit.Base64Decode('YWI='));
-    
-  AssertEquals('Three-byte (no padding) should be handled correctly',
-    'abc', TStringKit.Base64Decode('YWJj'));
-    
-  // Test with whitespace (which should be ignored)
-  AssertEquals('Whitespace should be ignored',
-    'Hello World!', TStringKit.Base64Decode(' SGVs bG8g V29y bGQh '));
-    
-  // Test invalid input
-  AssertEquals('Invalid Base64 (incorrect length) should return empty string',
-    '', TStringKit.Base64Decode('SGVsbG8gV29ybGQh='));
-    
-  AssertEquals('Invalid Base64 (invalid characters) should return empty string',
-    '', TStringKit.Base64Decode('SG@sbG8gV2*ybGQh'));
 end;
 
 procedure TStringTests.Test71_HexEncode;
