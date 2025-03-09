@@ -48,7 +48,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Scenarios](#common-scenarios)
     - [Advanced Use](#advanced-use)
   - [📁 Archive Operations](#-archive-operations)
-  - [🛠️ Error Handling](#-error-handling)
+  - [🛠️ Error Handling](#️-error-handling)
 
 ## 🔄 JSON Operations
 
@@ -262,49 +262,131 @@ Count := TFileKit.CountMatches('dir', '*.txt');          // Count matching files
 ## 🧵String operations
 
 ```pascal
-// Basic string operations
-Str := TStringKit.Trim(Text);                     // Trim whitespace
+// ---------- Basic String Manipulation ----------
+
+// Trimming and Whitespace
+Str := TStringKit.Trim(Text);                     // Trim whitespace from both ends
 Str := TStringKit.TrimLeft(Text);                 // Trim left whitespace
 Str := TStringKit.TrimRight(Text);                // Trim right whitespace
-Str := TStringKit.ToLower(Text);                  // Convert to lowercase
-Str := TStringKit.ToUpper(Text);                  // Convert to uppercase
-
-// Advanced string operations
-Str := TStringKit.PadCenter(Text, Width, Char);   // Center pad with character
-Str := TStringKit.PadLeft(Text, Width, Char);     // Left pad with character
-Str := TStringKit.PadRight(Text, Width, Char);    // Right pad with character
-
-// Whitespace handling
-Str := TStringKit.CollapseWhitespace(Text);       // Collapse multiple spaces
+Str := TStringKit.CollapseWhitespace(Text);       // Collapse multiple spaces to one
 Str := TStringKit.RemoveWhitespace(Text);         // Remove all whitespace
 
-// Text manipulation
-Str := TStringKit.DuplicateText(Text, Count);     // Duplicate text
-Str := TStringKit.ReverseText(Text);              // Reverse text
-Str := TStringKit.CapitalizeText(Text);           // Capitalize words
-Str := TStringKit.ReplaceText(Text, Old, New);    // Replace text
+// Case Conversion
+Str := TStringKit.ToLower(Text);                  // Convert to lowercase
+Str := TStringKit.ToUpper(Text);                  // Convert to uppercase
+Str := TStringKit.CapitalizeText(Text);           // Capitalize first letter of each word
 
-// Pattern matching and extraction
+// Advanced Case Conversion
+Str := TStringKit.ToTitleCase(Text);              // Convert to Title Case
+Str := TStringKit.ToCamelCase(Text);              // Convert to camelCase
+Str := TStringKit.ToPascalCase(Text);             // Convert to PascalCase
+Str := TStringKit.ToSnakeCase(Text);              // Convert to snake_case
+Str := TStringKit.ToKebabCase(Text);              // Convert to kebab-case
+
+// Padding and Alignment
+Str := TStringKit.PadLeft(Text, Width, Char);     // Left pad with character
+Str := TStringKit.PadRight(Text, Width, Char);    // Right pad with character
+Str := TStringKit.PadCenter(Text, Width, Char);   // Center pad with character
+
+// Text Transformation
+Str := TStringKit.ReverseText(Text);              // Reverse text
+Str := TStringKit.DuplicateText(Text, Count);     // Duplicate text
+Str := TStringKit.Truncate(Text, MaxLen, '...');  // Truncate with ellipsis
+
+// ---------- String Inspection ----------
+
+// Basic Tests
+if TStringKit.IsEmpty(Text) then                  // Check if empty
+Length := TStringKit.GetLength(Text);             // Get string length
+Count := TStringKit.CountWords(Text);             // Count words
+
+// Content Inspection
+if TStringKit.Contains(Text, SubStr) then         // Check if contains substring
+if TStringKit.StartsWith(Text, Prefix) then       // Check if starts with prefix
+if TStringKit.EndsWith(Text, Suffix) then         // Check if ends with suffix
+Count := TStringKit.CountSubString(Text, SubStr); // Count occurrences of substring
+
+// Validation
+if TStringKit.IsValidEmail('user@example.com') then       // Validate email address
+if TStringKit.IsValidURL('https://example.com') then      // Validate URL
+if TStringKit.IsValidIP('192.168.1.1') then               // Validate IP address (v4 or v6)
+if TStringKit.IsValidIPv4('192.168.1.1') then             // Validate IPv4 address
+if TStringKit.IsValidIPv6('::1') then                     // Validate IPv6 address
+if TStringKit.IsValidDate('2024-01-15', 'yyyy-mm-dd') then // Validate date format
+
+// ---------- Substring Operations ----------
+
+// Extraction
+Str := TStringKit.SubString(Text, Start, Length); // Extract substring
+Str := TStringKit.LeftStr(Text, Length);          // Get left part
+Str := TStringKit.RightStr(Text, Length);         // Get right part
+
+// Splitting and Joining
+Words := TStringKit.GetWords(Text);               // Split into words
+Strings := TStringKit.Split('a,b,c', ',');                // Split by delimiter
+Strings := TStringKit.Split('a,b,,c', ',', 0, True);      // Split and remove empty entries
+Str := TStringKit.Join(['one', 'two', 'three'], ', ');    // Join with delimiter
+
+// ---------- Pattern Matching and Replacement ----------
+
+// Regex Operations
 Matches := TStringKit.ExtractMatches(Text, Pattern);      // Extract regex matches with positions
 Words := TStringKit.ExtractAllMatches(Text, Pattern);     // Extract regex matches as strings
 if TStringKit.MatchesPattern(Text, Pattern) then          // Check regex pattern
 Str := TStringKit.ReplaceRegEx(Text, Pattern, Replace);   // Replace using regex
 
-// Word operations
-Words := TStringKit.GetWords(Text);               // Split into words
-Count := TStringKit.CountSubString(Text, SubStr); // Count occurrences
+// Simple Replacement
+Str := TStringKit.ReplaceText(Text, Old, New);            // Replace all occurrences
 
-// String tests
-if TStringKit.Contains(Text, SubStr) then         // Check substring
-if TStringKit.StartsWith(Text, Prefix) then       // Check prefix
-if TStringKit.EndsWith(Text, Suffix) then         // Check suffix
-if TStringKit.IsEmpty(Text) then                  // Check if empty
-Length := TStringKit.GetLength(Text);             // Get string length
+// ---------- Formatting ----------
 
-// Substring operations
-Str := TStringKit.SubString(Text, Start, Length); // Get substring
-Str := TStringKit.LeftStr(Text, Length);          // Get left part
-Str := TStringKit.RightStr(Text, Length);         // Get right part
+// Number Formatting
+Str := TStringKit.FormatNumber(1234);                     // Format to "1,234"
+Str := TStringKit.FormatFloat(1234.56, 2, '.', ',');      // Format to "1,234.56"
+Str := TStringKit.FormatFileSize(1048576);                // Format to "1.00 MB"
+
+// ---------- String Similarity and Distance ----------
+
+// Distance Metrics
+Dist := TStringKit.LevenshteinDistance(S1, S2);        // Edit distance between strings
+Dist := TStringKit.HammingDistance(S1, S2);            // Character differences at same positions
+
+// Similarity Metrics (0-1 scale, higher is more similar)
+Sim := TStringKit.LevenshteinSimilarity(S1, S2);       // Normalized similarity
+Sim := TStringKit.JaroSimilarity(S1, S2);              // Jaro similarity for short strings
+Sim := TStringKit.JaroWinklerSimilarity(S1, S2);       // Jaro-Winkler with prefix bonus
+Sim := TStringKit.LCSSimilarity(S1, S2);               // LCS similarity ratio
+
+// Common Subsequence
+LCS := TStringKit.LongestCommonSubsequence(S1, S2);    // Longest common subsequence
+
+// Fuzzy Matching
+if TStringKit.IsFuzzyMatch(S1, S2) then               // Default: Levenshtein, threshold 0.7
+if TStringKit.IsFuzzyMatch(S1, S2, 0.8) then          // Custom threshold
+if TStringKit.IsFuzzyMatch(S1, S2, 0.7, 1) then       // Using Jaro-Winkler (method=1)
+if TStringKit.IsFuzzyMatch(S1, S2, 0.7, 2) then       // Using LCS similarity (method=2)
+
+// ---------- Phonetic Algorithms ----------
+
+// Phonetic Encoding
+Code := TStringKit.Soundex('Smith');                   // Get Soundex code (S530)
+Code := TStringKit.Metaphone('Smith');                 // Get Metaphone code (SM0)
+
+// ---------- Text Analysis ----------
+
+// Readability and Analysis
+Score := TStringKit.FleschKincaidReadability(Text);    // Calculate readability (0-100)
+NGrams := TStringKit.GenerateNGrams(Text, 2);          // Generate bigrams
+
+// ---------- Encoding/Decoding ----------
+
+// HTML Encoding
+Encoded := TStringKit.HTMLEncode('<div>');             // HTML encoding
+Decoded := TStringKit.HTMLDecode('&lt;div&gt;');       // HTML decoding
+
+// URL Encoding
+Encoded := TStringKit.URLEncode('a b');                // URL encoding (a+b)
+Decoded := TStringKit.URLDecode('a+b');                // URL decoding
 ```
 
 ## 🕙 DateTime Operations
