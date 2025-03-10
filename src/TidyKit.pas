@@ -60,6 +60,7 @@ type
 
   { Re-export math types }
   TMatrix = TidyKit.Math.TMatrix;
+  IMatrix = TidyKit.Math.Matrices.IMatrix;
   TMatrixKit = TidyKit.Math.Matrices.TMatrixKit;
   TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
   TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
