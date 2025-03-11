@@ -395,10 +395,10 @@ begin
     [3.14159, 0.1]
   ]);
 
-  WriteLn(M.ToString);
-
-  Expected := '|1 -2.5|' + sLineBreak +
-              '|3.14159 0.1|';
+  // Column 1 width = 7 (length of "3.14159")
+  // Column 2 width = 4 (length of "-2.5")
+  Expected := '|      1 -2.5|' + sLineBreak +
+              '|3.14159  0.1|';
   Actual := M.ToString;
   AssertEquals('Matrix string representation', Expected, Actual);
 end;

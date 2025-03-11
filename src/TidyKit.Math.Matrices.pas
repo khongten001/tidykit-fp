@@ -1014,11 +1014,14 @@ var
   I, J: Integer;
   Values: array of array of string;
   CurrentValue: string;
+  ColWidths: array of Integer;
+  FormattedValue: string;
 begin
-  // Initialize the array to store formatted values
+  // Initialize arrays
   SetLength(Values, GetRows, GetCols);
+  SetLength(ColWidths, GetCols);
   
-  // Format all values
+  // First pass: Format all values and find maximum width per column
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
     begin
@@ -1030,9 +1033,13 @@ begin
         Delete(CurrentValue, Length(CurrentValue), 1);
       
       Values[I, J] := CurrentValue;
+      
+      // Update maximum width for this column
+      if Length(CurrentValue) > ColWidths[J] then
+        ColWidths[J] := Length(CurrentValue);
     end;
   
-  // Build the string representation
+  // Build the string representation with consistent column widths
   Result := '';
   for I := 0 to GetRows - 1 do
   begin
@@ -1040,8 +1047,14 @@ begin
     for J := 0 to GetCols - 1 do
     begin
       if J > 0 then
-        Result := Result + ' ';  // Single space between numbers
-      Result := Result + Values[I, J];
+        Result := Result + ' ';  // Single space between columns
+      
+      // Right-align the value within its column width
+      FormattedValue := Values[I, J];
+      while Length(FormattedValue) < ColWidths[J] do
+        FormattedValue := ' ' + FormattedValue;
+      
+      Result := Result + FormattedValue;
     end;
     Result := Result + '|';
     
