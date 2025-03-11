@@ -93,12 +93,17 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - 🔢 Matrix Operations
     - Basic operations (add, subtract, multiply)
     - Matrix creation (zeros, ones, identity)
-    - Matrix transpose
+    - Matrix transpose and inverse
     - Determinant and trace calculation
-    - Coming Soon:
-      - Matrix decompositions (LU, QR)
-      - Matrix inversion
-      - Matrix rank calculation
+    - Matrix decompositions (LU, QR, Eigen)
+    - Matrix properties (rank, condition number)
+    - Matrix norms (one, infinity, Frobenius)
+    - Special matrices (diagonal, symmetric, random)
+    - Element-wise operations
+    - Submatrix operations
+    - Linear system solving
+    - Comprehensive error handling
+    - Memory-safe interface design
   - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)
     - Inverse functions (arcsin, arccos, arctan, arctan2)

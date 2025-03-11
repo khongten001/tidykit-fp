@@ -951,32 +951,67 @@ end;
 
 ### Matrix Operations (TMatrixKit)
 ```pascal
-// Matrix creation
-M := TMatrixKit.CreateMatrix(Rows, Cols);        // Create empty matrix
-I := TMatrixKit.Identity(Size);                  // Create identity matrix
-Z := TMatrixKit.Zeros(Rows, Cols);               // Create zero matrix
-O := TMatrixKit.Ones(Rows, Cols);                // Create matrix of ones
+// Creating matrices
+M := TMatrixKit.CreateFromArray([[1.0, 2.0], [3.0, 4.0]]);  // From array
+M := TMatrixKit.Identity(3);                                 // Identity matrix
+M := TMatrixKit.Zeros(2, 3);                                // Zero matrix
+M := TMatrixKit.Ones(3, 2);                                 // Matrix of ones
+M := TMatrixKit.CreateDiagonal([1.0, 2.0, 3.0]);           // Diagonal matrix
+M := TMatrixKit.CreateSymmetric([[1.0, 2.0], [2.0, 3.0]]); // Symmetric matrix
+M := TMatrixKit.CreateRandom(2, 2, 0.0, 1.0);              // Random matrix
 
 // Basic operations
-C := TMatrixKit.Add(A, B);                       // Matrix addition
-D := TMatrixKit.Subtract(A, B);                  // Matrix subtraction
-E := TMatrixKit.Multiply(A, B);                  // Matrix multiplication
-F := TMatrixKit.ScalarMultiply(A, 2.0);          // Scalar multiplication
+C := A.Add(B);                    // Matrix addition
+C := A.Subtract(B);               // Matrix subtraction
+C := A.Multiply(B);               // Matrix multiplication
+C := A.ScalarMultiply(2.0);       // Scalar multiplication
+C := A.Transpose;                 // Matrix transpose
+C := A.Inverse;                   // Matrix inverse
 
-// Matrix transformations
-T := TMatrixKit.Transpose(A);                    // Matrix transpose
+// Element-wise operations
+C := A.ElementWiseMultiply(B);    // Element-wise multiplication
+C := A.ElementWiseDivide(B);      // Element-wise division
 
 // Matrix properties
-Det := TMatrixKit.Determinant(A);                // Calculate determinant
-Tr := TMatrixKit.Trace(A);                       // Calculate trace
+Val := M.Determinant;             // Matrix determinant
+Val := M.Trace;                   // Matrix trace
+Val := M.Rank;                    // Matrix rank
+Val := M.Condition;               // Condition number
+Val := M.NormOne;                 // Maximum column sum norm
+Val := M.NormInf;                 // Maximum row sum norm
+Val := M.NormFrobenius;           // Frobenius norm
 
-// Helper functions
-Rows := TMatrixKit.GetRows(A);                   // Get number of rows
-Cols := TMatrixKit.GetCols(A);                   // Get number of columns
-IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
+// Matrix type checks
+if M.IsSquare then ...            // Check if square
+if M.IsSymmetric then ...         // Check if symmetric
+if M.IsDiagonal then ...          // Check if diagonal
+if M.IsTriangular(True) then ...  // Check if upper triangular
+if M.IsPositiveDefinite then ...  // Check if positive definite
+if M.IsOrthogonal then ...        // Check if orthogonal
 
-// Note: Features like matrix rank, inversion, LU and QR decomposition
-// are planned for future implementation
+// Matrix decompositions
+LU := M.LU;                       // LU decomposition
+QR := M.QR;                       // QR decomposition
+Eigen := M.EigenDecomposition;    // Eigendecomposition
+
+// Submatrix operations
+Sub := M.GetSubMatrix(0, 0, 2, 2);  // Get 2x2 submatrix from top-left
+M.SetSubMatrix(1, 1, Sub);          // Set submatrix at position (1,1)
+
+// Solving linear systems (Ax = b)
+X := A.Inverse.Multiply(B);          // Using inverse
+// Or using LU decomposition:
+LU := A.LU;
+X := LU.U.Inverse.Multiply(
+     LU.L.Inverse.Multiply(B));
+
+// Error handling
+try
+  M := A.Inverse;
+except
+  on E: EMatrixError do
+    WriteLn('Matrix error: ', E.Message);
+end;
 ```
 
 ### Trigonometry (TTrigKit)
