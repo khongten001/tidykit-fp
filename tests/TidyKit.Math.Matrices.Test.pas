@@ -27,6 +27,7 @@ type
     procedure Test15_QRDecomposition;
     procedure Test16_EigenDecomposition;
     procedure Test17_SingularMatrix;
+    procedure Test18_ToString;
   end;
 
 implementation
@@ -35,7 +36,7 @@ procedure TMatrixTest.Test01_CreateFromArray;
 var
   M: IMatrix;
 begin
-  M := TDoubleMatrix.CreateFromArray([
+  M := TMatrixKit.CreateFromArray([
     [1.0, 2.0, 3.0],
     [4.0, 5.0, 6.0],
     [7.0, 8.0, 9.0]
@@ -52,7 +53,7 @@ procedure TMatrixTest.Test02_Identity;
 var
   M: IMatrix;
 begin
-  M := TDoubleMatrix.Identity(3);
+  M := TMatrixKit.Identity(3);
   
   AssertEquals('Identity size', 3, M.Rows);
   AssertEquals('Diagonal element [0,0]', 1.0, M.Values[0, 0]);
@@ -66,7 +67,7 @@ procedure TMatrixTest.Test03_Zeros;
 var
   M: IMatrix;
 begin
-  M := TDoubleMatrix.Zeros(2, 3);
+  M := TMatrixKit.Zeros(2, 3);
   
   AssertEquals('Rows count', 2, M.Rows);
   AssertEquals('Cols count', 3, M.Cols);
@@ -78,7 +79,7 @@ procedure TMatrixTest.Test04_Ones;
 var
   M: IMatrix;
 begin
-  M := TDoubleMatrix.Ones(2, 3);
+  M := TMatrixKit.Ones(2, 3);
   
   AssertEquals('Rows count', 2, M.Rows);
   AssertEquals('Cols count', 3, M.Cols);
@@ -90,12 +91,12 @@ procedure TMatrixTest.Test05_Add;
 var
   A, B, C: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
   
-  B := TDoubleMatrix.CreateFromArray([
+  B := TMatrixKit.CreateFromArray([
     [5.0, 6.0],
     [7.0, 8.0]
   ]);
@@ -112,12 +113,12 @@ procedure TMatrixTest.Test06_Subtract;
 var
   A, B, C: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [5.0, 6.0],
     [7.0, 8.0]
   ]);
   
-  B := TDoubleMatrix.CreateFromArray([
+  B := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
@@ -134,12 +135,12 @@ procedure TMatrixTest.Test07_Multiply;
 var
   A, B, C: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
   
-  B := TDoubleMatrix.CreateFromArray([
+  B := TMatrixKit.CreateFromArray([
     [5.0, 6.0],
     [7.0, 8.0]
   ]);
@@ -156,7 +157,7 @@ procedure TMatrixTest.Test08_ScalarMultiply;
 var
   A, B: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
@@ -173,7 +174,7 @@ procedure TMatrixTest.Test09_Transpose;
 var
   A, B: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0, 3.0],
     [4.0, 5.0, 6.0]
   ]);
@@ -194,7 +195,7 @@ procedure TMatrixTest.Test10_Determinant;
 var
   A: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
@@ -206,7 +207,7 @@ procedure TMatrixTest.Test11_Trace;
 var
   A: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
     [3.0, 4.0]
   ]);
@@ -219,7 +220,7 @@ var
   A: IMatrix;
 begin
   // Full rank matrix
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 0.0, 0.0],
     [0.0, 1.0, 0.0],
     [0.0, 0.0, 1.0]
@@ -227,7 +228,7 @@ begin
   AssertEquals('Full rank matrix', 3, A.Rank);
   
   // Rank 2 matrix
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 0.0, 1.0],
     [0.0, 1.0, 0.0],
     [2.0, 0.0, 2.0]
@@ -235,7 +236,7 @@ begin
   AssertEquals('Rank 2 matrix', 2, A.Rank);
   
   // Rank 1 matrix
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 2.0, 3.0],
     [2.0, 4.0, 6.0],
     [3.0, 6.0, 9.0]
@@ -249,7 +250,7 @@ var
   I, J: Integer;
   Tolerance: Double;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [4.0, 7.0],
     [2.0, 6.0]
   ]);
@@ -274,7 +275,7 @@ var
   I, J: Integer;
   Tolerance: Double;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [4.0, 3.0],
     [6.0, 3.0]
   ]);
@@ -283,7 +284,7 @@ begin
   Product := LU.L.Multiply(LU.U);
   
   // Reconstruct original matrix considering permutation
-  Original := TDoubleMatrix.Zeros(2, 2);
+  Original := TMatrixKit.Zeros(2, 2);
   for I := 0 to 1 do
     for J := 0 to 1 do
       Original.Values[LU.P[I], J] := A.Values[I, J];
@@ -303,7 +304,7 @@ var
   I, J: Integer;
   Tolerance: Double;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [12.0, -51.0],
     [6.0, 167.0],
     [-4.0, 24.0]
@@ -336,7 +337,7 @@ var
   Tolerance: Double;
 begin
   // Test with a simple 2x2 matrix with known eigenvalues
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [3.0, -2.0],
     [1.0, 4.0]
   ]);
@@ -361,7 +362,7 @@ procedure TMatrixTest.Test17_SingularMatrix;
 var
   A: IMatrix;
 begin
-  A := TDoubleMatrix.CreateFromArray([
+  A := TMatrixKit.CreateFromArray([
     [1.0, 1.0],
     [1.0, 1.0]
   ]);
@@ -381,6 +382,25 @@ begin
     on E: EMatrixError do
       ; // Expected exception
   end;
+end;
+
+procedure TMatrixTest.Test18_ToString;
+var
+  M: IMatrix;
+  Expected, Actual: string;
+begin
+  // Test 2x2 matrix with different number formats
+  M := TMatrixKit.CreateFromArray([
+    [1.0, -2.5],
+    [3.14159, 0.1]
+  ]);
+
+  WriteLn(M.ToString);
+
+  Expected := '|1 -2.5|' + sLineBreak +
+              '|3.14159 0.1|';
+  Actual := M.ToString;
+  AssertEquals('Matrix string representation', Expected, Actual);
 end;
 
 initialization

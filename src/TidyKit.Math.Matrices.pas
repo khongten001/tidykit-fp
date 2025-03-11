@@ -68,6 +68,9 @@ type
     function QR: TQRDecomposition;
     function EigenDecomposition: TEigenDecomposition;
     
+    { String representation }
+    function ToString: string;
+    
     property Rows: Integer read GetRows;
     property Cols: Integer read GetCols;
     property Values[Row, Col: Integer]: Double read GetValue write SetValue; default;
@@ -75,7 +78,7 @@ type
 
 type
   { Matrix implementation }
-  TDoubleMatrix = class(TInterfacedObject, IMatrix)
+  TMatrixKit = class(TInterfacedObject, IMatrix)
   private
     FData: array of array of Double;
     function GetRows: Integer;
@@ -89,7 +92,7 @@ type
     function BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
     function ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
     function DotProduct(const v1, v2: TDoubleArray): Double;
-    procedure NormalizeColumn(var Matrix: TDoubleMatrix; Col: Integer);
+    procedure NormalizeColumn(var Matrix: TMatrixKit; Col: Integer);
   public
     constructor Create(const ARows, ACols: Integer);
     destructor Destroy; override;
@@ -114,13 +117,16 @@ type
     function LU: TLUDecomposition;
     function QR: TQRDecomposition;
     function EigenDecomposition: TEigenDecomposition;
+    
+    { String representation }
+    function ToString: string; override;
   end;
 
 implementation
 
-{ TDoubleMatrix }
+{ TMatrixKit }
 
-constructor TDoubleMatrix.Create(const ARows, ACols: Integer);
+constructor TMatrixKit.Create(const ARows, ACols: Integer);
 var
   I: Integer;
 begin
@@ -130,23 +136,23 @@ begin
     SetLength(FData[I], ACols);
 end;
 
-destructor TDoubleMatrix.Destroy;
+destructor TMatrixKit.Destroy;
 begin
   SetLength(FData, 0);
   inherited;
 end;
 
-class function TDoubleMatrix.CreateFromArray(const Data: TMatrixArray): IMatrix;
+class function TMatrixKit.CreateFromArray(const Data: TMatrixArray): IMatrix;
 var
   I, J, Rows, Cols: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
   Rows := Length(Data);
   if Rows = 0 then
     raise EMatrixError.Create('Cannot create matrix from empty array');
     
   Cols := Length(Data[0]);
-  Matrix := TDoubleMatrix.Create(Rows, Cols);
+  Matrix := TMatrixKit.Create(Rows, Cols);
   Result := Matrix;
   
   for I := 0 to Rows - 1 do
@@ -159,41 +165,41 @@ begin
   end;
 end;
 
-class function TDoubleMatrix.Identity(const Size: Integer): IMatrix;
+class function TMatrixKit.Identity(const Size: Integer): IMatrix;
 var
   I: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
-  Matrix := TDoubleMatrix.Create(Size, Size);
+  Matrix := TMatrixKit.Create(Size, Size);
   Result := Matrix;
   for I := 0 to Size - 1 do
     Matrix.FData[I, I] := 1.0;
 end;
 
-class function TDoubleMatrix.Zeros(const Rows, Cols: Integer): IMatrix;
+class function TMatrixKit.Zeros(const Rows, Cols: Integer): IMatrix;
 begin
-  Result := TDoubleMatrix.Create(Rows, Cols);
+  Result := TMatrixKit.Create(Rows, Cols);
   // Values are already zero-initialized
 end;
 
-class function TDoubleMatrix.Ones(const Rows, Cols: Integer): IMatrix;
+class function TMatrixKit.Ones(const Rows, Cols: Integer): IMatrix;
 var
   I, J: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
-  Matrix := TDoubleMatrix.Create(Rows, Cols);
+  Matrix := TMatrixKit.Create(Rows, Cols);
   Result := Matrix;
   for I := 0 to Rows - 1 do
     for J := 0 to Cols - 1 do
       Matrix.FData[I, J] := 1.0;
 end;
 
-function TDoubleMatrix.GetRows: Integer;
+function TMatrixKit.GetRows: Integer;
 begin
   Result := Length(FData);
 end;
 
-function TDoubleMatrix.GetCols: Integer;
+function TMatrixKit.GetCols: Integer;
 begin
   if Length(FData) > 0 then
     Result := Length(FData[0])
@@ -201,56 +207,56 @@ begin
     Result := 0;
 end;
 
-function TDoubleMatrix.GetValue(Row, Col: Integer): Double;
+function TMatrixKit.GetValue(Row, Col: Integer): Double;
 begin
   Result := FData[Row, Col];
 end;
 
-procedure TDoubleMatrix.SetValue(Row, Col: Integer; const Value: Double);
+procedure TMatrixKit.SetValue(Row, Col: Integer; const Value: Double);
 begin
   FData[Row, Col] := Value;
 end;
 
-function TDoubleMatrix.Add(const Other: IMatrix): IMatrix;
+function TMatrixKit.Add(const Other: IMatrix): IMatrix;
 var
   I, J: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
     raise EMatrixError.Create('Matrix dimensions must match for addition');
     
-  Matrix := TDoubleMatrix.Create(GetRows, GetCols);
+  Matrix := TMatrixKit.Create(GetRows, GetCols);
   Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
       Matrix.FData[I, J] := FData[I, J] + Other.Values[I, J];
 end;
 
-function TDoubleMatrix.Subtract(const Other: IMatrix): IMatrix;
+function TMatrixKit.Subtract(const Other: IMatrix): IMatrix;
 var
   I, J: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
     raise EMatrixError.Create('Matrix dimensions must match for subtraction');
     
-  Matrix := TDoubleMatrix.Create(GetRows, GetCols);
+  Matrix := TMatrixKit.Create(GetRows, GetCols);
   Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
       Matrix.FData[I, J] := FData[I, J] - Other.Values[I, J];
 end;
 
-function TDoubleMatrix.Multiply(const Other: IMatrix): IMatrix;
+function TMatrixKit.Multiply(const Other: IMatrix): IMatrix;
 var
   I, J, K: Integer;
   Sum: Double;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
   if GetCols <> Other.Rows then
     raise EMatrixError.Create('Invalid matrix dimensions for multiplication');
     
-  Matrix := TDoubleMatrix.Create(GetRows, Other.Cols);
+  Matrix := TMatrixKit.Create(GetRows, Other.Cols);
   Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to Other.Cols - 1 do
@@ -262,36 +268,36 @@ begin
     end;
 end;
 
-function TDoubleMatrix.ScalarMultiply(const Scalar: Double): IMatrix;
+function TMatrixKit.ScalarMultiply(const Scalar: Double): IMatrix;
 var
   I, J: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
-  Matrix := TDoubleMatrix.Create(GetRows, GetCols);
+  Matrix := TMatrixKit.Create(GetRows, GetCols);
   Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
       Matrix.FData[I, J] := FData[I, J] * Scalar;
 end;
 
-function TDoubleMatrix.Transpose: IMatrix;
+function TMatrixKit.Transpose: IMatrix;
 var
   I, J: Integer;
-  Matrix: TDoubleMatrix;
+  Matrix: TMatrixKit;
 begin
-  Matrix := TDoubleMatrix.Create(GetCols, GetRows);
+  Matrix := TMatrixKit.Create(GetCols, GetRows);
   Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
       Matrix.FData[J, I] := FData[I, J];
 end;
 
-function TDoubleMatrix.IsSquare: Boolean;
+function TMatrixKit.IsSquare: Boolean;
 begin
   Result := GetRows = GetCols;
 end;
 
-function TDoubleMatrix.Determinant: Double;
+function TMatrixKit.Determinant: Double;
 var
   N, I, J, K: Integer;
   Factor: Double;
@@ -300,7 +306,7 @@ var
   function MinorDeterminant(const M: IMatrix; const Size: Integer): Double;
   var
     I, J, K, L: Integer;
-    SubMatrix: TDoubleMatrix;
+    SubMatrix: TMatrixKit;
     Sign: Double;
   begin
     if Size = 1 then
@@ -310,7 +316,7 @@ var
     else
     begin
       Result := 0;
-      SubMatrix := TDoubleMatrix.Create(Size - 1, Size - 1);
+      SubMatrix := TMatrixKit.Create(Size - 1, Size - 1);
       for K := 0 to Size - 1 do
       begin
         L := 0;
@@ -350,7 +356,7 @@ begin
     Result := MinorDeterminant(Self, N);
 end;
 
-function TDoubleMatrix.Trace: Double;
+function TMatrixKit.Trace: Double;
 var
   I: Integer;
 begin
@@ -362,12 +368,12 @@ begin
     Result := Result + FData[I, I];
 end;
 
-function TDoubleMatrix.Rank: Integer;
+function TMatrixKit.Rank: Integer;
 var
   I, J, K, PivotRow: Integer;
   Factor: Double;
   Tolerance: Double;
-  RowEchelon: TDoubleMatrix;
+  RowEchelon: TMatrixKit;
   MaxVal: Double;
   IsZeroRow: Boolean;
 begin
@@ -376,7 +382,7 @@ begin
     Exit;
 
   // Create a copy of the matrix for row echelon form
-  RowEchelon := TDoubleMatrix.Create(GetRows, GetCols);
+  RowEchelon := TMatrixKit.Create(GetRows, GetCols);
   try
     // Copy data
     for I := 0 to GetRows - 1 do
@@ -433,13 +439,13 @@ begin
   end;
 end;
 
-function TDoubleMatrix.Inverse: IMatrix;
+function TMatrixKit.Inverse: IMatrix;
 var
   I, J: Integer;
   LUDecomp: TLUDecomposition;
   B: array of Double;
   X: array of Double;
-  InvMatrix: TDoubleMatrix;
+  InvMatrix: TMatrixKit;
 begin
   if not IsSquare then
     raise EMatrixError.Create('Matrix must be square to calculate inverse');
@@ -451,7 +457,7 @@ begin
   LUDecomp := LU;
   
   // Create result matrix
-  InvMatrix := TDoubleMatrix.Create(GetRows, GetRows);
+  InvMatrix := TMatrixKit.Create(GetRows, GetRows);
   Result := InvMatrix;
   
   // Solve for each column of the inverse
@@ -475,11 +481,11 @@ begin
   end;
 end;
 
-function TDoubleMatrix.LU: TLUDecomposition;
+function TMatrixKit.LU: TLUDecomposition;
 var
   I, J, K, PivotRow: Integer;
   Factor, MaxVal: Double;
-  L, U: TDoubleMatrix;
+  L, U: TMatrixKit;
   Tolerance: Double;
 begin
   if not IsSquare then
@@ -488,8 +494,8 @@ begin
   Tolerance := 1E-12;
 
   // Initialize L and U matrices
-  L := TDoubleMatrix.Create(GetRows, GetRows);
-  U := TDoubleMatrix.Create(GetRows, GetRows);
+  L := TMatrixKit.Create(GetRows, GetRows);
+  U := TMatrixKit.Create(GetRows, GetRows);
   
   // Initialize permutation array
   SetLength(Result.P, GetRows);
@@ -558,15 +564,15 @@ begin
   Result.U := U;
 end;
 
-function TDoubleMatrix.QR: TQRDecomposition;
+function TMatrixKit.QR: TQRDecomposition;
 var
   I, J, K: Integer;
-  Q, R: TDoubleMatrix;
+  Q, R: TMatrixKit;
   V: array of Double;
   Dot: Double;
 begin
-  Q := TDoubleMatrix.Create(GetRows, GetCols);
-  R := TDoubleMatrix.Create(GetCols, GetCols);
+  Q := TMatrixKit.Create(GetRows, GetCols);
+  R := TMatrixKit.Create(GetCols, GetCols);
   
   // Copy original matrix to Q
   for I := 0 to GetRows - 1 do
@@ -614,16 +620,16 @@ begin
   Result.R := R;
 end;
 
-function TDoubleMatrix.EigenDecomposition: TEigenDecomposition;
+function TMatrixKit.EigenDecomposition: TEigenDecomposition;
 var
   I, J, K, Iter: Integer;
   MaxIter: Integer;
   Tolerance: Double;
-  Q, R, Current: TDoubleMatrix;
+  Q, R, Current: TMatrixKit;
   QRDecomp: TQRDecomposition;
   Converged: Boolean;
   ShiftValue, TraceValue, Det: Double;
-  EigenVectors: TDoubleMatrix;
+  EigenVectors: TMatrixKit;
   Norm: Double;
   Discriminant: Double;
 begin
@@ -651,7 +657,7 @@ begin
       Result.EigenValues[1] := 2.0;
       
       // Create eigenvectors matrix with known values
-      EigenVectors := TDoubleMatrix.Create(GetRows, GetRows);
+      EigenVectors := TMatrixKit.Create(GetRows, GetRows);
       
       // First eigenvector
       EigenVectors.FData[0, 0] := 2.0 / Sqrt(5.0);
@@ -679,7 +685,7 @@ begin
       Result.EigenValues[1] := TraceValue / 2;
       
       // Create identity matrix for eigenvectors in this case
-      EigenVectors := TDoubleMatrix.Create(GetRows, GetRows);
+      EigenVectors := TMatrixKit.Create(GetRows, GetRows);
       EigenVectors.FData[0, 0] := 1;
       EigenVectors.FData[1, 1] := 1;
       Result.EigenVectors := EigenVectors;
@@ -692,7 +698,7 @@ begin
     Result.EigenValues[1] := (TraceValue - Sqrt(Discriminant)) / 2;
     
     // Create eigenvectors matrix
-    EigenVectors := TDoubleMatrix.Create(GetRows, GetRows);
+    EigenVectors := TMatrixKit.Create(GetRows, GetRows);
     
     // Compute first eigenvector
     if Abs(FData[0, 1]) > Tolerance then
@@ -788,7 +794,7 @@ begin
   
   // For larger matrices, use QR iteration
   // Create and initialize working matrix
-  Current := TDoubleMatrix.Create(GetRows, GetRows);
+  Current := TMatrixKit.Create(GetRows, GetRows);
   try
     // Copy original matrix
     for I := 0 to GetRows - 1 do
@@ -829,8 +835,8 @@ begin
         if Assigned(QRDecomp.Q) and Assigned(QRDecomp.R) then
         begin
           // Safely access matrices
-          Q := QRDecomp.Q as TDoubleMatrix;
-          R := QRDecomp.R as TDoubleMatrix;
+          Q := QRDecomp.Q as TMatrixKit;
+          R := QRDecomp.R as TMatrixKit;
           
           // Directly compute R*Q in Current
           for I := 0 to GetRows - 1 do
@@ -878,7 +884,7 @@ begin
     end;
 
     // Create eigenvector matrix
-    EigenVectors := TDoubleMatrix.Create(GetRows, GetRows);
+    EigenVectors := TMatrixKit.Create(GetRows, GetRows);
     try
       // Copy the converged matrix
       for I := 0 to GetRows - 1 do
@@ -902,7 +908,7 @@ begin
   end;
 end;
 
-function TDoubleMatrix.BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
+function TMatrixKit.BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
 var
   I, J: Integer;
   N: Integer;
@@ -919,7 +925,7 @@ begin
   end;
 end;
 
-function TDoubleMatrix.ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
+function TMatrixKit.ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
 var
   I, J: Integer;
   N: Integer;
@@ -936,7 +942,7 @@ begin
   end;
 end;
 
-procedure TDoubleMatrix.SwapRows(Row1, Row2: Integer);
+procedure TMatrixKit.SwapRows(Row1, Row2: Integer);
 var
   Temp: array of Double;
   J: Integer;
@@ -955,7 +961,7 @@ begin
     FData[Row2, J] := Temp[J];
 end;
 
-function TDoubleMatrix.FindPivot(StartRow, Col: Integer): Integer;
+function TMatrixKit.FindPivot(StartRow, Col: Integer): Integer;
 var
   I: Integer;
   MaxVal: Double;
@@ -971,7 +977,7 @@ begin
     end;
 end;
 
-function TDoubleMatrix.DotProduct(const v1, v2: TDoubleArray): Double;
+function TMatrixKit.DotProduct(const v1, v2: TDoubleArray): Double;
 var
   I: Integer;
 begin
@@ -983,7 +989,7 @@ begin
     Result := Result + v1[I] * v2[I];
 end;
 
-procedure TDoubleMatrix.NormalizeColumn(var Matrix: TDoubleMatrix; Col: Integer);
+procedure TMatrixKit.NormalizeColumn(var Matrix: TMatrixKit; Col: Integer);
 var
   I: Integer;
   Norm: Double;
@@ -1001,6 +1007,47 @@ begin
   // Normalize the column
   for I := 0 to Matrix.GetRows - 1 do
     Matrix.FData[I, Col] := Matrix.FData[I, Col] / Norm;
+end;
+
+function TMatrixKit.ToString: string;
+var
+  I, J: Integer;
+  Values: array of array of string;
+  CurrentValue: string;
+begin
+  // Initialize the array to store formatted values
+  SetLength(Values, GetRows, GetCols);
+  
+  // Format all values
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+    begin
+      // Format with 6 decimal places, trim trailing zeros
+      CurrentValue := Format('%.6f', [FData[I, J]]);
+      while (Length(CurrentValue) > 1) and (CurrentValue[Length(CurrentValue)] = '0') do
+        Delete(CurrentValue, Length(CurrentValue), 1);
+      if CurrentValue[Length(CurrentValue)] = '.' then
+        Delete(CurrentValue, Length(CurrentValue), 1);
+      
+      Values[I, J] := CurrentValue;
+    end;
+  
+  // Build the string representation
+  Result := '';
+  for I := 0 to GetRows - 1 do
+  begin
+    Result := Result + '|';
+    for J := 0 to GetCols - 1 do
+    begin
+      if J > 0 then
+        Result := Result + ' ';  // Single space between numbers
+      Result := Result + Values[I, J];
+    end;
+    Result := Result + '|';
+    
+    if I < GetRows - 1 then
+      Result := Result + sLineBreak;
+  end;
 end;
 
 end. 

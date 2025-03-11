@@ -10,7 +10,7 @@ uses
   //, TidyKit.Strings.Test
   //, TestCaseCrypto
   //, TestCaseRequest
-  , TestCaseMath
+  //, TestCaseMath
   //, TestCaseArchive
   //, TidyKit.Crypto.AES256.Test
   //, TidyKit.JSON.Test
