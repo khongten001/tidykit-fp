@@ -63,6 +63,11 @@ type
     function Rank: Integer;
     function IsSquare: Boolean;
     
+    { Matrix norms }
+    function NormOne: Double;     // Column sum norm
+    function NormInf: Double;     // Row sum norm
+    function NormFrobenius: Double; // Frobenius norm
+    
     { Matrix decompositions }
     function LU: TLUDecomposition;
     function QR: TQRDecomposition;
@@ -120,6 +125,11 @@ type
     
     { String representation }
     function ToString: string; override;
+    
+    { Additional implementations }
+    function NormOne: Double;
+    function NormInf: Double;
+    function NormFrobenius: Double;
   end;
 
 implementation
@@ -1061,6 +1071,50 @@ begin
     if I < GetRows - 1 then
       Result := Result + sLineBreak;
   end;
+end;
+
+function TMatrixKit.NormOne: Double;
+var
+  I, J: Integer;
+  ColSum: Double;
+begin
+  Result := 0;
+  for J := 0 to GetCols - 1 do
+  begin
+    ColSum := 0;
+    for I := 0 to GetRows - 1 do
+      ColSum := ColSum + Abs(FData[I, J]);
+    if ColSum > Result then
+      Result := ColSum;
+  end;
+end;
+
+function TMatrixKit.NormInf: Double;
+var
+  I, J: Integer;
+  RowSum: Double;
+begin
+  Result := 0;
+  for I := 0 to GetRows - 1 do
+  begin
+    RowSum := 0;
+    for J := 0 to GetCols - 1 do
+      RowSum := RowSum + Abs(FData[I, J]);
+    if RowSum > Result then
+      Result := RowSum;
+  end;
+end;
+
+function TMatrixKit.NormFrobenius: Double;
+var
+  I, J: Integer;
+  Sum: Double;
+begin
+  Sum := 0;
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      Sum := Sum + Sqr(FData[I, J]);
+  Result := Sqrt(Sum);
 end;
 
 end. 

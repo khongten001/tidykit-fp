@@ -28,6 +28,7 @@ type
     procedure Test16_EigenDecomposition;
     procedure Test17_SingularMatrix;
     procedure Test18_ToString;
+    procedure Test19_MatrixNorms;
   end;
 
 implementation
@@ -401,6 +402,38 @@ begin
               '|3.14159  0.1|';
   Actual := M.ToString;
   AssertEquals('Matrix string representation', Expected, Actual);
+end;
+
+procedure TMatrixTest.Test19_MatrixNorms;
+var
+  M: IMatrix;
+  Tolerance: Double;
+begin
+  M := TMatrixKit.CreateFromArray([
+    [1.0, -2.0],
+    [3.0,  4.0]
+  ]);
+  
+  Tolerance := 1E-12;
+  
+  // NormOne (maximum column sum)
+  // Column 1: |1| + |3| = 4
+  // Column 2: |-2| + |4| = 6
+  // Maximum = 6
+  AssertTrue('Matrix one norm', 
+    Abs(M.NormOne - 6.0) < Tolerance);
+  
+  // NormInf (maximum row sum)
+  // Row 1: |1| + |-2| = 3
+  // Row 2: |3| + |4| = 7
+  // Maximum = 7
+  AssertTrue('Matrix infinity norm', 
+    Abs(M.NormInf - 7.0) < Tolerance);
+  
+  // NormFrobenius (square root of sum of squares)
+  // sqrt(1² + (-2)² + 3² + 4²) = sqrt(30)
+  AssertTrue('Matrix Frobenius norm', 
+    Abs(M.NormFrobenius - Sqrt(30)) < Tolerance);
 end;
 
 initialization
