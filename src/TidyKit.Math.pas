@@ -15,9 +15,6 @@ type
   TSingleArray = array of Single;
   TExtendedArray = array of Extended;
   
-  { Matrix type used in matrix operations }
-  TMatrix = array of array of Double;
-
   { Pair of doubles used in various mathematical operations }
   TDoublePair = record
     Lower: Double;

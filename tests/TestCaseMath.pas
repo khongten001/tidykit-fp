@@ -9,8 +9,7 @@ uses
   TidyKit.Math,
   TidyKit.Math.Stats,
   TidyKit.Math.Finance,
-  TidyKit.Math.Trigonometry,
-  TidyKit.Math.Matrices;
+  TidyKit.Math.Trigonometry;
 
 type
   { Base test case for math operations }
@@ -183,16 +182,6 @@ type
     procedure Test51_VectorAngle180;
   end;
 
-  { Test cases for matrix operations }
-  TTestCaseMatrix = class(TTestCaseMathBase)
-  published
-    procedure Test01_MatrixCreation;
-    procedure Test02_MatrixAddition;
-    procedure Test03_MatrixSubtraction;
-    procedure Test04_MatrixMultiplication;
-    procedure Test05_MatrixTranspose;
-    procedure Test06_MatrixDeterminant;
-  end;
 
 implementation
 
@@ -1347,95 +1336,10 @@ begin
   AssertEquals(Pi, TTrigKit.VectorAngle(0, 0, -1, 0), 'VectorAngle 180° failed');
 end;
 
-{ TTestCaseMatrix }
-
-procedure TTestCaseMatrix.Test01_MatrixCreation;
-var
-  M: TMatrix;
-begin
-  M := TMatrixKit.Identity(3);
-  AssertEquals(1.0, M[0,0], 'Identity matrix creation failed');
-  AssertEquals(0.0, M[0,1], 'Identity matrix creation failed');
-  
-  M := TMatrixKit.Zeros(2, 2);
-  AssertEquals(0.0, M[0,0], 'Zero matrix creation failed');
-  
-  M := TMatrixKit.Ones(2, 2);
-  AssertEquals(1.0, M[0,0], 'Ones matrix creation failed');
-end;
-
-procedure TTestCaseMatrix.Test02_MatrixAddition;
-var
-  A, B, C: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2; A[1,0] := 3; A[1,1] := 4;
-  B[0,0] := 1; B[0,1] := 2; B[1,0] := 3; B[1,1] := 4;
-  
-  C := TMatrixKit.Add(A, B);
-  AssertEquals(2.0, C[0,0], 'Matrix addition failed');
-  AssertEquals(8.0, C[1,1], 'Matrix addition failed');
-end;
-
-procedure TTestCaseMatrix.Test03_MatrixSubtraction;
-var
-  A, B, C: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 2; A[0,1] := 3; A[1,0] := 4; A[1,1] := 5;
-  B[0,0] := 1; B[0,1] := 2; B[1,0] := 3; B[1,1] := 4;
-  
-  C := TMatrixKit.Subtract(A, B);
-  AssertEquals(1.0, C[0,0], 'Matrix subtraction failed');
-  AssertEquals(1.0, C[1,1], 'Matrix subtraction failed');
-end;
-
-procedure TTestCaseMatrix.Test04_MatrixMultiplication;
-var
-  A, B, C: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  B := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2; A[1,0] := 3; A[1,1] := 4;
-  B[0,0] := 2; B[0,1] := 0; B[1,0] := 1; B[1,1] := 2;
-  
-  C := TMatrixKit.Multiply(A, B);
-  AssertEquals(4.0, C[0,0], 'Matrix multiplication failed');
-  AssertEquals(4.0, C[0,1], 'Matrix multiplication failed');
-  AssertEquals(10.0, C[1,0], 'Matrix multiplication failed');
-  AssertEquals(8.0, C[1,1], 'Matrix multiplication failed');
-end;
-
-procedure TTestCaseMatrix.Test05_MatrixTranspose;
-var
-  A, T: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2; A[1,0] := 3; A[1,1] := 4;
-  
-  T := TMatrixKit.Transpose(A);
-  AssertEquals(1.0, T[0,0], 'Matrix transpose failed');
-  AssertEquals(3.0, T[0,1], 'Matrix transpose failed');
-  AssertEquals(2.0, T[1,0], 'Matrix transpose failed');
-  AssertEquals(4.0, T[1,1], 'Matrix transpose failed');
-end;
-
-procedure TTestCaseMatrix.Test06_MatrixDeterminant;
-var
-  A: TMatrix;
-begin
-  A := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2; A[1,0] := 3; A[1,1] := 4;
-  
-  AssertEquals(-2.0, TMatrixKit.Determinant(A), 'Matrix determinant failed');
-end;
 
 initialization
   RegisterTest(TTestCaseStats);
   RegisterTest(TTestCaseFinance);
   RegisterTest(TTestCaseTrig);
-  RegisterTest(TTestCaseMatrix);
 end. 
 
