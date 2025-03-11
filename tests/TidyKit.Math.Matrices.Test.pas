@@ -5,7 +5,7 @@ unit TidyKit.Math.Matrices.Test;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit.Math.Matrices;
+  Classes, SysUtils, fpcunit, testregistry, Math, TidyKit.Math.Matrices;
 
 type
   TMatrixTest = class(TTestCase)
@@ -29,6 +29,13 @@ type
     procedure Test17_SingularMatrix;
     procedure Test18_ToString;
     procedure Test19_MatrixNorms;
+    procedure Test20_SpecialMatrices;
+    procedure Test21_MatrixProperties;
+    procedure Test22_BlockOperations;
+    procedure Test23_ElementWiseOperations;
+    procedure Test24_EdgeCases;
+    procedure Test25_ErrorConditions;
+    procedure Test26_AdditionalProperties;
   end;
 
 implementation
@@ -434,6 +441,260 @@ begin
   // sqrt(1² + (-2)² + 3² + 4²) = sqrt(30)
   AssertTrue('Matrix Frobenius norm', 
     Abs(M.NormFrobenius - Sqrt(30)) < Tolerance);
+end;
+
+procedure TMatrixTest.Test20_SpecialMatrices;
+var
+  M: IMatrix;
+  Diagonal: array[0..2] of Double;
+begin
+  // Test band matrix
+  M := TMatrixKit.CreateBandMatrix(3, 1, 1);
+  AssertEquals('Band matrix size', 3, M.Rows);
+  AssertEquals('Band matrix [0,0]', 1.0, M.Values[0, 0]);
+  AssertEquals('Band matrix [0,1]', 1.0, M.Values[0, 1]);
+  AssertEquals('Band matrix [0,2]', 0.0, M.Values[0, 2]);
+  AssertEquals('Band matrix [1,0]', 1.0, M.Values[1, 0]);
+  
+  // Test symmetric matrix
+  M := TMatrixKit.CreateSymmetric([
+    [1.0, 2.0],
+    [2.0, 3.0]
+  ]);
+  AssertEquals('Symmetric matrix size', 2, M.Rows);
+  AssertEquals('Symmetric matrix [0,1]', 2.0, M.Values[0, 1]);
+  AssertEquals('Symmetric matrix [1,0]', 2.0, M.Values[1, 0]);
+  
+  // Test diagonal matrix
+  Diagonal[0] := 1.0;
+  Diagonal[1] := 2.0;
+  Diagonal[2] := 3.0;
+  M := TMatrixKit.CreateDiagonal(Diagonal);
+  AssertEquals('Diagonal matrix size', 3, M.Rows);
+  AssertEquals('Diagonal matrix [0,0]', 1.0, M.Values[0, 0]);
+  AssertEquals('Diagonal matrix [1,1]', 2.0, M.Values[1, 1]);
+  AssertEquals('Diagonal matrix [0,1]', 0.0, M.Values[0, 1]);
+  
+  // Test random matrix
+  M := TMatrixKit.CreateRandom(2, 2, 0.0, 1.0);
+  AssertEquals('Random matrix size', 2, M.Rows);
+  AssertTrue('Random matrix range', (M.Values[0, 0] >= 0.0) and (M.Values[0, 0] <= 1.0));
+end;
+
+procedure TMatrixTest.Test21_MatrixProperties;
+var
+  M: IMatrix;
+begin
+  // Test symmetric property
+  M := TMatrixKit.CreateSymmetric([
+    [1.0, 2.0],
+    [2.0, 3.0]
+  ]);
+  AssertTrue('IsSymmetric true case', M.IsSymmetric);
+  
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
+  AssertFalse('IsSymmetric false case', M.IsSymmetric);
+  
+  // Test diagonal property
+  M := TMatrixKit.CreateDiagonal([1.0, 2.0]);
+  AssertTrue('IsDiagonal true case', M.IsDiagonal);
+  
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [0.0, 3.0]
+  ]);
+  AssertFalse('IsDiagonal false case', M.IsDiagonal);
+  
+  // Test triangular property
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [0.0, 3.0]
+  ]);
+  AssertTrue('IsTriangular upper true case', M.IsTriangular(True));
+  AssertFalse('IsTriangular lower false case', M.IsTriangular(False));
+end;
+
+procedure TMatrixTest.Test22_BlockOperations;
+var
+  M, Sub: IMatrix;
+begin
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0, 3.0],
+    [4.0, 5.0, 6.0],
+    [7.0, 8.0, 9.0]
+  ]);
+  
+  // Test GetSubMatrix
+  Sub := M.GetSubMatrix(0, 0, 2, 2);
+  AssertEquals('SubMatrix size', 2, Sub.Rows);
+  AssertEquals('SubMatrix [0,0]', 1.0, Sub.Values[0, 0]);
+  AssertEquals('SubMatrix [1,1]', 5.0, Sub.Values[1, 1]);
+  
+  // Test SetSubMatrix
+  Sub := TMatrixKit.CreateFromArray([
+    [10.0, 11.0],
+    [12.0, 13.0]
+  ]);
+  M.SetSubMatrix(0, 0, Sub);
+  AssertEquals('SetSubMatrix [0,0]', 10.0, M.Values[0, 0]);
+  AssertEquals('SetSubMatrix [1,1]', 13.0, M.Values[1, 1]);
+end;
+
+procedure TMatrixTest.Test23_ElementWiseOperations;
+var
+  A, B, C: IMatrix;
+begin
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
+  
+  B := TMatrixKit.CreateFromArray([
+    [2.0, 3.0],
+    [4.0, 5.0]
+  ]);
+  
+  // Test element-wise multiplication
+  C := A.ElementWiseMultiply(B);
+  AssertEquals('ElementWiseMultiply [0,0]', 2.0, C.Values[0, 0]);
+  AssertEquals('ElementWiseMultiply [1,1]', 20.0, C.Values[1, 1]);
+  
+  // Test element-wise division
+  C := A.ElementWiseDivide(B);
+  AssertEquals('ElementWiseDivide [0,0]', 0.5, C.Values[0, 0]);
+  AssertEquals('ElementWiseDivide [1,1]', 0.8, C.Values[1, 1]);
+end;
+
+procedure TMatrixTest.Test24_EdgeCases;
+var
+  M: IMatrix;
+  I, J: Integer;
+  LargeSize: Integer;
+begin
+  // Test 1x1 matrix
+  M := TMatrixKit.CreateFromArray([[42.0]]);
+  AssertEquals('1x1 matrix size', 1, M.Rows);
+  AssertEquals('1x1 matrix value', 42.0, M.Values[0, 0]);
+  
+  // Test empty matrix (0x0)
+  M := TMatrixKit.Zeros(0, 0);
+  AssertEquals('Empty matrix rows', 0, M.Rows);
+  AssertEquals('Empty matrix cols', 0, M.Cols);
+  
+  // Test large matrix (100x100)
+  LargeSize := 100;
+  M := TMatrixKit.Zeros(LargeSize, LargeSize);
+  AssertEquals('Large matrix size', LargeSize, M.Rows);
+  
+  // Test extreme values
+  M := TMatrixKit.CreateFromArray([
+    [1.0E10, 1.0],
+    [1.0, -1.0E10]
+  ]);
+  AssertTrue('Extreme max value within tolerance', 
+    Abs(M.Values[0, 0] - 1.0E10) < 1.0E-6);
+  AssertTrue('Extreme min value within tolerance', 
+    Abs(M.Values[1, 1] - (-1.0E10)) < 1.0E-6);
+end;
+
+procedure TMatrixTest.Test25_ErrorConditions;
+var
+  M, Other: IMatrix;
+begin
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
+  
+  // Test invalid dimensions for operations
+  Other := TMatrixKit.CreateFromArray([[1.0]]);
+  try
+    M.Add(Other);
+    Fail('Should raise EMatrixError for mismatched dimensions in Add');
+  except
+    on E: EMatrixError do
+      ; // Expected exception
+  end;
+  
+  // Test element-wise division by zero
+  Other := TMatrixKit.Zeros(2, 2);
+  try
+    M.ElementWiseDivide(Other);
+    Fail('Should raise exception for division by zero');
+  except
+    on E: EMatrixError do
+      ; // Expected exception
+    on E: EZeroDivide do
+      ; // Also acceptable
+  end;
+  
+  // Test invalid submatrix access
+  try
+    M.GetSubMatrix(-1, 0, 1, 1);
+    Fail('Should raise EMatrixError for invalid submatrix indices');
+  except
+    on E: EMatrixError do
+      ; // Expected exception
+  end;
+  
+  // Test invalid matrix creation
+  try
+    M := TMatrixKit.CreateFromArray([
+      [1.0, 2.0],
+      [3.0]  // Different column count
+    ]);
+    Fail('Should raise EMatrixError for inconsistent row lengths');
+  except
+    on E: EMatrixError do
+      ; // Expected exception
+  end;
+end;
+
+procedure TMatrixTest.Test26_AdditionalProperties;
+var
+  M: IMatrix;
+  Tolerance: Double;
+begin
+  Tolerance := 1E-12;
+  
+  // Test positive definite matrix
+  M := TMatrixKit.CreateFromArray([
+    [2.0, -1.0],
+    [-1.0, 2.0]
+  ]);
+  AssertTrue('Should be positive definite', M.IsPositiveDefinite);
+  
+  // Test non-positive definite matrix
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [2.0, 1.0]
+  ]);
+  AssertFalse('Should not be positive definite', M.IsPositiveDefinite);
+  
+  // Test orthogonal matrix (rotation matrix)
+  M := TMatrixKit.CreateFromArray([
+    [0.0, -1.0],
+    [1.0, 0.0]
+  ]);
+  AssertTrue('Should be orthogonal', M.IsOrthogonal);
+  
+  // Test condition number
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 0.0],
+    [0.0, 2.0]
+  ]);
+  AssertTrue('Condition number should be approximately 2', 
+    Abs(M.Condition - 2.0) < 1.0E-3);  // More lenient tolerance
+  
+  // Test non-orthogonal matrix
+  M := TMatrixKit.CreateFromArray([
+    [1.0, 1.0],
+    [0.0, 1.0]
+  ]);
+  AssertFalse('Should not be orthogonal', M.IsOrthogonal);
 end;
 
 initialization

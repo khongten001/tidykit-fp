@@ -62,6 +62,12 @@ type
     function Trace: Double;
     function Rank: Integer;
     function IsSquare: Boolean;
+    function IsSymmetric: Boolean;
+    function IsDiagonal: Boolean;
+    function IsTriangular(Upper: Boolean = True): Boolean;
+    function IsPositiveDefinite: Boolean;
+    function IsOrthogonal: Boolean;
+    function Condition: Double;
     
     { Matrix norms }
     function NormOne: Double;     // Column sum norm
@@ -72,6 +78,14 @@ type
     function LU: TLUDecomposition;
     function QR: TQRDecomposition;
     function EigenDecomposition: TEigenDecomposition;
+    
+    { Block operations }
+    function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+    procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
+    
+    { Element-wise operations }
+    function ElementWiseMultiply(const Other: IMatrix): IMatrix;
+    function ElementWiseDivide(const Other: IMatrix): IMatrix;
     
     { String representation }
     function ToString: string;
@@ -130,6 +144,28 @@ type
     function NormOne: Double;
     function NormInf: Double;
     function NormFrobenius: Double;
+    
+    { Additional matrix constructors }
+    class function CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
+    class function CreateSymmetric(const Data: TMatrixArray): IMatrix;
+    class function CreateDiagonal(const Diagonal: array of Double): IMatrix;
+    class function CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
+    
+    { Additional matrix properties }
+    function IsSymmetric: Boolean;
+    function IsDiagonal: Boolean;
+    function IsTriangular(Upper: Boolean = True): Boolean;
+    function IsPositiveDefinite: Boolean;
+    function IsOrthogonal: Boolean;
+    function Condition: Double;
+    
+    { Block operations }
+    function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+    procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
+    
+    { Element-wise operations }
+    function ElementWiseMultiply(const Other: IMatrix): IMatrix;
+    function ElementWiseDivide(const Other: IMatrix): IMatrix;
   end;
 
 implementation
@@ -1115,6 +1151,256 @@ begin
     for J := 0 to GetCols - 1 do
       Sum := Sum + Sqr(FData[I, J]);
   Result := Sqrt(Sum);
+end;
+
+function TMatrixKit.IsSymmetric: Boolean;
+var
+  I, J: Integer;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      if FData[I, J] <> FData[J, I] then
+        Exit(False);
+  Exit(True);
+end;
+
+function TMatrixKit.IsDiagonal: Boolean;
+var
+  I, J: Integer;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      if (I <> J) and (FData[I, J] <> 0) then
+        Exit(False);
+  Exit(True);
+end;
+
+function TMatrixKit.IsTriangular(Upper: Boolean = True): Boolean;
+var
+  I, J: Integer;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      if (Upper and (I > J) and (FData[I, J] <> 0)) or
+         ((not Upper) and (I < J) and (FData[I, J] <> 0)) then
+        Exit(False);
+  Exit(True);
+end;
+
+function TMatrixKit.IsPositiveDefinite: Boolean;
+var
+  I, J: Integer;
+  Det: Double;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  Det := Determinant;
+  if Det <= 0 then
+    Exit(False);
+    
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      if (I = J) and (FData[I, J] <= 0) then
+        Exit(False);
+  Exit(True);
+end;
+
+function TMatrixKit.IsOrthogonal: Boolean;
+var
+  I, J: Integer;
+  IdentityMat: TMatrixKit;
+  Product: IMatrix;
+  Tolerance: Double;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  IdentityMat := TMatrixKit.Create(GetRows, GetRows);
+  try
+    // Initialize identity matrix
+    for I := 0 to GetRows - 1 do
+      IdentityMat.FData[I, I] := 1.0;
+    
+    // Check if A * A^T = I
+    Product := Multiply(Transpose);
+    
+    // Compare with identity matrix within tolerance
+    Tolerance := 1E-12;
+    for I := 0 to GetRows - 1 do
+      for J := 0 to GetCols - 1 do
+        if Abs(Product.Values[I, J] - IdentityMat.FData[I, J]) > Tolerance then
+          Exit(False);
+          
+    Result := True;
+  finally
+    IdentityMat.Free;
+  end;
+end;
+
+function TMatrixKit.Condition: Double;
+var
+  InverseMatrix: IMatrix;
+begin
+  if not IsSquare then
+    raise EMatrixError.Create('Condition number requires square matrix');
+    
+  try
+    InverseMatrix := Inverse;
+    Result := NormOne * InverseMatrix.NormOne;
+  except
+    on E: EMatrixError do
+      Result := MaxDouble;  // Return infinity for singular matrices
+  end;
+end;
+
+function TMatrixKit.GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if (StartRow < 0) or (StartRow + NumRows > GetRows) or
+     (StartCol < 0) or (StartCol + NumCols > GetCols) then
+    raise EMatrixError.Create('Invalid submatrix dimensions');
+    
+  Matrix := TMatrixKit.Create(NumRows, NumCols);
+  Result := Matrix;
+  for I := 0 to NumRows - 1 do
+    for J := 0 to NumCols - 1 do
+      Matrix.FData[I, J] := FData[StartRow + I, StartCol + J];
+end;
+
+procedure TMatrixKit.SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
+var
+  I, J: Integer;
+begin
+  if (StartRow < 0) or (StartRow + SubMatrix.Rows > GetRows) or
+     (StartCol < 0) or (StartCol + SubMatrix.Cols > GetCols) then
+    raise EMatrixError.Create('Invalid submatrix dimensions');
+    
+  for I := 0 to SubMatrix.Rows - 1 do
+    for J := 0 to SubMatrix.Cols - 1 do
+      FData[StartRow + I, StartCol + J] := SubMatrix.Values[I, J];
+end;
+
+function TMatrixKit.ElementWiseMultiply(const Other: IMatrix): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
+    raise EMatrixError.Create('Matrix dimensions must match for element-wise multiplication');
+    
+  Matrix := TMatrixKit.Create(GetRows, GetCols);
+  Result := Matrix;
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      Matrix.FData[I, J] := FData[I, J] * Other.Values[I, J];
+end;
+
+function TMatrixKit.ElementWiseDivide(const Other: IMatrix): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
+    raise EMatrixError.Create('Matrix dimensions must match for element-wise division');
+    
+  Matrix := TMatrixKit.Create(GetRows, GetCols);
+  Result := Matrix;
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      Matrix.FData[I, J] := FData[I, J] / Other.Values[I, J];
+end;
+
+class function TMatrixKit.CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if (Size <= 0) or (LowerBand < 0) or (UpperBand < 0) then
+    raise EMatrixError.Create('Invalid band matrix parameters');
+    
+  Matrix := TMatrixKit.Create(Size, Size);
+  Result := Matrix;
+  
+  for I := 0 to Size - 1 do
+    for J := 0 to Size - 1 do
+      if (J - I <= UpperBand) and (I - J <= LowerBand) then
+        Matrix.FData[I, J] := 1  // Default value for band elements
+      else
+        Matrix.FData[I, J] := 0;
+end;
+
+class function TMatrixKit.CreateSymmetric(const Data: TMatrixArray): IMatrix;
+var
+  I, J, Size: Integer;
+  Matrix: TMatrixKit;
+begin
+  Size := Length(Data);
+  if Size = 0 then
+    raise EMatrixError.Create('Cannot create symmetric matrix from empty array');
+    
+  if Length(Data[0]) <> Size then
+    raise EMatrixError.Create('Matrix must be square for symmetric construction');
+    
+  Matrix := TMatrixKit.Create(Size, Size);
+  Result := Matrix;
+  
+  for I := 0 to Size - 1 do
+  begin
+    if Length(Data[I]) <> Size then
+      raise EMatrixError.Create('All rows must have the same length');
+      
+    Matrix.FData[I, I] := Data[I, I];  // Diagonal elements
+    for J := 0 to I - 1 do
+    begin
+      Matrix.FData[I, J] := Data[I, J];
+      Matrix.FData[J, I] := Data[I, J];  // Mirror across diagonal
+    end;
+  end;
+end;
+
+class function TMatrixKit.CreateDiagonal(const Diagonal: array of Double): IMatrix;
+var
+  I, Size: Integer;
+  Matrix: TMatrixKit;
+begin
+  Size := Length(Diagonal);
+  if Size = 0 then
+    raise EMatrixError.Create('Cannot create diagonal matrix from empty array');
+    
+  Matrix := TMatrixKit.Create(Size, Size);
+  Result := Matrix;
+  
+  for I := 0 to Size - 1 do
+    Matrix.FData[I, I] := Diagonal[I];
+end;
+
+class function TMatrixKit.CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if (Rows <= 0) or (Cols <= 0) then
+    raise EMatrixError.Create('Invalid matrix dimensions');
+    
+  Matrix := TMatrixKit.Create(Rows, Cols);
+  Result := Matrix;
+  
+  Randomize;  // Initialize random number generator
+  for I := 0 to Rows - 1 do
+    for J := 0 to Cols - 1 do
+      Matrix.FData[I, J] := Min + Random * (Max - Min);
 end;
 
 end. 
