@@ -5,7 +5,12 @@ unit TidyKit.Math.Matrices.Test;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, Math, TidyKit.Math.Matrices;
+  Classes
+  , SysUtils
+  , fpcunit
+  , testregistry
+  , Math
+  , TidyKit.Math.Matrices; // alternatively, TidyKit
 
 type
   TMatrixTest = class(TTestCase)

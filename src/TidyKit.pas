@@ -59,14 +59,31 @@ type
   ERequestError = TidyKit.Request.ERequestError;
 
   { Re-export math types }
-  TMatrix = TidyKit.Math.TMatrix;
+  TDoubleArray = TidyKit.Math.TDoubleArray;
+  TIntegerArray = TidyKit.Math.TIntegerArray;
+  TSingleArray = TidyKit.Math.TSingleArray;
+  TExtendedArray = TidyKit.Math.TExtendedArray;
+  TDoublePair = TidyKit.Math.TDoublePair;
+
+  { Re-export the Matrix types }
+  IMatrix = TidyKit.Math.Matrices.IMatrix;
   TMatrixKit = TidyKit.Math.Matrices.TMatrixKit;
-  TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
-  TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
-  TStatsKit = TidyKit.Math.Stats.TStatsKit;
+  TMatrixArray = TidyKit.Math.Matrices.TMatrixArray;
+  TLUDecomposition = TidyKit.Math.Matrices.TLUDecomposition;
+  TQRDecomposition = TidyKit.Math.Matrices.TQRDecomposition;
+  TEigenDecomposition = TidyKit.Math.Matrices.TEigenDecomposition;
   EMatrixError = TidyKit.Math.Matrices.EMatrixError;
-  EStatsError = TidyKit.Math.Stats.EStatsError;
+
+  { Re-export the finance types }
+  TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
   EFinanceError = TidyKit.Math.Finance.EFinanceError;
+
+  { Re-export the trigonometry types }
+  TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
+
+  { Re-export the statistics types }
+  TStatsKit = TidyKit.Math.Stats.TStatsKit;
+  EStatsError = TidyKit.Math.Stats.EStatsError;
 
   { Re-export archive types }
   TArchiveKit = TidyKit.Archive.TArchiveKit;
@@ -151,6 +168,15 @@ function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 // Logger singleton accessor
 function Logger: TLogger;
 
+// Convenience functions for matrix operations
+function CreateMatrix(Rows, Cols: Integer): IMatrix;
+function CreateMatrixFromArray(const Data: TMatrixArray): IMatrix;
+function IdentityMatrix(Size: Integer): IMatrix;
+function ZerosMatrix(Rows, Cols: Integer): IMatrix;
+function OnesMatrix(Rows, Cols: Integer): IMatrix;
+function DiagonalMatrix(const Diagonal: array of Double): IMatrix;
+function SolveLinearSystem(const A, B: IMatrix): IMatrix;
+
 implementation
 
 function Logger: TLogger;
@@ -176,6 +202,42 @@ end;
 function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 begin
   Result := TidyKit.Logger.NameValuePair(AName, AValue);
+end;
+
+// Convenience functions for matrix operations
+function CreateMatrix(Rows, Cols: Integer): IMatrix;
+begin
+  Result := TMatrixKit.Create(Rows, Cols);
+end;
+
+function CreateMatrixFromArray(const Data: TMatrixArray): IMatrix;
+begin
+  Result := TMatrixKit.CreateFromArray(Data);
+end;
+
+function IdentityMatrix(Size: Integer): IMatrix;
+begin
+  Result := TMatrixKit.Identity(Size);
+end;
+
+function ZerosMatrix(Rows, Cols: Integer): IMatrix;
+begin
+  Result := TMatrixKit.Zeros(Rows, Cols);
+end;
+
+function OnesMatrix(Rows, Cols: Integer): IMatrix;
+begin
+  Result := TMatrixKit.Ones(Rows, Cols);
+end;
+
+function DiagonalMatrix(const Diagonal: array of Double): IMatrix;
+begin
+  Result := TMatrixKit.CreateDiagonal(Diagonal);
+end;
+
+function SolveLinearSystem(const A, B: IMatrix): IMatrix;
+begin
+  Result := A.Inverse.Multiply(B);
 end;
 
 initialization
