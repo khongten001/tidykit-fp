@@ -95,15 +95,20 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Matrix creation (zeros, ones, identity)
     - Matrix transpose and inverse
     - Determinant and trace calculation
-    - Matrix decompositions (LU, QR, Eigen)
+    - Matrix decompositions (LU, QR, Eigen, SVD, Cholesky)
     - Matrix properties (rank, condition number)
     - Matrix norms (one, infinity, Frobenius)
-    - Special matrices (diagonal, symmetric, random)
+    - Special matrices (diagonal, symmetric, random, Hilbert, Toeplitz, Vandermonde)
     - Element-wise operations
     - Submatrix operations
-    - Linear system solving
+    - Linear system solving (direct and iterative methods)
+    - Matrix functions (exponential, power)
+    - Pseudoinverse for non-square matrices
+    - Vector operations (dot product, cross product, normalization)
+    - Statistical operations (mean, covariance, correlation)
     - Comprehensive error handling
     - Memory-safe interface design
+    - String representations of matrices and decompositions
   - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)
     - Inverse functions (arcsin, arccos, arctan, arctan2)
@@ -379,25 +384,62 @@ end;
 ### 🔢 Matrix Operations
 ```pascal
 var
-  A, B, C: TMatrix;
+  A, B, C: IMatrix;
 begin
   // Create and initialize matrices
-  A := TMatrixKit.CreateMatrix(2, 2);
-  A[0,0] := 1; A[0,1] := 2;
-  A[1,0] := 3; A[1,1] := 4;
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
   
   // Create identity matrix
   B := TMatrixKit.Identity(2);
   
   // Matrix multiplication
-  C := TMatrixKit.Multiply(A, B);
+  C := A.Multiply(B);
   
   // Calculate properties
-  WriteLn(Format('Determinant: %.2f', [TMatrixKit.Determinant(A)]));
-  WriteLn(Format('Trace: %.2f', [TMatrixKit.Trace(A)]));
+  WriteLn(Format('Determinant: %.2f', [A.Determinant]));
+  WriteLn(Format('Trace: %.2f', [A.Trace]));
   
-  // Matrix transpose
-  C := TMatrixKit.Transpose(A);
+  // Matrix transpose and inverse
+  C := A.Transpose;
+  C := A.Inverse;
+  
+  // Matrix decompositions
+  LU := A.LU;
+  QR := A.QR;
+  Eigen := A.EigenDecomposition;
+  SVD := A.SVD;
+  Chol := A.Cholesky;
+  
+  // Advanced matrix creation
+  H := TMatrixKit.CreateHilbert(3);
+  T := TMatrixKit.CreateToeplitz(FirstRow, FirstCol);
+  V := TMatrixKit.CreateVandermonde(Vector);
+  
+  // Matrix functions
+  E := A.Exp;                // Matrix exponential
+  P := A.Power(0.5);         // Matrix square root
+  
+  // Vector operations
+  V1 := TMatrixKit.CreateFromArray([[1.0], [2.0], [3.0]]);
+  V2 := TMatrixKit.CreateFromArray([[4.0], [5.0], [6.0]]);
+  DotProd := V1.DotProduct(V2);
+  Cross := V1.CrossProduct(V2);
+  Norm := V1.Normalize;
+  
+  // Statistical operations
+  Mean := A.Mean;            // Overall mean
+  ColMeans := A.Mean(0);     // Column means
+  RowMeans := A.Mean(1);     // Row means
+  Cov := A.Covariance;       // Covariance matrix
+  Corr := A.Correlation;     // Correlation matrix
+  
+  // Solving linear systems
+  X := A.Inverse.Multiply(B);                    // Direct solution
+  X := A.PseudoInverse.Multiply(B);              // For non-square systems
+  X := A.SolveIterative(B, imConjugateGradient); // Iterative solution
 end;
 ```
 

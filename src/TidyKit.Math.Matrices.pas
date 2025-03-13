@@ -21,21 +21,46 @@ type
   IMatrix = interface;
 
 type
+  { Iteration methods for solving linear systems }
+  TIterativeMethod = (imConjugateGradient, imGaussSeidel, imJacobi);
+
+  { Eigenpair for power method }
+  TEigenpair = record
+    EigenValue: Double;
+    EigenVector: IMatrix; // Column vector
+    function ToString: string;
+  end;
+
   { Matrix decomposition records }
   TLUDecomposition = record
     L: IMatrix;
     U: IMatrix;
     P: array of Integer;
+    function ToString: string;
   end;
 
   TQRDecomposition = record
     Q: IMatrix;
     R: IMatrix;
+    function ToString: string;
   end;
 
   TEigenDecomposition = record
     EigenValues: array of Double;
     EigenVectors: IMatrix;
+    function ToString: string;
+  end;
+
+  TSVD = record
+    U: IMatrix;  // Orthogonal matrix
+    S: IMatrix;  // Diagonal matrix of singular values
+    V: IMatrix;  // Orthogonal matrix
+    function ToString: string;
+  end;
+
+  TCholeskyDecomposition = record
+    L: IMatrix;  // Lower triangular matrix
+    function ToString: string;
   end;
 
 type
@@ -56,6 +81,11 @@ type
     { Matrix transformations }
     function Transpose: IMatrix;
     function Inverse: IMatrix;
+    function PseudoInverse: IMatrix;
+    
+    { Matrix functions }
+    function Exp: IMatrix;  // Matrix exponential
+    function Power(exponent: Double): IMatrix;
     
     { Matrix properties }
     function Determinant: Double;
@@ -66,8 +96,22 @@ type
     function IsDiagonal: Boolean;
     function IsTriangular(Upper: Boolean = True): Boolean;
     function IsPositiveDefinite: Boolean;
+    function IsPositiveSemidefinite: Boolean;
     function IsOrthogonal: Boolean;
     function Condition: Double;
+    
+    { Vector operations }
+    function IsVector: Boolean;
+    function IsColumnVector: Boolean;
+    function IsRowVector: Boolean;
+    function DotProduct(const Other: IMatrix): Double;
+    function CrossProduct(const Other: IMatrix): IMatrix; // For 3D vectors
+    function Normalize: IMatrix;
+    
+    { Statistical operations }
+    function Mean(Axis: Integer = -1): IMatrix; // -1 = overall, 0 = rows, 1 = columns
+    function Covariance: IMatrix;
+    function Correlation: IMatrix;
     
     { Matrix norms }
     function NormOne: Double;     // Column sum norm
@@ -78,6 +122,13 @@ type
     function LU: TLUDecomposition;
     function QR: TQRDecomposition;
     function EigenDecomposition: TEigenDecomposition;
+    function SVD: TSVD;
+    function Cholesky: TCholeskyDecomposition;
+    
+    { Iterative methods }
+    function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
+                            MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+    function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
     
     { Block operations }
     function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
@@ -121,6 +172,10 @@ type
     class function Identity(const Size: Integer): IMatrix;
     class function Zeros(const Rows, Cols: Integer): IMatrix;
     class function Ones(const Rows, Cols: Integer): IMatrix;
+    class function CreateSparse(Rows, Cols: Integer): IMatrix;
+    class function CreateHilbert(Size: Integer): IMatrix;
+    class function CreateToeplitz(const FirstRow, FirstCol: TDoubleArray): IMatrix;
+    class function CreateVandermonde(const Vector: TDoubleArray): IMatrix;
     
     { Interface implementations }
     function Add(const Other: IMatrix): IMatrix;
@@ -129,6 +184,9 @@ type
     function ScalarMultiply(const Scalar: Double): IMatrix;
     function Transpose: IMatrix;
     function Inverse: IMatrix;
+    function PseudoInverse: IMatrix;
+    function Exp: IMatrix;
+    function Power(exponent: Double): IMatrix;
     function Determinant: Double;
     function Trace: Double;
     function Rank: Integer;
@@ -136,6 +194,8 @@ type
     function LU: TLUDecomposition;
     function QR: TQRDecomposition;
     function EigenDecomposition: TEigenDecomposition;
+    function SVD: TSVD;
+    function Cholesky: TCholeskyDecomposition;
     
     { String representation }
     function ToString: string; override;
@@ -151,11 +211,30 @@ type
     class function CreateDiagonal(const Diagonal: array of Double): IMatrix;
     class function CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
     
+    { Vector operations }
+    function IsVector: Boolean;
+    function IsColumnVector: Boolean;
+    function IsRowVector: Boolean;
+    function DotProduct(const Other: IMatrix): Double;
+    function CrossProduct(const Other: IMatrix): IMatrix;
+    function Normalize: IMatrix;
+    
+    { Statistical operations }
+    function Mean(Axis: Integer = -1): IMatrix;
+    function Covariance: IMatrix;
+    function Correlation: IMatrix;
+    
+    { Iterative methods }
+    function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient;
+                            MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+    function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
+    
     { Additional matrix properties }
     function IsSymmetric: Boolean;
     function IsDiagonal: Boolean;
     function IsTriangular(Upper: Boolean = True): Boolean;
     function IsPositiveDefinite: Boolean;
+    function IsPositiveSemidefinite: Boolean;
     function IsOrthogonal: Boolean;
     function Condition: Double;
     
@@ -169,6 +248,15 @@ type
   end;
 
 implementation
+
+// Insert this function at the beginning of the implementation section
+function SignWithMagnitude(const Magnitude, Value: Double): Double;
+begin
+  if Value >= 0 then
+    Result := Abs(Magnitude)
+  else
+    Result := -Abs(Magnitude);
+end;
 
 { TMatrixKit }
 
@@ -255,11 +343,15 @@ end;
 
 function TMatrixKit.GetValue(Row, Col: Integer): Double;
 begin
+  if (Row < 0) or (Row >= GetRows) or (Col < 0) or (Col >= GetCols) then
+    raise EMatrixError.Create(Format('Matrix index out of bounds: [%d,%d]', [Row, Col]));
   Result := FData[Row, Col];
 end;
 
 procedure TMatrixKit.SetValue(Row, Col: Integer; const Value: Double);
 begin
+  if (Row < 0) or (Row >= GetRows) or (Col < 0) or (Col >= GetCols) then
+    raise EMatrixError.Create(Format('Matrix index out of bounds: [%d,%d]', [Row, Col]));
   FData[Row, Col] := Value;
 end;
 
@@ -269,13 +361,13 @@ var
   Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
-    raise EMatrixError.Create('Matrix dimensions must match for addition');
+    raise EMatrixError.Create('Matrix dimensions do not match for addition');
     
   Matrix := TMatrixKit.Create(GetRows, GetCols);
-  Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
-      Matrix.FData[I, J] := FData[I, J] + Other.Values[I, J];
+      Matrix.FData[I, J] := FData[I, J] + Other.GetValue(I, J);
+  Result := Matrix;
 end;
 
 function TMatrixKit.Subtract(const Other: IMatrix): IMatrix;
@@ -284,34 +376,34 @@ var
   Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
-    raise EMatrixError.Create('Matrix dimensions must match for subtraction');
+    raise EMatrixError.Create('Matrix dimensions do not match for subtraction');
     
   Matrix := TMatrixKit.Create(GetRows, GetCols);
-  Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
-      Matrix.FData[I, J] := FData[I, J] - Other.Values[I, J];
+      Matrix.FData[I, J] := FData[I, J] - Other.GetValue(I, J);
+  Result := Matrix;
 end;
 
 function TMatrixKit.Multiply(const Other: IMatrix): IMatrix;
 var
   I, J, K: Integer;
-  Sum: Double;
   Matrix: TMatrixKit;
+  Sum: Double;
 begin
   if GetCols <> Other.Rows then
-    raise EMatrixError.Create('Invalid matrix dimensions for multiplication');
+    raise EMatrixError.Create('Matrix dimensions do not match for multiplication');
     
   Matrix := TMatrixKit.Create(GetRows, Other.Cols);
-  Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to Other.Cols - 1 do
     begin
       Sum := 0;
       for K := 0 to GetCols - 1 do
-        Sum := Sum + FData[I, K] * Other.Values[K, J];
+        Sum := Sum + FData[I, K] * Other.GetValue(K, J);
       Matrix.FData[I, J] := Sum;
     end;
+  Result := Matrix;
 end;
 
 function TMatrixKit.ScalarMultiply(const Scalar: Double): IMatrix;
@@ -356,9 +448,9 @@ var
     Sign: Double;
   begin
     if Size = 1 then
-      Result := M.Values[0, 0]
+      Result := M.GetValue(0, 0)
     else if Size = 2 then
-      Result := M.Values[0, 0] * M.Values[1, 1] - M.Values[0, 1] * M.Values[1, 0]
+      Result := M.GetValue(0, 0) * M.GetValue(1, 1) - M.GetValue(0, 1) * M.GetValue(1, 0)
     else
     begin
       Result := 0;
@@ -371,7 +463,7 @@ var
           for J := 0 to Size - 1 do
             if J <> K then
             begin
-              SubMatrix.FData[I - 1, L] := M.Values[I, J];
+              SubMatrix.FData[I - 1, L] := M.GetValue(I, J);
               Inc(L);
             end;
           L := 0;
@@ -382,7 +474,7 @@ var
         else
           Sign := -1;
           
-        Result := Result + Sign * M.Values[0, K] * MinorDeterminant(SubMatrix, Size - 1);
+        Result := Result + Sign * M.GetValue(0, K) * MinorDeterminant(SubMatrix, Size - 1);
       end;
     end;
   end;
@@ -966,8 +1058,8 @@ begin
   begin
     Result[I] := b[I];
     for J := I + 1 to N - 1 do
-      Result[I] := Result[I] - Upper.Values[I, J] * Result[J];
-    Result[I] := Result[I] / Upper.Values[I, I];
+      Result[I] := Result[I] - Upper.GetValue(I, J) * Result[J];
+    Result[I] := Result[I] / Upper.GetValue(I, I);
   end;
 end;
 
@@ -983,8 +1075,8 @@ begin
   begin
     Result[I] := b[I];
     for J := 0 to I - 1 do
-      Result[I] := Result[I] - Lower.Values[I, J] * Result[J];
-    Result[I] := Result[I] / Lower.Values[I, I];
+      Result[I] := Result[I] - Lower.GetValue(I, J) * Result[J];
+    Result[I] := Result[I] / Lower.GetValue(I, I);
   end;
 end;
 
@@ -1215,6 +1307,25 @@ begin
   Exit(True);
 end;
 
+function TMatrixKit.IsPositiveSemidefinite: Boolean;
+var
+  I, J: Integer;
+  Det: Double;
+begin
+  if not IsSquare then
+    Exit(False);
+    
+  Det := Determinant;
+  if Det < 0 then
+    Exit(False);
+    
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      if (I = J) and (FData[I, J] < 0) then
+        Exit(False);
+  Exit(True);
+end;
+
 function TMatrixKit.IsOrthogonal: Boolean;
 var
   I, J: Integer;
@@ -1238,7 +1349,7 @@ begin
     Tolerance := 1E-12;
     for I := 0 to GetRows - 1 do
       for J := 0 to GetCols - 1 do
-        if Abs(Product.Values[I, J] - IdentityMat.FData[I, J]) > Tolerance then
+        if Abs(Product.GetValue(I, J) - IdentityMat.FData[I, J]) > Tolerance then
           Exit(False);
           
     Result := True;
@@ -1289,7 +1400,7 @@ begin
     
   for I := 0 to SubMatrix.Rows - 1 do
     for J := 0 to SubMatrix.Cols - 1 do
-      FData[StartRow + I, StartCol + J] := SubMatrix.Values[I, J];
+      FData[StartRow + I, StartCol + J] := SubMatrix.GetValue(I, J);
 end;
 
 function TMatrixKit.ElementWiseMultiply(const Other: IMatrix): IMatrix;
@@ -1298,13 +1409,13 @@ var
   Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
-    raise EMatrixError.Create('Matrix dimensions must match for element-wise multiplication');
+    raise EMatrixError.Create('Matrix dimensions do not match for element-wise multiplication');
     
   Matrix := TMatrixKit.Create(GetRows, GetCols);
-  Result := Matrix;
   for I := 0 to GetRows - 1 do
     for J := 0 to GetCols - 1 do
-      Matrix.FData[I, J] := FData[I, J] * Other.Values[I, J];
+      Matrix.FData[I, J] := FData[I, J] * Other.GetValue(I, J);
+  Result := Matrix;
 end;
 
 function TMatrixKit.ElementWiseDivide(const Other: IMatrix): IMatrix;
@@ -1313,13 +1424,18 @@ var
   Matrix: TMatrixKit;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
-    raise EMatrixError.Create('Matrix dimensions must match for element-wise division');
+    raise EMatrixError.Create('Matrix dimensions do not match for element-wise division');
     
   Matrix := TMatrixKit.Create(GetRows, GetCols);
-  Result := Matrix;
-  for I := 0 to GetRows - 1 do
-    for J := 0 to GetCols - 1 do
-      Matrix.FData[I, J] := FData[I, J] / Other.Values[I, J];
+  try
+    for I := 0 to GetRows - 1 do
+      for J := 0 to GetCols - 1 do
+        Matrix.FData[I, J] := FData[I, J] / Other.GetValue(I, J);
+    Result := Matrix;
+  except
+    Matrix.Free;
+    raise;
+  end;
 end;
 
 class function TMatrixKit.CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
@@ -1401,6 +1517,680 @@ begin
   for I := 0 to Rows - 1 do
     for J := 0 to Cols - 1 do
       Matrix.FData[I, J] := Min + Random * (Max - Min);
+end;
+
+function TMatrixKit.IsVector: Boolean;
+begin
+  Result := (GetRows = 1) or (GetCols = 1);
+end;
+
+function TMatrixKit.IsColumnVector: Boolean;
+begin
+  Result := GetCols = 1;
+end;
+
+function TMatrixKit.IsRowVector: Boolean;
+begin
+  Result := GetRows = 1;
+end;
+
+function TMatrixKit.DotProduct(const Other: IMatrix): Double;
+var
+  I: Integer;
+  Sum: Double;
+begin
+  if not (IsVector and Other.IsVector) then
+    raise EMatrixError.Create('Dot product requires both operands to be vectors');
+    
+  // Case 1: Both are row vectors
+  if IsRowVector and Other.IsRowVector and (GetCols = Other.Cols) then
+  begin
+    Sum := 0;
+    for I := 0 to GetCols - 1 do
+      Sum := Sum + FData[0, I] * Other.GetValue(0, I);
+    Result := Sum;
+  end
+  // Case 2: Both are column vectors
+  else if IsColumnVector and Other.IsColumnVector and (GetRows = Other.Rows) then
+  begin
+    Sum := 0;
+    for I := 0 to GetRows - 1 do
+      Sum := Sum + FData[I, 0] * Other.GetValue(I, 0);
+    Result := Sum;
+  end
+  // Case 3: First is row vector, second is column vector
+  else if IsRowVector and Other.IsColumnVector and (GetCols = Other.Rows) then
+  begin
+    Sum := 0;
+    for I := 0 to GetCols - 1 do
+      Sum := Sum + FData[0, I] * Other.GetValue(I, 0);
+    Result := Sum;
+  end
+  // Case 4: First is column vector, second is row vector
+  else if IsColumnVector and Other.IsRowVector and (GetRows = Other.Cols) then
+  begin
+    Sum := 0;
+    for I := 0 to GetRows - 1 do
+      Sum := Sum + FData[I, 0] * Other.GetValue(0, I);
+    Result := Sum;
+  end
+  else
+    raise EMatrixError.Create('Vector dimensions do not match for dot product');
+end;
+
+function TMatrixKit.CrossProduct(const Other: IMatrix): IMatrix;
+var
+  ResultMatrix: TMatrixKit;
+begin
+  // Only defined for 3D vectors
+  if not (IsColumnVector and Other.IsColumnVector and (GetRows = 3) and (Other.Rows = 3)) then
+    raise EMatrixError.Create('Cross product requires two 3D column vectors');
+    
+  ResultMatrix := TMatrixKit.Create(3, 1);
+  ResultMatrix.SetValue(0, 0, FData[1, 0] * Other.GetValue(2, 0) - FData[2, 0] * Other.GetValue(1, 0));
+  ResultMatrix.SetValue(1, 0, FData[2, 0] * Other.GetValue(0, 0) - FData[0, 0] * Other.GetValue(2, 0));
+  ResultMatrix.SetValue(2, 0, FData[0, 0] * Other.GetValue(1, 0) - FData[1, 0] * Other.GetValue(0, 0));
+  
+  Result := ResultMatrix;
+end;
+
+function TMatrixKit.Normalize: IMatrix;
+var
+  I: Integer;
+  Norm: Double;
+  ResultMatrix: TMatrixKit;
+begin
+  WriteLn('Starting Normalize');
+  
+  if not IsVector then
+    raise EMatrixError.Create('Normalize requires a vector');
+    
+  Norm := 0;
+  
+  // Calculate Euclidean norm
+  if IsColumnVector then
+  begin
+    for I := 0 to GetRows - 1 do
+      Norm := Norm + Sqr(FData[I, 0]);
+    
+    if Norm < 1E-12 then
+      raise EMatrixError.Create('Cannot normalize zero vector');
+    
+    Norm := Sqrt(Norm);
+    
+    // Create normalized vector
+    ResultMatrix := TMatrixKit.Create(GetRows, 1);
+    for I := 0 to GetRows - 1 do
+      ResultMatrix.FData[I, 0] := FData[I, 0] / Norm;
+  end
+  else // IsRowVector
+  begin
+    for I := 0 to GetCols - 1 do
+      Norm := Norm + Sqr(FData[0, I]);
+    
+    if Norm < 1E-12 then
+      raise EMatrixError.Create('Cannot normalize zero vector');
+    
+    Norm := Sqrt(Norm);
+    
+    // Create normalized vector
+    ResultMatrix := TMatrixKit.Create(1, GetCols);
+    for I := 0 to GetCols - 1 do
+      ResultMatrix.FData[0, I] := FData[0, I] / Norm;
+  end;
+  
+  Result := ResultMatrix;
+  
+  WriteLn('Finished Normalize');
+end;
+
+function TMatrixKit.Mean(Axis: Integer = -1): IMatrix;
+var
+  I, J: Integer;
+  Sum: Double;
+  ResultMatrix: TMatrixKit;
+begin
+  if Axis < 0 then
+  begin
+    ResultMatrix := TMatrixKit.Create(1, 1);
+    Sum := 0;
+    for I := 0 to GetRows - 1 do
+      for J := 0 to GetCols - 1 do
+        Sum := Sum + FData[I, J];
+    ResultMatrix.SetValue(0, 0, Sum / (GetRows * GetCols));
+    Result := ResultMatrix;
+  end
+  else if Axis = 0 then
+  begin
+    ResultMatrix := TMatrixKit.Create(1, GetCols);
+    for J := 0 to GetCols - 1 do
+    begin
+      Sum := 0;
+      for I := 0 to GetRows - 1 do
+        Sum := Sum + FData[I, J];
+      ResultMatrix.SetValue(0, J, Sum / GetRows);
+    end;
+    Result := ResultMatrix;
+  end
+  else if Axis = 1 then
+  begin
+    ResultMatrix := TMatrixKit.Create(GetRows, 1);
+    for I := 0 to GetRows - 1 do
+    begin
+      Sum := 0;
+      for J := 0 to GetCols - 1 do
+        Sum := Sum + FData[I, J];
+      ResultMatrix.SetValue(I, 0, Sum / GetCols);
+    end;
+    Result := ResultMatrix;
+  end
+  else
+    raise EMatrixError.Create('Invalid axis for mean calculation');
+end;
+
+function TMatrixKit.Covariance: IMatrix;
+var
+  I, J, K: Integer;
+  MeanMatrix: IMatrix;
+  ResultMatrix: TMatrixKit;
+  ColMeans: array of Double;
+begin
+  if (GetRows <= 1) or (GetCols <= 1) then
+    raise EMatrixError.Create('Covariance requires at least two elements');
+    
+  // Get column means
+  MeanMatrix := Mean(0);  // Column means (1 x Cols matrix)
+  SetLength(ColMeans, GetCols);
+  for J := 0 to GetCols - 1 do
+    ColMeans[J] := MeanMatrix.GetValue(0, J);
+    
+  ResultMatrix := TMatrixKit.Create(GetCols, GetCols);
+  
+  // Compute covariance matrix
+  for I := 0 to GetCols - 1 do
+    for J := 0 to GetCols - 1 do
+    begin
+      ResultMatrix.SetValue(I, J, 0.0);
+      for K := 0 to GetRows - 1 do
+        ResultMatrix.SetValue(I, J, ResultMatrix.GetValue(I, J) + 
+          (FData[K, I] - ColMeans[I]) * (FData[K, J] - ColMeans[J]));
+      ResultMatrix.SetValue(I, J, ResultMatrix.GetValue(I, J) / (GetRows - 1));
+    end;
+    
+  Result := ResultMatrix;
+end;
+
+function TMatrixKit.Correlation: IMatrix;
+var
+  I, J: Integer;
+  CovMatrix: IMatrix;
+  ResultMatrix: TMatrixKit;
+  StdDev: array of Double;
+begin
+  if (GetRows <= 1) or (GetCols <= 1) then
+    raise EMatrixError.Create('Correlation requires at least two elements');
+    
+  CovMatrix := Covariance;
+  ResultMatrix := TMatrixKit.Create(GetCols, GetCols);
+  
+  // Get standard deviations from diagonal of covariance matrix
+  SetLength(StdDev, GetCols);
+  for I := 0 to GetCols - 1 do
+    StdDev[I] := Sqrt(CovMatrix.GetValue(I, I));
+  
+  // Compute correlation matrix
+  for I := 0 to GetCols - 1 do
+    for J := 0 to GetCols - 1 do
+      if (StdDev[I] > 0) and (StdDev[J] > 0) then
+        ResultMatrix.SetValue(I, J, CovMatrix.GetValue(I, J) / (StdDev[I] * StdDev[J]))
+      else
+        ResultMatrix.SetValue(I, J, 0.0);
+        
+  Result := ResultMatrix;
+end;
+
+function TMatrixKit.SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
+                            MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+begin
+  // Implementation of iterative method
+  // This is a placeholder and should be replaced with the actual implementation
+  raise EMatrixError.Create('Iterative method not implemented');
+end;
+
+function TMatrixKit.PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
+begin
+  // Implementation of power method
+  // This is a placeholder and should be replaced with the actual implementation
+  raise EMatrixError.Create('Power method not implemented');
+end;
+
+class function TMatrixKit.CreateSparse(Rows, Cols: Integer): IMatrix;
+begin
+  // For now, we'll just create a regular matrix filled with zeros
+  // In a real implementation, this would use a specialized sparse matrix data structure
+  Result := TMatrixKit.Zeros(Rows, Cols);
+end;
+
+class function TMatrixKit.CreateHilbert(Size: Integer): IMatrix;
+var
+  I, J: Integer;
+  Matrix: TMatrixKit;
+begin
+  if Size <= 0 then
+    raise EMatrixError.Create('Hilbert matrix size must be positive');
+    
+  Matrix := TMatrixKit.Create(Size, Size);
+  Result := Matrix;
+  
+  for I := 0 to Size - 1 do
+    for J := 0 to Size - 1 do
+      Matrix.FData[I, J] := 1.0 / (I + J + 1);
+end;
+
+class function TMatrixKit.CreateToeplitz(const FirstRow, FirstCol: TDoubleArray): IMatrix;
+var
+  I, J: Integer;
+  Rows, Cols: Integer;
+  Matrix: TMatrixKit;
+begin
+  Rows := Length(FirstCol);
+  Cols := Length(FirstRow);
+  
+  if (Rows = 0) or (Cols = 0) then
+    raise EMatrixError.Create('First row and column arrays cannot be empty');
+    
+  // First elements of row and column must match
+  if FirstRow[0] <> FirstCol[0] then
+    raise EMatrixError.Create('First elements of row and column must be the same');
+    
+  Matrix := TMatrixKit.Create(Rows, Cols);
+  Result := Matrix;
+  
+  for I := 0 to Rows - 1 do
+    for J := 0 to Cols - 1 do
+      if J - I >= 0 then
+        Matrix.FData[I, J] := FirstRow[J - I]
+      else
+        Matrix.FData[I, J] := FirstCol[I - J];
+end;
+
+class function TMatrixKit.CreateVandermonde(const Vector: TDoubleArray): IMatrix;
+var
+  I, J, N: Integer;
+  Matrix: TMatrixKit;
+begin
+  N := Length(Vector);
+  if N = 0 then
+    raise EMatrixError.Create('Vector cannot be empty');
+    
+  Matrix := TMatrixKit.Create(N, N);
+  Result := Matrix;
+  
+  for I := 0 to N - 1 do
+    for J := 0 to N - 1 do
+      Matrix.FData[I, J] := Math.Power(Vector[I], J);
+end;
+
+function TMatrixKit.SVD: TSVD;
+var
+  I, J, K: Integer;
+  A, U, S, V: TMatrixKit;
+  QRDecomp: TQRDecomposition;
+  Eigen: TEigenDecomposition;
+  ATA: IMatrix;
+begin
+  // For a matrix A, SVD is A = U * S * V^T
+  // where U and V are orthogonal matrices and S is a diagonal matrix of singular values
+  
+  // Create working matrices
+  A := TMatrixKit.Create(GetRows, GetCols);
+  U := TMatrixKit.Create(GetRows, GetRows);
+  S := TMatrixKit.Create(GetRows, GetCols);
+  V := TMatrixKit.Create(GetCols, GetCols);
+  
+  try
+    // Copy original matrix to A
+    for I := 0 to GetRows - 1 do
+      for J := 0 to GetCols - 1 do
+        A.FData[I, J] := FData[I, J];
+    
+    // Compute V and singular values using eigendecomposition of A^T * A
+    ATA := Transpose.Multiply(Self);
+    Eigen := ATA.EigenDecomposition;
+    
+    // V is the matrix of eigenvectors
+    for I := 0 to GetCols - 1 do
+      for J := 0 to GetCols - 1 do
+        V.FData[I, J] := Eigen.EigenVectors.GetValue(I, J);
+    
+    // S contains singular values (square roots of eigenvalues)
+    for I := 0 to Min(GetRows, GetCols) - 1 do
+      if Eigen.EigenValues[I] > 0 then
+        S.FData[I, I] := Sqrt(Eigen.EigenValues[I]);
+    
+    // Compute U = A * V * S^(-1)
+    // For each column of U
+    for J := 0 to Min(GetRows, GetCols) - 1 do
+    begin
+      if S.FData[J, J] > 1E-10 then
+      begin
+        // Compute U_j = A * V_j / sigma_j
+        for I := 0 to GetRows - 1 do
+        begin
+          U.FData[I, J] := 0;
+          for K := 0 to GetCols - 1 do
+            U.FData[I, J] := U.FData[I, J] + A.FData[I, K] * V.FData[K, J];
+          U.FData[I, J] := U.FData[I, J] / S.FData[J, J];
+        end;
+      end
+      else
+      begin
+        // Handle zero singular values
+        for I := 0 to GetRows - 1 do
+          U.FData[I, J] := 0;
+        if J < GetRows then
+          U.FData[J, J] := 1;
+      end;
+    end;
+    
+    // Complete U with orthogonal basis if needed
+    if GetRows > GetCols then
+    begin
+      // Use QR decomposition to complete the orthogonal basis
+      QRDecomp := A.QR;
+      for J := GetCols to GetRows - 1 do
+        for I := 0 to GetRows - 1 do
+          U.FData[I, J] := QRDecomp.Q.GetValue(I, J);
+    end;
+    
+    // Set result
+    Result.U := U;
+    Result.S := S;
+    Result.V := V;
+  except
+    // Free matrices in case of exception
+    A.Free;
+    U.Free;
+    S.Free;
+    V.Free;
+    raise;
+  end;
+  
+  // Free temporary matrix A
+  A.Free;
+end;
+
+function TMatrixKit.Cholesky: TCholeskyDecomposition;
+var
+  I, J, K: Integer;
+  Sum: Double;
+  L: TMatrixKit;
+begin
+  if not IsSquare then
+    raise EMatrixError.Create('Cholesky decomposition requires square matrix');
+    
+  if not IsPositiveDefinite then
+    raise EMatrixError.Create('Cholesky decomposition requires positive definite matrix');
+  
+  L := TMatrixKit.Create(GetRows, GetRows);
+  
+  for I := 0 to GetRows - 1 do
+  begin
+    for J := 0 to I do
+    begin
+      Sum := 0;
+      
+      if J = I then  // Diagonal elements
+      begin
+        for K := 0 to J - 1 do
+          Sum := Sum + Sqr(L.FData[J, K]);
+          
+        L.FData[J, J] := Sqrt(FData[J, J] - Sum);
+      end
+      else  // Lower triangular elements
+      begin
+        for K := 0 to J - 1 do
+          Sum := Sum + L.FData[I, K] * L.FData[J, K];
+          
+        L.FData[I, J] := (FData[I, J] - Sum) / L.FData[J, J];
+      end;
+    end;
+  end;
+  
+  Result.L := L;
+end;
+
+function TMatrixKit.PseudoInverse: IMatrix;
+var
+  SVDResult: TSVD;
+  SInverse: TMatrixKit;
+  I: Integer;
+  Tolerance: Double;
+begin
+  // Compute SVD: A = U * S * V^T
+  SVDResult := SVD;
+  
+  // Create inverse of S by inverting non-zero singular values
+  SInverse := TMatrixKit.Create(GetCols, GetRows);
+  try
+    Tolerance := 1E-12 * SVDResult.S.GetValue(0, 0);  // Relative to largest singular value
+    
+    for I := 0 to Min(GetRows, GetCols) - 1 do
+      if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
+        SInverse.FData[I, I] := 1.0 / SVDResult.S.GetValue(I, I);
+    
+    // Compute pseudoinverse: A^+ = V * S^+ * U^T
+    Result := SVDResult.V.Multiply(SInverse).Multiply(SVDResult.U.Transpose);
+  finally
+    // Free SInverse matrix
+    SInverse.Free;
+  end;
+end;
+
+function TMatrixKit.Exp: IMatrix;
+var
+  I, J, K, N: Integer;
+  Factorial: Double;
+  Term, Sum: IMatrix;
+begin
+  if not IsSquare then
+    raise EMatrixError.Create('Matrix exponential requires square matrix');
+  
+  // Initialize result to identity matrix
+  Result := TMatrixKit.Identity(GetRows);
+  
+  // Initialize first term (A^1 / 1!)
+  Term := Self;
+  
+  // Use Taylor series: e^A = I + A + A^2/2! + A^3/3! + ...
+  N := 20;  // Number of terms in the series
+  
+  for K := 1 to N do
+  begin
+    // Compute factorial
+    Factorial := 1.0;
+    for I := 2 to K do
+      Factorial := Factorial * I;
+    
+    // Add term to sum
+    Sum := Term.ScalarMultiply(1.0 / Factorial);
+    Result := Result.Add(Sum);
+    
+    // Compute next term: A^(k+1)
+    if K < N then
+      Term := Term.Multiply(Self);
+  end;
+end;
+
+function TMatrixKit.Power(exponent: Double): IMatrix;
+var
+  I, J: Integer;
+  EigenDecomp: TEigenDecomposition;
+  D, V, VInv: TMatrixKit;
+  SVDResult: TSVD;
+  SInverse: TMatrixKit;
+  HasNegativeEigenvalues: Boolean;
+  EigenMatrix: TMatrixKit;
+begin
+  if not IsSquare then
+    raise EMatrixError.Create('Matrix power requires square matrix');
+    
+  if Frac(exponent) = 0 then
+  begin
+    // Integer exponent
+    if exponent = 0 then
+      Result := TMatrixKit.Identity(GetRows)
+    else if exponent > 0 then
+    begin
+      // Positive integer power
+      Result := Self;
+      for I := 2 to Round(exponent) do
+        Result := Result.Multiply(Self);
+    end
+    else
+    begin
+      // Negative integer power
+      Result := Inverse;
+      for I := 2 to Abs(Round(exponent)) do
+        Result := Result.Multiply(Inverse);
+    end;
+  end
+  else
+  begin
+    // Non-integer exponent
+    try
+      // First try eigendecomposition: A^p = V * D^p * V^(-1)
+      EigenDecomp := EigenDecomposition;
+      
+      // Check if there are negative eigenvalues
+      HasNegativeEigenvalues := False;
+      for I := 0 to GetRows - 1 do
+        if EigenDecomp.EigenValues[I] < 0 then
+        begin
+          HasNegativeEigenvalues := True;
+          Break;
+        end;
+        
+      if HasNegativeEigenvalues then
+      begin
+        // For matrices with negative eigenvalues, use SVD: A = U * S * V^T
+        // Then A^p = U * S^p * V^T
+        SVDResult := SVD;
+        
+        // Create S^p
+        SInverse := TMatrixKit.Create(GetRows, GetRows);
+        for I := 0 to GetRows - 1 do
+          if SVDResult.S.GetValue(I, I) > 1E-10 then
+            SInverse.FData[I, I] := Math.Power(SVDResult.S.GetValue(I, I), exponent);
+            
+        // Compute A^p = U * S^p * V^T
+        Result := SVDResult.U.Multiply(SInverse).Multiply(SVDResult.V.Transpose);
+      end
+      else
+      begin
+        // Create diagonal matrix D^p
+        D := TMatrixKit.Create(GetRows, GetRows);
+        for I := 0 to GetRows - 1 do
+          D.SetValue(I, I, Math.Power(EigenDecomp.EigenValues[I], exponent));
+        
+        // Get eigenvectors matrix
+        EigenMatrix := TMatrixKit.Create(GetRows, GetRows);
+        for I := 0 to GetRows - 1 do
+          for J := 0 to GetRows - 1 do
+            EigenMatrix.FData[I, J] := EigenDecomp.EigenVectors.GetValue(I, J);
+            
+        // Compute A^p = V * D^p * V^(-1)
+        V := EigenMatrix;
+        VInv := TMatrixKit.Create(GetRows, GetRows);
+        VInv := V.Inverse as TMatrixKit;
+        Result := V.Multiply(D).Multiply(VInv);
+      end;
+    except
+      on E: EMatrixError do
+        raise EMatrixError.Create('Failed to compute matrix power: ' + E.Message);
+    end;
+  end;
+end;
+
+{ TEigenpair }
+
+function TEigenpair.ToString: string;
+begin
+  Result := 'EigenValue: ' + FloatToStr(EigenValue) + sLineBreak;
+  Result := Result + 'EigenVector: ' + sLineBreak;
+  Result := Result + EigenVector.ToString;
+end;
+
+{ TLUDecomposition }
+
+function TLUDecomposition.ToString: string;
+var
+  PStr: string;
+  I: Integer;
+begin
+  // Format permutation array
+  PStr := '[';
+  for I := 0 to High(P) do
+  begin
+    PStr := PStr + IntToStr(P[I]);
+    if I < High(P) then
+      PStr := PStr + ', ';
+  end;
+  PStr := PStr + ']';
+  
+  Result := 'LU Decomposition:' + sLineBreak +
+            'L =' + sLineBreak + L.ToString + sLineBreak +
+            'U =' + sLineBreak + U.ToString + sLineBreak +
+            'P = ' + PStr;
+end;
+
+{ TQRDecomposition }
+
+function TQRDecomposition.ToString: string;
+begin
+  Result := 'QR Decomposition:' + sLineBreak +
+            'Q =' + sLineBreak + Q.ToString + sLineBreak +
+            'R =' + sLineBreak + R.ToString;
+end;
+
+{ TEigenDecomposition }
+
+function TEigenDecomposition.ToString: string;
+var
+  ValStr: string;
+  I: Integer;
+begin
+  // Format eigenvalues array
+  ValStr := '[';
+  for I := 0 to High(EigenValues) do
+  begin
+    ValStr := ValStr + FloatToStr(EigenValues[I]);
+    if I < High(EigenValues) then
+      ValStr := ValStr + ', ';
+  end;
+  ValStr := ValStr + ']';
+  
+  Result := 'Eigendecomposition:' + sLineBreak +
+            'EigenValues = ' + ValStr + sLineBreak +
+            'EigenVectors =' + sLineBreak + EigenVectors.ToString;
+end;
+
+{ TSVD }
+
+function TSVD.ToString: string;
+begin
+  Result := 'Singular Value Decomposition:' + sLineBreak +
+            'U =' + sLineBreak + U.ToString + sLineBreak +
+            'S =' + sLineBreak + S.ToString + sLineBreak +
+            'V =' + sLineBreak + V.ToString;
+end;
+
+{ TCholeskyDecomposition }
+
+function TCholeskyDecomposition.ToString: string;
+begin
+  Result := 'Cholesky Decomposition:' + sLineBreak +
+            'L =' + sLineBreak + L.ToString;
 end;
 
 end. 
