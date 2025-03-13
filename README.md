@@ -1,5 +1,12 @@
 # 🧰 TidyKit
 
+[![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
+[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
+[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)]()
+[![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
+[![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
+
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
 
@@ -570,6 +577,10 @@ end;
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
 - 📊 [Math](docs/TidyKit.Math.md)
+  - 📈 [Statistics](docs/TidyKit.Math.Stats.md)
+  - 💰 [Finance](docs/TidyKit.Math.Finance.md)
+  - 🔢 [Matrices](docs/TidyKit.Math.Matrices.md)
+  - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
 - 📂 [File System](docs/TidyKit.FS.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 🌐 [Network](docs/TidyKit.Request.md)
@@ -584,7 +595,7 @@ For detailed documentation, see:
 
 ```bash
 $ cd tests
-$ ./TestRunner.exe -a --format=all
+$ ./TestRunner.exe -a --format=plain
 ```
 
 ## 🤝 Contributing
