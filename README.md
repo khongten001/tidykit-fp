@@ -1,11 +1,12 @@
 # 🧰 TidyKit
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
-[![License](https://img.shields.io/badge/License-MIT-green.svg)](LICENSE.md)
-[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.0-orange.svg)]()
-[![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
+[![Lazarus](https://img.shields.io/badge/Lazarus-3.8-blue.svg)](https://www.lazarus-ide.org/)
+[![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
+[![Documentation](https://img.shields.io/badge/Docs-Available-grightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
+[![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
