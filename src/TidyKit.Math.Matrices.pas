@@ -8,6 +8,9 @@ interface
 uses
   Classes, SysUtils, Math, TidyKit.Math;
 
+const
+  DEBUG_MODE = False;
+
 type
   { Matrix operation errors }
   EMatrixError = class(Exception);
@@ -712,50 +715,62 @@ begin
   Q := TMatrixKit.Create(GetRows, GetCols);
   R := TMatrixKit.Create(GetCols, GetCols);
   
-  // Copy original matrix to Q
-  for I := 0 to GetRows - 1 do
-    for J := 0 to GetCols - 1 do
-      Q.FData[I, J] := FData[I, J];
-
-  SetLength(V, GetRows);
-  
-  // Gram-Schmidt process
-  for J := 0 to GetCols - 1 do
-  begin
-    // Copy column to V
+  try
+    // Copy original matrix to Q
     for I := 0 to GetRows - 1 do
-      V[I] := Q.FData[I, J];
-      
-    // Subtract projections of previous vectors
-    for K := 0 to J - 1 do
+      for J := 0 to GetCols - 1 do
+        Q.FData[I, J] := FData[I, J];
+
+    SetLength(V, GetRows);
+    
+    // Gram-Schmidt process
+    for J := 0 to GetCols - 1 do
     begin
+      // Copy column to V
+      for I := 0 to GetRows - 1 do
+        V[I] := Q.FData[I, J];
+        
+      // Subtract projections of previous vectors
+      for K := 0 to J - 1 do
+      begin
+        Dot := 0;
+        for I := 0 to GetRows - 1 do
+          Dot := Dot + Q.FData[I, K] * V[I];
+        R.FData[K, J] := Dot;
+        
+        for I := 0 to GetRows - 1 do
+          V[I] := V[I] - Dot * Q.FData[I, K];
+      end;
+      
+      // Normalize V
       Dot := 0;
       for I := 0 to GetRows - 1 do
-        Dot := Dot + Q.FData[I, K] * V[I];
-      R.FData[K, J] := Dot;
+        Dot := Dot + V[I] * V[I];
+      Dot := Sqrt(Dot);
       
-      for I := 0 to GetRows - 1 do
-        V[I] := V[I] - Dot * Q.FData[I, K];
+      if Dot > 1E-12 then
+      begin
+        R.FData[J, J] := Dot;
+        for I := 0 to GetRows - 1 do
+          Q.FData[I, J] := V[I] / Dot;
+      end
+      else
+      begin
+        Q.Free;
+        R.Free;
+        raise EMatrixError.Create('Matrix columns are linearly dependent');
+      end;
     end;
-    
-    // Normalize V
-    Dot := 0;
-    for I := 0 to GetRows - 1 do
-      Dot := Dot + V[I] * V[I];
-    Dot := Sqrt(Dot);
-    
-    if Dot > 1E-12 then
-    begin
-      R.FData[J, J] := Dot;
-      for I := 0 to GetRows - 1 do
-        Q.FData[I, J] := V[I] / Dot;
-    end
-    else
-      raise EMatrixError.Create('Matrix columns are linearly dependent');
-  end;
 
-  Result.Q := Q;
-  Result.R := R;
+    Result.Q := Q;
+    Result.R := R;
+    // Set to nil to prevent double free in case of exception
+    Q := nil;
+    R := nil;
+  finally
+    if Assigned(Q) then Q.Free;
+    if Assigned(R) then R.Free;
+  end;
 end;
 
 function TMatrixKit.EigenDecomposition: TEigenDecomposition;
@@ -968,28 +983,31 @@ begin
       // Compute QR decomposition
       try
         QRDecomp := Current.QR;
+        Q := QRDecomp.Q as TMatrixKit;
+        R := QRDecomp.R as TMatrixKit;
         
-        // Form R*Q and add shift back
-        if Assigned(QRDecomp.Q) and Assigned(QRDecomp.R) then
-        begin
-          // Safely access matrices
-          Q := QRDecomp.Q as TMatrixKit;
-          R := QRDecomp.R as TMatrixKit;
-          
-          // Directly compute R*Q in Current
-          for I := 0 to GetRows - 1 do
+        try
+          // Form R*Q and add shift back
+          if Assigned(Q) and Assigned(R) then
           begin
-            for J := 0 to GetRows - 1 do
+            // Directly compute R*Q in Current
+            for I := 0 to GetRows - 1 do
             begin
-              Current.FData[I, J] := 0;
-              for K := 0 to Min(GetRows, GetCols) - 1 do
-                if (K < R.GetCols) and (I < R.GetRows) and (K < Q.GetRows) and (J < Q.GetCols) then
+              for J := 0 to GetRows - 1 do
+              begin
+                Current.FData[I, J] := 0;
+                for K := 0 to GetRows - 1 do
                   Current.FData[I, J] := Current.FData[I, J] + R.FData[I, K] * Q.FData[K, J];
+              end;
+              
+              // Add shift back to diagonal
+              Current.FData[I, I] := Current.FData[I, I] + ShiftValue;
             end;
-            
-            // Add shift back to diagonal
-            Current.FData[I, I] := Current.FData[I, I] + ShiftValue;
           end;
+        finally
+          // Free Q and R after use since they are no longer managed by QRDecomp
+          Q.Free;
+          R.Free;
         end;
       except
         on E: Exception do
@@ -1015,11 +1033,7 @@ begin
     until Converged or (Iter >= MaxIter);
 
     if not Converged then
-    begin
-      // If not converged, we'll return approximate results with a warning
       WriteLn('Warning: Eigendecomposition did not fully converge, results may be approximate');
-      // We don't raise an exception so tests can still pass with approximate results
-    end;
 
     // Create eigenvector matrix
     EigenVectors := TMatrixKit.Create(GetRows, GetRows);
@@ -1042,7 +1056,7 @@ begin
       if Assigned(EigenVectors) then EigenVectors.Free;
     end;
   finally
-    if Assigned(Current) then Current.Free;
+    Current.Free;
   end;
 end;
 
@@ -1600,7 +1614,8 @@ var
   Norm: Double;
   ResultMatrix: TMatrixKit;
 begin
-  WriteLn('Starting Normalize');
+  
+  if DEBUG_MODE then WriteLn('Starting Normalize');
   
   if not IsVector then
     raise EMatrixError.Create('Normalize requires a vector');
@@ -1641,7 +1656,7 @@ begin
   
   Result := ResultMatrix;
   
-  WriteLn('Finished Normalize');
+  if DEBUG_MODE then WriteLn('Finished Normalize');
 end;
 
 function TMatrixKit.Mean(Axis: Integer = -1): IMatrix;
@@ -1838,6 +1853,8 @@ var
   QRDecomp: TQRDecomposition;
   Eigen: TEigenDecomposition;
   ATA: IMatrix;
+  Tolerance: Double;
+  Norm: Double;
 begin
   // For a matrix A, SVD is A = U * S * V^T
   // where U and V are orthogonal matrices and S is a diagonal matrix of singular values
@@ -1856,68 +1873,105 @@ begin
     
     // Compute V and singular values using eigendecomposition of A^T * A
     ATA := Transpose.Multiply(Self);
-    Eigen := ATA.EigenDecomposition;
-    
-    // V is the matrix of eigenvectors
-    for I := 0 to GetCols - 1 do
-      for J := 0 to GetCols - 1 do
-        V.FData[I, J] := Eigen.EigenVectors.GetValue(I, J);
-    
-    // S contains singular values (square roots of eigenvalues)
-    for I := 0 to Min(GetRows, GetCols) - 1 do
-      if Eigen.EigenValues[I] > 0 then
-        S.FData[I, I] := Sqrt(Eigen.EigenValues[I]);
-    
-    // Compute U = A * V * S^(-1)
-    // For each column of U
-    for J := 0 to Min(GetRows, GetCols) - 1 do
-    begin
-      if S.FData[J, J] > 1E-10 then
+    try
+      Eigen := ATA.EigenDecomposition;
+      
+      // V is the matrix of eigenvectors
+      for I := 0 to GetCols - 1 do
       begin
-        // Compute U_j = A * V_j / sigma_j
-        for I := 0 to GetRows - 1 do
-        begin
-          U.FData[I, J] := 0;
-          for K := 0 to GetCols - 1 do
-            U.FData[I, J] := U.FData[I, J] + A.FData[I, K] * V.FData[K, J];
-          U.FData[I, J] := U.FData[I, J] / S.FData[J, J];
-        end;
-      end
-      else
-      begin
-        // Handle zero singular values
-        for I := 0 to GetRows - 1 do
-          U.FData[I, J] := 0;
-        if J < GetRows then
-          U.FData[J, J] := 1;
+        // Copy and normalize column
+        Norm := 0;
+        for J := 0 to GetCols - 1 do
+          Norm := Norm + Sqr(Eigen.EigenVectors.GetValue(J, I));
+        Norm := Sqrt(Norm);
+        
+        if Norm > 1E-12 then
+          for J := 0 to GetCols - 1 do
+            V.FData[J, I] := Eigen.EigenVectors.GetValue(J, I) / Norm
+        else
+          for J := 0 to GetCols - 1 do
+            if J = I then
+              V.FData[J, I] := 1.0
+            else
+              V.FData[J, I] := 0.0;
       end;
+      
+      // S contains singular values (square roots of eigenvalues)
+      Tolerance := 1E-12;
+      for I := 0 to Min(GetRows, GetCols) - 1 do
+        if Eigen.EigenValues[I] > Tolerance then
+          S.FData[I, I] := Sqrt(Abs(Eigen.EigenValues[I]));
+      
+      // Compute U = A * V * S^(-1)
+      // For each column of U
+      for J := 0 to Min(GetRows, GetCols) - 1 do
+      begin
+        if S.FData[J, J] > Tolerance then
+        begin
+          // Compute U_j = A * V_j / sigma_j
+          for I := 0 to GetRows - 1 do
+          begin
+            U.FData[I, J] := 0;
+            for K := 0 to GetCols - 1 do
+              U.FData[I, J] := U.FData[I, J] + A.FData[I, K] * V.FData[K, J];
+            U.FData[I, J] := U.FData[I, J] / S.FData[J, J];
+          end;
+          
+          // Normalize column
+          Norm := 0;
+          for I := 0 to GetRows - 1 do
+            Norm := Norm + Sqr(U.FData[I, J]);
+          Norm := Sqrt(Norm);
+          
+          if Norm > Tolerance then
+            for I := 0 to GetRows - 1 do
+              U.FData[I, J] := U.FData[I, J] / Norm;
+        end
+        else
+        begin
+          // Handle zero singular values
+          for I := 0 to GetRows - 1 do
+            if I = J then
+              U.FData[I, J] := 1.0
+            else
+              U.FData[I, J] := 0.0;
+        end;
+      end;
+      
+      // Complete U with orthogonal basis if needed
+      if GetRows > GetCols then
+      begin
+        // Use QR decomposition to complete the orthogonal basis
+        QRDecomp := A.QR;
+        try
+          for J := GetCols to GetRows - 1 do
+            for I := 0 to GetRows - 1 do
+              U.FData[I, J] := QRDecomp.Q.GetValue(I, J);
+        finally
+          // QRDecomp is a record, its fields will be freed automatically
+        end;
+      end;
+      
+      // Set result
+      Result.U := U;
+      Result.S := S;
+      Result.V := V;
+      
+      // Set to nil to prevent double free
+      U := nil;
+      S := nil;
+      V := nil;
+    finally
+      // Free ATA interface
+      ATA := nil;
     end;
-    
-    // Complete U with orthogonal basis if needed
-    if GetRows > GetCols then
-    begin
-      // Use QR decomposition to complete the orthogonal basis
-      QRDecomp := A.QR;
-      for J := GetCols to GetRows - 1 do
-        for I := 0 to GetRows - 1 do
-          U.FData[I, J] := QRDecomp.Q.GetValue(I, J);
-    end;
-    
-    // Set result
-    Result.U := U;
-    Result.S := S;
-    Result.V := V;
-  except
-    // Free matrices in case of exception
+  finally
+    // Free all temporary matrices
     A.Free;
-    U.Free;
-    S.Free;
-    V.Free;
-    raise;
+    if Assigned(U) then U.Free;
+    if Assigned(S) then S.Free;
+    if Assigned(V) then V.Free;
   end;
-  
-  // Free temporary matrix A
-  A.Free;
 end;
 
 function TMatrixKit.Cholesky: TCholeskyDecomposition;
