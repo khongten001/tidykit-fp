@@ -115,7 +115,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Vector operations (dot product, cross product, normalization)
     - Statistical operations (mean, covariance, correlation)
     - Comprehensive error handling
-    - Memory-safe interface design
+    - Memory-safe interface design with automatic reference counting
     - String representations of matrices and decompositions
   - 📐 Trigonometry
     - Basic functions (sin, cos, tan, sec, csc, cot)

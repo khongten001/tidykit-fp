@@ -1064,6 +1064,22 @@ begin
   // All matrices are freed when they go out of scope
 end;
 
+// IMPORTANT: Memory Management
+// 1. Always use IMatrix interface (not TMatrixKit objects directly)
+// 2. Let interface references go out of scope naturally for cleanup
+// 3. Never manually free IMatrix references
+// 4. If you must use TMatrixKit objects directly (rare), use try-finally:
+var
+  M: TMatrixKit;  // Direct object - requires manual management
+begin
+  M := TMatrixKit.CreateMatrix(3, 3);  // Internal constructor
+  try
+    // Use M...
+  finally
+    M.Free;  // Manual cleanup required
+  end;
+end;
+
 // Safe decomposition usage
 var
   M: IMatrix;

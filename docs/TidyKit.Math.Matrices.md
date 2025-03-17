@@ -463,44 +463,62 @@ end;
 
 ## Memory Management
 
-TidyKit's matrix operations are designed with robust memory management to prevent leaks and ensure efficient resource usage. All matrix operations follow these principles:
+TidyKit.Math.Matrices uses a dual approach to memory management:
 
-1. **Automatic Cleanup**: All matrices implement reference counting through interfaces and are automatically freed when they go out of scope.
-2. **Safe Decompositions**: Matrix decompositions (QR, SVD, Cholesky) handle temporary matrices properly and ensure cleanup in all cases.
-3. **Exception Safety**: All operations use try-finally blocks to guarantee cleanup even when exceptions occur.
+### Interface-Based Memory Management (Recommended)
 
-Example of safe matrix usage:
+The library primarily uses interface-based memory management through the `IMatrix` interface. When you use the interface type, memory is automatically managed through reference counting:
+
 ```pascal
 var
   A, B, C: IMatrix;
-  QR: TQRDecomposition;
 begin
+  // Create matrices
+  A := TMatrixKit.Create(3, 3);
+  B := TMatrixKit.Create(3, 3);
+  
+  // Perform operations
+  C := A.Multiply(B);
+  
+  // No need to free anything - reference counting handles cleanup
+  // when variables go out of scope
+end;
+```
+
+### Internal Implementation Details
+
+Internally, the library uses `TMatrixKit` objects which require manual memory management. However, as a user of the library, you should:
+
+1. **Always use the `IMatrix` interface** in your code, not the `TMatrixKit` class directly
+2. **Never manually free `IMatrix` references** - they are automatically managed
+3. **Let interface variables go out of scope naturally** for proper cleanup
+
+### When Manual Memory Management Is Needed
+
+If you ever need to work directly with `TMatrixKit` objects (which is rare and not recommended), you must manually free them:
+
+```pascal
+var
+  M: TMatrixKit;  // Direct object reference - requires manual management
+begin
+  M := TMatrixKit.CreateMatrix(3, 3);  // Internal constructor
   try
-    // Create matrices
-    A := TMatrixKit.CreateFromArray([
-      [1.0, 2.0],
-      [3.0, 4.0]
-    ]);
-    B := TMatrixKit.CreateFromArray([
-      [5.0, 6.0],
-      [7.0, 8.0]
-    ]);
-    
-    // Perform operations
-    C := A.Multiply(B);
-    QR := C.QR;
-    
-    // Use decomposition results...
-    // All matrices are automatically managed
+    // Use M...
   finally
-    // Explicit cleanup is optional but safe
-    A := nil;
-    B := nil;
-    C := nil;
-    QR := nil;
+    M.Free;  // Manual cleanup required
   end;
 end;
 ```
+
+### Best Practices
+
+1. **Always use `IMatrix` interface** instead of `TMatrixKit` class
+2. **Use factory methods** that return interfaces (`TMatrixKit.Create`, `TMatrixKit.Identity`, etc.)
+3. **Let interface references go out of scope naturally** for automatic cleanup
+4. **Use try-finally blocks** if you ever need to work with direct `TMatrixKit` objects
+5. **Avoid mixing interface and direct object references** to the same matrix
+
+By following these guidelines, your code will be memory-safe and avoid leaks when using the matrix library.
 
 ### Best Practices
 
