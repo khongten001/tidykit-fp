@@ -11,6 +11,7 @@ A comprehensive guide to using the matrix operations in TidyKit.
 - [Vector Operations](#vector-operations)
 - [Statistical Operations](#statistical-operations)
 - [Common Use Cases](#common-use-cases)
+- [Memory Management](#memory-management)
 
 ## Basic Operations
 
@@ -187,14 +188,19 @@ where:
 - $Q$ is orthogonal ($Q^TQ = I$)
 - $R$ is upper triangular
 
+The QR decomposition is implemented with robust memory management:
+- Temporary vectors and matrices are properly cleaned up
+- Exception handling ensures resources are freed
+- Memory-safe Gram-Schmidt process implementation
+
 ```pascal
 var
   M: IMatrix;
   QR: TQRDecomposition;
 begin
   QR := M.QR;
-  // QR.Q is the orthogonal matrix
-  // QR.R is the upper triangular matrix
+  // QR.Q and QR.R are automatically managed
+  // Temporary matrices used in the decomposition are properly freed
   
   // Get formatted string representation
   WriteLn(QR.ToString);
@@ -230,15 +236,19 @@ where:
 - $\Sigma$ is a diagonal matrix with singular values
 - $V^T$ is the transpose of an orthogonal matrix
 
+The SVD implementation features:
+- Safe management of all temporary matrices
+- Proper cleanup of eigendecomposition components
+- Memory-efficient QR iteration process
+
 ```pascal
 var
   M: IMatrix;
   SVD: TSVD;
 begin
   SVD := M.SVD;
-  // SVD.U is the left orthogonal matrix
-  // SVD.S is the diagonal matrix of singular values
-  // SVD.V is the right orthogonal matrix
+  // SVD.U, SVD.S, and SVD.V are automatically managed
+  // All intermediate calculations use proper cleanup
   
   // Get formatted string representation
   WriteLn(SVD.ToString);
@@ -248,8 +258,11 @@ end;
 ### Cholesky Decomposition
 For a positive definite matrix $A$, factors it into:
 $$A = LL^T$$
-where:
-- $L$ is a lower triangular matrix
+
+The Cholesky decomposition ensures:
+- Safe memory management of the L matrix
+- Proper cleanup in case of non-positive definite matrices
+- Exception safety for all temporary calculations
 
 ```pascal
 var
@@ -257,7 +270,8 @@ var
   Chol: TCholeskyDecomposition;
 begin
   Chol := M.Cholesky;
-  // Chol.L is the lower triangular matrix
+  // Chol.L is automatically managed
+  // Memory is properly freed even if matrix is not positive definite
   
   // Get formatted string representation
   WriteLn(Chol.ToString);
@@ -447,29 +461,53 @@ begin
 end;
 ```
 
-## Best Practices
+## Memory Management
 
-1. **Numerical Stability**
-   - Check condition number $\kappa(A)$ before inversion
-   - For ill-conditioned matrices ($\kappa(A) \gg 1$), use decompositions
-   - Consider scaling if values differ by many orders of magnitude
+TidyKit's matrix operations are designed with robust memory management to prevent leaks and ensure efficient resource usage. All matrix operations follow these principles:
 
-2. **Performance**
-   - Use appropriate decomposition for your problem:
-     - LU for general linear systems
-     - QR for least squares problems
-     - Eigendecomposition for finding principal components
-   - Avoid explicit inverse when possible
+1. **Automatic Cleanup**: All matrices implement reference counting through interfaces and are automatically freed when they go out of scope.
+2. **Safe Decompositions**: Matrix decompositions (QR, SVD, Cholesky) handle temporary matrices properly and ensure cleanup in all cases.
+3. **Exception Safety**: All operations use try-finally blocks to guarantee cleanup even when exceptions occur.
 
-3. **Memory Management**
-   - Use the `IMatrix` interface for automatic memory management
-   - Let the interface handle cleanup through reference counting
+Example of safe matrix usage:
+```pascal
+var
+  A, B, C: IMatrix;
+  QR: TQRDecomposition;
+begin
+  try
+    // Create matrices
+    A := TMatrixKit.CreateFromArray([
+      [1.0, 2.0],
+      [3.0, 4.0]
+    ]);
+    B := TMatrixKit.CreateFromArray([
+      [5.0, 6.0],
+      [7.0, 8.0]
+    ]);
+    
+    // Perform operations
+    C := A.Multiply(B);
+    QR := C.QR;
+    
+    // Use decomposition results...
+    // All matrices are automatically managed
+  finally
+    // Explicit cleanup is optional but safe
+    A := nil;
+    B := nil;
+    C := nil;
+    QR := nil;
+  end;
+end;
+```
 
-4. **Error Handling**
-   - Always handle potential exceptions for:
-     - Matrix inversion (singular matrices)
-     - Decompositions (numerical instability)
-     - Operations with mismatched dimensions 
+### Best Practices
+
+1. Use interface types (`IMatrix`) instead of concrete classes for automatic reference counting.
+2. Let matrices go out of scope naturally rather than manually freeing them.
+3. Use try-finally blocks when working with multiple matrices to ensure cleanup.
+4. Set matrices to nil after assigning them to results to prevent double freeing.
 
 ## String Representation of Matrices and Decompositions
 

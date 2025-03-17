@@ -1044,6 +1044,46 @@ S := Eigen.ToString;                                        // Format eigendecom
 S := SVD.ToString;                                          // Format SVD (U, S, V)
 S := Chol.ToString;                                         // Format Cholesky decomposition (L)
 S := Pair.ToString;                                         // Format eigenpair (value, vector)
+
+// Memory-safe matrix usage
+var
+  A, B, C: IMatrix;
+begin
+  // Create matrices with automatic cleanup
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
+  B := TMatrixKit.CreateFromArray([
+    [5.0, 6.0],
+    [7.0, 8.0]
+  ]);
+  
+  // Operations are memory-safe and handle cleanup
+  C := A.Multiply(B);
+  // All matrices are freed when they go out of scope
+end;
+
+// Safe decomposition usage
+var
+  M: IMatrix;
+  QR: TQRDecomposition;
+  SVD: TSVD;
+  Chol: TCholeskyDecomposition;
+begin
+  M := TMatrixKit.CreateFromArray([
+    [4.0, 1.0],
+    [1.0, 3.0]
+  ]);
+  
+  // All decompositions handle memory cleanup automatically
+  QR := M.QR;
+  SVD := M.SVD;
+  Chol := M.Cholesky;
+  
+  // Use decomposition results...
+  // All temporary matrices are properly managed
+end;
 ```
 
 ### Trigonometry (TTrigKit)
