@@ -1530,7 +1530,10 @@ begin
   EndTime := Now;
   ElapsedMS := (EndTime - StartTime) * 24 * 60 * 60 * 1000;
   WriteLn(Format('Matrix multiplication took %.2f ms', [ElapsedMS]));
-  
+
+  WriteLn('C:');
+  WriteLn(C.ToString);
+
   AssertEquals('8x8 result rows', 8, C.Rows);
   AssertEquals('8x8 result cols', 8, C.Cols);
   
@@ -1543,6 +1546,9 @@ begin
   ElapsedMS := (EndTime - StartTime) * 24 * 60 * 60 * 1000;
   WriteLn(Format('SVD decomposition took %.2f ms', [ElapsedMS]));
   
+  WriteLn('SVD:');
+  WriteLn(SVD.ToString);
+
   // Verify SVD properties
   AssertEquals('SVD.U rows', 8, SVD.U.Rows);
   AssertEquals('SVD.U cols', 8, SVD.U.Cols);
