@@ -50,6 +50,7 @@ type
     procedure Test33_AdvancedMatrixCreation;
     procedure Test34_ToStringMethods;
     procedure Test35_DecompositionsLarge;
+    procedure Test36_Matrix8x8;
   end;
 
 implementation
@@ -1485,6 +1486,81 @@ begin
         Abs(Product.Values[I, J] - A.Values[I, J]) < Tolerance);
   
   WriteLn('Finished Test35_DecompositionsLarge');
+end;
+
+procedure TMatrixTest.Test36_Matrix8x8;
+var
+  A, B, C: IMatrix;
+  SVD: TSVD;
+  I, J: Integer;
+  Tolerance: Double;
+  StartTime, EndTime: TDateTime;
+  ElapsedMS: Double;
+begin
+  WriteLn('Starting Test36_Matrix8x8');
+  
+  // Create test matrices
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0],
+    [8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+    [2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 1.0],
+    [7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 8.0],
+    [3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 1.0, 2.0],
+    [6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 8.0, 7.0],
+    [4.0, 5.0, 6.0, 7.0, 8.0, 1.0, 2.0, 3.0],
+    [5.0, 4.0, 3.0, 2.0, 1.0, 8.0, 7.0, 6.0]
+  ]);
+  
+  B := TMatrixKit.CreateFromArray([
+    [8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0],
+    [1.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0, 2.0],
+    [2.0, 1.0, 8.0, 7.0, 6.0, 5.0, 4.0, 3.0],
+    [3.0, 2.0, 1.0, 8.0, 7.0, 6.0, 5.0, 4.0],
+    [4.0, 3.0, 2.0, 1.0, 8.0, 7.0, 6.0, 5.0],
+    [5.0, 4.0, 3.0, 2.0, 1.0, 8.0, 7.0, 6.0],
+    [6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 8.0, 7.0],
+    [7.0, 6.0, 5.0, 4.0, 3.0, 2.0, 1.0, 8.0]
+  ]);
+  
+  // Test basic operations
+  WriteLn('Testing basic operations...');
+  
+  StartTime := Now;
+  C := A.Multiply(B);
+  EndTime := Now;
+  ElapsedMS := (EndTime - StartTime) * 24 * 60 * 60 * 1000;
+  WriteLn(Format('Matrix multiplication took %.2f ms', [ElapsedMS]));
+  
+  AssertEquals('8x8 result rows', 8, C.Rows);
+  AssertEquals('8x8 result cols', 8, C.Cols);
+  
+  // Test SVD
+  WriteLn('Testing SVD decomposition...');
+  
+  StartTime := Now;
+  SVD := A.SVD;
+  EndTime := Now;
+  ElapsedMS := (EndTime - StartTime) * 24 * 60 * 60 * 1000;
+  WriteLn(Format('SVD decomposition took %.2f ms', [ElapsedMS]));
+  
+  // Verify SVD properties
+  AssertEquals('SVD.U rows', 8, SVD.U.Rows);
+  AssertEquals('SVD.U cols', 8, SVD.U.Cols);
+  AssertEquals('SVD.S rows', 8, SVD.S.Rows);
+  AssertEquals('SVD.S cols', 8, SVD.S.Cols);
+  AssertEquals('SVD.V rows', 8, SVD.V.Rows);
+  AssertEquals('SVD.V cols', 8, SVD.V.Cols);
+  
+  // Verify U*S*V^T = A
+  C := SVD.U.Multiply(SVD.S).Multiply(SVD.V.Transpose);
+  Tolerance := 1E-6;
+  
+  for I := 0 to 7 do
+    for J := 0 to 7 do
+      AssertTrue(Format('SVD reconstruction at [%d,%d]', [I, J]),
+        Abs(C.Values[I, J] - A.Values[I, J]) < Tolerance);
+  
+  WriteLn('Finished Test36_Matrix8x8');
 end;
 
 initialization

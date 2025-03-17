@@ -10,6 +10,7 @@ uses
 
 const
   DEBUG_MODE = False;
+  BLOCK_SIZE = 4;  // Optimal for 8x8 matrices
 
 type
   { Matrix operation errors }
@@ -390,7 +391,7 @@ end;
 
 function TMatrixKit.Multiply(const Other: IMatrix): IMatrix;
 var
-  I, J, K: Integer;
+  I, J, K, II, JJ, KK: Integer;
   Matrix: TMatrixKit;
   Sum: Double;
 begin
@@ -398,14 +399,53 @@ begin
     raise EMatrixError.Create('Matrix dimensions do not match for multiplication');
     
   Matrix := TMatrixKit.Create(GetRows, Other.Cols);
-  for I := 0 to GetRows - 1 do
-    for J := 0 to Other.Cols - 1 do
+  
+  // Use block multiplication for larger matrices
+  if (GetRows >= BLOCK_SIZE) and (GetCols >= BLOCK_SIZE) and (Other.Cols >= BLOCK_SIZE) then
+  begin
+    // Initialize result matrix to zero
+    for I := 0 to GetRows - 1 do
+      for J := 0 to Other.Cols - 1 do
+        Matrix.FData[I, J] := 0.0;
+    
+    // Block matrix multiplication
+    II := 0;
+    while II < GetRows do
     begin
-      Sum := 0;
-      for K := 0 to GetCols - 1 do
-        Sum := Sum + FData[I, K] * Other.GetValue(K, J);
-      Matrix.FData[I, J] := Sum;
+      JJ := 0;
+      while JJ < Other.Cols do
+      begin
+        KK := 0;
+        while KK < GetCols do
+        begin
+          for I := II to Min(II+BLOCK_SIZE-1, GetRows-1) do
+            for J := JJ to Min(JJ+BLOCK_SIZE-1, Other.Cols-1) do
+            begin
+              Sum := Matrix.FData[I, J];
+              for K := KK to Min(KK+BLOCK_SIZE-1, GetCols-1) do
+                Sum := Sum + FData[I, K] * Other.GetValue(K, J);
+              Matrix.FData[I, J] := Sum;
+            end;
+          Inc(KK, BLOCK_SIZE);
+        end;
+        Inc(JJ, BLOCK_SIZE);
+      end;
+      Inc(II, BLOCK_SIZE);
     end;
+  end
+  else
+  begin
+    // Standard multiplication for smaller matrices
+    for I := 0 to GetRows - 1 do
+      for J := 0 to Other.Cols - 1 do
+      begin
+        Sum := 0;
+        for K := 0 to GetCols - 1 do
+          Sum := Sum + FData[I, K] * Other.GetValue(K, J);
+        Matrix.FData[I, J] := Sum;
+      end;
+  end;
+  
   Result := Matrix;
 end;
 
@@ -1862,137 +1902,327 @@ end;
 
 function TMatrixKit.SVD: TSVD;
 var
-  I, J, K: Integer;
-  A, U, S, V: TMatrixKit;
-  QRDecomp: TQRDecomposition;
-  Eigen: TEigenDecomposition;
-  ATA: IMatrix;
+  I, J, K, L, M, Iter: Integer;
+  MaxIter: Integer;
   Tolerance: Double;
-  Norm: Double;
+  A, S, V: TMatrixKit;  // Removed U from here since we use A as U
+  C, F, G, H, S1, X, Y, Z: Double;
+  RV1: array of Double;
+  Anorm, Scale, Shift: Double;
+  Flag: Boolean;
 begin
-  // For a matrix A, SVD is A = U * S * V^T
-  // where U and V are orthogonal matrices and S is a diagonal matrix of singular values
+  MaxIter := 50;  // Usually converges in fewer iterations
+  Tolerance := 1E-12;
   
-  // Create working matrices
+  // Initialize matrices
   A := TMatrixKit.Create(GetRows, GetCols);
-  U := TMatrixKit.Create(GetRows, GetRows);
   S := TMatrixKit.Create(GetRows, GetCols);
   V := TMatrixKit.Create(GetCols, GetCols);
   
-  try
-    // Copy original matrix to A
-    for I := 0 to GetRows - 1 do
-      for J := 0 to GetCols - 1 do
-        A.FData[I, J] := FData[I, J];
+  // Copy original matrix to A
+  for I := 0 to GetRows - 1 do
+    for J := 0 to GetCols - 1 do
+      A.FData[I, J] := FData[I, J];
+      
+  SetLength(RV1, GetCols);
+  
+  // Householder reduction to bidiagonal form
+  G := 0;
+  Scale := 0;
+  Anorm := 0;
+  
+  for I := 0 to GetCols - 1 do
+  begin
+    L := I + 1;
+    RV1[I] := Scale * G;
+    G := 0;
+    S1 := 0;
+    Scale := 0;
     
-    // Compute V and singular values using eigendecomposition of A^T * A
-    ATA := Transpose.Multiply(Self);
-    try
-      Eigen := ATA.EigenDecomposition;
-      try
-        // V is the matrix of eigenvectors
-        for I := 0 to GetCols - 1 do
+    if I < GetRows then
+    begin
+      for K := I to GetRows - 1 do
+        Scale := Scale + Abs(A.FData[K, I]);
+      
+      if Scale <> 0 then
+      begin
+        for K := I to GetRows - 1 do
         begin
-          // Copy and normalize column
-          Norm := 0;
-          for J := 0 to GetCols - 1 do
-            Norm := Norm + Sqr(Eigen.EigenVectors.GetValue(J, I));
-          Norm := Sqrt(Norm);
-          
-          if Norm > 1E-12 then
-            for J := 0 to GetCols - 1 do
-              V.FData[J, I] := Eigen.EigenVectors.GetValue(J, I) / Norm
-          else
-            for J := 0 to GetCols - 1 do
-              if J = I then
-                V.FData[J, I] := 1.0
-              else
-                V.FData[J, I] := 0.0;
+          A.FData[K, I] := A.FData[K, I] / Scale;
+          S1 := S1 + Sqr(A.FData[K, I]);
         end;
         
-        // S contains singular values (square roots of eigenvalues)
-        Tolerance := 1E-12;
-        for I := 0 to Min(GetRows, GetCols) - 1 do
-          if Eigen.EigenValues[I] > Tolerance then
-            S.FData[I, I] := Sqrt(Abs(Eigen.EigenValues[I]));
+        F := A.FData[I, I];
+        G := -SignWithMagnitude(Sqrt(S1), F);
+        H := F * G - S1;
+        A.FData[I, I] := F - G;
         
-        // Compute U = A * V * S^(-1)
-        // For each column of U
-        for J := 0 to Min(GetRows, GetCols) - 1 do
+        for J := L to GetCols - 1 do
         begin
-          if S.FData[J, J] > Tolerance then
-          begin
-            // Compute U_j = A * V_j / sigma_j
-            for I := 0 to GetRows - 1 do
-            begin
-              U.FData[I, J] := 0;
-              for K := 0 to GetCols - 1 do
-                U.FData[I, J] := U.FData[I, J] + A.FData[I, K] * V.FData[K, J];
-              U.FData[I, J] := U.FData[I, J] / S.FData[J, J];
-            end;
-            
-            // Normalize column
-            Norm := 0;
-            for I := 0 to GetRows - 1 do
-              Norm := Norm + Sqr(U.FData[I, J]);
-            Norm := Sqrt(Norm);
-            
-            if Norm > Tolerance then
-              for I := 0 to GetRows - 1 do
-                U.FData[I, J] := U.FData[I, J] / Norm;
-          end
-          else
-          begin
-            // Handle zero singular values
-            for I := 0 to GetRows - 1 do
-              if I = J then
-                U.FData[I, J] := 1.0
-              else
-                U.FData[I, J] := 0.0;
-          end;
+          S1 := 0;
+          for K := I to GetRows - 1 do
+            S1 := S1 + A.FData[K, I] * A.FData[K, J];
+          F := S1 / H;
+          for K := I to GetRows - 1 do
+            A.FData[K, J] := A.FData[K, J] + F * A.FData[K, I];
         end;
         
-        // Complete U with orthogonal basis if needed
-        if GetRows > GetCols then
-        begin
-          // Use QR decomposition to complete the orthogonal basis
-          QRDecomp := A.QR;
-          try
-            for J := GetCols to GetRows - 1 do
-              for I := 0 to GetRows - 1 do
-                U.FData[I, J] := QRDecomp.Q.GetValue(I, J);
-          finally
-            // Free QR decomposition components
-            if Assigned(QRDecomp.Q) then QRDecomp.Q := nil;
-            if Assigned(QRDecomp.R) then QRDecomp.R := nil;
-          end;
-        end;
-        
-        // Set result
-        Result.U := U;
-        Result.S := S;
-        Result.V := V;
-        
-        // Set to nil to prevent double free
-        U := nil;
-        S := nil;
-        V := nil;
-      finally
-        // Free eigendecomposition components
-        SetLength(Eigen.EigenValues, 0);
-        if Assigned(Eigen.EigenVectors) then Eigen.EigenVectors := nil;
+        for K := I to GetRows - 1 do
+          A.FData[K, I] := Scale * A.FData[K, I];
       end;
-    finally
-      // Free ATA interface
-      ATA := nil;
     end;
-  finally
-    // Free all temporary matrices
-    A.Free;
-    if Assigned(U) then U.Free;
-    if Assigned(S) then S.Free;
-    if Assigned(V) then V.Free;
+    
+    S.FData[I, I] := Scale * G;
+    G := 0;
+    S1 := 0;
+    Scale := 0;
+    
+    if (I < GetRows) and (I <> GetCols - 1) then
+    begin
+      for K := L to GetCols - 1 do
+        Scale := Scale + Abs(A.FData[I, K]);
+      
+      if Scale <> 0 then
+      begin
+        for K := L to GetCols - 1 do
+        begin
+          A.FData[I, K] := A.FData[I, K] / Scale;
+          S1 := S1 + Sqr(A.FData[I, K]);
+        end;
+        
+        F := A.FData[I, L];
+        G := -SignWithMagnitude(Sqrt(S1), F);
+        H := F * G - S1;
+        A.FData[I, L] := F - G;
+        
+        for K := L to GetCols - 1 do
+          RV1[K] := A.FData[I, K] / H;
+        
+        for J := L to GetRows - 1 do
+        begin
+          S1 := 0;
+          for K := L to GetCols - 1 do
+            S1 := S1 + A.FData[J, K] * A.FData[I, K];
+          for K := L to GetCols - 1 do
+            A.FData[J, K] := A.FData[J, K] + S1 * RV1[K];
+        end;
+        
+        for K := L to GetCols - 1 do
+          A.FData[I, K] := Scale * A.FData[I, K];
+      end;
+    end;
+    
+    Anorm := Max(Anorm, Abs(S.FData[I, I]) + Abs(RV1[I]));
   end;
+  
+  // Accumulation of right-hand transformations
+  for I := GetCols - 1 downto 0 do
+  begin
+    if I < GetCols - 1 then
+    begin
+      if G <> 0 then
+      begin
+        for J := L to GetCols - 1 do
+          V.FData[J, I] := (A.FData[I, J] / A.FData[I, L]) / G;
+        
+        for J := L to GetCols - 1 do
+        begin
+          S1 := 0;
+          for K := L to GetCols - 1 do
+            S1 := S1 + A.FData[I, K] * V.FData[K, J];
+          for K := L to GetCols - 1 do
+            V.FData[K, J] := V.FData[K, J] + S1 * V.FData[K, I];
+        end;
+      end;
+      
+      for J := L to GetCols - 1 do
+      begin
+        V.FData[I, J] := 0;
+        V.FData[J, I] := 0;
+      end;
+    end;
+    
+    V.FData[I, I] := 1;
+    G := RV1[I];
+    L := I;
+  end;
+  
+  // Accumulation of left-hand transformations
+  for I := Min(GetRows - 1, GetCols - 1) downto 0 do
+  begin
+    L := I + 1;
+    G := S.FData[I, I];
+    
+    if I < GetCols - 1 then
+      for J := L to GetCols - 1 do
+        A.FData[I, J] := 0;
+    
+    if G <> 0 then
+    begin
+      G := 1.0 / G;
+      
+      if I < GetCols - 1 then
+      begin
+        for J := L to GetCols - 1 do
+        begin
+          S1 := 0;
+          for K := L to GetRows - 1 do
+            S1 := S1 + A.FData[K, I] * A.FData[K, J];
+          F := (S1 / A.FData[I, I]) * G;
+          
+          for K := I to GetRows - 1 do
+            A.FData[K, J] := A.FData[K, J] + F * A.FData[K, I];
+        end;
+      end;
+      
+      for J := I to GetRows - 1 do
+        A.FData[J, I] := A.FData[J, I] * G;
+    end
+    else
+    begin
+      for J := I to GetRows - 1 do
+        A.FData[J, I] := 0;
+    end;
+    
+    A.FData[I, I] := A.FData[I, I] + 1;
+  end;
+  
+  // Diagonalization of the bidiagonal form
+  for K := GetCols - 1 downto 0 do
+  begin
+    for Iter := 1 to MaxIter do
+    begin
+      Flag := True;
+      
+      // Test for splitting
+      L := K;
+      while L >= 0 do
+      begin
+        M := L - 1;
+        if Abs(RV1[L]) + Anorm = Anorm then
+        begin
+          Flag := False;
+          Break;
+        end;
+        if (M >= 0) and (Abs(S.FData[M, M]) + Anorm = Anorm) then
+          Break;
+        Dec(L);
+      end;
+      
+      if Flag then
+      begin
+        C := 0;
+        S1 := 1;
+        
+        for I := L to K do
+        begin
+          F := S1 * RV1[I];
+          RV1[I] := C * RV1[I];
+          
+          if Abs(F) + Anorm = Anorm then
+            Break;
+            
+          G := S.FData[I, I];
+          H := Sqrt(F * F + G * G);
+          S.FData[I, I] := H;
+          C := G / H;
+          S1 := -F / H;
+          
+          for J := 0 to GetRows - 1 do
+          begin
+            Y := A.FData[J, M];
+            Z := A.FData[J, I];
+            A.FData[J, M] := Y * C + Z * S1;
+            A.FData[J, I] := -Y * S1 + Z * C;
+          end;
+        end;
+      end;
+      
+      Z := S.FData[K, K];
+      
+      if L = K then
+      begin
+        if Z < 0 then
+        begin
+          S.FData[K, K] := -Z;
+          for J := 0 to GetCols - 1 do
+            V.FData[J, K] := -V.FData[J, K];
+        end;
+        Break;
+      end;
+      
+      if Iter >= MaxIter then
+        raise EMatrixError.Create('SVD did not converge');
+        
+      X := S.FData[L, L];
+      Y := S.FData[K - 1, K - 1];
+      G := RV1[K - 1];
+      H := RV1[K];
+      F := ((Y - Z) * (Y + Z) + (G - H) * (G + H)) / (2 * H * Y);
+      G := Sqrt(F * F + 1);
+      F := ((X - Z) * (X + Z) + H * (Y / (F + SignWithMagnitude(G, F)) - H)) / X;
+      
+      // Next QR transformation
+      C := 1;
+      S1 := 1;
+      
+      for J := L to K - 1 do
+      begin
+        I := J + 1;
+        G := RV1[I];
+        Y := S.FData[I, I];
+        H := S1 * G;
+        G := C * G;
+        
+        Z := Sqrt(F * F + H * H);
+        RV1[J] := Z;
+        C := F / Z;
+        S1 := H / Z;
+        F := X * C + G * S1;
+        G := -X * S1 + G * C;
+        H := Y * S1;
+        Y := Y * C;
+        
+        for M := 0 to GetCols - 1 do
+        begin
+          X := V.FData[M, J];
+          Z := V.FData[M, I];
+          V.FData[M, J] := X * C + Z * S1;
+          V.FData[M, I] := -X * S1 + Z * C;
+        end;
+        
+        Z := Sqrt(F * F + H * H);
+        S.FData[J, J] := Z;
+        
+        if Z <> 0 then
+        begin
+          Z := 1 / Z;
+          C := F * Z;
+          S1 := H * Z;
+        end;
+        
+        F := C * G + S1 * Y;
+        X := -S1 * G + C * Y;
+        
+        for M := 0 to GetRows - 1 do
+        begin
+          Y := A.FData[M, J];
+          Z := A.FData[M, I];
+          A.FData[M, J] := Y * C + Z * S1;
+          A.FData[M, I] := -Y * S1 + Z * C;
+        end;
+      end;
+      
+      RV1[L] := 0;
+      RV1[K] := F;
+      S.FData[K, K] := X;
+    end;
+  end;
+  
+  // Copy final matrices to result
+  Result.U := A;  // A is used as U matrix
+  Result.S := S;
+  Result.V := V;
 end;
 
 function TMatrixKit.Cholesky: TCholeskyDecomposition;
@@ -2042,7 +2272,7 @@ end;
 function TMatrixKit.PseudoInverse: IMatrix;
 var
   SVDResult: TSVD;
-  SInverse: TMatrixKit;
+  SInverse: IMatrix;
   I: Integer;
   Tolerance: Double;
 begin
@@ -2051,19 +2281,15 @@ begin
   
   // Create inverse of S by inverting non-zero singular values
   SInverse := TMatrixKit.Create(GetCols, GetRows);
-  try
-    Tolerance := 1E-12 * SVDResult.S.GetValue(0, 0);  // Relative to largest singular value
-    
-    for I := 0 to Min(GetRows, GetCols) - 1 do
-      if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
-        SInverse.FData[I, I] := 1.0 / SVDResult.S.GetValue(I, I);
-    
-    // Compute pseudoinverse: A^+ = V * S^+ * U^T
-    Result := SVDResult.V.Multiply(SInverse).Multiply(SVDResult.U.Transpose);
-  finally
-    // Free SInverse matrix
-    SInverse.Free;
-  end;
+  Tolerance := 1E-12 * SVDResult.S.GetValue(0, 0);  // Relative to largest singular value
+  
+  for I := 0 to Min(GetRows, GetCols) - 1 do
+    if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
+      SInverse.Values[I, I] := 1.0 / SVDResult.S.GetValue(I, I);
+  
+  // Compute pseudoinverse: A^+ = V * S^+ * U^T
+  // All matrices are IMatrix interfaces and will be automatically freed
+  Result := SVDResult.V.Multiply(SInverse).Multiply(SVDResult.U.Transpose);
 end;
 
 function TMatrixKit.Exp: IMatrix;
