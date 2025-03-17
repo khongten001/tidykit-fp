@@ -51,6 +51,7 @@ type
     procedure Test34_ToStringMethods;
     procedure Test35_DecompositionsLarge;
     procedure Test36_Matrix8x8;
+    procedure Test37_FractionalPower8x8;
   end;
 
 implementation
@@ -1567,6 +1568,55 @@ begin
         Abs(C.Values[I, J] - A.Values[I, J]) < Tolerance);
   
   WriteLn('Finished Test36_Matrix8x8');
+end;
+
+procedure TMatrixTest.Test37_FractionalPower8x8;
+var
+  Matrix, PowerMatrix, CheckMatrix: IMatrix;
+  I, J: Integer;
+  Tolerance: Double;
+begin
+  WriteLn('Testing fractional power on 8x8 matrix...');
+  
+  // Create a well-conditioned positive definite matrix
+  Matrix := TMatrixKit.CreateFromArray([
+    [4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [1.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 1.0, 4.0, 1.0, 0.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 1.0, 4.0, 1.0, 0.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 1.0, 4.0, 1.0, 0.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 1.0, 4.0, 1.0, 0.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 4.0, 1.0],
+    [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 1.0, 4.0]
+  ]);
+  
+  WriteLn('Computing matrix to power 0.5...');
+  PowerMatrix := Matrix.Power(0.5);
+  
+  WriteLn('Verifying results...');
+  // Check that PowerMatrix * PowerMatrix ≈ Matrix
+  CheckMatrix := PowerMatrix.Multiply(PowerMatrix);
+  
+  Tolerance := 1E-10;
+  for I := 0 to 7 do
+    for J := 0 to 7 do
+      if Abs(CheckMatrix.Values[I, J] - Matrix.Values[I, J]) > Tolerance then
+        Fail(Format('Matrix power verification failed at [%d,%d]: expected %.10f, got %.10f',
+          [I, J, Matrix.Values[I, J], CheckMatrix.Values[I, J]]));
+          
+  WriteLn('Testing negative fractional power...');
+  PowerMatrix := Matrix.Power(-0.5);
+  CheckMatrix := PowerMatrix.Multiply(PowerMatrix);
+  
+  // Check that PowerMatrix * PowerMatrix ≈ Matrix^(-1)
+  Matrix := Matrix.Inverse;
+  for I := 0 to 7 do
+    for J := 0 to 7 do
+      if Abs(CheckMatrix.Values[I, J] - Matrix.Values[I, J]) > Tolerance then
+        Fail(Format('Matrix negative power verification failed at [%d,%d]: expected %.10f, got %.10f',
+          [I, J, Matrix.Values[I, J], CheckMatrix.Values[I, J]]));
+          
+  WriteLn('Fractional power test completed successfully');
 end;
 
 initialization

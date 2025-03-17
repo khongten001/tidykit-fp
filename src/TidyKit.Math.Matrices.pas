@@ -2330,12 +2330,10 @@ end;
 function TMatrixKit.Power(exponent: Double): IMatrix;
 var
   I, J: Integer;
-  EigenDecomp: TEigenDecomposition;
-  D, V, VInv: TMatrixKit;
   SVDResult: TSVD;
   SInverse: TMatrixKit;
-  HasNegativeEigenvalues: Boolean;
-  EigenMatrix: TMatrixKit;
+  Tolerance: Double;
+  ResultMatrix: IMatrix;
 begin
   if not IsSquare then
     raise EMatrixError.Create('Matrix power requires square matrix');
@@ -2362,57 +2360,28 @@ begin
   end
   else
   begin
-    // Non-integer exponent
+    // Non-integer exponent - always use SVD
+    // A^p = U * S^p * V^T where S^p is diagonal matrix with s_i^p on diagonal
+    SVDResult := SVD;
+    Tolerance := 1E-12;
+    
+    // Create S^p
+    SInverse := TMatrixKit.Create(GetRows, GetRows);
     try
-      // First try eigendecomposition: A^p = V * D^p * V^(-1)
-      EigenDecomp := EigenDecomposition;
-      
-      // Check if there are negative eigenvalues
-      HasNegativeEigenvalues := False;
+      // Only operate on the diagonal elements
       for I := 0 to GetRows - 1 do
-        if EigenDecomp.EigenValues[I] < 0 then
-        begin
-          HasNegativeEigenvalues := True;
-          Break;
-        end;
-        
-      if HasNegativeEigenvalues then
       begin
-        // For matrices with negative eigenvalues, use SVD: A = U * S * V^T
-        // Then A^p = U * S^p * V^T
-        SVDResult := SVD;
-        
-        // Create S^p
-        SInverse := TMatrixKit.Create(GetRows, GetRows);
-        for I := 0 to GetRows - 1 do
-          if SVDResult.S.GetValue(I, I) > 1E-10 then
-            SInverse.FData[I, I] := Math.Power(SVDResult.S.GetValue(I, I), exponent);
-            
-        // Compute A^p = U * S^p * V^T
-        Result := SVDResult.U.Multiply(SInverse).Multiply(SVDResult.V.Transpose);
-      end
-      else
-      begin
-        // Create diagonal matrix D^p
-        D := TMatrixKit.Create(GetRows, GetRows);
-        for I := 0 to GetRows - 1 do
-          D.SetValue(I, I, Math.Power(EigenDecomp.EigenValues[I], exponent));
-        
-        // Get eigenvectors matrix
-        EigenMatrix := TMatrixKit.Create(GetRows, GetRows);
-        for I := 0 to GetRows - 1 do
-          for J := 0 to GetRows - 1 do
-            EigenMatrix.FData[I, J] := EigenDecomp.EigenVectors.GetValue(I, J);
-            
-        // Compute A^p = V * D^p * V^(-1)
-        V := EigenMatrix;
-        VInv := TMatrixKit.Create(GetRows, GetRows);
-        VInv := V.Inverse as TMatrixKit;
-        Result := V.Multiply(D).Multiply(VInv);
+        if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
+          SInverse.SetValue(I, I, Math.Power(Abs(SVDResult.S.GetValue(I, I)), exponent));
       end;
-    except
-      on E: EMatrixError do
-        raise EMatrixError.Create('Failed to compute matrix power: ' + E.Message);
+      
+      // Compute A^p = U * S^p * V^T
+      ResultMatrix := SVDResult.U.Multiply(SInverse).Multiply(SVDResult.V.Transpose);
+      
+      // Copy the result to avoid returning a reference to a temporary object
+      Result := ResultMatrix;
+    finally
+      SInverse.Free;
     end;
   end;
 end;
