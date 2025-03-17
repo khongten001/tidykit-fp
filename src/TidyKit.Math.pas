@@ -6,7 +6,7 @@ unit TidyKit.Math;
 interface
 
 uses
-  Classes, SysUtils, Math;
+  Classes, SysUtils;
 
 type
   { Array types for different numeric data }
