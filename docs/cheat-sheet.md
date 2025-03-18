@@ -951,32 +951,171 @@ end;
 
 ### Matrix Operations (TMatrixKit)
 ```pascal
-// Matrix creation
-M := TMatrixKit.CreateMatrix(Rows, Cols);        // Create empty matrix
-I := TMatrixKit.Identity(Size);                  // Create identity matrix
-Z := TMatrixKit.Zeros(Rows, Cols);               // Create zero matrix
-O := TMatrixKit.Ones(Rows, Cols);                // Create matrix of ones
+// Creating matrices
+M := TMatrixKit.CreateFromArray([[1.0, 2.0], [3.0, 4.0]]);  // From 2D array
+M := TMatrixKit.Identity(3);                                // 3x3 identity matrix
+M := TMatrixKit.Zeros(2, 3);                                // 2x3 matrix of zeros
+M := TMatrixKit.Ones(3, 2);                                 // 3x2 matrix of ones
+M := TMatrixKit.CreateDiagonal([1.0, 2.0, 3.0]);            // Diagonal matrix
+M := TMatrixKit.CreateRandom(3, 3, 0.0, 1.0);               // Random matrix
+
+// Advanced matrix creation
+M := TMatrixKit.CreateHilbert(3);                           // Hilbert matrix
+M := TMatrixKit.CreateToeplitz(FirstRow, FirstCol);         // Toeplitz matrix
+M := TMatrixKit.CreateVandermonde(Vector);                  // Vandermonde matrix
+M := TMatrixKit.CreateBandMatrix(3, 1, 1);                  // Band matrix
+M := TMatrixKit.CreateSymmetric([[1.0, 2.0], [2.0, 3.0]]);  // Symmetric matrix
 
 // Basic operations
-C := TMatrixKit.Add(A, B);                       // Matrix addition
-D := TMatrixKit.Subtract(A, B);                  // Matrix subtraction
-E := TMatrixKit.Multiply(A, B);                  // Matrix multiplication
-F := TMatrixKit.ScalarMultiply(A, 2.0);          // Scalar multiplication
+C := A.Add(B);                                              // Matrix addition
+C := A.Subtract(B);                                         // Matrix subtraction
+C := A.Multiply(B);                                         // Matrix multiplication
+C := A.ScalarMultiply(2.0);                                 // Scalar multiplication
+C := A.ElementWiseMultiply(B);                              // Element-wise multiplication
+C := A.ElementWiseDivide(B);                                // Element-wise division
 
 // Matrix transformations
-T := TMatrixKit.Transpose(A);                    // Matrix transpose
+T := M.Transpose;                                           // Transpose
+I := M.Inverse;                                             // Inverse
+P := M.PseudoInverse;                                       // Pseudoinverse (Moore-Penrose)
+E := M.Exp;                                                 // Matrix exponential
+P := M.Power(2.0);                                          // Matrix power
 
 // Matrix properties
-Det := TMatrixKit.Determinant(A);                // Calculate determinant
-Tr := TMatrixKit.Trace(A);                       // Calculate trace
+D := M.Determinant;                                         // Determinant
+T := M.Trace;                                               // Trace
+R := M.Rank;                                                // Rank
+C := M.Condition;                                           // Condition number
 
-// Helper functions
-Rows := TMatrixKit.GetRows(A);                   // Get number of rows
-Cols := TMatrixKit.GetCols(A);                   // Get number of columns
-IsSquare := TMatrixKit.IsSquare(A);              // Check if matrix is square
+// Matrix norms
+N1 := M.NormOne;                                            // One norm (max column sum)
+NI := M.NormInf;                                            // Infinity norm (max row sum)
+NF := M.NormFrobenius;                                      // Frobenius norm
 
-// Note: Features like matrix rank, inversion, LU and QR decomposition
-// are planned for future implementation
+// Matrix type checks
+if M.IsSquare then ...                                      // Check if square
+if M.IsSymmetric then ...                                   // Check if symmetric
+if M.IsDiagonal then ...                                    // Check if diagonal
+if M.IsTriangular(True) then ...                            // Check if upper triangular
+if M.IsTriangular(False) then ...                           // Check if lower triangular
+if M.IsPositiveDefinite then ...                            // Check if positive definite
+if M.IsPositiveSemidefinite then ...                        // Check if positive semidefinite
+if M.IsOrthogonal then ...                                  // Check if orthogonal
+
+// Matrix decompositions
+LU := M.LU;                                                 // LU decomposition
+QR := M.QR;                                                 // QR decomposition
+Eigen := M.EigenDecomposition;                              // Eigendecomposition
+SVD := M.SVD;                                               // Singular Value Decomposition
+Chol := M.Cholesky;                                         // Cholesky decomposition
+
+// Vector operations
+if V.IsVector then ...                                      // Check if vector
+if V.IsColumnVector then ...                                // Check if column vector
+if V.IsRowVector then ...                                   // Check if row vector
+D := V1.DotProduct(V2);                                     // Dot product
+C := V1.CrossProduct(V2);                                   // Cross product (3D vectors)
+N := V.Normalize;                                           // Normalize vector
+
+// Statistical operations
+Mean := M.Mean;                                             // Overall mean
+ColMeans := M.Mean(0);                                      // Column means
+RowMeans := M.Mean(1);                                      // Row means
+Cov := M.Covariance;                                        // Covariance matrix
+Corr := M.Correlation;                                      // Correlation matrix
+
+// Block operations
+Sub := M.GetSubMatrix(0, 0, 2, 2);                          // Get submatrix
+M.SetSubMatrix(1, 1, Sub);                                  // Set submatrix
+
+// Solving linear systems
+X := A.Inverse.Multiply(B);                                 // Direct solution
+X := A.PseudoInverse.Multiply(B);                           // For non-square systems
+X := A.SolveIterative(B, imConjugateGradient);              // Iterative solution
+
+// Advanced eigenvalue methods
+Pair := M.PowerMethod;                                      // Power method for dominant eigenvalue
+
+// String representations
+S := M.ToString;                                            // String representation of matrix
+S := LU.ToString;                                           // Format LU decomposition (L, U, P)
+S := QR.ToString;                                           // Format QR decomposition (Q, R)
+S := Eigen.ToString;                                        // Format eigendecomposition (values, vectors)
+S := SVD.ToString;                                          // Format SVD (U, S, V)
+S := Chol.ToString;                                         // Format Cholesky decomposition (L)
+S := Pair.ToString;                                         // Format eigenpair (value, vector)
+
+// Memory-safe matrix usage
+var
+  A, B, C: IMatrix;
+begin
+  // Create matrices with automatic cleanup
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0],
+    [3.0, 4.0]
+  ]);
+  B := TMatrixKit.CreateFromArray([
+    [5.0, 6.0],
+    [7.0, 8.0]
+  ]);
+  
+  // Operations are memory-safe and handle cleanup
+  C := A.Multiply(B);
+  // All matrices are freed when they go out of scope
+end;
+
+// IMPORTANT: Memory Management
+// 1. Always use IMatrix interface (not TMatrixKit objects directly)
+// 2. Let interface references go out of scope naturally for cleanup
+// 3. Never manually free IMatrix references
+// 4. If you must use TMatrixKit objects directly (rare), use try-finally:
+var
+  M: TMatrixKit;  // Direct object - requires manual management
+begin
+  M := TMatrixKit.CreateMatrix(3, 3);  // Internal constructor
+  try
+    // Use M...
+  finally
+    M.Free;  // Manual cleanup required
+  end;
+end;
+
+// Safe decomposition usage
+var
+  M: IMatrix;
+  QR: TQRDecomposition;
+  SVD: TSVD;
+  Chol: TCholeskyDecomposition;
+begin
+  M := TMatrixKit.CreateFromArray([
+    [4.0, 1.0],
+    [1.0, 3.0]
+  ]);
+  
+  // All decompositions handle memory cleanup automatically
+  QR := M.QR;
+  SVD := M.SVD;
+  Chol := M.Cholesky;
+  
+  // Use decomposition results...
+  // All temporary matrices are properly managed
+end;
+
+// Power method for dominant eigenvalue/vector
+Pair := M.PowerMethod;                                      // Get dominant eigenpair
+WriteLn('Eigenvalue: ', Pair.EigenValue);                   // Access eigenvalue
+WriteLn('Eigenvector: ', Pair.EigenVector.ToString);        // Access eigenvector
+
+// Fractional matrix powers
+PowerM := M.Power(0.5);                                     // Square root of matrix
+PowerM := M.Power(-0.5);                                    // Inverse square root
+
+// Sparse matrix operations
+SM := TMatrixKit.CreateSparse(5, 5);                        // Create empty sparse matrix
+SM.SetValue(0, 0, 1.0);                                     // Set specific element
+SM.SetValue(1, 1, 2.0);                                     // Only non-zero elements stored
+SM2 := SM.Add(SM);                                          // Add sparse matrices
+Value := SM.GetValue(0, 0);                                 // Get element value
 ```
 
 ### Trigonometry (TTrigKit)
@@ -1167,7 +1306,6 @@ Logger
   .SetFormat('[%time] [%level] %message');
   
 // Custom message format patterns
-Logger.SetFormat('[%time] [%level] %message');                    // Default format
 Logger.SetFormat('[%time] [%level] [%category] %message');        // With category
 Logger.SetFormat('[%time] [%level] [%file:%line] %message');      // With source location
 Logger.SetFormat('[%time] [%level] [Thread %threadid] %message'); // With thread ID

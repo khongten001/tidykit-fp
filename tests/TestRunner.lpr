@@ -14,7 +14,8 @@ uses
   , TestCaseArchive
   , TidyKit.Crypto.AES256.Test
   , TidyKit.JSON.Test
-  , TidyKit.Logger.Test;
+  , TidyKit.Logger.Test
+  , TidyKit.Math.Matrices.Test;
 
 type
 
