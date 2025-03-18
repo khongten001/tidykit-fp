@@ -3,21 +3,46 @@ unit TidyKit.Math.Matrices;
 {$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 
+{-----------------------------------------------------------------------------
+ TidyKit.Math.Matrices
+
+ A comprehensive matrix algebra library for Free Pascal
+ 
+ This unit provides:
+ - Complete matrix operations (arithmetic, transformations, properties)
+ - Efficient sparse and dense matrix implementations
+ - Matrix decompositions (LU, QR, SVD, Cholesky, Eigendecomposition)
+ - Iterative methods for solving linear systems
+ - Statistical functions
+ - Specialized matrices (Hilbert, Toeplitz, Vandermonde)
+ 
+ Design principles:
+ - Interface-based architecture for flexibility
+ - Value semantics for matrix operations (operations return new matrices)
+ - Support for both dense and sparse matrix representations
+ - Numerically stable implementations of key algorithms
+ - Comprehensive error checking
+-----------------------------------------------------------------------------}
+
 interface
 
 uses
   Classes, SysUtils, Math, TidyKit.Math;
 
 const
+  { Debug mode flag to enable additional debugging output }
   DEBUG_MODE = False;
+  
+  { Block size for optimized matrix multiplication using cache-aware blocking algorithm.
+    Adjusting this value can significantly impact performance based on CPU cache size. }
   BLOCK_SIZE = 4;  // Optimal for 8x8 matrices
 
 type
-  { Matrix operation errors }
+  { Exception type for matrix operation errors }
   EMatrixError = class(Exception);
 
 type
-  { Matrix array type }
+  { 2D array of double values used as underlying storage for dense matrices }
   TMatrixArray = array of array of Double;
 
 type
@@ -25,17 +50,25 @@ type
   IMatrix = interface;
 
 type
-  { Iteration methods for solving linear systems }
+  { Enum specifying iterative methods for solving linear systems
+    - imConjugateGradient: Fast for symmetric positive definite matrices
+    - imGaussSeidel: Typically converges faster than Jacobi
+    - imJacobi: Simple, parallelizable method }
   TIterativeMethod = (imConjugateGradient, imGaussSeidel, imJacobi);
 
-  { Eigenpair for power method }
+  { Record type representing an eigenvalue and its corresponding eigenvector
+    Used in power iteration and eigenvalue computations }
   TEigenpair = record
     EigenValue: Double;
     EigenVector: IMatrix; // Column vector
     function ToString: string;
   end;
 
-  { Matrix decomposition records }
+  { LU decomposition record
+    Represents the factorization A = P^-1*L*U where:
+    - L is lower triangular with unit diagonal
+    - U is upper triangular
+    - P is a permutation matrix (stored as array of indices) }
   TLUDecomposition = record
     L: IMatrix;
     U: IMatrix;
@@ -43,18 +76,33 @@ type
     function ToString: string;
   end;
 
+  { QR decomposition record
+    Represents the factorization A = Q*R where:
+    - Q is orthogonal (Q*Q^T = I)
+    - R is upper triangular
+    Used for solving linear systems and least squares problems }
   TQRDecomposition = record
     Q: IMatrix;
     R: IMatrix;
     function ToString: string;
   end;
 
+  { Eigendecomposition record
+    Represents the factorization A = V*D*V^-1 where:
+    - D is a diagonal matrix with eigenvalues
+    - V contains the corresponding eigenvectors as columns
+    Only valid for diagonalizable matrices }
   TEigenDecomposition = record
     EigenValues: array of Double;
     EigenVectors: IMatrix;
     function ToString: string;
   end;
 
+  { Singular Value Decomposition (SVD) record
+    Represents the factorization A = U*S*V^T where:
+    - U and V are orthogonal matrices
+    - S is a diagonal matrix of singular values
+    Useful for pseudo-inverse, rank computation, and data analysis }
   TSVD = record
     U: IMatrix;  // Orthogonal matrix
     S: IMatrix;  // Diagonal matrix of singular values
@@ -62,13 +110,20 @@ type
     function ToString: string;
   end;
 
+  { Cholesky decomposition record
+    Represents the factorization A = L*L^T where:
+    - L is lower triangular
+    Only valid for symmetric positive definite matrices
+    Faster than LU decomposition when applicable }
   TCholeskyDecomposition = record
     L: IMatrix;  // Lower triangular matrix
     function ToString: string;
   end;
 
 type
-  { Matrix interface }
+  { Matrix interface
+    Defines the core functionality for all matrix implementations
+    All operations return new matrices rather than modifying existing ones }
   IMatrix = interface
     ['{F8A7B320-7A1D-4E85-9B12-E77D2B5C8A9E}']
     function GetRows: Integer;
@@ -154,92 +209,366 @@ type
   { Matrix implementation }
   TMatrixKit = class(TInterfacedObject, IMatrix)
   private
+    { Underlying 2D array to store matrix elements in dense format }
     FData: array of array of Double;
+    
+    { Basic accessor methods }
     function GetRows: Integer;
     function GetCols: Integer;
     function GetValue(Row, Col: Integer): Double; virtual;
     procedure SetValue(Row, Col: Integer; const Value: Double); virtual;
     
-    { Helper methods }
+    { Helper methods for numerical algorithms }
+    { Swaps two rows in the matrix, used for pivoting operations in LU and Gaussian elimination }
     procedure SwapRows(Row1, Row2: Integer);
+    
+    { Finds the index of the row with maximum absolute value in a column, starting from StartRow
+      Used for numerical stability in LU decomposition with partial pivoting }
     function FindPivot(StartRow, Col: Integer): Integer;
+    
+    { Solves an upper triangular system Ux = b using back substitution
+      Parameters:
+        Upper: Upper triangular matrix U
+        b: Right-hand side vector
+      Returns: Solution vector x }
     function BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
+    
+    { Solves a lower triangular system Lx = b using forward substitution
+      Parameters:
+        Lower: Lower triangular matrix L
+        b: Right-hand side vector
+      Returns: Solution vector x }
     function ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
+    
+    { Computes the dot product of two vectors
+      Used as a helper in various matrix operations }
     function DotProduct(const v1, v2: TDoubleArray): Double;
+    
+    { Normalizes a column vector to unit length
+      Used in QR decomposition and other orthogonalization processes }
     procedure NormalizeColumn(var Matrix: TMatrixKit; Col: Integer);
   public
+    { Creates a new matrix with specified dimensions
+      Parameters:
+        ARows: Number of rows
+        ACols: Number of columns
+      All elements are initialized to zero }
     constructor Create(const ARows, ACols: Integer);
+    
+    { Frees resources associated with the matrix }
     destructor Destroy; override;
     
-    { Static creation methods }
+    { Static factory methods for creating various types of matrices }
+    
+    { Creates a matrix from a 2D array of values
+      Parameters:
+        Data: 2D array with matrix values
+      Returns: New matrix populated with values from the array
+      Raises: EMatrixError if rows have different lengths }
     class function CreateFromArray(const Data: TMatrixArray): IMatrix;
+    
+    { Creates an identity matrix of specified size
+      Parameters:
+        Size: Number of rows/columns
+      Returns: Square matrix with ones on the diagonal and zeros elsewhere }
     class function Identity(const Size: Integer): IMatrix;
+    
+    { Creates a matrix filled with zeros
+      Parameters:
+        Rows, Cols: Matrix dimensions
+      Returns: Matrix of specified size with all elements set to zero }
     class function Zeros(const Rows, Cols: Integer): IMatrix;
+    
+    { Creates a matrix filled with ones
+      Parameters:
+        Rows, Cols: Matrix dimensions
+      Returns: Matrix of specified size with all elements set to one }
     class function Ones(const Rows, Cols: Integer): IMatrix;
+    
+    { Creates a sparse matrix implementation
+      Parameters:
+        Rows, Cols: Matrix dimensions
+      Returns: Empty sparse matrix of specified size
+      Note: Use for matrices with many zero elements to save memory }
     class function CreateSparse(Rows, Cols: Integer): IMatrix;
+    
+    { Creates a Hilbert matrix, a classical example of an ill-conditioned matrix
+      H(i,j) = 1/(i+j-1)
+      Parameters:
+        Size: Size of square matrix
+      Returns: Size×Size Hilbert matrix }
     class function CreateHilbert(Size: Integer): IMatrix;
+    
+    { Creates a Toeplitz matrix with specified first row and column
+      A Toeplitz matrix has constant values along all diagonals
+      Parameters:
+        FirstRow: Values for the first row
+        FirstCol: Values for the first column
+      Returns: Toeplitz matrix }
     class function CreateToeplitz(const FirstRow, FirstCol: TDoubleArray): IMatrix;
+    
+    { Creates a Vandermonde matrix from vector [x₁, x₂, ..., xₙ]
+      V(i,j) = xᵢʲ⁻¹
+      Parameters:
+        Vector: Input vector
+      Returns: Vandermonde matrix }
     class function CreateVandermonde(const Vector: TDoubleArray): IMatrix;
     
     { Interface implementations }
+    
+    { Adds this matrix to another matrix
+      Parameters:
+        Other: Matrix to add
+      Returns: Result of A + B
+      Raises: EMatrixError if dimensions don't match }
     function Add(const Other: IMatrix): IMatrix;
+    
+    { Subtracts another matrix from this matrix
+      Parameters:
+        Other: Matrix to subtract
+      Returns: Result of A - B
+      Raises: EMatrixError if dimensions don't match }
     function Subtract(const Other: IMatrix): IMatrix;
+    
+    { Multiplies this matrix by another matrix
+      Parameters:
+        Other: Right-hand matrix
+      Returns: Result of A * B
+      Raises: EMatrixError if inner dimensions don't match
+      Note: Uses block algorithm for large matrices to improve cache efficiency }
     function Multiply(const Other: IMatrix): IMatrix;
+    
+    { Multiplies this matrix by a scalar
+      Parameters:
+        Scalar: Value to multiply by
+      Returns: Result of k * A }
     function ScalarMultiply(const Scalar: Double): IMatrix;
+    
+    { Computes the transpose of this matrix
+      Returns: A^T where (A^T)ᵢⱼ = Aⱼᵢ }
     function Transpose: IMatrix;
+    
+    { Computes the inverse of this matrix
+      Returns: A^(-1) such that A * A^(-1) = I
+      Raises: EMatrixError if matrix is singular or non-square
+      Note: Uses LU decomposition for computation }
     function Inverse: IMatrix;
+    
+    { Computes the Moore-Penrose pseudoinverse
+      Returns: A^+ which is the generalized inverse
+      Note: Works for non-square and rank-deficient matrices
+      Uses SVD decomposition for computation }
     function PseudoInverse: IMatrix;
+    
+    { Computes the matrix exponential e^A
+      Returns: Matrix exponential using series expansion }
     function Exp: IMatrix;
+    
+    { Computes the matrix power A^p for real p
+      Parameters:
+        exponent: Power to raise matrix to
+      Returns: A^p
+      Raises: EMatrixError for non-square matrices }
     function Power(exponent: Double): IMatrix;
+    
+    { Computes the determinant of the matrix
+      Returns: |A|
+      Raises: EMatrixError for non-square matrices }
     function Determinant: Double;
+    
+    { Computes the trace of the matrix (sum of diagonal elements)
+      Returns: Tr(A)
+      Raises: EMatrixError for non-square matrices }
     function Trace: Double;
+    
+    { Computes the rank of the matrix (number of linearly independent rows/columns)
+      Returns: rank(A)
+      Note: Uses Gaussian elimination with tolerance for numerical stability }
     function Rank: Integer;
+    
+    { Checks if the matrix is square (same number of rows and columns)
+      Returns: True if matrix is square }
     function IsSquare: Boolean;
+    
+    { Computes LU decomposition with partial pivoting
+      Returns: Record with L, U matrices and permutation vector P
+      Raises: EMatrixError for non-square matrices }
     function LU: TLUDecomposition;
+    
+    { Computes QR decomposition using Householder reflections
+      Returns: Record with Q (orthogonal) and R (upper triangular) matrices }
     function QR: TQRDecomposition;
+    
+    { Computes eigenvalues and eigenvectors
+      Returns: Record with eigenvalues and eigenvector matrix
+      Raises: EMatrixError for non-square matrices
+      Note: Uses QR algorithm with shifts for better convergence }
     function EigenDecomposition: TEigenDecomposition;
+    
+    { Computes Singular Value Decomposition (SVD)
+      Returns: Record with U, S, and V matrices (A = U*S*V^T)
+      Note: Useful for pseudoinverse, rank determination, and data analysis }
     function SVD: TSVD;
+    
+    { Computes Cholesky decomposition
+      Returns: Record with lower triangular matrix L (A = L*L^T)
+      Raises: EMatrixError if matrix is not symmetric positive definite }
     function Cholesky: TCholeskyDecomposition;
     
-    { String representation }
+    { String representation for debugging and display }
     function ToString: string; override;
     
-    { Additional implementations }
+    { Matrix norm functions }
+    
+    { Computes column sum norm (maximum absolute column sum)
+      Returns: ||A||₁ }
     function NormOne: Double;
+    
+    { Computes row sum norm (maximum absolute row sum)
+      Returns: ||A||∞ }
     function NormInf: Double;
+    
+    { Computes Frobenius norm (square root of sum of squares)
+      Returns: ||A||ᶠ = sqrt(sum of all aᵢⱼ²) }
     function NormFrobenius: Double;
     
-    { Additional matrix constructors }
+    { Additional specialized matrix constructors }
+    
+    { Creates a band matrix with specified bandwidths
+      Parameters:
+        Size: Matrix size (square)
+        LowerBand: Width of band below diagonal
+        UpperBand: Width of band above diagonal
+      Returns: Band matrix with specified structure }
     class function CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
+    
+    { Creates a symmetric matrix from data
+      Data is assumed to contain the upper triangular part
+      Parameters:
+        Data: Array containing at least the upper triangular values
+      Returns: Symmetric matrix A where A = A^T }
     class function CreateSymmetric(const Data: TMatrixArray): IMatrix;
+    
+    { Creates a diagonal matrix from vector of diagonal values
+      Parameters:
+        Diagonal: Values to place on diagonal
+      Returns: Matrix with specified values on diagonal, zeros elsewhere }
     class function CreateDiagonal(const Diagonal: array of Double): IMatrix;
+    
+    { Creates a matrix with random values between Min and Max
+      Parameters:
+        Rows, Cols: Matrix dimensions
+        Min, Max: Range for random values
+      Returns: Matrix filled with uniform random values }
     class function CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
     
-    { Vector operations }
+    { Vector-related functions }
+    
+    { Checks if matrix is a vector (has only one row or column)
+      Returns: True if matrix is a vector }
     function IsVector: Boolean;
+    
+    { Checks if matrix is a column vector (has only one column)
+      Returns: True if matrix is a column vector }
     function IsColumnVector: Boolean;
+    
+    { Checks if matrix is a row vector (has only one row)
+      Returns: True if matrix is a row vector }
     function IsRowVector: Boolean;
+    
+    { Computes dot product between two vectors
+      Parameters:
+        Other: Second vector
+      Returns: Dot product (sum of element-wise products)
+      Raises: EMatrixError if either is not a vector or dimensions don't match }
     function DotProduct(const Other: IMatrix): Double;
+    
+    { Computes cross product between two 3D vectors
+      Parameters:
+        Other: Second 3D vector
+      Returns: Cross product vector
+      Raises: EMatrixError if inputs aren't 3D vectors }
     function CrossProduct(const Other: IMatrix): IMatrix;
+    
+    { Normalizes a vector to unit length
+      Returns: Unit vector in same direction
+      Raises: EMatrixError if not a vector or zero vector }
     function Normalize: IMatrix;
     
-    { Statistical operations }
+    { Statistical functions }
+    
+    { Computes mean value(s)
+      Parameters:
+        Axis: -1 for overall mean, 0 for row means, 1 for column means
+      Returns: Scalar, row vector, or column vector of means }
     function Mean(Axis: Integer = -1): IMatrix;
+    
+    { Computes covariance matrix for multivariate data
+      Returns: Covariance matrix
+      Note: Assumes columns are variables, rows are observations }
     function Covariance: IMatrix;
+    
+    { Computes correlation matrix for multivariate data
+      Returns: Correlation matrix with values between -1 and 1
+      Note: Assumes columns are variables, rows are observations }
     function Correlation: IMatrix;
     
-    { Iterative methods }
+    { Iterative solvers for large systems }
+    
+    { Solves linear system Ax = b using iterative methods
+      Parameters:
+        B: Right-hand side vector or matrix
+        Method: Iterative method to use
+        MaxIterations: Maximum number of iterations
+        Tolerance: Convergence tolerance
+      Returns: Solution x
+      Raises: EMatrixError if system is incompatible or non-convergent }
     function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient;
                             MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+    
+    { Finds dominant eigenvalue and eigenvector using power iteration
+      Parameters:
+        MaxIterations: Maximum number of iterations
+        Tolerance: Convergence tolerance
+      Returns: Record with eigenvalue and eigenvector
+      Note: Finds only the eigenvalue with largest magnitude }
     function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
     
     { Additional matrix properties }
+    
+    { Checks if matrix is symmetric (A = A^T)
+      Returns: True if matrix is symmetric
+      Note: Uses tolerance for floating-point comparison }
     function IsSymmetric: Boolean;
+    
+    { Checks if matrix is diagonal (zeros everywhere except diagonal)
+      Returns: True if matrix is diagonal }
     function IsDiagonal: Boolean;
+    
+    { Checks if matrix is triangular
+      Parameters:
+        Upper: True to check for upper triangular, False for lower
+      Returns: True if matrix is triangular of specified type }
     function IsTriangular(Upper: Boolean = True): Boolean;
+    
+    { Checks if matrix is positive definite
+      Returns: True if matrix is symmetric with all positive eigenvalues
+      Note: A matrix is positive definite if x^T*A*x > 0 for all non-zero x }
     function IsPositiveDefinite: Boolean;
+    
+    { Checks if matrix is positive semidefinite
+      Returns: True if matrix is symmetric with all non-negative eigenvalues
+      Note: A matrix is positive semidefinite if x^T*A*x ≥ 0 for all x }
     function IsPositiveSemidefinite: Boolean;
+    
+    { Checks if matrix is orthogonal (A^T*A = I)
+      Returns: True if matrix is orthogonal
+      Note: Orthogonal matrices preserve vector lengths and angles }
     function IsOrthogonal: Boolean;
+    
+    { Computes condition number of the matrix
+      Returns: Condition number (ratio of largest to smallest singular value)
+      Note: Large condition numbers indicate ill-conditioned matrices }
     function Condition: Double;
     
     { Block operations }
@@ -252,35 +581,97 @@ type
   end;
 
 type
+  { Record structure for storing non-zero elements in sparse matrix
+    Sparse matrices store only non-zero elements to save memory
+    when dealing with matrices that have many zeros }
   TSparseElement = record
-    Row: Integer;
-    Col: Integer;
-    Value: Double;
+    Row: Integer;    // Row index of the element
+    Col: Integer;    // Column index of the element
+    Value: Double;   // Value at this position (always non-zero)
   end;
   
+  { Sparse matrix implementation that inherits from TMatrixKit
+    While TMatrixKit stores all elements in a 2D array,
+    TMatrixKitSparse only stores non-zero elements for memory efficiency.
+    Most suitable for large matrices with >90% zero elements. }
   TMatrixKitSparse = class(TMatrixKit)
   private
+    { Array of non-zero elements }
     FElements: array of TSparseElement;
+    
+    { Current number of non-zero elements }
     FElementCount: Integer;
+    
+    { Current capacity of FElements array }
     FCapacity: Integer;
     
+    { Ensures the internal array has enough capacity for new elements
+      Automatically grows the array when needed, similar to TList
+      Parameters:
+        NewCount: Required capacity }
     procedure EnsureCapacity(NewCount: Integer);
   public
+    { Creates a new sparse matrix with specified dimensions
+      Parameters:
+        Rows: Number of rows
+        Cols: Number of columns
+      Note: Initial state is an empty matrix (all zeros) }
     constructor Create(Rows, Cols: Integer);
+    
+    { Frees the resources associated with the sparse matrix }
     destructor Destroy; override;
     
+    { Gets value at specified position
+      This is an O(log n) operation in sparse implementation
+      Uses binary search to find the element if it exists
+      Parameters:
+        Row, Col: Position to retrieve
+      Returns: Value at position (0 if element not found) }
     function GetValue(Row, Col: Integer): Double; override;
+    
+    { Sets value at specified position
+      This is an O(n) operation in worst case
+      If setting to zero, removes the element from storage
+      Parameters:
+        Row, Col: Position to set
+        Value: New value }
     procedure SetValue(Row, Col: Integer; const Value: Double); override;
+    
+    { Adds two matrices, optimized for sparse matrices
+      Parameters:
+        Other: Matrix to add to this one
+      Returns: New sparse matrix with sum
+      Note: Result preserves sparsity pattern }
     function Add(const Other: IMatrix): IMatrix;
     
-    // Sparse-specific methods
+    { Sparse-specific methods }
+    
+    { Adds a non-zero element to the sparse matrix
+      More efficient than SetValue when building a matrix sequentially
+      Parameters:
+        Row, Col: Position to add
+        Value: Non-zero value to add
+      Note: If element exists, value is added to existing value }
     procedure AddElement(Row, Col: Integer; Value: Double);
+    
+    { Removes zero/duplicate elements and sorts for efficiency
+      Call periodically after many modifications to maintain performance }
     procedure CompactStorage;
   end;
 
 implementation
 
-// Insert this function at the beginning of the implementation section
+{ Helper function to return a value with the magnitude of one parameter
+  but the sign of another. Used extensively in various decompositions
+  for numerical stability.
+  
+  Parameters:
+    Magnitude: Value whose absolute value to use
+    Value: Value whose sign to use
+  
+  Returns:
+    abs(Magnitude) if Value ≥ 0, -abs(Magnitude) otherwise
+}
 function SignWithMagnitude(const Magnitude, Value: Double): Double;
 begin
   if Value >= 0 then
@@ -693,6 +1084,33 @@ begin
   end;
 end;
 
+{ LU decomposition with partial pivoting
+  
+  Computes the decomposition of matrix A such that PA = LU where:
+  - P is a permutation matrix (stored as array of indices)
+  - L is a lower triangular matrix with unit diagonal
+  - U is an upper triangular matrix
+  
+  Algorithm:
+  1. Initialize L as identity matrix, U as a copy of this matrix, P as identity permutation
+  2. For each column k:
+     a. Find pivot (row with largest absolute value in current column)
+     b. Swap rows in U and update permutation P
+     c. For each row below pivot:
+        i. Compute multiplier and store in L
+        ii. Eliminate elements below pivot in U
+  
+  Uses partial pivoting for numerical stability.
+  
+  Returns: 
+    TLUDecomposition record containing L, U matrices and permutation array P
+  
+  Raises:
+    EMatrixError if matrix is not square or is singular
+  
+  Time complexity: O(n³) where n is the matrix dimension
+  Space complexity: O(n²)
+}
 function TMatrixKit.LU: TLUDecomposition;
 var
   I, J, K, PivotRow: Integer;
@@ -703,30 +1121,31 @@ begin
   if not IsSquare then
     raise EMatrixError.Create('LU decomposition requires square matrix');
 
+  { Numerical tolerance for detecting singular matrices }
   Tolerance := 1E-12;
 
-  // Initialize L and U matrices
+  { Initialize L as identity and U as copy of input matrix }
   L := TMatrixKit.Create(GetRows, GetRows);
   U := TMatrixKit.Create(GetRows, GetRows);
   
-  // Initialize permutation array
+  { Initialize permutation array to identity permutation }
   SetLength(Result.P, GetRows);
   for I := 0 to GetRows - 1 do
     Result.P[I] := I;
 
-  // Copy original matrix to U
+  { Copy original matrix to U }
   for I := 0 to GetRows - 1 do
     for J := 0 to GetRows - 1 do
       U.FData[I, J] := FData[I, J];
 
-  // Initialize L with identity matrix
+  { Initialize L with identity matrix (unit diagonal) }
   for I := 0 to GetRows - 1 do
     L.FData[I, I] := 1;
 
-  // Perform LU decomposition with partial pivoting
+  { Main LU decomposition loop with partial pivoting }
   for K := 0 to GetRows - 2 do
   begin
-    // Find pivot
+    { Find pivot element (maximum absolute value in current column) }
     MaxVal := Abs(U.FData[K, K]);
     PivotRow := K;
     for I := K + 1 to GetRows - 1 do
@@ -736,7 +1155,7 @@ begin
         PivotRow := I;
       end;
 
-    // Check if matrix is singular
+    { Check if matrix is singular (pivot too small) }
     if MaxVal <= Tolerance then
     begin
       L.Free;
@@ -744,27 +1163,30 @@ begin
       raise EMatrixError.Create('Matrix is singular');
     end;
 
-    // Swap rows if necessary
+    { Swap rows if necessary (partial pivoting) }
     if PivotRow <> K then
     begin
       U.SwapRows(K, PivotRow);
-      // Update permutation array
+      { Update permutation array to track row exchanges }
       J := Result.P[K];
       Result.P[K] := Result.P[PivotRow];
       Result.P[PivotRow] := J;
     end;
 
+    { Perform elimination for all rows below current pivot }
     for I := K + 1 to GetRows - 1 do
     begin
+      { Compute multiplier and store in L matrix }
       Factor := U.FData[I, K] / U.FData[K, K];
       L.FData[I, K] := Factor;
       
+      { Eliminate elements below pivot in U matrix }
       for J := K to GetRows - 1 do
         U.FData[I, J] := U.FData[I, J] - Factor * U.FData[K, J];
     end;
   end;
 
-  // Final check for singularity
+  { Final check for singularity (last diagonal element) }
   if Abs(U.FData[GetRows-1, GetRows-1]) <= Tolerance then
   begin
     L.Free;
@@ -772,6 +1194,7 @@ begin
     raise EMatrixError.Create('Matrix is singular');
   end;
 
+  { Store results }
   Result.L := L;
   Result.U := U;
 end;
