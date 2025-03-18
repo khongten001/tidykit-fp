@@ -463,14 +463,14 @@ begin
   else
   begin
     // Standard multiplication for smaller matrices
-    for I := 0 to GetRows - 1 do
-      for J := 0 to Other.Cols - 1 do
-      begin
-        Sum := 0;
-        for K := 0 to GetCols - 1 do
-          Sum := Sum + FData[I, K] * Other.GetValue(K, J);
-        Matrix.FData[I, J] := Sum;
-      end;
+  for I := 0 to GetRows - 1 do
+    for J := 0 to Other.Cols - 1 do
+    begin
+      Sum := 0;
+      for K := 0 to GetCols - 1 do
+        Sum := Sum + FData[I, K] * Other.GetValue(K, J);
+      Matrix.FData[I, J] := Sum;
+    end;
   end;
   
   Result := Matrix;
@@ -2410,11 +2410,11 @@ begin
   S := TMatrixKit.Create(GetRows, GetCols);
   V := TMatrixKit.Create(GetCols, GetCols);
   
-  // Copy original matrix to A
-  for I := 0 to GetRows - 1 do
-    for J := 0 to GetCols - 1 do
-      A.FData[I, J] := FData[I, J];
-      
+    // Copy original matrix to A
+    for I := 0 to GetRows - 1 do
+      for J := 0 to GetCols - 1 do
+        A.FData[I, J] := FData[I, J];
+    
   SetLength(RV1, GetCols);
   
   // Householder reduction to bidiagonal form
@@ -2422,8 +2422,8 @@ begin
   Scale := 0;
   Anorm := 0;
   
-  for I := 0 to GetCols - 1 do
-  begin
+        for I := 0 to GetCols - 1 do
+        begin
     L := I + 1;
     RV1[I] := Scale * G;
     G := 0;
@@ -2469,12 +2469,12 @@ begin
     Scale := 0;
     
     if (I < GetRows) and (I <> GetCols - 1) then
-    begin
+          begin
       for K := L to GetCols - 1 do
         Scale := Scale + Abs(A.FData[I, K]);
       
       if Scale <> 0 then
-      begin
+            begin
         for K := L to GetCols - 1 do
         begin
           A.FData[I, K] := A.FData[I, K] / Scale;
@@ -2568,9 +2568,9 @@ begin
       
       for J := I to GetRows - 1 do
         A.FData[J, I] := A.FData[J, I] * G;
-    end
-    else
-    begin
+          end
+          else
+          begin
       for J := I to GetRows - 1 do
         A.FData[J, I] := 0;
     end;
@@ -2580,7 +2580,7 @@ begin
   
   // Diagonalization of the bidiagonal form
   for K := GetCols - 1 downto 0 do
-  begin
+        begin
     for Iter := 1 to MaxIter do
     begin
       Flag := True;
@@ -2772,15 +2772,15 @@ begin
   
   // Create inverse of S by inverting non-zero singular values
   SInverse := TMatrixKit.Create(GetCols, GetRows);
-  Tolerance := 1E-12 * SVDResult.S.GetValue(0, 0);  // Relative to largest singular value
-  
-  for I := 0 to Min(GetRows, GetCols) - 1 do
-    if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
+    Tolerance := 1E-12 * SVDResult.S.GetValue(0, 0);  // Relative to largest singular value
+    
+    for I := 0 to Min(GetRows, GetCols) - 1 do
+      if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
       SInverse.Values[I, I] := 1.0 / SVDResult.S.GetValue(I, I);
-  
-  // Compute pseudoinverse: A^+ = V * S^+ * U^T
+    
+    // Compute pseudoinverse: A^+ = V * S^+ * U^T
   // All matrices are IMatrix interfaces and will be automatically freed
-  Result := SVDResult.V.Multiply(SInverse).Multiply(SVDResult.U.Transpose);
+    Result := SVDResult.V.Multiply(SInverse).Multiply(SVDResult.U.Transpose);
 end;
 
 function TMatrixKit.Exp: IMatrix;
@@ -2853,20 +2853,20 @@ begin
   begin
     // Non-integer exponent - always use SVD
     // A^p = U * S^p * V^T where S^p is diagonal matrix with s_i^p on diagonal
-    SVDResult := SVD;
+        SVDResult := SVD;
     Tolerance := 1E-12;
-    
-    // Create S^p
-    SInverse := TMatrixKit.Create(GetRows, GetRows);
+        
+        // Create S^p
+        SInverse := TMatrixKit.Create(GetRows, GetRows);
     try
       // Only operate on the diagonal elements
-      for I := 0 to GetRows - 1 do
+        for I := 0 to GetRows - 1 do
       begin
         if Abs(SVDResult.S.GetValue(I, I)) > Tolerance then
           SInverse.SetValue(I, I, Math.Power(Abs(SVDResult.S.GetValue(I, I)), exponent));
       end;
-      
-      // Compute A^p = U * S^p * V^T
+            
+        // Compute A^p = U * S^p * V^T
       ResultMatrix := SVDResult.U.Multiply(SInverse).Multiply(SVDResult.V.Transpose);
       
       // Copy the result to avoid returning a reference to a temporary object

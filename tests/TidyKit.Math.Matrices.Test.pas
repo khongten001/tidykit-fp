@@ -10,7 +10,7 @@ uses
   , fpcunit
   , testregistry
   , TidyKit.Math
-  , TidyKit.Math.Matrices; // alternatively, TidyKit
+  , TidyKit.Math.Matrices; // alternatively, simply use TidyKit
 
 type
   TMatrixTest = class(TTestCase)

@@ -1100,6 +1100,22 @@ begin
   // Use decomposition results...
   // All temporary matrices are properly managed
 end;
+
+// Power method for dominant eigenvalue/vector
+Pair := M.PowerMethod;                                      // Get dominant eigenpair
+WriteLn('Eigenvalue: ', Pair.EigenValue);                   // Access eigenvalue
+WriteLn('Eigenvector: ', Pair.EigenVector.ToString);        // Access eigenvector
+
+// Fractional matrix powers
+PowerM := M.Power(0.5);                                     // Square root of matrix
+PowerM := M.Power(-0.5);                                    // Inverse square root
+
+// Sparse matrix operations
+SM := TMatrixKit.CreateSparse(5, 5);                        // Create empty sparse matrix
+SM.SetValue(0, 0, 1.0);                                     // Set specific element
+SM.SetValue(1, 1, 2.0);                                     // Only non-zero elements stored
+SM2 := SM.Add(SM);                                          // Add sparse matrices
+Value := SM.GetValue(0, 0);                                 // Get element value
 ```
 
 ### Trigonometry (TTrigKit)
@@ -1290,7 +1306,6 @@ Logger
   .SetFormat('[%time] [%level] %message');
   
 // Custom message format patterns
-Logger.SetFormat('[%time] [%level] %message');                    // Default format
 Logger.SetFormat('[%time] [%level] [%category] %message');        // With category
 Logger.SetFormat('[%time] [%level] [%file:%line] %message');      // With source location
 Logger.SetFormat('[%time] [%level] [Thread %threadid] %message'); // With thread ID

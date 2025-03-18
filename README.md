@@ -110,10 +110,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - Element-wise operations
     - Submatrix operations
     - Linear system solving (direct and iterative methods)
-    - Matrix functions (exponential, power)
+    - Matrix functions (exponential, power with support for fractional powers)
     - Pseudoinverse for non-square matrices
     - Vector operations (dot product, cross product, normalization)
     - Statistical operations (mean, covariance, correlation)
+    - Advanced eigenvalue computation with PowerMethod
+    - Memory-efficient sparse matrix implementation
     - Comprehensive error handling
     - Memory-safe interface design with automatic reference counting
     - String representations of matrices and decompositions

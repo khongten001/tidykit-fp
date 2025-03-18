@@ -612,3 +612,84 @@ These string representations are particularly helpful for:
 - Logging matrix operations for analysis
 - Verifying correctness of decompositions
 - Educational purposes to demonstrate matrix concepts 
+
+### Power Method
+For a matrix $A$, the power method iteratively finds the dominant eigenvalue and corresponding eigenvector:
+
+```pascal
+var
+  M: IMatrix;
+  Pair: TEigenpair;
+begin
+  // Create a test matrix with known dominant eigenvalue
+  M := TMatrixKit.CreateFromArray([
+    [4.0, 1.0],
+    [1.0, 3.0]
+  ]);
+  
+  // Compute the dominant eigenpair using the power method
+  Pair := M.PowerMethod;
+  
+  // Access the results
+  WriteLn('Dominant eigenvalue: ', Pair.EigenValue:10:6);
+  WriteLn('Eigenvector:');
+  WriteLn(Pair.EigenVector.ToString);
+  
+  // Validate that A*v = λ*v
+  // A*v should approximately equal λ*v within numerical tolerance
+end;
+```
+
+### Sparse Matrix Operations
+The library provides memory-efficient sparse matrix implementation for matrices with many zero elements:
+
+```pascal
+var
+  SM, Result: IMatrix;
+begin
+  // Create a sparse matrix
+  SM := TMatrixKit.CreateSparse(5, 5);
+  
+  // Set only non-zero elements
+  SM.SetValue(0, 0, 1.0);
+  SM.SetValue(1, 1, 2.0);
+  SM.SetValue(2, 2, 3.0);
+  SM.SetValue(0, 4, 5.0);
+  SM.SetValue(4, 0, 5.0);
+  
+  // Get values (default is 0.0 for unset elements)
+  WriteLn(SM.GetValue(0, 0));  // 1.0
+  WriteLn(SM.GetValue(0, 1));  // 0.0
+  
+  // Addition works with both sparse and dense matrices
+  Result := SM.Add(SM);  // Doubles all values
+  
+  // Convert to dense matrix if needed
+  Dense := SM.ToDense;
+end;
+```
+
+
+### Matrix Power
+For a square matrix $A$ and a scalar $p$, the matrix power is defined as:
+$$A^p = V D^p V^{-1}$$
+where $A = VDV^{-1}$ is the eigendecomposition of $A$.
+
+The implementation supports:
+- Integer powers (positive and negative)
+- Fractional powers (positive and negative) for positive definite matrices
+
+```pascal
+var
+  M, PowerM: IMatrix;
+begin
+  // Integer power
+  PowerM := M.Power(2);  // A^2
+  
+  // Fractional power (for positive definite matrices)
+  PowerM := M.Power(0.5);   // A^(1/2) or square root of A
+  PowerM := M.Power(-0.5);  // A^(-1/2) or inverse square root of A
+end;
+```
+
+For fractional powers, the matrix must be positive definite to ensure real eigenvalues.
