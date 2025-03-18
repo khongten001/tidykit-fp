@@ -3,521 +3,284 @@ unit TidyKit.Math.Matrices;
 {$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 
-{
-  TidyKit.Math.Matrices
-  ===================
-  
-  A comprehensive matrix manipulation library for FreePascal, providing a wide range of
-  matrix operations including basic arithmetic, decompositions, solving linear systems,
-  statistical operations, and more.
-  
-  This unit implements common linear algebra functionality through a convenient interface-based
-  approach, allowing for different matrix implementations (dense, sparse) while presenting
-  a consistent API.
-  
-  Key features:
-  - Basic matrix arithmetic (addition, subtraction, multiplication)
-  - Matrix decompositions (LU, QR, SVD, Eigenvalue, Cholesky)
-  - Linear system solvers (direct and iterative methods)
-  - Vector operations
-  - Statistical operations (mean, covariance, correlation)
-  - Factory methods for creating specialized matrices
-  
-  Usage example:
-    var
-      A, B, C: IMatrix;
-    begin
-      A := CreateMatrix(3, 3);
-      B := IdentityMatrix(3);
-      
-      // Set some values
-      A[0, 0] := 2;
-      A[1, 1] := 3;
-      A[2, 2] := 4;
-      
-      // Perform operations
-      C := A.Multiply(B);
-      
-      // Solve a linear system
-      B := A.Inverse.Multiply(C);
-    end;
-}
-
 interface
 
 uses
   Classes, SysUtils, Math, TidyKit.Math;
 
 const
-  { Debug mode flag for additional logging }
   DEBUG_MODE = False;
-  
-  { Block size for optimized matrix multiplication }
   BLOCK_SIZE = 4;  // Optimal for 8x8 matrices
 
 type
-  { Custom exception class for matrix operation errors }
+  { Matrix operation errors }
   EMatrixError = class(Exception);
 
 type
-  { 2D array of doubles used to store matrix data }
+  { Matrix array type }
   TMatrixArray = array of array of Double;
 
 type
-  { Forward declaration of matrix interface }
+  { Forward declarations }
   IMatrix = interface;
 
 type
-  { Enumeration of iterative methods for solving linear systems:
-    - imConjugateGradient: Efficient for symmetric positive definite matrices
-    - imGaussSeidel: Similar to Jacobi but uses updated values immediately
-    - imJacobi: Simple iterative method using diagonal dominance }
+  { Iteration methods for solving linear systems }
   TIterativeMethod = (imConjugateGradient, imGaussSeidel, imJacobi);
 
-  { Record containing eigenvalue and eigenvector pair.
-    Used by PowerMethod to return the dominant eigenvalue and its corresponding eigenvector }
+  { Eigenpair for power method }
   TEigenpair = record
-    EigenValue: Double;      // The eigenvalue
-    EigenVector: IMatrix;    // The corresponding eigenvector (stored as a column vector)
+    EigenValue: Double;
+    EigenVector: IMatrix; // Column vector
     function ToString: string;
   end;
 
-  { Record containing LU decomposition matrices and permutation array.
-    LU decomposition factorizes a matrix A = P·L·U where:
-    - L is lower triangular with ones on the diagonal
-    - U is upper triangular
-    - P is a permutation matrix (stored as array for efficiency) }
+  { Matrix decomposition records }
   TLUDecomposition = record
-    L: IMatrix;              // Lower triangular matrix with unit diagonal
-    U: IMatrix;              // Upper triangular matrix 
-    P: array of Integer;     // Permutation array (P[i] = j means row i in original maps to row j)
+    L: IMatrix;
+    U: IMatrix;
+    P: array of Integer;
     function ToString: string;
   end;
 
-  { Record containing QR decomposition matrices.
-    QR decomposition factorizes a matrix A = Q·R where:
-    - Q is an orthogonal matrix (Q·Q^T = I)
-    - R is an upper triangular matrix }
   TQRDecomposition = record
-    Q: IMatrix;              // Orthogonal matrix
-    R: IMatrix;              // Upper triangular matrix
+    Q: IMatrix;
+    R: IMatrix;
     function ToString: string;
   end;
 
-  { Record containing eigendecomposition results.
-    Eigendecomposition factorizes a matrix A = V·D·V^(-1) where:
-    - D is a diagonal matrix of eigenvalues
-    - V is a matrix whose columns are the eigenvectors }
   TEigenDecomposition = record
-    EigenValues: array of Double;  // Array of eigenvalues
-    EigenVectors: IMatrix;         // Matrix where each column is an eigenvector
+    EigenValues: array of Double;
+    EigenVectors: IMatrix;
     function ToString: string;
   end;
 
-  { Record containing singular value decomposition matrices.
-    SVD factorizes a matrix A = U·S·V^T where:
-    - U contains left singular vectors
-    - S is a diagonal matrix of singular values
-    - V contains right singular vectors }
   TSVD = record
-    U: IMatrix;              // Left singular vectors (orthogonal matrix)
-    S: IMatrix;              // Diagonal matrix of singular values
-    V: IMatrix;              // Right singular vectors (orthogonal matrix)
+    U: IMatrix;  // Orthogonal matrix
+    S: IMatrix;  // Diagonal matrix of singular values
+    V: IMatrix;  // Orthogonal matrix
     function ToString: string;
   end;
 
-  { Record containing Cholesky decomposition matrix.
-    Cholesky decomposition factorizes a symmetric positive-definite matrix A = L·L^T where:
-    - L is a lower triangular matrix with positive diagonal elements }
   TCholeskyDecomposition = record
-    L: IMatrix;              // Lower triangular matrix
+    L: IMatrix;  // Lower triangular matrix
     function ToString: string;
   end;
 
 type
-  { Interface defining matrix operations and properties.
-    IMatrix provides a comprehensive API for linear algebra operations.
-    All matrix implementations must support these methods. }
+  { Matrix interface }
   IMatrix = interface
     ['{F8A7B320-7A1D-4E85-9B12-E77D2B5C8A9E}']
-    { Basic matrix dimension and value accessors }
-    function GetRows: Integer;           // Get number of rows
-    function GetCols: Integer;           // Get number of columns
-    function GetValue(Row, Col: Integer): Double;  // Get element at specified position
-    procedure SetValue(Row, Col: Integer; const Value: Double);  // Set element at specified position
+    function GetRows: Integer;
+    function GetCols: Integer;
+    function GetValue(Row, Col: Integer): Double;
+    procedure SetValue(Row, Col: Integer; const Value: Double);
     
-    { Basic arithmetic operations 
-      These implement standard matrix arithmetic operations }
-    
-    { Matrix addition: C = A + B
-      Both matrices must have same dimensions }
+    { Basic operations }
     function Add(const Other: IMatrix): IMatrix;
-    
-    { Matrix subtraction: C = A - B
-      Both matrices must have same dimensions }
     function Subtract(const Other: IMatrix): IMatrix;
-    
-    { Matrix multiplication: C = A * B
-      A's column count must equal B's row count }
     function Multiply(const Other: IMatrix): IMatrix;
-    
-    { Scalar multiplication: C = s * A
-      Multiplies every element by scalar value }
     function ScalarMultiply(const Scalar: Double): IMatrix;
     
     { Matrix transformations }
-    
-    { Matrix transpose: B = A^T
-      Returns a new matrix with rows and columns swapped }
     function Transpose: IMatrix;
-    
-    { Matrix inverse: B = A^(-1)
-      Returns matrix B such that A*B = I 
-      Matrix must be square and non-singular }
     function Inverse: IMatrix;
-    
-    { Pseudoinverse (Moore-Penrose): A^+
-      Generalized inverse for any matrix, including non-square and singular
-      Satisfies: A*A^+*A = A, A^+*A*A^+ = A^+ }
     function PseudoInverse: IMatrix;
     
     { Matrix functions }
-    
-    { Matrix exponential: e^A
-      Computed using the definition: e^A = I + A + A²/2! + A³/3! + ...
-      Particularly useful for solving systems of differential equations }
-    function Exp: IMatrix;
-    
-    { Matrix power: A^p
-      For integer powers: repeated multiplication
-      For non-integer powers: computed using eigendecomposition }
+    function Exp: IMatrix;  // Matrix exponential
     function Power(exponent: Double): IMatrix;
     
     { Matrix properties }
-    
-    { Matrix determinant: |A|
-      Scalar value representing the volume scaling factor of the matrix
-      Only defined for square matrices }
     function Determinant: Double;
-    
-    { Matrix trace: tr(A)
-      Sum of elements on the main diagonal
-      Only defined for square matrices }
     function Trace: Double;
-    
-    { Matrix rank
-      Number of linearly independent rows/columns
-      Maximum number of linearly independent columns }
     function Rank: Integer;
-    
-    { Tests if matrix is square (rows = columns) }
     function IsSquare: Boolean;
-    
-    { Tests if matrix is symmetric (A = A^T) }
     function IsSymmetric: Boolean;
-    
-    { Tests if matrix is diagonal (all off-diagonal elements are zero) }
     function IsDiagonal: Boolean;
-    
-    { Tests if matrix is triangular
-      Upper=True checks upper triangular (all elements below diagonal are zero)
-      Upper=False checks lower triangular (all elements above diagonal are zero) }
     function IsTriangular(Upper: Boolean = True): Boolean;
-    
-    { Tests if matrix is positive definite
-      A square matrix is positive definite if:
-      - It's symmetric
-      - All eigenvalues are positive
-      - x^T*A*x > 0 for any non-zero vector x }
     function IsPositiveDefinite: Boolean;
-    
-    { Tests if matrix is positive semidefinite
-      Like positive definite, but eigenvalues can be zero
-      x^T*A*x ≥ 0 for any non-zero vector x }
     function IsPositiveSemidefinite: Boolean;
-    
-    { Tests if matrix is orthogonal (A^T*A = I)
-      Columns/rows form an orthonormal basis }
     function IsOrthogonal: Boolean;
-    
-    { Matrix condition number: κ(A) = ||A|| * ||A^(-1)||
-      Measures numerical stability of linear systems
-      Higher values indicate potential for larger numerical errors }
     function Condition: Double;
     
-    { Vector operations
-      These methods treat matrices as vectors when appropriate }
-    
-    { Tests if matrix is a vector (has exactly one row or one column) }
+    { Vector operations }
     function IsVector: Boolean;
-    
-    { Tests if matrix is a column vector (has exactly one column) }
     function IsColumnVector: Boolean;
-    
-    { Tests if matrix is a row vector (has exactly one row) }
     function IsRowVector: Boolean;
-    
-    { Dot product between vectors: a·b = ∑(a_i * b_i)
-      Both matrices must be vectors of the same length }
     function DotProduct(const Other: IMatrix): Double;
-    
-    { Cross product: a × b (only defined for 3D vectors)
-      Returns a vector perpendicular to both input vectors }
-    function CrossProduct(const Other: IMatrix): IMatrix;
-    
-    { Normalizes a vector to unit length (length = 1)
-      Returns vector divided by its Euclidean norm }
+    function CrossProduct(const Other: IMatrix): IMatrix; // For 3D vectors
     function Normalize: IMatrix;
     
     { Statistical operations }
-    
-    { Calculates mean values
-      Axis=-1: mean of all elements
-      Axis=0: mean of each column (returns row vector)
-      Axis=1: mean of each row (returns column vector) }
-    function Mean(Axis: Integer = -1): IMatrix;
-    
-    { Calculates covariance matrix
-      For data matrix X, returns X^T*X/(n-1) after centering }
+    function Mean(Axis: Integer = -1): IMatrix; // -1 = overall, 0 = rows, 1 = columns
     function Covariance: IMatrix;
-    
-    { Calculates correlation matrix
-      Normalized covariance matrix with values in [-1,1] }
     function Correlation: IMatrix;
     
-    { Matrix norms - various ways to measure matrix "size" }
+    { Matrix norms }
+    function NormOne: Double;     // Column sum norm
+    function NormInf: Double;     // Row sum norm
+    function NormFrobenius: Double; // Frobenius norm
     
-    { 1-norm (maximum absolute column sum)
-      ||A||₁ = max_j ∑_i |a_ij| }
-    function NormOne: Double;
-    
-    { Infinity norm (maximum absolute row sum)
-      ||A||_∞ = max_i ∑_j |a_ij| }
-    function NormInf: Double;
-    
-    { Frobenius norm (Euclidean norm of all elements)
-      ||A||_F = √(∑_i ∑_j |a_ij|²) }
-    function NormFrobenius: Double;
-    
-    { Matrix decompositions - ways to factorize matrices }
-    
-    { LU decomposition: A = P*L*U
-      Useful for solving linear systems and calculating determinants }
+    { Matrix decompositions }
     function LU: TLUDecomposition;
-    
-    { QR decomposition: A = Q*R
-      Useful for least squares problems and eigenvalue algorithms }
     function QR: TQRDecomposition;
-    
-    { Eigendecomposition: A = V*D*V^(-1) 
-      Useful for understanding dynamic systems, principal component analysis }
     function EigenDecomposition: TEigenDecomposition;
-    
-    { Singular Value Decomposition (SVD): A = U*S*V^T
-      The "Swiss Army knife" of matrix decompositions
-      Useful for dimensionality reduction, solving least-squares problems, etc. }
     function SVD: TSVD;
-    
-    { Cholesky decomposition: A = L*L^T
-      Efficient decomposition for symmetric positive-definite matrices }
     function Cholesky: TCholeskyDecomposition;
     
-    { Iterative methods for solving linear systems }
-    
-    { Solves Ax = b using iterative methods
-      Useful for large sparse systems where direct methods are inefficient
-      Method: Specifies which iterative algorithm to use
-      MaxIterations: Limits the number of iterations
-      Tolerance: Controls convergence criteria }
+    { Iterative methods }
     function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
                             MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
-    
-    { Power method for finding dominant eigenvalue and eigenvector
-      An iterative algorithm that converges to the largest eigenvalue
-      MaxIterations: Limits number of iterations
-      Tolerance: Controls convergence criteria }
     function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
     
-    { Block operations for manipulating portions of matrices }
-    
-    { Extracts a submatrix from the original matrix }
+    { Block operations }
     function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
-    
-    { Replaces a portion of the matrix with the given submatrix }
     procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
     
-    { Element-wise operations (Hadamard operations) }
-    
-    { Element-wise multiplication (Hadamard product): C_ij = A_ij * B_ij
-      Both matrices must have the same dimensions }
+    { Element-wise operations }
     function ElementWiseMultiply(const Other: IMatrix): IMatrix;
-    
-    { Element-wise division: C_ij = A_ij / B_ij
-      Both matrices must have the same dimensions
-      Handles division by zero gracefully }
     function ElementWiseDivide(const Other: IMatrix): IMatrix;
     
-    { String representation for display }
+    { String representation }
     function ToString: string;
     
-    { Properties for convenient array-like access }
     property Rows: Integer read GetRows;
     property Cols: Integer read GetCols;
     property Values[Row, Col: Integer]: Double read GetValue write SetValue; default;
   end;
 
 type
-  { Main matrix implementation class.
-    TMatrixKit implements the IMatrix interface with a dense storage format.
-    This is the standard implementation for general-purpose matrix operations.
-    For sparse matrices (mostly zero values), use the TMatrixKitSparse class instead. }
+  { Matrix implementation }
   TMatrixKit = class(TInterfacedObject, IMatrix)
   private
-    { Internal storage for matrix elements as a 2D array }
     FData: array of array of Double;
-    
-    { Basic accessors for dimensions and values }
     function GetRows: Integer;
     function GetCols: Integer;
     function GetValue(Row, Col: Integer): Double; virtual;
     procedure SetValue(Row, Col: Integer; const Value: Double); virtual;
     
-    { Helper methods for internal implementation }
-    
-    { Swaps two rows in the matrix - used in LU decomposition and other algorithms }
+    { Helper methods }
     procedure SwapRows(Row1, Row2: Integer);
-    
-    { Finds the row with the maximum absolute value in a given column
-      Used in LU decomposition for numerical stability (partial pivoting) }
     function FindPivot(StartRow, Col: Integer): Integer;
-    
-    { Performs back substitution to solve an upper triangular system Ux = b
-      Used after LU decomposition to solve linear systems }
     function BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
-    
-    { Performs forward substitution to solve a lower triangular system Lx = b
-      Used after LU decomposition to solve linear systems }
     function ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
-    
-    { Calculates the dot product of two vectors
-      Helper method for various matrix operations }
     function DotProduct(const v1, v2: TDoubleArray): Double;
-    
-    { Normalizes a column in the matrix so its Euclidean norm equals 1
-      Used in QR decomposition and other orthogonalization processes }
     procedure NormalizeColumn(var Matrix: TMatrixKit; Col: Integer);
   public
-    { Constructor creates a matrix with specified dimensions
-      Elements are initialized to zero }
     constructor Create(const ARows, ACols: Integer);
-    
-    { Destructor frees allocated memory }
     destructor Destroy; override;
     
-    { Static factory methods for creating various types of matrices }
-    
-    { Creates a matrix from a 2D array of values }
+    { Static creation methods }
     class function CreateFromArray(const Data: TMatrixArray): IMatrix;
-    
-    { Creates an identity matrix of specified size
-      Elements on main diagonal are 1, others are 0 }
     class function Identity(const Size: Integer): IMatrix;
-    
-    { Creates a matrix filled with zeros }
     class function Zeros(const Rows, Cols: Integer): IMatrix;
-    
-    { Creates a matrix filled with ones }
     class function Ones(const Rows, Cols: Integer): IMatrix;
-    
-    { Creates a sparse matrix (uses different internal storage)
-      Efficient when most elements are zero }
     class function CreateSparse(Rows, Cols: Integer): IMatrix;
-    
-    { Creates a Hilbert matrix of specified size
-      A Hilbert matrix has elements H_ij = 1/(i+j-1)
-      Used in numerical analysis as a test case for ill-conditioned matrices }
     class function CreateHilbert(Size: Integer): IMatrix;
-    
-    { Creates a Toeplitz matrix
-      A matrix whose elements are constant along diagonals
-      Specified by first row and first column }
     class function CreateToeplitz(const FirstRow, FirstCol: TDoubleArray): IMatrix;
-    
-    { Creates a Vandermonde matrix from a vector
-      Used in polynomial interpolation and curve fitting }
     class function CreateVandermonde(const Vector: TDoubleArray): IMatrix;
     
-    { Implementation of interface methods }
-    // ... existing methods ...
+    { Interface implementations }
+    function Add(const Other: IMatrix): IMatrix;
+    function Subtract(const Other: IMatrix): IMatrix;
+    function Multiply(const Other: IMatrix): IMatrix;
+    function ScalarMultiply(const Scalar: Double): IMatrix;
+    function Transpose: IMatrix;
+    function Inverse: IMatrix;
+    function PseudoInverse: IMatrix;
+    function Exp: IMatrix;
+    function Power(exponent: Double): IMatrix;
+    function Determinant: Double;
+    function Trace: Double;
+    function Rank: Integer;
+    function IsSquare: Boolean;
+    function LU: TLUDecomposition;
+    function QR: TQRDecomposition;
+    function EigenDecomposition: TEigenDecomposition;
+    function SVD: TSVD;
+    function Cholesky: TCholeskyDecomposition;
+    
+    { String representation }
+    function ToString: string; override;
+    
+    { Additional implementations }
+    function NormOne: Double;
+    function NormInf: Double;
+    function NormFrobenius: Double;
     
     { Additional matrix constructors }
-    
-    { Creates a band matrix with specified band widths
-      Efficient for representing tridiagonal and other banded systems }
     class function CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
-    
-    { Creates a symmetric matrix from data
-      Ensures the matrix is symmetric by mirroring across the diagonal }
     class function CreateSymmetric(const Data: TMatrixArray): IMatrix;
-    
-    { Creates a diagonal matrix from an array of values }
     class function CreateDiagonal(const Diagonal: array of Double): IMatrix;
-    
-    { Creates a matrix with random values in the specified range }
     class function CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
     
-    // ... other methods ...
+    { Vector operations }
+    function IsVector: Boolean;
+    function IsColumnVector: Boolean;
+    function IsRowVector: Boolean;
+    function DotProduct(const Other: IMatrix): Double;
+    function CrossProduct(const Other: IMatrix): IMatrix;
+    function Normalize: IMatrix;
+    
+    { Statistical operations }
+    function Mean(Axis: Integer = -1): IMatrix;
+    function Covariance: IMatrix;
+    function Correlation: IMatrix;
+    
+    { Iterative methods }
+    function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient;
+                            MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+    function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
+    
+    { Additional matrix properties }
+    function IsSymmetric: Boolean;
+    function IsDiagonal: Boolean;
+    function IsTriangular(Upper: Boolean = True): Boolean;
+    function IsPositiveDefinite: Boolean;
+    function IsPositiveSemidefinite: Boolean;
+    function IsOrthogonal: Boolean;
+    function Condition: Double;
+    
+    { Block operations }
+    function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+    procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
+    
+    { Element-wise operations }
+    function ElementWiseMultiply(const Other: IMatrix): IMatrix;
+    function ElementWiseDivide(const Other: IMatrix): IMatrix;
   end;
 
 type
-  { Element type for sparse matrix storage
-    Stores each non-zero element with its row and column indices }
   TSparseElement = record
-    Row: Integer;    // Row index
-    Col: Integer;    // Column index
-    Value: Double;   // Element value (non-zero)
+    Row: Integer;
+    Col: Integer;
+    Value: Double;
   end;
   
-  { Sparse matrix implementation
-    Optimized for matrices with mostly zero elements
-    Only stores non-zero elements to save memory }
   TMatrixKitSparse = class(TMatrixKit)
   private
-    { Array of non-zero elements }
     FElements: array of TSparseElement;
-    
-    { Current number of non-zero elements stored }
     FElementCount: Integer;
-    
-    { Capacity of the elements array (for efficient growth) }
     FCapacity: Integer;
     
-    { Ensures the capacity is sufficient, growing the array if necessary }
     procedure EnsureCapacity(NewCount: Integer);
   public
-    { Constructor initializes a sparse matrix with given dimensions }
     constructor Create(Rows, Cols: Integer);
-    
-    { Destructor frees allocated memory }
     destructor Destroy; override;
     
-    { Override value accessors for sparse storage }
     function GetValue(Row, Col: Integer): Double; override;
     procedure SetValue(Row, Col: Integer; const Value: Double); override;
-    
-    { Override Add method for efficient sparse implementation }
     function Add(const Other: IMatrix): IMatrix;
     
-    { Sparse-specific method to add a non-zero element }
+    // Sparse-specific methods
     procedure AddElement(Row, Col: Integer; Value: Double);
-    
-    { Compacts the storage by removing zero elements and sorting }
     procedure CompactStorage;
   end;
 
 implementation
 
-// Helper function to return magnitude with sign of value
+// Insert this function at the beginning of the implementation section
 function SignWithMagnitude(const Magnitude, Value: Double): Double;
 begin
   if Value >= 0 then
@@ -528,7 +291,6 @@ end;
 
 { TMatrixKit }
 
-{ Creates a new matrix with specified dimensions }
 constructor TMatrixKit.Create(const ARows, ACols: Integer);
 var
   I: Integer;
@@ -539,14 +301,12 @@ begin
     SetLength(FData[I], ACols);
 end;
 
-{ Frees matrix memory }
 destructor TMatrixKit.Destroy;
 begin
   SetLength(FData, 0);
   inherited;
 end;
 
-{ Creates matrix from 2D array }
 class function TMatrixKit.CreateFromArray(const Data: TMatrixArray): IMatrix;
 var
   I, J, Rows, Cols: Integer;
@@ -570,7 +330,6 @@ begin
   end;
 end;
 
-{ Creates identity matrix of specified size }
 class function TMatrixKit.Identity(const Size: Integer): IMatrix;
 var
   I: Integer;
@@ -582,14 +341,12 @@ begin
     Matrix.FData[I, I] := 1.0;
 end;
 
-{ Creates zero matrix of specified size }
 class function TMatrixKit.Zeros(const Rows, Cols: Integer): IMatrix;
 begin
   Result := TMatrixKit.Create(Rows, Cols);
   // Values are already zero-initialized
 end;
 
-{ Creates matrix filled with ones }
 class function TMatrixKit.Ones(const Rows, Cols: Integer): IMatrix;
 var
   I, J: Integer;
@@ -602,13 +359,11 @@ begin
       Matrix.FData[I, J] := 1.0;
 end;
 
-{ Returns number of rows }
 function TMatrixKit.GetRows: Integer;
 begin
   Result := Length(FData);
 end;
 
-{ Returns number of columns }
 function TMatrixKit.GetCols: Integer;
 begin
   if Length(FData) > 0 then
@@ -617,7 +372,6 @@ begin
     Result := 0;
 end;
 
-{ Gets value at specified position }
 function TMatrixKit.GetValue(Row, Col: Integer): Double;
 begin
   if (Row < 0) or (Row >= GetRows) or (Col < 0) or (Col >= GetCols) then
@@ -625,7 +379,6 @@ begin
   Result := FData[Row, Col];
 end;
 
-{ Sets value at specified position }
 procedure TMatrixKit.SetValue(Row, Col: Integer; const Value: Double);
 begin
   if (Row < 0) or (Row >= GetRows) or (Col < 0) or (Col >= GetCols) then
@@ -633,7 +386,6 @@ begin
   FData[Row, Col] := Value;
 end;
 
-{ Adds two matrices }
 function TMatrixKit.Add(const Other: IMatrix): IMatrix;
 var
   I, J: Integer;
@@ -649,7 +401,6 @@ begin
   Result := Matrix;
 end;
 
-{ Subtracts two matrices }
 function TMatrixKit.Subtract(const Other: IMatrix): IMatrix;
 var
   I, J: Integer;
@@ -665,7 +416,6 @@ begin
   Result := Matrix;
 end;
 
-{ Multiplies two matrices using block multiplication for large matrices }
 function TMatrixKit.Multiply(const Other: IMatrix): IMatrix;
 var
   I, J, K, II, JJ, KK: Integer;
@@ -726,7 +476,6 @@ begin
   Result := Matrix;
 end;
 
-{ Multiplies matrix by scalar }
 function TMatrixKit.ScalarMultiply(const Scalar: Double): IMatrix;
 var
   I, J: Integer;
@@ -739,7 +488,6 @@ begin
       Matrix.FData[I, J] := FData[I, J] * Scalar;
 end;
 
-{ Transposes matrix }
 function TMatrixKit.Transpose: IMatrix;
 var
   I, J: Integer;
@@ -752,13 +500,11 @@ begin
       Matrix.FData[J, I] := FData[I, J];
 end;
 
-{ Checks if matrix is square }
 function TMatrixKit.IsSquare: Boolean;
 begin
   Result := GetRows = GetCols;
 end;
 
-{ Calculates matrix determinant using recursive minor expansion }
 function TMatrixKit.Determinant: Double;
 var
   N, I, J, K: Integer;
@@ -822,7 +568,6 @@ begin
     Result := MinorDeterminant(Self, N);
 end;
 
-{ Calculates matrix trace (sum of diagonal elements) }
 function TMatrixKit.Trace: Double;
 var
   I: Integer;
@@ -835,7 +580,6 @@ begin
     Result := Result + FData[I, I];
 end;
 
-{ Calculates matrix rank using Gaussian elimination }
 function TMatrixKit.Rank: Integer;
 var
   I, J, K, PivotRow: Integer;
@@ -907,7 +651,6 @@ begin
   end;
 end;
 
-{ Calculates matrix inverse using LU decomposition }
 function TMatrixKit.Inverse: IMatrix;
 var
   I, J: Integer;
@@ -950,7 +693,6 @@ begin
   end;
 end;
 
-{ Performs LU decomposition with partial pivoting }
 function TMatrixKit.LU: TLUDecomposition;
 var
   I, J, K, PivotRow: Integer;
@@ -1034,7 +776,6 @@ begin
   Result.U := U;
 end;
 
-{ Performs QR decomposition using Gram-Schmidt process }
 function TMatrixKit.QR: TQRDecomposition;
 var
   I, J, K: Integer;
@@ -3057,7 +2798,7 @@ begin
   // Initialize first term (A^1 / 1!)
   Term := Self;
   
-  // Use Taylor series: e^A = I + A + A²/2! + A³/3! + ...
+  // Use Taylor series: e^A = I + A + A^2/2! + A^3/3! + ...
   N := 20;  // Number of terms in the series
   
   for K := 1 to N do
