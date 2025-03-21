@@ -210,24 +210,20 @@ uses
   TidyKit.Math.Matrices,     // Matrix operations
   TidyKit.Math.Trigonometry, // Trigonometric functions
   
-  // String manipulation units
-  TidyKit.String,            // String operations
-  TidyKit.String.Format,     // String formatting
-  TidyKit.String.Convert,    // String conversion
+  // String manipulation unit
+  TidyKit.Strings,           // String operations
   
-  // File system units
-  TidyKit.FS,               // File system operations
-  TidyKit.FS.Path,          // Path manipulation
-  TidyKit.FS.Search,        // File searching
+  // File system unit
+  TidyKit.FS,                // File system operations
   
   // Cryptography units
-  TidyKit.Crypto,           // Base crypto operations
-  TidyKit.Crypto.SHA2,      // SHA2 implementation
-  TidyKit.Crypto.SHA3,      // SHA3 implementation
-  TidyKit.Crypto.AES256,    // AES-256 implementation
+  TidyKit.Crypto,            // Base crypto operations
+  TidyKit.Crypto.SHA2,       // SHA2 implementation
+  TidyKit.Crypto.SHA3,       // SHA3 implementation
+  TidyKit.Crypto.AES256,     // AES-256 implementation
   
   // Network units
-  TidyKit.Request;          // HTTP client with simple and advanced features
+  TidyKit.Request;           // HTTP client with simple and advanced features
 
 ```
 
