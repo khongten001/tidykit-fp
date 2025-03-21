@@ -18,7 +18,8 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - [🧰 TidyKit](#-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [✨ Features](#-features)
-  - [💻 Installation](#-installation)
+  - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
+  - [💻 Installation (General)](#-installation-general)
   - [🚀 Quick Start](#-quick-start)
     - [📂 File System Operations](#-file-system-operations)
     - [📝 String Operations](#-string-operations)
@@ -179,7 +180,20 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
-## 💻 Installation
+
+## 💻 Installation (Lazarus IDE)
+
+1. First, downloa the repo
+2. Open / start a new project in Lazarus IDE
+2. Go to `Package` → `Open Package File (.lpk)...`
+3. Navigate to the TidyKit packages in the `directory\lazarus\` folder and select `TidyKit.lpk`
+4. In the package window that opens, click `Compile`
+5. Click `Use → Add to Project` to install the package
+
+The TidyKit package is now ready to use in your Lazarus projects.
+
+
+## 💻 Installation (General)
 
 1. Clone the repository:
 ```bash
