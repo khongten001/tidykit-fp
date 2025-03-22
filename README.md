@@ -20,6 +20,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
+  - [📝 Library Usage](#-library-usage)
   - [🚀 Quick Start](#-quick-start)
     - [📂 File System Operations](#-file-system-operations)
     - [📝 String Operations](#-string-operations)
@@ -183,12 +184,21 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 
 ## 💻 Installation (Lazarus IDE)
 
-1. First, downloa the repo
+1. Clone the repository:
+
+```bash
+git clone https://github.com/yourusername/TidyKit.git
+```
+
 2. Open / start a new project in Lazarus IDE
-2. Go to `Package` → `Open Package File (.lpk)...`
-3. Navigate to the TidyKit packages in the `directory\lazarus\` folder and select `TidyKit.lpk`
-4. In the package window that opens, click `Compile`
-5. Click `Use → Add to Project` to install the package
+
+3. Go to `Package` → `Open Package File (.lpk)...`
+
+4. Navigate to the TidyKit packages in the `directory\lazarus\` folder and select `TidyKit.lpk`
+
+5. In the package window that opens, click `Compile`
+
+6. Click `Use → Add to Project` to install the package
 
 The TidyKit package is now ready to use in your Lazarus projects.
 
@@ -196,13 +206,17 @@ The TidyKit package is now ready to use in your Lazarus projects.
 ## 💻 Installation (General)
 
 1. Clone the repository:
+
 ```bash
 git clone https://github.com/yourusername/TidyKit.git
 ```
 
-2. Add the source directory to your project's search path.
+1. Add the source directory to your project's search path.
 
-3. Add either the all-inclusive TidyKit unit or choose specific units you need:
+
+## 📝 Library Usage
+
+Add either the all-inclusive TidyKit unit or choose specific units you need:
 
 ```pascal
 // Option 1: All-inclusive unit (includes all functionality)
@@ -238,7 +252,6 @@ uses
   
   // Network units
   TidyKit.Request;           // HTTP client with simple and advanced features
-
 ```
 
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
