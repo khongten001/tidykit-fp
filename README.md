@@ -187,7 +187,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/TidyKit.git
+git clone https://github.com/ikelaiah/tidykit-fp
 ```
 
 2. Open / start a new project in Lazarus IDE
@@ -208,10 +208,10 @@ The TidyKit package is now ready to use in your Lazarus projects.
 1. Clone the repository:
 
 ```bash
-git clone https://github.com/yourusername/TidyKit.git
+git clone https://github.com/ikelaiah/tidykit-fp
 ```
 
-1. Add the source directory to your project's search path.
+2. Add the source directory to your project's search path.
 
 
 ## 📝 Library Usage
