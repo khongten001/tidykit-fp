@@ -194,13 +194,13 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 3. Go to `Package` → `Open Package File (.lpk)...`
 
-4. Navigate to the TidyKit packages in the `directory\lazarus\` folder and select `TidyKit.lpk`
+4. Navigate to the TidyKit packages in the `directory/lazarus/` folder and select `TidyKit.lpk`
 
 5. In the package window that opens, click `Compile`
 
 6. Click `Use → Add to Project` to install the package
 
-The TidyKit package is now ready to use in your Lazarus projects.
+The TidyKit package is now ready to use in your Lazarus project.
 
 
 ## 💻 Installation (General)
