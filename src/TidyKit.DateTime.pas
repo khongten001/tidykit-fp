@@ -5,7 +5,7 @@ unit TidyKit.DateTime;
 interface
 
 uses
-  Classes, SysUtils, DateUtils, StrUtils, Types
+  Classes, SysUtils, DateUtils, StrUtils, Types, streamex
   {$IFDEF WINDOWS}
   , Windows
   {$ENDIF};
@@ -75,6 +75,20 @@ type
   
   PTimeZoneInformation = ^TTimeZoneInformation;
   {$ENDIF}
+
+  { TDSTRule represents a specific DST rule for a region }
+  TDSTRule = record
+    Region: string;           // Region identifier (e.g., 'US', 'EU', 'AU')
+    StartMonth: Integer;      // Month when DST starts (1-12)
+    StartWeek: Integer;       // Week of the month (1-5, where 5 means last)
+    StartDayOfWeek: Integer;  // Day of week (1-7, where 1=Sunday)
+    StartHour: Integer;       // Hour when DST starts (0-23)
+    EndMonth: Integer;        // Month when DST ends (1-12)
+    EndWeek: Integer;         // Week of the month (1-5, where 5 means last)
+    EndDayOfWeek: Integer;    // Day of week (1-7, where 1=Sunday)
+    EndHour: Integer;         // Hour when DST ends (0-23)
+    Offset: Integer;          // DST offset in minutes (typically 60)
+  end;
 
   { TDateSpanKind represents different ways to measure time spans }
   TDateSpanKind = (
@@ -1993,11 +2007,109 @@ begin
   end;
 end;
 {$ELSE}
+{$IFDEF UNIX}
+var
+  TZEnv: string;
+  TZFile: string;
+  FileStream: TFileStream;
+  StreamReader: TStreamReader;
+  Line: string;
+  TZName: string;
+  TZOffset: Integer;
+  IsDST: Boolean;
+  SystemTime: TSystemTime;
+  Year, Month, Day: Word;
+  Hour, Min, Sec, MSec: Word;
+  TZData: TStringList;
+  I: Integer;
+  Found: Boolean;
 begin
-  Result.Name := 'UTC';
-  Result.Offset := 0;
-  Result.IsDST := False;
+  try
+    // Get current date components
+    DecodeDateTime(AValue, Year, Month, Day, Hour, Min, Sec, MSec);
+    
+    // First try to get timezone from environment variable
+    TZEnv := GetEnvironmentVariable('TZ');
+    if TZEnv <> '' then
+    begin
+      // If TZ is set, use it directly
+      Result.Name := TZEnv;
+      
+      // Try to get offset from /etc/timezone or /etc/localtime
+      TZFile := '/etc/timezone';
+      if FileExists(TZFile) then
+      begin
+        FileStream := TFileStream.Create(TZFile, fmOpenRead or fmShareDenyNone);
+        try
+          StreamReader := TStreamReader.Create(FileStream);
+          try
+            Line := StreamReader.ReadLine;
+            if Line <> '' then
+            begin
+              // Try to find this timezone in the zoneinfo database
+              TZFile := '/usr/share/zoneinfo/' + Line;
+              if FileExists(TZFile) then
+              begin
+                // Parse the timezone file to get offset and DST info
+                ParseLinuxTimezoneFile(TZFile, AValue, Result.Offset, Result.IsDST);
+                Exit;
+              end;
+            end;
+          finally
+            StreamReader.Free;
+          end;
+        finally
+          FileStream.Free;
+        end;
+      end;
+      
+      // Fallback to UTC if we couldn't determine the offset
+      Result.Offset := 0;
+      Result.IsDST := False;
+      Exit;
+    end;
+    
+    // If TZ is not set, try to determine from /etc/localtime
+    TZFile := '/etc/localtime';
+    if FileExists(TZFile) then
+    begin
+      // Try to find the actual timezone file that /etc/localtime is linked to
+      TZData := TStringList.Create;
+      try
+        // Run 'readlink -f /etc/localtime' to get the actual file
+        RunCommand('readlink', ['-f', TZFile], TZData);
+        if TZData.Count > 0 then
+        begin
+          TZFile := TZData[0];
+          // Extract timezone name from path (e.g., /usr/share/zoneinfo/America/New_York)
+          I := Pos('/zoneinfo/', TZFile);
+          if I > 0 then
+          begin
+            Result.Name := Copy(TZFile, I + 9, Length(TZFile));
+            // Parse the timezone file to get offset and DST info
+            ParseLinuxTimezoneFile(TZFile, AValue, Result.Offset, Result.IsDST);
+            Exit;
+          end;
+        end;
+      finally
+        TZData.Free;
+      end;
+    end;
+    
+    // If all else fails, use UTC
+    Result.Name := 'UTC';
+    Result.Offset := 0;
+    Result.IsDST := False;
+  except
+    on E: Exception do
+    begin
+      Result.Name := 'UTC';
+      Result.Offset := 0;
+      Result.IsDST := False;
+    end;
+  end;
 end;
+{$ENDIF}
 {$ENDIF}
 
 class function TDateTimeKit.WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime;
@@ -2408,5 +2520,292 @@ begin
     
   Result := AOffset;
 end;
+
+// Helper function to parse Linux timezone files
+{$IFDEF UNIX}
+class procedure TDateTimeKit.ParseLinuxTimezoneFile(const TZFile: string; const AValue: TDateTime; 
+  out Offset: Integer; out IsDST: Boolean);
+var
+  FileStream: TFileStream;
+  StreamReader: TStreamReader;
+  Line: string;
+  TZData: TStringList;
+  I: Integer;
+  Found: Boolean;
+  Year, Month, Day: Word;
+  Hour, Min, Sec, MSec: Word;
+  CurrentTime: TDateTime;
+  TZRule: string;
+  TZOffset: string;
+  TZName: string;
+  DSTStart, DSTEnd: TDateTime;
+  DSTOffset: Integer;
+  Region: string;
+  DSTRules: array of TDSTRule;
+  RuleIndex: Integer;
+  RuleFound: Boolean;
+begin
+  // Default values
+  Offset := 0;
+  IsDST := False;
+  
+  // Initialize DST rules for common regions
+  SetLength(DSTRules, 5);
+  
+  // US DST rules (since 2007)
+  DSTRules[0].Region := 'US';
+  DSTRules[0].StartMonth := 3;  // March
+  DSTRules[0].StartWeek := 2;   // Second week
+  DSTRules[0].StartDayOfWeek := 1; // Sunday
+  DSTRules[0].StartHour := 2;   // 2 AM
+  DSTRules[0].EndMonth := 11;   // November
+  DSTRules[0].EndWeek := 1;     // First week
+  DSTRules[0].EndDayOfWeek := 1; // Sunday
+  DSTRules[0].EndHour := 2;     // 2 AM
+  DSTRules[0].Offset := 60;     // 1 hour
+  
+  // EU DST rules (since 1996)
+  DSTRules[1].Region := 'EU';
+  DSTRules[1].StartMonth := 3;  // March
+  DSTRules[1].StartWeek := 5;   // Last week
+  DSTRules[1].StartDayOfWeek := 1; // Sunday
+  DSTRules[1].StartHour := 1;   // 1 AM UTC
+  DSTRules[1].EndMonth := 10;   // October
+  DSTRules[1].EndWeek := 5;     // Last week
+  DSTRules[1].EndDayOfWeek := 1; // Sunday
+  DSTRules[1].EndHour := 1;     // 1 AM UTC
+  DSTRules[1].Offset := 60;     // 1 hour
+  
+  // Australia DST rules (varies by state, this is a simplification)
+  DSTRules[2].Region := 'AU';
+  DSTRules[2].StartMonth := 10; // October
+  DSTRules[2].StartWeek := 1;   // First week
+  DSTRules[2].StartDayOfWeek := 1; // Sunday
+  DSTRules[2].StartHour := 2;   // 2 AM
+  DSTRules[2].EndMonth := 4;    // April
+  DSTRules[2].EndWeek := 1;     // First week
+  DSTRules[2].EndDayOfWeek := 1; // Sunday
+  DSTRules[2].EndHour := 3;     // 3 AM
+  DSTRules[2].Offset := 60;     // 1 hour
+  
+  // New Zealand DST rules
+  DSTRules[3].Region := 'NZ';
+  DSTRules[3].StartMonth := 9;  // September
+  DSTRules[3].StartWeek := 4;   // Fourth week
+  DSTRules[3].StartDayOfWeek := 1; // Sunday
+  DSTRules[3].StartHour := 2;   // 2 AM
+  DSTRules[3].EndMonth := 4;    // April
+  DSTRules[3].EndWeek := 1;     // First week
+  DSTRules[3].EndDayOfWeek := 1; // Sunday
+  DSTRules[3].EndHour := 3;     // 3 AM
+  DSTRules[3].Offset := 60;     // 1 hour
+  
+  // Brazil DST rules (simplified, as they've changed over time)
+  DSTRules[4].Region := 'BR';
+  DSTRules[4].StartMonth := 11; // November
+  DSTRules[4].StartWeek := 1;   // First week
+  DSTRules[4].StartDayOfWeek := 1; // Sunday
+  DSTRules[4].StartHour := 0;   // Midnight
+  DSTRules[4].EndMonth := 2;    // February
+  DSTRules[4].EndWeek := 3;     // Third week
+  DSTRules[4].EndDayOfWeek := 1; // Sunday
+  DSTRules[4].EndHour := 0;     // Midnight
+  DSTRules[4].Offset := 60;     // 1 hour
+  
+  try
+    // Get current date components
+    DecodeDateTime(AValue, Year, Month, Day, Hour, Min, Sec, MSec);
+    CurrentTime := AValue;
+    
+    // Try to read the timezone file
+    FileStream := TFileStream.Create(TZFile, fmOpenRead or fmShareDenyNone);
+    try
+      StreamReader := TStreamReader.Create(FileStream);
+      try
+        TZData := TStringList.Create;
+        try
+          // Read all lines from the file
+          while not StreamReader.EndOfStream do
+          begin
+            Line := StreamReader.ReadLine;
+            TZData.Add(Line);
+          end;
+          
+          // Look for timezone rules in the file
+          Found := False;
+          Region := '';
+          
+          for I := 0 to TZData.Count - 1 do
+          begin
+            Line := TZData[I];
+            
+            // Look for lines that define timezone rules
+            if (Pos('TZ=', Line) > 0) or (Pos('Zone', Line) > 0) then
+            begin
+              // Extract timezone name and offset
+              if Pos('TZ=', Line) > 0 then
+              begin
+                // Format: TZ=America/New_York
+                TZName := Copy(Line, Pos('TZ=', Line) + 3, Length(Line));
+                
+                // Try to determine region from timezone name
+                if Pos('America/New_York', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('America/Chicago', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('America/Denver', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('America/Los_Angeles', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('America/Anchorage', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('America/Honolulu', TZName) > 0 then
+                  Region := 'US'
+                else if Pos('Europe/', TZName) > 0 then
+                  Region := 'EU'
+                else if Pos('Australia/', TZName) > 0 then
+                  Region := 'AU'
+                else if Pos('Pacific/Auckland', TZName) > 0 then
+                  Region := 'NZ'
+                else if Pos('America/Sao_Paulo', TZName) > 0 then
+                  Region := 'BR';
+              end
+              else if Pos('Zone', Line) > 0 then
+              begin
+                // Format: Zone America/New_York -5:00 US EST
+                TZRule := Copy(Line, Pos('Zone', Line) + 5, Length(Line));
+                TZOffset := Copy(TZRule, 1, Pos(' ', TZRule) - 1);
+                
+                // Parse offset (format: -5:00 or -0500)
+                if Pos(':', TZOffset) > 0 then
+                begin
+                  // Format: -5:00
+                  Offset := StrToIntDef(Copy(TZOffset, 1, Pos(':', TZOffset) - 1), 0) * 60;
+                  Offset := Offset + StrToIntDef(Copy(TZOffset, Pos(':', TZOffset) + 1, 2), 0);
+                end
+                else
+                begin
+                  // Format: -0500
+                  Offset := StrToIntDef(Copy(TZOffset, 1, 3), 0) * 60;
+                  Offset := Offset + StrToIntDef(Copy(TZOffset, 4, 2), 0);
+                end;
+                
+                // Try to extract region from the rule
+                if Pos('US', TZRule) > 0 then
+                  Region := 'US'
+                else if Pos('EU', TZRule) > 0 then
+                  Region := 'EU'
+                else if Pos('AU', TZRule) > 0 then
+                  Region := 'AU'
+                else if Pos('NZ', TZRule) > 0 then
+                  Region := 'NZ'
+                else if Pos('BR', TZRule) > 0 then
+                  Region := 'BR';
+                
+                Found := True;
+                Break;
+              end;
+            end;
+          end;
+          
+          // If we found a region, check if we're in DST
+          if Region <> '' then
+          begin
+            // Find the rule for this region
+            RuleFound := False;
+            for RuleIndex := 0 to High(DSTRules) do
+            begin
+              if DSTRules[RuleIndex].Region = Region then
+              begin
+                RuleFound := True;
+                Break;
+              end;
+            end;
+            
+            if RuleFound then
+            begin
+              // Calculate DST start and end dates for the current year
+              DSTStart := CalculateDSTDate(Year, DSTRules[RuleIndex].StartMonth, 
+                                         DSTRules[RuleIndex].StartWeek, 
+                                         DSTRules[RuleIndex].StartDayOfWeek, 
+                                         DSTRules[RuleIndex].StartHour);
+              
+              DSTEnd := CalculateDSTDate(Year, DSTRules[RuleIndex].EndMonth, 
+                                       DSTRules[RuleIndex].EndWeek, 
+                                       DSTRules[RuleIndex].EndDayOfWeek, 
+                                       DSTRules[RuleIndex].EndHour);
+              
+              // Check if current date is within DST period
+              if (CurrentTime >= DSTStart) and (CurrentTime < DSTEnd) then
+              begin
+                IsDST := True;
+                Offset := Offset + DSTRules[RuleIndex].Offset;
+              end;
+            end;
+          end;
+          
+          if not Found then
+          begin
+            // If we couldn't find timezone rules, use UTC
+            Offset := 0;
+            IsDST := False;
+          end;
+        finally
+          TZData.Free;
+        end;
+      finally
+        StreamReader.Free;
+      end;
+    finally
+      FileStream.Free;
+    end;
+  except
+    on E: Exception do
+    begin
+      // If there's an error, use UTC
+      Offset := 0;
+      IsDST := False;
+    end;
+  end;
+end;
+
+// Helper function to calculate DST transition dates
+class function TDateTimeKit.CalculateDSTDate(const Year, Month, Week, DayOfWeek, Hour: Integer): TDateTime;
+var
+  FirstDayOfMonth: TDateTime;
+  TargetDayOfWeek: Integer;
+  DaysToAdd: Integer;
+begin
+  // Get the first day of the month
+  FirstDayOfMonth := EncodeDate(Year, Month, 1);
+  
+  // Calculate the target day of week (1-7, where 1=Sunday)
+  TargetDayOfWeek := DayOfWeek;
+  
+  // Calculate days to add to reach the target day of week
+  DaysToAdd := (TargetDayOfWeek - DayOfWeek(FirstDayOfMonth) + 7) mod 7;
+  
+  // If we're looking for the last week, we need to go to the next month and subtract
+  if Week = 5 then
+  begin
+    // Go to the first day of the next month
+    FirstDayOfMonth := IncMonth(FirstDayOfMonth, 1);
+    
+    // Go back to the target day of week
+    DaysToAdd := (TargetDayOfWeek - DayOfWeek(FirstDayOfMonth) + 7) mod 7;
+    
+    // Subtract 7 days to get to the last week
+    Result := FirstDayOfMonth + DaysToAdd - 7;
+  end
+  else
+  begin
+    // For weeks 1-4, add the appropriate number of weeks
+    Result := FirstDayOfMonth + DaysToAdd + (Week - 1) * 7;
+  end;
+  
+  // Add the hour
+  Result := Result + EncodeTime(Hour, 0, 0, 0);
+end;
+{$ENDIF}
 
 end. 

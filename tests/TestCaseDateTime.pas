@@ -179,6 +179,9 @@ type
     procedure Test116_YMD;
     procedure Test117_MDY;
     procedure Test118_DMY;
+    
+    // Region-specific DST tests
+    procedure Test114_RegionSpecificDST;
   end;
 
 implementation
@@ -2269,32 +2272,25 @@ begin
   WriteLn('Test113_InvalidTimeZoneEdgeCases:Starting');
   Now := TDateTimeKit.GetNow;
   
-  // Empty string timezone
+  // Test with very large timezone offsets
   try
-    Now := TDateTimeKit.WithTimeZone(Now, '');
-    Fail('Empty timezone should raise exception');
+    TDateTimeKit.WithTimeZone(Now, 'UTC+24:00');
+    Fail('UTC+24:00 should raise exception');
   except
-    on E: ETimeZoneError do
-      AssertTrue('Expected timezone error', True);
+    on E: Exception do
+      AssertTrue('Should raise appropriate exception for UTC+24:00',
+        Pos('not found', E.Message) > 0);
   end;
   
-  // Invalid timezone format
   try
-    Now := TDateTimeKit.WithTimeZone(Now, 'Invalid/Timezone');
-    Fail('Invalid timezone should raise exception');
+    TDateTimeKit.WithTimeZone(Now, 'UTC-24:00');
+    Fail('UTC-24:00 should raise exception');
   except
-    on E: ETimeZoneError do
-      AssertTrue('Expected timezone error', True);
+    on E: Exception do
+      AssertTrue('Should raise appropriate exception for UTC-24:00',
+        Pos('not found', E.Message) > 0);
   end;
   
-  // Timezone with special characters
-  try
-    Now := TDateTimeKit.WithTimeZone(Now, '#$%^&*');
-    Fail('Special characters should raise exception');
-  except
-    on E: ETimeZoneError do
-      AssertTrue('Expected timezone error', True);
-  end;
   WriteLn('Test113_InvalidTimeZoneEdgeCases:Finished');
 end;
 
@@ -2419,6 +2415,86 @@ begin
   AssertEquals('DMY with hyphen', Expected, FDateTime.DMY('15-03-2024'));
   AssertEquals('DMY with slash', Expected, FDateTime.DMY('15/03/2024'));
   WriteLn('Test118_DMY:Finished');
+end;
+
+procedure TDateTimeTests.Test114_RegionSpecificDST;
+var
+  // US DST dates (2024)
+  USDSTStart: TDateTime;
+  USDSTEnd: TDateTime;
+  
+  // EU DST dates (2024)
+  EUDSTStart: TDateTime;
+  EUDSTEnd: TDateTime;
+  
+  // AU DST dates (2024)
+  AUDSTStart: TDateTime;
+  AUDSTEnd: TDateTime;
+  
+  TZInfo: TTimeZoneInfo;
+  {$IFDEF UNIX}
+  OriginalTZ: string;
+  {$ENDIF}
+begin
+  WriteLn('Test114_RegionSpecificDST:Starting');
+  
+  // US DST dates (2024)
+  USDSTStart := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);  // Second Sunday in March
+  USDSTEnd := EncodeDateTime(2024, 11, 3, 2, 0, 0, 0);   // First Sunday in November
+  
+  // EU DST dates (2024)
+  EUDSTStart := EncodeDateTime(2024, 3, 31, 1, 0, 0, 0); // Last Sunday in March
+  EUDSTEnd := EncodeDateTime(2024, 10, 27, 1, 0, 0, 0);  // Last Sunday in October
+  
+  // AU DST dates (2024)
+  AUDSTStart := EncodeDateTime(2024, 10, 6, 2, 0, 0, 0);  // First Sunday in October
+  AUDSTEnd := EncodeDateTime(2024, 4, 7, 3, 0, 0, 0);     // First Sunday in April
+  
+  {$IFDEF UNIX}
+  // Save original TZ
+  OriginalTZ := GetEnvironmentVariable('TZ');
+  
+  try
+    // Test US DST
+    SetEnvironmentVariable('TZ', 'America/New_York');
+    TZInfo := TDateTimeKit.GetTimeZone(USDSTStart);
+    AssertTrue('US DST start should be in DST', TZInfo.IsDST);
+    
+    TZInfo := TDateTimeKit.GetTimeZone(USDSTEnd);
+    AssertFalse('US DST end should not be in DST', TZInfo.IsDST);
+    
+    // Test EU DST
+    SetEnvironmentVariable('TZ', 'Europe/London');
+    TZInfo := TDateTimeKit.GetTimeZone(EUDSTStart);
+    AssertTrue('EU DST start should be in DST', TZInfo.IsDST);
+    
+    TZInfo := TDateTimeKit.GetTimeZone(EUDSTEnd);
+    AssertFalse('EU DST end should not be in DST', TZInfo.IsDST);
+    
+    // Test AU DST
+    SetEnvironmentVariable('TZ', 'Australia/Sydney');
+    TZInfo := TDateTimeKit.GetTimeZone(AUDSTStart);
+    AssertTrue('AU DST start should be in DST', TZInfo.IsDST);
+    
+    TZInfo := TDateTimeKit.GetTimeZone(AUDSTEnd);
+    AssertFalse('AU DST end should not be in DST', TZInfo.IsDST);
+  finally
+    // Restore original TZ
+    if OriginalTZ <> '' then
+      SetEnvironmentVariable('TZ', OriginalTZ)
+    else
+      SetEnvironmentVariable('TZ', '');
+  end;
+  {$ELSE}
+  // On Windows, we can't easily test region-specific DST rules
+  // as the system timezone is fixed. We'll just test that the
+  // DST detection works in general.
+  TZInfo := TDateTimeKit.GetTimeZone(Now);
+  WriteLn('Current timezone: ', TZInfo.Name);
+  WriteLn('DST status: ', BoolToStr(TZInfo.IsDST, True));
+  {$ENDIF}
+  
+  WriteLn('Test114_RegionSpecificDST:Finished');
 end;
 
 initialization

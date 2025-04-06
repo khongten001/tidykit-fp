@@ -567,13 +567,35 @@ Ceil := TDateTimeKit.CeilingDate(Now, duMonth);   // Round up to month end
 ### Timezone Operations
 ```pascal
 // Get timezone information
-TZ := TDateTimeKit.GetTimeZone(Now);           // Current timezone info
-SystemTZ := TDateTimeKit.GetSystemTimeZone;     // System timezone name
-TZNames := TDateTimeKit.GetTimeZoneNames;       // Available timezone names
+TZInfo := TDateTimeKit.GetTimeZone(Now);           // Current timezone info
+SystemTZ := TDateTimeKit.GetSystemTimeZone;        // System timezone name
+TZNames := TDateTimeKit.GetTimeZoneNames;          // Available timezone names
+
+// Check DST status
+if TZInfo.IsDST then                              // Check if in DST
+  WriteLn('Currently in DST');
+WriteLn('Offset: ', TZInfo.Offset, ' minutes');   // Get timezone offset
+WriteLn('Name: ', TZInfo.Name);                   // Get timezone name
 
 // Convert between timezones
-UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');   // Convert to UTC
-Local := TDateTimeKit.ForceTimeZone(Now, 'EST'); // Force timezone
+UTC := TDateTimeKit.WithTimeZone(Now, 'UTC');     // Convert to UTC
+Local := TDateTimeKit.ForceTimeZone(Now, 'EST');  // Force timezone
+
+// DST transition handling (2024 dates)
+DSTStart := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);  // US DST start
+DSTEnd := EncodeDateTime(2024, 11, 3, 2, 0, 0, 0);    // US DST end
+
+// Region-specific DST rules supported:
+// - United States (since 2007)
+// - European Union (since 1996)
+// - Australia (simplified)
+// - New Zealand
+// - Brazil (simplified)
+
+// Platform-specific behavior:
+// - Windows: Uses Windows API for DST detection
+// - Linux: Uses timezone files and region-specific rules
+// - Fallback to UTC if timezone information unavailable
 ```
 
 ## 🔒 Cryptographic Operations

@@ -612,6 +612,7 @@ For detailed documentation, see:
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔄 [JSON](docs/TidyKit.JSON.md)
 - 📝 [Logger](docs/TidyKit.Logger.md)
+- 📅 [DateTime](docs/TidyKit.DateTime.md)
 
 ## ✅ Testing
 
