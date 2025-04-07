@@ -186,6 +186,27 @@ type
 
 implementation
 
+{$IFDEF WINDOWS}
+uses Windows;
+{$ENDIF}
+
+{$IFDEF UNIX}
+{$LINKLIB c}
+function setenv(name, value: PChar; overwrite: LongInt): LongInt; cdecl; external 'c';
+{$ENDIF}
+
+{ SetEnvironmentVariableCrossPlatform - Sets environment variable in a platform-independent way }
+procedure SetEnvironmentVariableCrossPlatform(const Name, Value: string);
+begin
+  {$IFDEF WINDOWS}
+  Windows.SetEnvironmentVariable(PChar(Name), PChar(Value));
+  {$ELSE}
+  {$IFDEF UNIX}
+  setenv(PChar(Name), PChar(Value), 1);
+  {$ENDIF}
+  {$ENDIF}
+end;
+
 { TDateTimeTests }
 
 procedure TDateTimeTests.SetUp;
@@ -2456,7 +2477,7 @@ begin
   
   try
     // Test US DST
-    SetEnvironmentVariable('TZ', 'America/New_York');
+    SetEnvironmentVariableCrossPlatform('TZ', 'America/New_York');
     TZInfo := TDateTimeKit.GetTimeZone(USDSTStart);
     AssertTrue('US DST start should be in DST', TZInfo.IsDST);
     
@@ -2464,7 +2485,7 @@ begin
     AssertFalse('US DST end should not be in DST', TZInfo.IsDST);
     
     // Test EU DST
-    SetEnvironmentVariable('TZ', 'Europe/London');
+    SetEnvironmentVariableCrossPlatform('TZ', 'Europe/London');
     TZInfo := TDateTimeKit.GetTimeZone(EUDSTStart);
     AssertTrue('EU DST start should be in DST', TZInfo.IsDST);
     
@@ -2472,7 +2493,7 @@ begin
     AssertFalse('EU DST end should not be in DST', TZInfo.IsDST);
     
     // Test AU DST
-    SetEnvironmentVariable('TZ', 'Australia/Sydney');
+    SetEnvironmentVariableCrossPlatform('TZ', 'Australia/Sydney');
     TZInfo := TDateTimeKit.GetTimeZone(AUDSTStart);
     AssertTrue('AU DST start should be in DST', TZInfo.IsDST);
     
@@ -2481,9 +2502,9 @@ begin
   finally
     // Restore original TZ
     if OriginalTZ <> '' then
-      SetEnvironmentVariable('TZ', OriginalTZ)
+      SetEnvironmentVariableCrossPlatform('TZ', OriginalTZ)
     else
-      SetEnvironmentVariable('TZ', '');
+      SetEnvironmentVariableCrossPlatform('TZ', '');
   end;
   {$ELSE}
   // On Windows, we can't easily test region-specific DST rules
