@@ -761,7 +761,7 @@ begin
   TempPath := '';
 end;
 
-function FileTimeToDateTime(const FileTime: TDateTime): TDateTime;
+function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
 {$IFDEF WINDOWS}
 var
   LocalFileTime: TFileTime;

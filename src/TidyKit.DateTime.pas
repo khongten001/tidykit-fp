@@ -1928,9 +1928,9 @@ end;
 class function TDateTimeKit.GetTimeZone(const AValue: TDateTime): TTimeZoneInfo;
 {$IFDEF WINDOWS}
 var
+  SystemTime: TSystemTime;
   TZInfo: TTimeZoneInformation;
   RetVal: DWORD;
-  LocalTime, SystemTime: TSystemTime;
 begin
   try
     // Convert TDateTime to SystemTime
