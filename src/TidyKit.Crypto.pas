@@ -70,8 +70,8 @@ type
   { Exception class for cryptographic operations }
   ECryptoError = class(Exception);
 
-const
 {$IFDEF MSWINDOWS}
+const
   PROV_RSA_FULL = 1;
   CRYPT_VERIFYCONTEXT = $F0000000;
 {$ENDIF}
