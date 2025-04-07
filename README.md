@@ -325,6 +325,9 @@ end;
 var
   CurrentTime: TDateTime;
   NextWorkday: TDateTime;
+  TZInfo: TTimeZoneInfo;
+  OriginalTZ: string;
+  DSTTransitionDate: TDateTime;
 begin
   // Get next business day for delivery date
   CurrentTime := TDateTimeKit.GetNow;
@@ -340,6 +343,36 @@ begin
        TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(17, 0, 0, 0)
      )) then
     WriteLn('Within business hours');
+    
+  // Cross-platform timezone handling
+  TZInfo := TDateTimeKit.GetTimeZone(CurrentTime);
+  WriteLn('Current timezone: ', TZInfo.Name);
+  WriteLn('Offset from UTC: ', TZInfo.Offset, ' minutes');
+  WriteLn('DST active: ', BoolToStr(TZInfo.IsDST, True));
+  
+  // Convert between timezones
+  WriteLn('UTC time: ', TDateTimeKit.GetAsString(
+    TDateTimeKit.WithTimeZone(CurrentTime, 'UTC'), 
+    'yyyy-mm-dd hh:nn:ss'));
+    
+  // Cross-platform environment variables for testing
+  OriginalTZ := GetEnvVar('TZ');
+  try
+    // Change timezone for testing
+    SetEnvVar('TZ', 'America/New_York');
+    
+    // Create a datetime value near the US DST transition 
+    // (2:00 AM on second Sunday in March 2024)
+    DSTTransitionDate := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+    
+    // Check if this time is in DST using GetTimeZone
+    TZInfo := TDateTimeKit.GetTimeZone(DSTTransitionDate);
+    WriteLn('DST active: ', BoolToStr(TZInfo.IsDST, True));
+    WriteLn('Timezone offset: ', TZInfo.Offset, ' minutes');
+  finally
+    // Restore original timezone
+    SetEnvVar('TZ', OriginalTZ);
+  end;
 end;
 ```
 

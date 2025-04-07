@@ -12,8 +12,8 @@ The `TidyKit.DateTime` module provides comprehensive date and time manipulation 
 - **Business Day Functions**: Work with business days (excluding weekends and holidays)
 - **Time Span Operations**: Create and manipulate time periods and intervals
 - **Date Unit Operations**: Floor, ceiling, and round dates to various units
-- **Timezone Support**: Work with different timezones and handle DST transitions
-- **Enhanced DST Detection**: Accurate DST detection for multiple regions
+- **Cross-Platform Timezone Support**: Reliable timezone handling on both Windows and Linux
+- **Advanced DST Detection**: Accurate DST detection for multiple global regions
 
 ## Timezone Operations
 
@@ -28,13 +28,15 @@ Returns timezone information for a given date/time. The `TTimeZoneInfo` record c
 
 Platform-specific behavior:
 - **Windows**: Uses Windows API for accurate DST detection
-  - Handles US DST rules (March to November)
-  - Supports custom DST rules from Windows settings
+  - Handles US, EU, Australian, and other region DST rules
+  - Supports standard Windows timezone database
+  - Properly handles ambiguous times during DST transitions
   - Falls back to UTC if timezone information is unavailable
 - **Linux**: Uses system timezone files
   - Checks `TZ` environment variable
   - Reads from `/etc/timezone` or `/etc/localtime`
   - Parses timezone files for offset and DST information
+  - Fully supports IANA timezone database
   - Falls back to UTC if timezone information is unavailable
 
 ### GetSystemTimeZone
@@ -59,11 +61,47 @@ Convert dates between timezones:
 - `ForceTimeZone`: Forces a date to be interpreted in the specified timezone
 
 ### DST Handling
-The library provides accurate DST detection:
-- Windows: Uses system DST rules
-- Linux: Parses timezone files for DST rules
-- Handles edge cases around DST transitions
-- Supports region-specific DST rules
+The library provides accurate DST detection for multiple global regions:
+
+- **North America (US/Canada)**: Second Sunday in March to First Sunday in November
+- **Europe (EU)**: Last Sunday in March to Last Sunday in October
+- **Australia (Southern States)**: First Sunday in October to First Sunday in April
+- **New Zealand**: Last Sunday in September to First Sunday in April
+- **Brazil**: First Sunday in November to Third Sunday in February
+
+Each region's rules are correctly implemented for both Windows and Linux platforms, ensuring consistent behavior across operating systems. Special care is taken to handle ambiguous times during DST transitions (e.g., when the clock moves back and a time occurs twice).
+
+### Cross-Platform Environment Variable Support
+The library provides platform-independent functions for working with environment variables, which is crucial for timezone testing and configuration:
+
+```pascal
+// Get/set environment variable cross-platform
+function GetEnvVar(const Name: string): string;
+procedure SetEnvVar(const Name, Value: string);
+```
+
+These helper functions ensure consistent environment variable handling on both Windows and Linux, allowing you to:
+- Save and restore timezone settings during testing
+- Set the `TZ` environment variable for specific timezone tests
+- Handle environment variables without platform-specific code
+
+Example usage:
+```pascal
+var
+  OriginalTZ: string;
+begin
+  // Save original timezone
+  OriginalTZ := GetEnvVar('TZ');
+  try
+    // Set timezone for testing
+    SetEnvVar('TZ', 'America/New_York');
+    // Run timezone-sensitive operations...
+  finally
+    // Restore original timezone
+    SetEnvVar('TZ', OriginalTZ);
+  end;
+end;
+```
 
 ### Error Handling
 ```pascal
@@ -79,7 +117,10 @@ Timezone operations may raise `ETimeZoneError` for:
 1. Always check `IsDST` when working with dates near DST transitions
 2. Use `WithTimeZone` for timezone conversions to preserve point in time
 3. Handle `ETimeZoneError` for robust timezone operations
-4. Consider platform-specific behavior when deploying
+4. Use `GetEnvVar` and `SetEnvVar` for environment variable operations
+5. For testing timezone behavior, save and restore timezone settings
+6. When working with DST transition times, be aware of ambiguous times
+7. For maximum compatibility, test both Windows and Linux behavior
 
 ## Examples
 
@@ -124,22 +165,61 @@ begin
 end;
 ```
 
-### DST Transition Handling
+### Cross-Platform DST Transition Handling
 
 ```pascal
 var
-  DSTStart: TDateTime;
+  OriginalTZ: string;
+  DSTDate: TDateTime;
   TZInfo: TTimeZoneInfo;
+  // Define test dates for different regions
+  USDate, EUDate, AUDate: TDateTime;
 begin
-  // March 10, 2024 2:00 AM (DST start in US)
-  DSTStart := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+  // Save original timezone setting
+  OriginalTZ := GetEnvVar('TZ');
   
-  // Check DST status
-  TZInfo := TDateTimeKit.GetTimeZone(DSTStart);
-  if TZInfo.IsDST then
-    WriteLn('Time is in DST')
-  else
-    WriteLn('Time is not in DST');
+  try
+    // Test Australian DST
+    SetEnvVar('TZ', 'Australia/Sydney');
+    
+    // Create a datetime value for 2:00 AM on first Sunday in October 2024
+    // (Note: EncodeDateTime just creates a TDateTime value, it doesn't handle DST)
+    DSTDate := EncodeDateTime(2024, 10, 6, 2, 0, 0, 0);
+    
+    // Use GetTimeZone to check DST status for this datetime
+    TZInfo := TDateTimeKit.GetTimeZone(DSTDate);
+    if TZInfo.IsDST then
+      WriteLn('Time is in DST - Australian summer time is in effect')
+    else
+      WriteLn('Time is not in DST');
+    
+    // Create more datetime values for testing different regional DST transitions
+    // US DST starts second Sunday in March
+    USDate := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+    // EU DST starts last Sunday in March
+    EUDate := EncodeDateTime(2024, 3, 31, 1, 0, 0, 0);
+    // AU DST starts first Sunday in October
+    AUDate := EncodeDateTime(2024, 10, 6, 2, 0, 0, 0);
+    
+    // Check DST status for each region by using GetTimeZone
+    SetEnvVar('TZ', 'America/New_York');
+    WriteLn('US DST: ', BoolToStr(TDateTimeKit.GetTimeZone(USDate).IsDST, True));
+    
+    SetEnvVar('TZ', 'Europe/London');
+    WriteLn('EU DST: ', BoolToStr(TDateTimeKit.GetTimeZone(EUDate).IsDST, True));
+    
+    SetEnvVar('TZ', 'Australia/Sydney');
+    WriteLn('AU DST: ', BoolToStr(TDateTimeKit.GetTimeZone(AUDate).IsDST, True));
+      
+    // Convert to UTC and back
+    WriteLn('UTC time: ', DateTimeToStr(TDateTimeKit.WithTimeZone(DSTDate, 'UTC')));
+    WriteLn('Local time: ', DateTimeToStr(TDateTimeKit.WithTimeZone(
+                              TDateTimeKit.WithTimeZone(DSTDate, 'UTC'), 
+                              'Australia/Sydney')));
+  finally
+    // Restore original timezone
+    SetEnvVar('TZ', OriginalTZ);
+  end;
 end;
 ```
 
@@ -172,6 +252,14 @@ TDSTRule = record
 end;
 ```
 
+### Platform-Specific Helpers
+
+```pascal
+// Cross-platform environment variable helpers
+function GetEnvVar(const Name: string): string;
+procedure SetEnvVar(const Name, Value: string);
+```
+
 ### Key Functions
 
 #### GetTimeZone
@@ -198,10 +286,22 @@ class function ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): 
 
 Forces a date/time to be interpreted in a specific timezone, without changing the actual time.
 
-## Notes
+## Cross-Platform Considerations
 
-- The DST detection system is designed to work on both Windows and Linux platforms
-- On Windows, it uses the Windows API to determine DST status
-- On Linux, it reads timezone files and applies region-specific DST rules
-- The system supports multiple regions with different DST rules
-- For unsupported platforms or when timezone information cannot be determined, it falls back to UTC 
+### Windows
+- Uses Windows API for timezone information
+- Provides reliable DST detection for all major regions
+- Handles ambiguous times during DST transitions
+- Windows timezone names may differ from IANA names
+
+### Linux
+- Uses IANA timezone database
+- Relies on the `TZ` environment variable and timezone files
+- More standardized timezone naming conventions
+- Requires proper installation of timezone data
+
+### Testing Tips
+- Always test with both Windows and Linux environments
+- Use `GetEnvVar` and `SetEnvVar` for testing different timezones
+- Pay special attention to dates near DST transitions
+- For critical applications, test with different regional settings 
