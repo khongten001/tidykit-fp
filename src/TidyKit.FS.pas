@@ -2477,8 +2477,20 @@ begin
     else
     {$ENDIF} 
     begin
-      Parts1 := SplitString(NormalizePath(Path1), PathDelim);
-      Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+      // For Unix paths starting with /, handle them specially
+      {$IFDEF UNIX}
+      if IsUnixStyle then
+      begin
+        // Remove leading slash for splitting
+        Parts1 := SplitString(Copy(Path1, 2, Length(Path1)), '/');
+        Parts2 := SplitString(Copy(Path2, 2, Length(Path2)), '/');
+      end
+      else
+      {$ENDIF}
+      begin
+        Parts1 := SplitString(NormalizePath(Path1), PathDelim);
+        Parts2 := SplitString(NormalizePath(Path2), PathDelim);
+      end;
     end;
   end;
   
@@ -2509,7 +2521,8 @@ begin
   
   if Length(CommonParts) = 0 then
     Result := ''
-  else begin
+  else 
+  begin
     {$IFDEF WINDOWS}
     if HasDriveLetter then
     begin
@@ -2521,7 +2534,7 @@ begin
     {$ENDIF}
     if IsUnixStyle then
     begin
-      Result := '/' + CommonParts[0];  // Add leading slash for Unix paths
+      Result := '/' + CommonParts[0];  // Add single leading slash for Unix paths
       for I := 1 to High(CommonParts) do
         Result := Result + '/' + CommonParts[I];
     end
@@ -3288,7 +3301,10 @@ begin
   {$IFDEF WINDOWS}
   Result := Length(Path) > 260;  // MAX_PATH
   {$ELSE}
-  Result := Length(Path) > 4096; // PATH_MAX
+  // On Unix, the PATH_MAX value of 4096 includes the null terminator
+  // Also, some distros may have limitations for specific operations
+  // Using a more conservative threshold
+  Result := Length(Path) > 1024; // More conservative limit for cross-platform compatibility
   {$ENDIF}
 end;
 
