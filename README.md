@@ -22,20 +22,20 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [💻 Installation (General)](#-installation-general)
   - [📝 Library Usage](#-library-usage)
   - [🚀 Quick Start](#-quick-start)
-    - [📂 File System Operations](#-file-system-operations)
     - [📝 String Operations](#-string-operations)
+    - [📂 File System Operations](#-file-system-operations)
     - [📅 DateTime Operations](#-datetime-operations)
+    - [🔄 JSON Operations](#-json-operations)
+    - [📝 Logging Operations](#-logging-operations)
     - [🌐 HTTP Request Operations](#-http-request-operations)
     - [🔐 Crypto Operations](#-crypto-operations)
+    - [📦 Archive Operations](#-archive-operations)
     - [📈 Statistical Operations](#-statistical-operations)
     - [🔢 Matrix Operations](#-matrix-operations)
     - [📐 Trigonometric Operations](#-trigonometric-operations)
     - [💰 Financial Operations](#-financial-operations)
-    - [📦 Archive Operations](#-archive-operations)
-    - [📝 Logging Operations](#-logging-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
-    - [Theoretical Compatibility](#theoretical-compatibility)
     - [Dependencies](#dependencies)
     - [Build Requirements](#build-requirements)
   - [📚 Documentation](#-documentation)
@@ -225,24 +225,23 @@ uses
 
 // Option 2: Choose specific units based on your needs
 uses
+  // String manipulation unit
+  TidyKit.Strings,           // String operations
+  
+  // File system operations
+  TidyKit.FS,                // File system operations
+  
+  // Date Time manipulation unit
+  TidyKit.DateTime,          // Date Time operations
+  
   // JSON functionality
   TidyKit.JSON,              // All JSON functionality
   
   // Logging functionality
   TidyKit.Logger,            // Easy to use logging system
   
-  // Math-related units
-  TidyKit.Math,              // Base math types and operations
-  TidyKit.Math.Stats,        // Statistical calculations
-  TidyKit.Math.Finance,      // Financial mathematics
-  TidyKit.Math.Matrices,     // Matrix operations
-  TidyKit.Math.Trigonometry, // Trigonometric functions
-  
-  // String manipulation unit
-  TidyKit.Strings,           // String operations
-  
-  // File system unit
-  TidyKit.FS,                // File system operations
+  // Network units
+  TidyKit.Request,           // HTTP client with simple and advanced features
   
   // Cryptography units
   TidyKit.Crypto,            // Base crypto operations
@@ -250,8 +249,15 @@ uses
   TidyKit.Crypto.SHA3,       // SHA3 implementation
   TidyKit.Crypto.AES256,     // AES-256 implementation
   
-  // Network units
-  TidyKit.Request;           // HTTP client with simple and advanced features
+  // Archive operations
+  TidyKit.Archive,           // Archive operations
+  
+  // Math-related units
+  TidyKit.Math,              // Base math types and operations
+  TidyKit.Math.Stats,        // Statistical calculations
+  TidyKit.Math.Matrices,     // Matrix operations
+  TidyKit.Math.Trigonometry, // Trigonometric functions
+  TidyKit.Math.Finance;      // Financial mathematics
 ```
 
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
@@ -265,6 +271,26 @@ Choose Option 2 if you want to optimize your application by including only the s
 Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
 ## 🚀 Quick Start
+
+### 📝 String Operations
+```pascal
+var
+  Text: string;
+begin
+  // Email validation
+  if TStringKit.MatchesPattern('user@example.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
+    WriteLn('Valid email');
+    
+  // Format phone number
+  Text := TStringKit.PadLeft('5551234', 10, '0');  // Returns '0005551234'
+  
+  // Clean user input
+  Text := TStringKit.CollapseWhitespace('  Hello    World  ');  // Returns 'Hello World'
+  
+  // Format product code
+  Text := TStringKit.PadCenter('A123', 8, '-');  // Returns '--A123---'
+end;
+```
 
 ### 📂 File System Operations
 ```pascal
@@ -300,31 +326,14 @@ begin
 end;
 ```
 
-### 📝 String Operations
-```pascal
-var
-  Text: string;
-begin
-  // Email validation
-  if TStringKit.MatchesPattern('user@example.com', '^[\w\.-]+@[\w\.-]+\.\w+$') then
-    WriteLn('Valid email');
-    
-  // Format phone number
-  Text := TStringKit.PadLeft('5551234', 10, '0');  // Returns '0005551234'
-  
-  // Clean user input
-  Text := TStringKit.CollapseWhitespace('  Hello    World  ');  // Returns 'Hello World'
-  
-  // Format product code
-  Text := TStringKit.PadCenter('A123', 8, '-');  // Returns '--A123---'
-end;
-```
-
 ### 📅 DateTime Operations
 ```pascal
 var
   CurrentTime: TDateTime;
   NextWorkday: TDateTime;
+  TZInfo: TTimeZoneInfo;
+  OriginalTZ: string;
+  DSTTransitionDate: TDateTime;
 begin
   // Get next business day for delivery date
   CurrentTime := TDateTimeKit.GetNow;
@@ -340,6 +349,129 @@ begin
        TDateTimeKit.StartOfDay(CurrentTime) + EncodeTime(17, 0, 0, 0)
      )) then
     WriteLn('Within business hours');
+    
+  // Cross-platform timezone handling
+  TZInfo := TDateTimeKit.GetTimeZone(CurrentTime);
+  WriteLn('Current timezone: ', TZInfo.Name);
+  WriteLn('Offset from UTC: ', TZInfo.Offset, ' minutes');
+  WriteLn('DST active: ', BoolToStr(TZInfo.IsDST, True));
+  
+  // Convert between timezones
+  WriteLn('UTC time: ', TDateTimeKit.GetAsString(
+    TDateTimeKit.WithTimeZone(CurrentTime, 'UTC'), 
+    'yyyy-mm-dd hh:nn:ss'));
+    
+  // Cross-platform environment variables for testing
+  OriginalTZ := GetEnvVar('TZ');
+  try
+    // Change timezone for testing
+    SetEnvVar('TZ', 'America/New_York');
+    
+    // Create a datetime value near the US DST transition 
+    // (2:00 AM on second Sunday in March 2024)
+    DSTTransitionDate := EncodeDateTime(2024, 3, 10, 2, 0, 0, 0);
+    
+    // Check if this time is in DST using GetTimeZone
+    TZInfo := TDateTimeKit.GetTimeZone(DSTTransitionDate);
+    WriteLn('DST active: ', BoolToStr(TZInfo.IsDST, True));
+    WriteLn('Timezone offset: ', TZInfo.Offset, ' minutes');
+  finally
+    // Restore original timezone
+    SetEnvVar('TZ', OriginalTZ);
+  end;
+end;
+```
+
+### 🔄 JSON Operations
+```pascal
+var
+  Person: IJSONObject;
+  Address: IJSONObject;
+  Hobbies: IJSONArray;
+  JSON: string;
+  Value: IJSONValue;
+begin
+  // Create a person object
+  Person := TJSON.Obj;
+  Person.Add('name', 'John Smith');
+  Person.Add('age', 30);
+  Person.Add('isActive', True);
+  
+  // Create and add an address object
+  Address := TJSON.Obj;
+  Address.Add('street', '123 Main St');
+  Address.Add('city', 'Springfield');
+  Address.Add('zipCode', '12345');
+  Person.Add('address', Address);
+  
+  // Create and add a hobbies array
+  Hobbies := TJSON.Arr;
+  Hobbies.Add('reading');
+  Hobbies.Add('cycling');
+  Hobbies.Add('swimming');
+  Person.Add('hobbies', Hobbies);
+  
+  // Convert to JSON string with pretty printing
+  JSON := Person.ToString(True);
+  WriteLn(JSON);
+  
+  // Parse JSON string
+  JSON := '{"name":"Jane Doe","age":25,"skills":["Pascal","Python"]}';
+  Value := TJSON.Parse(JSON);
+  Person := Value.AsObject;
+  
+  // Access values
+  WriteLn('Name: ', Person['name'].AsString);
+  WriteLn('Age: ', Person['age'].AsInteger);
+  WriteLn('First Skill: ', Person['skills'].AsArray[0].AsString);
+  
+  // Error handling
+  try
+    Value := TJSON.Parse('{invalid json}');
+  except
+    on E: EJSONException do
+      WriteLn('Error: ', E.Message);
+  end;
+end;
+```
+
+### 📝 Logging Operations
+```pascal
+// Simple one-line setup for console and file logging
+TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+
+// Log messages with different levels
+Logger.Debug('Processing started'); // Only shown if minimum level is Debug
+Logger.Info('User %s logged in', ['JohnDoe']);
+Logger.Warning('Disk space is low: %d%% remaining', [5]);
+Logger.Error('Failed to save file: %s', ['Access denied']);
+Logger.Fatal('Application crashed: %s', ['Segmentation fault']);
+
+// Create category-based loggers for better organization
+var
+  UILogger, DBLogger: ILogContext;
+begin
+  UILogger := Logger.CreateContext('UI');
+  DBLogger := Logger.CreateContext('DB');
+  
+  UILogger.Info('Window created');
+  DBLogger.Warning('Slow query detected: %s', ['SELECT * FROM large_table']);
+end;
+
+// Time operations and log their duration
+var
+  Timer: ITimedOperation;
+begin
+  Timer := Logger.TimedBlock('Data processing');
+  // ... perform long operation ...
+  // Timer automatically logs completion with duration when it goes out of scope
+end;
+
+// IMPORTANT: Always close log files when shutting down
+try
+  // Your application logic with logging...
+finally
+  Logger.CloseLogFiles;  // Ensures all data is written to disk
 end;
 ```
 
@@ -395,6 +527,27 @@ begin
   
   // Verify file integrity
   Hash := TCryptoKit.SHA256Hash(TFileKit.ReadFile('important.dat'));
+end;
+```
+
+### 📦 Archive Operations
+```pascal
+var
+  SourceDir, DestDir: string;
+begin
+  // Create ZIP archive
+  SourceDir := 'path/to/source';
+  TArchiveKit.CompressToZip(SourceDir, 'archive.zip', True);  // Recursive
+  
+  // Extract specific files
+  DestDir := 'path/to/extract';
+  TArchiveKit.DecompressFromZip('archive.zip', DestDir, '*.txt');  // Only .txt files
+  
+  // Create TAR archive with specific files
+  TArchiveKit.CompressToTar(SourceDir, 'backup.tar', True, '*.pas');  // Only .pas files
+  
+  // Extract entire TAR archive
+  TArchiveKit.DecompressFromTar('backup.tar', DestDir);
 end;
 ```
 
@@ -509,85 +662,25 @@ begin
 end;
 ```
 
-### 📦 Archive Operations
-```pascal
-var
-  SourceDir, DestDir: string;
-begin
-  // Create ZIP archive
-  SourceDir := 'path/to/source';
-  TArchiveKit.CompressToZip(SourceDir, 'archive.zip', True);  // Recursive
-  
-  // Extract specific files
-  DestDir := 'path/to/extract';
-  TArchiveKit.DecompressFromZip('archive.zip', DestDir, '*.txt');  // Only .txt files
-  
-  // Create TAR archive with specific files
-  TArchiveKit.CompressToTar(SourceDir, 'backup.tar', True, '*.pas');  // Only .pas files
-  
-  // Extract entire TAR archive
-  TArchiveKit.DecompressFromTar('backup.tar', DestDir);
-end;
-```
-
-### 📝 Logging Operations
-```pascal
-// Simple one-line setup for console and file logging
-TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
-
-// Log messages with different levels
-Logger.Debug('Processing started'); // Only shown if minimum level is Debug
-Logger.Info('User %s logged in', ['JohnDoe']);
-Logger.Warning('Disk space is low: %d%% remaining', [5]);
-Logger.Error('Failed to save file: %s', ['Access denied']);
-Logger.Fatal('Application crashed: %s', ['Segmentation fault']);
-
-// Create category-based loggers for better organization
-var
-  UILogger, DBLogger: ILogContext;
-begin
-  UILogger := Logger.CreateContext('UI');
-  DBLogger := Logger.CreateContext('DB');
-  
-  UILogger.Info('Window created');
-  DBLogger.Warning('Slow query detected: %s', ['SELECT * FROM large_table']);
-end;
-
-// Time operations and log their duration
-var
-  Timer: ITimedOperation;
-begin
-  Timer := Logger.TimedBlock('Data processing');
-  // ... perform long operation ...
-  // Timer automatically logs completion with duration when it goes out of scope
-end;
-
-// IMPORTANT: Always close log files when shutting down
-try
-  // Your application logic with logging...
-finally
-  Logger.CloseLogFiles;  // Ensures all data is written to disk
-end;
-```
-
 ## 📖 System Requirements
 
 ### Tested Environments
-- **Operating System**: Windows 11
-- **Compiler**: Free Pascal (FPC) 3.2.2
-- **IDE**: Lazarus 3.8
 
-### Theoretical Compatibility
-- **Operating Systems**:
-  - Windows (7, 8, 10, 11)
-  - Linux (Any distribution with FPC support)
-  - macOS (with FPC support)
-  - FreeBSD
-- **Compiler**: Free Pascal 3.2.2 or higher
-- **IDE**: Any IDE that supports Free Pascal
-  - Lazarus 3.6 or higher
-  - VS Code with OmniPascal
-  - Other text editors
+| Module                | Windows 11 | Ubuntu 24.04.2 |
+|-----------------------|------------|----------------|
+| TidyKit.Strings       | ✅         | 🚧            |
+| TidyKit.FS            | ✅         | 🚧            |
+| TidyKit.DateTime      | ✅         | ✅            |
+| TidyKit.JSON          | ✅         | 🚧            |
+| TidyKit.Logging       | ✅         | 🚧            |
+| TidyKit.Request       | ✅         | 🚧            |
+| TidyKit.Crypto        | ✅         | 🚧            |
+| TidyKit.Archive       | ✅         | 🚧            |
+| TidyKit.Math.Stats    | ✅         | 🚧            |
+| TidyKit.Math.Matrices | ✅         | 🚧            |
+| TidyKit.Math.Trig     | ✅         | 🚧            |
+| TidyKit.Math.Finance  | ✅         | 🚧            |
+
 
 ### Dependencies
 - No external dependencies required
@@ -602,16 +695,19 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
-- 📊 [Math](docs/TidyKit.Math.md)
-  - 📈 [Statistics](docs/TidyKit.Math.Stats.md)
-  - 💰 [Finance](docs/TidyKit.Math.Finance.md)
-  - 🔢 [Matrices](docs/TidyKit.Math.Matrices.md)
-  - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
+- 📝 [Strings](docs/TidyKit.Strings.md)
 - 📂 [File System](docs/TidyKit.FS.md)
-- 🔐 [Crypto](docs/TidyKit.Crypto.md)
-- 🌐 [Network](docs/TidyKit.Request.md)
+- 📅 [DateTime](docs/TidyKit.DateTime.md)
 - 🔄 [JSON](docs/TidyKit.JSON.md)
 - 📝 [Logger](docs/TidyKit.Logger.md)
+- 🌐 [Network](docs/TidyKit.Request.md)
+- 🔐 [Crypto](docs/TidyKit.Crypto.md)
+- 📦 [Archive](docs/TidyKit.Archive.md)
+- 📊 [Math](docs/TidyKit.Math.md)
+  - 📈 [Statistics](docs/TidyKit.Math.Stats.md)
+  - 🔢 [Matrices](docs/TidyKit.Math.Matrices.md)
+  - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
+  - 💰 [Finance](docs/TidyKit.Math.Finance.md)
 
 ## ✅ Testing
 

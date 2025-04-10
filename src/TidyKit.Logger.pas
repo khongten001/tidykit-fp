@@ -262,6 +262,7 @@ function NameValuePair(const AName: string; AValue: Double): TNameValuePair; ove
 type
   TConsoleSink = class(TInterfacedObject, ILogSink)
   public
+    constructor Create;
     procedure Write(const AFormattedMessage: string; ALevel: TLogLevel); 
     procedure Flush;
   end;
@@ -432,11 +433,11 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   case ALogLevel of
-    llDebug: Write(#27'[90m');    // Gray
-    llInfo: Write(#27'[0m');      // Default
-    llWarning: Write(#27'[33m');  // Yellow
-    llError: Write(#27'[31m');    // Red
-    llFatal: Write(#27'[97;41m'); // White on Red
+    llDebug: System.Write(#27'[90m');    // Gray
+    llInfo: System.Write(#27'[0m');      // Default
+    llWarning: System.Write(#27'[33m');  // Yellow
+    llError: System.Write(#27'[31m');    // Red
+    llFatal: System.Write(#27'[97;41m'); // White on Red
   end;
   {$ENDIF}
 end;
@@ -447,7 +448,7 @@ begin
   SetConsoleTextAttribute(GetStdHandle(STD_OUTPUT_HANDLE), 7); // Default
   {$ENDIF}
   {$IFDEF UNIX}
-  Write(#27'[0m');
+  System.Write(#27'[0m');
   {$ENDIF}
 end;
 
@@ -1178,6 +1179,7 @@ begin
 end;
 
 function GetEnvVar(const Name: string): string;
+{$IFDEF WINDOWS}
 var
   Buffer: array[0..1023] of Char;
 begin
@@ -1185,6 +1187,12 @@ begin
   if GetEnvironmentVariable(PChar(Name), Buffer, SizeOf(Buffer)) > 0 then
     Result := string(Buffer);
 end;
+{$ELSE}
+begin
+  // On Unix systems, GetEnvironmentVariable only takes one parameter
+  Result := GetEnvironmentVariable(Name);
+end;
+{$ENDIF}
 
 procedure TLogger.ConfigureFromEnvironment;
 var
@@ -1567,9 +1575,14 @@ end;
 
 { TConsoleSink }
 
+constructor TConsoleSink.Create;
+begin
+  inherited Create;
+end;
+
 procedure TConsoleSink.Write(const AFormattedMessage: string; ALevel: TLogLevel);
+{$IFDEF WINDOWS}
 const
-  {$IFDEF WINDOWS}
   // Windows console colors
   FOREGROUND_BLUE = 1;
   FOREGROUND_GREEN = 2;
@@ -1601,11 +1614,11 @@ begin
   
   {$IFDEF UNIX}
   case ALevel of
-    llDebug: Write(#27'[90m');    // Gray
-    llInfo: Write(#27'[0m');      // Default
-    llWarning: Write(#27'[33m');  // Yellow
-    llError: Write(#27'[31m');    // Red
-    llFatal: Write(#27'[97;41m'); // White on Red
+    llDebug: System.Write(#27'[90m');    // Gray
+    llInfo: System.Write(#27'[0m');      // Default
+    llWarning: System.Write(#27'[33m');  // Yellow
+    llError: System.Write(#27'[31m');    // Red
+    llFatal: System.Write(#27'[97;41m'); // White on Red
   end;
   {$ENDIF}
   
@@ -1616,7 +1629,7 @@ begin
   {$ENDIF}
   
   {$IFDEF UNIX}
-  Write(#27'[0m'); // Reset to default
+  System.Write(#27'[0m'); // Reset to default
   {$ENDIF}
 end;
 

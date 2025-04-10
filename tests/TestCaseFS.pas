@@ -308,7 +308,7 @@ begin
   AssertEquals('fpStat should succeed on source file',
     0, fpStat(PChar(FTestFile), SourceInfo));
   AssertEquals('Source file should have read-only permissions',
-    $1A4, SourceInfo.Mode and $1FF);
+    $1A4, SourceInfo.st_mode and $1FF);
   {$ENDIF}
   
   // Set a specific modification time for testing
@@ -342,8 +342,8 @@ begin
   AssertEquals('fpStat should succeed on destination file',
     0, fpStat(PChar(CopyFile), DestInfo));
   AssertEquals('File permissions should match',
-    SourceInfo.Mode and $1FF,  // Compare only permission bits
-    DestInfo.Mode and $1FF);
+    SourceInfo.st_mode and $1FF,  // Compare only permission bits
+    DestInfo.st_mode and $1FF);
   {$ENDIF}
   
   // Verify modification time was preserved

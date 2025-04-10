@@ -8,11 +8,12 @@ uses
   {$IFDEF UNIX}
   BaseUnix,  // Provides Unix-specific system calls for low-level file operations
   Unix,      // Defines Unix-specific types and constants
+  UnixType,  // Additional Unix system types
   {$ENDIF}
   {$IFDEF WINDOWS}
   Windows,   // Windows API units for interacting with the Windows operating system
   {$ENDIF}
-  Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils;
+  Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils, Math;
 
 const
   DEBUG_MODE = True; // Enable debugging output
@@ -26,6 +27,12 @@ const
   
   {$IFDEF UNIX}
   PATH_MAX = 4096;  // Maximum length of a file path on Unix/Linux systems (includes null terminator)
+  
+  // Linux file permission constants
+  S_IFMT   = $F000;
+  S_IFLNK  = $A000;
+  S_IFREG  = $8000;
+  S_IFDIR  = $4000;
   {$ENDIF}
 
 {$IFDEF WINDOWS}
@@ -625,15 +632,33 @@ type
     class function MatchesPattern(const FileName, Pattern: string): Boolean; static;
     class function FindFirstMatch(const Directory, Pattern: string): string; static;
     class function CountMatches(const Directory, Pattern: string): Integer; static;
+
+    class function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes; static;
   end;
 
 type
   { Exception class for file system operations }
   EFileSystemError = class(Exception);
 
-
+{$IFDEF UNIX}
+// Helper functions for Unix file system operations
+function S_ISDIR(Mode: mode_t): Boolean;
+function S_ISLNK(Mode: mode_t): Boolean;
+{$ENDIF}
 
 implementation
+
+{$IFDEF UNIX}
+function S_ISDIR(Mode: mode_t): Boolean;
+begin
+  Result := ((Mode and S_IFMT) = S_IFDIR);
+end;
+
+function S_ISLNK(Mode: mode_t): Boolean;
+begin
+  Result := ((Mode and S_IFMT) = S_IFLNK);
+end;
+{$ENDIF}
 
 { Forward declarations }
 function CompareByDate(List: TStringList; Index1, Index2: Integer): Integer; forward;
@@ -690,21 +715,21 @@ begin
   {$IFDEF UNIX}
   if FpStat(APath, Info) = 0 then
   begin
-    Result.ReadOnly := (Info.Mode and S_IWUSR) = 0;
-    Result.Directory := S_ISDIR(Info.Mode);
-    Result.SymLink := S_ISLNK(Info.Mode);
+    Result.ReadOnly := (Info.st_mode and S_IWUSR) = 0;
+    Result.Directory := ((Info.st_mode and S_IFMT) = S_IFDIR);
+    Result.SymLink := ((Info.st_mode and S_IFMT) = S_IFLNK);
     
     // Convert mode to string (e.g., 'rwxr-xr-x')
     Result.Permissions := '';
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IRUSR) <> 0, 'r', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IWUSR) <> 0, 'w', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IXUSR) <> 0, 'x', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IRGRP) <> 0, 'r', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IWGRP) <> 0, 'w', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IXGRP) <> 0, 'x', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IROTH) <> 0, 'r', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IWOTH) <> 0, 'w', '-');
-    Result.Permissions := Result.Permissions + IfThen((Info.Mode and S_IXOTH) <> 0, 'x', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IRUSR) <> 0, 'r', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IWUSR) <> 0, 'w', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IXUSR) <> 0, 'x', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IRGRP) <> 0, 'r', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IWGRP) <> 0, 'w', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IXGRP) <> 0, 'x', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IROTH) <> 0, 'r', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IWOTH) <> 0, 'w', '-');
+    Result.Permissions := Result.Permissions + IfThen((Info.st_mode and S_IXOTH) <> 0, 'x', '-');
   end;
   {$ENDIF}
   
@@ -736,7 +761,8 @@ begin
   TempPath := '';
 end;
 
-function FileTimeToDateTime(const FileTime: TFileTime): TDateTime;
+function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
+{$IFDEF WINDOWS}
 var
   LocalFileTime: TFileTime;
   SystemTime: TSystemTime;
@@ -758,6 +784,11 @@ begin
     Result := EncodeDate(SystemTime.wYear, SystemTime.wMonth, SystemTime.wDay) +
               EncodeTime(SystemTime.wHour, SystemTime.wMinute, SystemTime.wSecond, SystemTime.wMilliseconds);
   end;
+{$ELSE}
+begin
+  // On Unix systems, just return the datetime directly
+  Result := FileTime;
+{$ENDIF}
 end;
 
 { Helper functions }
@@ -948,18 +979,18 @@ begin
     if fpStat(PChar(ASourcePath), Info) = 0 then
     begin
       // Set permissions
-      fpChmod(PChar(ADestPath), Info.Mode and $0FFF);
+      fpChmod(PChar(ADestPath), Info.st_mode and $0FFF);
       
       // Set ownership if we have permissions
       if fpGetuid = 0 then  // Only try if we're root
       begin
-        fpChown(PChar(ADestPath), Info.uid, Info.gid);
+        fpChown(PChar(ADestPath), Info.st_uid, Info.st_gid);
       end;
       
       // Set timestamps
       with Info do
       begin
-        fpUtime(PChar(ADestPath), @Info.mtime);
+        fpUtime(PChar(ADestPath), @Info.st_mtime);
       end;
     end;
     {$ENDIF}
@@ -2087,28 +2118,26 @@ begin
 end;
 
 class procedure TFileKit.DeleteSymLink(const ALinkPath: string);
-{$IFDEF WINDOWS}
 var
   ErrorCode: DWORD;
-  ErrorMsg: string;
-{$ENDIF}
+  ErrMsg: string;
 begin
-  if not IsSymLink(ALinkPath) then
-    raise EFileSystemError.Create('Path is not a symbolic link');
+  if not FileExists(ALinkPath) and not DirectoryExists(ALinkPath) then
+    Exit;
     
   {$IFDEF WINDOWS}
   if not Windows.DeleteFile(PChar(ALinkPath)) then
   begin
     ErrorCode := GetLastError;
-    ErrorMsg := SysErrorMessage(ErrorCode);
-    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    ErrMsg := SysErrorMessage(ErrorCode);
+    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s (Error %d)', [ErrMsg, ErrorCode]);
   end;
   {$ENDIF}
   {$IFDEF UNIX}
   if fpUnlink(PChar(ALinkPath)) <> 0 then
   begin
-    ErrorMsg := SysErrorMessage(fpgeterrno);
-    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s', [ErrorMsg]);
+    ErrMsg := SysErrorMessage(fpgeterrno);
+    raise EFileSystemError.CreateFmt('Failed to delete symbolic link: %s', [ErrMsg]);
   end;
   {$ENDIF}
 end;
@@ -2137,14 +2166,14 @@ var
   TargetPath: WideString;
   BytesReturned: DWORD;
   ErrorCode: DWORD;
-  ErrorMsg: string;
+  ErrMsg: string;
   I: Integer;
 {$ENDIF}
 {$IFDEF UNIX}
 var
   Buffer: array[0..PATH_MAX - 1] of Char;
   BytesRead: Integer;
-  ErrorMsg: string;
+  ErrMsg: string;
 {$ENDIF}
 begin
   Result := '';
@@ -2163,8 +2192,8 @@ begin
   if Handle = INVALID_HANDLE_VALUE then
   begin
     ErrorCode := GetLastError;
-    ErrorMsg := SysErrorMessage(ErrorCode);
-    raise EFileSystemError.CreateFmt('Failed to open symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
+    ErrMsg := SysErrorMessage(ErrorCode);
+    raise EFileSystemError.CreateFmt('Failed to open symbolic link: %s (Error %d)', [ErrMsg, ErrorCode]);
   end;
   
   try
@@ -2177,8 +2206,8 @@ begin
                           BytesReturned, nil) then
     begin
       ErrorCode := GetLastError;
-      ErrorMsg := SysErrorMessage(ErrorCode);
-      raise EFileSystemError.CreateFmt('Failed to get reparse point data: %s (Error %d)', [ErrorMsg, ErrorCode]);
+      ErrMsg := SysErrorMessage(ErrorCode);
+      raise EFileSystemError.CreateFmt('Failed to get reparse point data: %s (Error %d)', [ErrMsg, ErrorCode]);
     end;
     
     if Buffer.ReparseTag = IO_REPARSE_TAG_SYMLINK then
@@ -2231,8 +2260,8 @@ begin
   BytesRead := fpReadLink(PChar(ALinkPath), Buffer, PATH_MAX);
   if BytesRead <= 0 then
   begin
-    ErrorMsg := SysErrorMessage(fpgeterrno);
-    raise EFileSystemError.CreateFmt('Failed to resolve symbolic link: %s', [ErrorMsg]);
+    ErrMsg := SysErrorMessage(fpgeterrno);
+    raise EFileSystemError.CreateFmt('Failed to resolve symbolic link: %s', [ErrMsg]);
   end;
   SetString(Result, Buffer, BytesRead);
   {$ENDIF}
@@ -2263,7 +2292,7 @@ begin
   {$ENDIF}
   {$IFDEF UNIX}
   if fpLStat(PChar(APath), Info) = 0 then
-    Result := S_ISLNK(Info.Mode);
+    Result := ((Info.st_mode and S_IFMT) = S_IFLNK);
   {$ENDIF}
 end;
 
@@ -2796,6 +2825,10 @@ begin
 end;
 
 class function TFileKit.IsExecutable(const FilePath: string): Boolean;
+{$IFDEF UNIX}
+var
+  Info: BaseUnix.Stat;
+{$ENDIF}
 begin
   {$IFDEF WINDOWS}
   Result := AnsiEndsText('.exe', FilePath) or
@@ -2803,7 +2836,7 @@ begin
             AnsiEndsText('.bat', FilePath) or
             AnsiEndsText('.cmd', FilePath);
   {$ELSE} 
-  Result := (fpStatFS(PChar(FilePath), @Stats) = 0) and ((Stats.Mode and S_IXUSR) <> 0);
+  Result := (fpStat(PChar(FilePath), Info) = 0) and ((Info.st_mode and S_IXUSR) <> 0);
   {$ENDIF}
 end;
 
@@ -2831,11 +2864,11 @@ begin
 end;
 {$ELSE}
 var
-  Stats: TStatFs;
+  StatFS: BaseUnix.TStatFS;
 begin
   Result := -1;
-  if fpStatFS(PChar(ExtractFilePath(Path)), @Stats) = 0 then
-    Result := Int64(Stats.bsize) * Int64(Stats.bavail);
+  if fpStatFS(PChar(ExtractFilePath(Path)), @StatFS) = 0 then
+    Result := Int64(StatFS.bsize) * Int64(StatFS.bavail);
 end;
 {$ENDIF}
 
@@ -2852,11 +2885,11 @@ begin
 end;
 {$ELSE}
 var
-  Stats: TStatFs;
+  StatFS: BaseUnix.TStatFS;
 begin
   Result := -1;
-  if fpStatFS(PChar(ExtractFilePath(Path)), @Stats) = 0 then
-    Result := Int64(Stats.bsize) * Int64(Stats.blocks);
+  if fpStatFS(PChar(ExtractFilePath(Path)), @StatFS) = 0 then
+    Result := Int64(StatFS.bsize) * Int64(StatFS.blocks);
 end;
 {$ENDIF}
 
@@ -3008,7 +3041,7 @@ begin
 end;
 {$ELSE}
 var
-  LockFile: Text;
+  TextFile: Text;
   LockPath: string;
 begin
   Result := False;
@@ -3025,9 +3058,9 @@ begin
     
   LockPath := FilePath + '.lock';
   try
-    AssignFile(LockFile, LockPath);
-    Rewrite(LockFile);
-    CloseFile(LockFile);
+    AssignFile(TextFile, LockPath);
+    Rewrite(TextFile);
+    CloseFile(TextFile);
     LockedFiles.Add(FilePath);
     Result := True;
   except
@@ -3369,6 +3402,40 @@ begin
     FindClose(SearchRec);
   end;
   Result := DirCount;
+end;
+
+class function TFileKit.GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
+var
+  FileStream: TFileStream;
+  BytesRead: Integer;
+  ChunkSize: Int64;
+begin
+  SetLength(Result, 0);
+  if not FileExists(FilePath) then
+    Exit;
+    
+  FileStream := TFileStream.Create(FilePath, fmOpenRead or fmShareDenyNone);
+  try
+    // Make sure offset is within file bounds
+    if (Offset < 0) or (Offset >= FileStream.Size) then
+      Exit;
+      
+    // Calculate actual chunk size (don't read past EOF)
+    ChunkSize := Min(Size, FileStream.Size - Offset);
+    if ChunkSize <= 0 then
+      Exit;
+      
+    // Set position and read chunk
+    FileStream.Position := Offset;
+    SetLength(Result, ChunkSize);
+    BytesRead := FileStream.Read(Result[0], ChunkSize);
+    
+    // If we didn't read the full chunk, resize the result
+    if BytesRead <> ChunkSize then
+      SetLength(Result, BytesRead);
+  finally
+    FileStream.Free;
+  end;
 end;
 
 finalization

@@ -1940,6 +1940,7 @@ function TMatrixKit.ElementWiseDivide(const Other: IMatrix): IMatrix;
 var
   I, J: Integer;
   Matrix: TMatrixKit;
+  DivisorValue: Double;
 begin
   if (GetRows <> Other.Rows) or (GetCols <> Other.Cols) then
     raise EMatrixError.Create('Matrix dimensions do not match for element-wise division');
@@ -1948,7 +1949,15 @@ begin
   try
     for I := 0 to GetRows - 1 do
       for J := 0 to GetCols - 1 do
-        Matrix.FData[I, J] := FData[I, J] / Other.GetValue(I, J);
+      begin
+        DivisorValue := Other.GetValue(I, J);
+        
+        // Check for division by zero
+        if Abs(DivisorValue) < 1E-12 then
+          raise EMatrixError.Create('Division by zero in element-wise division');
+          
+        Matrix.FData[I, J] := FData[I, J] / DivisorValue;
+      end;
     Result := Matrix;
   except
     Matrix.Free;
