@@ -273,6 +273,8 @@ const
   TestContent = 'Test Content';
 var
   CopyFile: string;
+  SourceModTime, DestModTime: TDateTime;
+  // Platform-specific variables
   {$IFDEF WINDOWS}
   SourceAttrs, DestAttrs: DWord;
   SourceHandle, DestHandle: THandle;
@@ -281,27 +283,29 @@ var
   {$IFDEF UNIX}
   SourceInfo, DestInfo: BaseUnix.Stat;
   {$ENDIF}
-  SourceModTime, DestModTime: TDateTime;
 begin
   WriteLn('Test05_CopyTo:Starting');
   CopyFile := FTestDir + PathDelim + 'copy.txt';
   
-  // Create source file
+  // Create source file (common for all platforms)
   TFileKit.WriteTextFile(FTestFile, TestContent);
   
-  // Set some test attributes on source file
+  //
+  // Platform-specific attribute setup
+  //
   {$IFDEF WINDOWS}
-  // Set read-only attribute on source
+  // Windows: Set read-only attribute and get initial attributes
+  WriteLn('Setting up Windows file attributes');
   SetFileAttributes(PChar(FTestFile), FILE_ATTRIBUTE_READONLY);
   
-  // Get initial source attributes
   SourceAttrs := GetFileAttributes(PChar(FTestFile));
   AssertTrue('Source file should have read-only attribute set',
     (SourceAttrs and FILE_ATTRIBUTE_READONLY) <> 0);
   {$ENDIF}
   
   {$IFDEF UNIX}
-  // Set read-only permissions on source (0444 = r--r--r--)
+  // Unix: Set read-only permissions (0444 = r--r--r--)
+  WriteLn('Setting up Unix file permissions');
   fpChmod(PChar(FTestFile), $1A4); // Octal 444
   
   // Get initial source attributes
@@ -311,22 +315,29 @@ begin
     $1A4, SourceInfo.st_mode and $1FF);
   {$ENDIF}
   
-  // Set a specific modification time for testing
+  // Set a specific modification time for testing (common for all platforms)
   SysUtils.FileSetDate(FTestFile, DateTimeToFileDate(EncodeDateTime(2024, 1, 14, 12, 0, 0, 0)));
   SourceModTime := FileDateToDateTime(SysUtils.FileAge(FTestFile));
   
-  // Test copy
+  // Perform the file copy operation (common for all platforms)
+  WriteLn('Copying file');
   TFileKit.CopyFile(FTestFile, CopyFile);
   
-  // Basic copy verification
+  //
+  // Verify copy results (common checks first)
+  //
+  WriteLn('Verifying common copy results');
   AssertTrue('Destination file should exist after copy',
     SysUtils.FileExists(CopyFile));
   AssertEquals('Copied content should match source',
     TestContent, TFileKit.ReadTextFile(CopyFile));
     
-  // Verify attributes were preserved
+  //
+  // Platform-specific verification
+  //
   {$IFDEF WINDOWS}
-  // Check if read-only attribute was preserved
+  // Windows: Verify attributes and timestamp
+  WriteLn('Verifying Windows-specific copy results');
   DestAttrs := GetFileAttributes(PChar(CopyFile));
   AssertTrue('Destination file should have read-only attribute',
     (DestAttrs and FILE_ATTRIBUTE_READONLY) <> 0);
@@ -335,25 +346,23 @@ begin
   AssertEquals('File attributes should match',
     SourceAttrs and (not FILE_ATTRIBUTE_ARCHIVE), // Ignore archive bit
     DestAttrs and (not FILE_ATTRIBUTE_ARCHIVE));
-  {$ENDIF}
-  
-  {$IFDEF UNIX}
-  // Verify permissions were preserved
-  AssertEquals('fpStat should succeed on destination file',
-    0, fpStat(PChar(CopyFile), DestInfo));
-  AssertEquals('File permissions should match',
-    SourceInfo.st_mode and $1FF,  // Compare only permission bits
-    DestInfo.st_mode and $1FF);
-  {$ENDIF}
-  
+    
   // Verify modification time was preserved
-  {$IFDEF WINDOWS}
   DestModTime := FileDateToDateTime(SysUtils.FileAge(CopyFile));
   AssertEquals('File modification time should match',
     SourceModTime, DestModTime);
   {$ENDIF}
   
   {$IFDEF UNIX}
+  // Unix: Verify permissions
+  WriteLn('Verifying Unix-specific copy results');
+  // Verify permissions were preserved
+  AssertEquals('fpStat should succeed on destination file',
+    0, fpStat(PChar(CopyFile), DestInfo));
+  AssertEquals('File permissions should match',
+    SourceInfo.st_mode and $1FF,  // Compare only permission bits
+    DestInfo.st_mode and $1FF);
+  
   // On Unix systems, file timestamps can vary due to:
   // 1. Different file systems handle timestamps with different precision/formats
   // 2. Daylight saving time handling differs between systems
@@ -1459,6 +1468,10 @@ var
 begin
   WriteLn('Test34i_ListDirectoriesWithSorting: Starting');
 
+  //
+  // Setup common for both platforms
+  //
+  
   // Clean up any existing files and directories first
   if DirectoryExists(FTestDir) then
   begin
@@ -1472,16 +1485,28 @@ begin
   Dir2 := TFileKit.CombinePaths(FTestDir, 'a_dir');  // First name
   Dir3 := TFileKit.CombinePaths(FTestDir, 'c_dir');  // Last name
   
+  WriteLn('Creating test directories with names: a_dir, b_dir, c_dir');
   TFileKit.CreateDirectory(Dir1);
   TFileKit.CreateDirectory(Dir2);
   TFileKit.CreateDirectory(Dir3);
   
+  //
+  // Platform-specific setup
+  //
+  
   {$IFDEF WINDOWS}
-  // Set different timestamps - Windows only
-  FileSetDate(Dir1, DateTimeToFileDate(EncodeDateTime(2024, 1, 2, 0, 0, 0, 0)));
-  FileSetDate(Dir2, DateTimeToFileDate(EncodeDateTime(2024, 1, 1, 0, 0, 0, 0)));
-  FileSetDate(Dir3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));
+  // Windows: Set different timestamps with clear ordering
+  WriteLn('Windows: Setting directory timestamps with known order');
+  FileSetDate(Dir1, DateTimeToFileDate(EncodeDateTime(2024, 1, 2, 0, 0, 0, 0)));  // Middle date
+  FileSetDate(Dir2, DateTimeToFileDate(EncodeDateTime(2024, 1, 1, 0, 0, 0, 0)));  // Oldest
+  FileSetDate(Dir3, DateTimeToFileDate(EncodeDateTime(2024, 1, 3, 0, 0, 0, 0)));  // Newest
   {$ENDIF}
+  
+  //
+  // Common tests for both platforms: Name-based sorting
+  //
+  
+  WriteLn('Testing name-based sorting (both platforms)');
   
   // Test name sorting (ascending)
   Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsName);
@@ -1493,7 +1518,14 @@ begin
   AssertEquals('First directory should be c_dir', 'c_dir', ExtractFileName(Dirs[0]));
   AssertEquals('Last directory should be a_dir', 'a_dir', ExtractFileName(Dirs[2]));
   
+  //
+  // Platform-specific tests: Date-based sorting
+  //
+  
   {$IFDEF WINDOWS}
+  // Windows: Test date sorting with expected order
+  WriteLn('Windows: Testing date-based sorting');
+  
   // Test date sorting (ascending)
   Dirs := TFileKit.ListDirectories(FTestDir, '*', False, fsDate);
   AssertEquals('First directory should be a_dir (oldest)', 'a_dir', ExtractFileName(Dirs[0]));
@@ -1506,6 +1538,9 @@ begin
   {$ENDIF}
   
   {$IFDEF UNIX}
+  // Unix: Test date sorting without expecting specific order
+  WriteLn('Unix: Testing date-based sorting (existence only)');
+  
   // On Linux, we'll verify that sorting works by checking all directories are present
   // rather than checking specific order since timestamp handling varies by filesystem
   WriteLn('Note: On Unix, only verifying all directories are present in fsDate sort');
@@ -1953,8 +1988,17 @@ var
 begin
   WriteLn('Test45_GetCommonPath: Starting');
   
+  // Test platform-independent functionality
+  AssertEquals('No common path should return empty string',
+    '',
+    TFileKit.GetCommonPath('/usr/local', '/etc/local'));
+  
+  //
+  // Platform-specific tests
+  //
   {$IFDEF WINDOWS}
   // Windows-specific path testing
+  WriteLn('Testing common path on Windows');
   CommonPath := TFileKit.GetCommonPath('C:\usr\local\bin', 'C:\usr\local\lib');
   WriteLn('Test45_GetCommonPath: Got Windows common path = "', CommonPath, '"');
   
@@ -1967,7 +2011,8 @@ begin
   {$ENDIF}
   
   {$IFDEF UNIX}
-  // Unix-specific path testing with direct verification of components
+  // Unix-specific path testing
+  WriteLn('Testing common path on Unix');
   CommonPath := TFileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib');
   WriteLn('Test45_GetCommonPath: Got common path = "', CommonPath, '"');
   
@@ -1981,11 +2026,7 @@ begin
   AssertEquals('Common path should start with a slash', '/', CommonPath[1]);
   AssertFalse('Common path should not have a double slash', CommonPath[2] = '/');
   {$ENDIF}
-    
-  AssertEquals('No common path should return empty string',
-    '',
-    TFileKit.GetCommonPath('/usr/local', '/etc/local'));
-    
+  
   WriteLn('Test45_GetCommonPath: Finished');
 end;
 
@@ -2376,45 +2417,63 @@ var
 begin
   WriteLn('Test69_IsPathTooLong: Starting');
   
-  {$IFDEF WINDOWS}
-  // Windows has a hard limit of 260 characters by default
-  LongPath := TFileKit.CombinePaths(FTestDir, StringOfChar('a', 300));
+  //
+  // Platform-specific path length testing
+  //
   
-  AssertTrue('Should detect too long path',
+  {$IFDEF WINDOWS}
+  // Windows implementation
+  // ---------------------------
+  // Windows has a hard limit of 260 characters by default (MAX_PATH)
+  WriteLn('Windows: Testing path length detection (MAX_PATH=260)');
+  
+  // Create a path that exceeds Windows' MAX_PATH limit
+  LongPath := TFileKit.CombinePaths(FTestDir, StringOfChar('a', 300));
+  WriteLn('Created test path with length: ', Length(LongPath));
+  
+  // Verify detection
+  AssertTrue('Should detect too long path (>260 chars)',
     TFileKit.IsPathTooLong(LongPath));
   
+  // Verify normal path is not detected as too long
   AssertFalse('Should accept normal path',
     TFileKit.IsPathTooLong(FTestDir));
   {$ENDIF}
   
   {$IFDEF UNIX}
-  // For Unix, we'll create an artificially long path and verify it's detected 
-  // as too long, regardless of the actual system limit
+  // Unix implementation
+  // ---------------------------
+  // Most Unix/Linux systems have a PATH_MAX of 4096, but we use a 
+  // more conservative threshold of 1024 in our implementation
+  WriteLn('Unix: Testing path length detection (threshold=1024)');
   
-  // Extremely long path (over 4096 characters)
+  // Create an extremely long path (over 4096 characters)
   LongPath := TFileKit.CombinePaths(FTestDir, StringOfChar('a', 5000));
+  WriteLn('Created test path with length: ', Length(LongPath));
   
+  // Test the path length detection
   Success := TFileKit.IsPathTooLong(LongPath);
   if not Success then
   begin
-    // If our extremely long path still isn't too long, generate an even longer one
-    // and verify manually based on length (over 1024)
-    WriteLn('Note: Even 5000-char path not detected as too long on this system');
-    WriteLn('      This suggests the path length limit is very high on this system');
-    WriteLn('      Manually checking path length instead');
+    // If our extremely long path still isn't too long, verify by length
+    WriteLn('Warning: Even 5000-char path not detected as too long on this system.');
+    WriteLn('         This suggests the path length limit is very high.');
+    WriteLn('         Performing direct length verification instead.');
     
-    // Just verify that the length check in TidyKit.FS is doing something
+    // Verify that short paths are not detected as too long
     AssertFalse('IsPathTooLong should accept normal path',
                 TFileKit.IsPathTooLong(FTestDir));
                 
-    // Verify that the long path really is longer than 1024 chars 
-    // (which is our Unix detection threshold in the function)
+    // Verify directly that the long path is longer than our threshold (1024)
     AssertTrue('Long path should be over 1024 chars',
                Length(LongPath) > 1024);
   end
   else
   begin
+    // Normal case: long path detected correctly
     AssertTrue('Should detect too long path', Success);
+    
+    // Verify normal path is not detected as too long
     AssertFalse('Should accept normal path',
                 TFileKit.IsPathTooLong(FTestDir));
   end;

@@ -6,39 +6,49 @@ interface
 
 uses
   {$IFDEF UNIX}
-  BaseUnix,  // Provides Unix-specific system calls for low-level file operations
-  Unix,      // Defines Unix-specific types and constants
+  BaseUnix,  // Unix-specific system calls for low-level file operations
+  Unix,      // Unix-specific types and constants
   UnixType,  // Additional Unix system types
   {$ENDIF}
   {$IFDEF WINDOWS}
-  Windows,   // Windows API units for interacting with the Windows operating system
+  Windows,   // Windows API units
   {$ENDIF}
   Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils, Math;
 
+//
+// Platform-specific constants
+//
 const
   DEBUG_MODE = True; // Enable debugging output
   
   {$IFDEF WINDOWS}
-  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Windows API flag: target is a directory
-  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;  // Windows API flag: allow non-admin symlink creation
-  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;           // Windows API flag: open symlink itself, not target
-  FILE_NAME_NORMALIZED = $0;                          // Windows API flag: get normalized path without . or .. components
+  // Windows API flag constants
+  SYMBOLIC_LINK_FLAG_DIRECTORY = $1;                  // Target is a directory
+  SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE = $2;  // Allow non-admin symlink creation
+  FILE_FLAG_OPEN_REPARSE_POINT = $00200000;           // Open symlink itself, not target
+  FILE_NAME_NORMALIZED = $0;                          // Get normalized path without . or .. components
   {$ENDIF}
   
   {$IFDEF UNIX}
-  PATH_MAX = 4096;  // Maximum length of a file path on Unix/Linux systems (includes null terminator)
+  // Unix/Linux file system constants
+  PATH_MAX = 4096;  // Maximum length of a file path (includes null terminator)
   
   // Linux file permission constants
-  S_IFMT   = $F000;
-  S_IFLNK  = $A000;
-  S_IFREG  = $8000;
-  S_IFDIR  = $4000;
+  S_IFMT   = $F000;  // Bitmask for the file type bitfields
+  S_IFLNK  = $A000;  // Symbolic link
+  S_IFREG  = $8000;  // Regular file
+  S_IFDIR  = $4000;  // Directory
   {$ENDIF}
 
+//
+// Platform-specific external function declarations
+//
 {$IFDEF WINDOWS}
-// Windows API function declarations
-function CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName: LPCSTR; dwFlags: DWORD): BOOL; stdcall; external 'kernel32.dll' name 'CreateSymbolicLinkA';
-function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePath: DWORD; dwFlags: DWORD): DWORD; stdcall; external 'kernel32.dll' name 'GetFinalPathNameByHandleA';
+// Windows API function declarations for symbolic link operations
+function CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName: LPCSTR; dwFlags: DWORD): BOOL; 
+  stdcall; external 'kernel32.dll' name 'CreateSymbolicLinkA';
+function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePath: DWORD; dwFlags: DWORD): DWORD; 
+  stdcall; external 'kernel32.dll' name 'GetFinalPathNameByHandleA';
 {$ENDIF}
 
 type
@@ -2063,8 +2073,8 @@ end;
 
 class procedure TFileKit.CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
 var
-  Flags: DWORD;
   {$IFDEF WINDOWS}
+  Flags: DWORD;
   ErrorCode: DWORD;
   ErrorMsg: string;
   {$ENDIF}
@@ -2074,6 +2084,8 @@ var
   {$ENDIF}
 begin
   {$IFDEF WINDOWS}
+  // Windows implementation
+  // -----------------------------
   // Add SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE for Windows 10 Developer Mode
   if IsDirectory then
     Flags := SYMBOLIC_LINK_FLAG_DIRECTORY or SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE
@@ -2096,7 +2108,10 @@ begin
     raise EFileSystemError.CreateFmt('Failed to create symbolic link: %s (Error %d)', [ErrorMsg, ErrorCode]);
   end;
   {$ENDIF}
+  
   {$IFDEF UNIX}
+  // Unix implementation
+  // -----------------------------
   if fpSymlink(PChar(ATargetPath), PChar(ALinkPath)) <> 0 then
   begin
     ErrorCode := fpgeterrno;
