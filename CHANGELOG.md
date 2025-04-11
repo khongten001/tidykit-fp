@@ -8,10 +8,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Added Ubuntu 24.04.02 compatibility for TidKit.DateTime and TidyKit.FS modules
 
 ### Fixed
+- Fixed file timestamp handling issues on Unix systems
+- Fixed path normalization for cross-platform compatibility
+- Resolved file path length detection issues on Linux
+- Corrected directory sorting behavior on Unix filesystems
 
 ### Changed
+- Reorganized platform-specific code for better readability
+- Improved test organization with clearer platform-specific sections 
+- Enhanced comments throughout platform-specific code sections
 
 ### Removed
 

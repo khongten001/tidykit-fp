@@ -669,7 +669,7 @@ end;
 | Module                | Windows 11 | Ubuntu 24.04.2 |
 |-----------------------|------------|----------------|
 | TidyKit.Strings       | ✅         | 🚧            |
-| TidyKit.FS            | ✅         | 🚧            |
+| TidyKit.FS            | ✅         | ✅            |
 | TidyKit.DateTime      | ✅         | ✅            |
 | TidyKit.JSON          | ✅         | 🚧            |
 | TidyKit.Logging       | ✅         | 🚧            |
