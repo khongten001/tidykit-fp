@@ -32,7 +32,7 @@ Please describe the tests that you ran to verify your changes.
   - ...
   - ...
 - [ ] Did it compile with the test runner?
-- [ ] Did you run the following command after compilation (in `test/`)? If not, please modify.
+- [ ] Did you run the following command after compilation (in `tests/`)? If not, please modify.
 
 ```pascal
 ./TestRunner.exe -a --format=plain
