@@ -9,17 +9,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 - Added Ubuntu 24.04.02 compatibility for TidKit.DateTime and TidyKit.FS modules
+- Added automatic test environment detection for TidyKit.Request
+- Added HTTP fallback mechanism for testing HTTPS endpoints when OpenSSL is unavailable
+- Added detailed OpenSSL installation instructions for Linux distributions
+- Added cross-platform SSL/TLS initialization support for HTTP requests
 
 ### Fixed
 - Fixed file timestamp handling issues on Unix systems
 - Fixed path normalization for cross-platform compatibility
 - Resolved file path length detection issues on Linux
 - Corrected directory sorting behavior on Unix filesystems
+- Fixed OpenSSL initialization and error handling on Linux systems
+- Fixed HTTP request error handling to work consistently across platforms
+- Improved TryGet and TryPost error handling for SSL failures
 
 ### Changed
 - Reorganized platform-specific code for better readability
 - Improved test organization with clearer platform-specific sections 
 - Enhanced comments throughout platform-specific code sections
+- Refactored TidyKit.Request.pas to use platform-specific implementations of SSL initialization
+- Updated documentation to include Linux OpenSSL dependencies for HTTPS support
 
 ### Removed
 
@@ -69,4 +78,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 - Limited timezone support on Unix-like systems
-- Untested on Linux, macOS, and FreeBSD platforms 
+- Untested on macOS and FreeBSD platforms 

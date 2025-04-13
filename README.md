@@ -481,6 +481,7 @@ var
   Response: TResponse;
   UserData: IJSONObject;
   ApiResponse: IJSONObject;
+  Result: TRequestResult;
 begin
   // Simple GET request with JSON response
   Response := Http.Get('https://api.example.com/data');
@@ -503,7 +504,14 @@ begin
   if Response.StatusCode = 201 then
     WriteLn('User created with ID: ', Response.JSON.AsObject['id'].AsString);
     
-  // Download file with progress
+  // Error handling with TryGet pattern
+  Result := Http.TryGet('https://api.example.com/users');
+  if Result.Success then
+    WriteLn('Found ', Result.Response.JSON.AsObject['count'].AsInteger, ' users')
+  else
+    WriteLn('Error: ', Result.Error);
+    
+  // Download file with custom headers
   Response := Http.Get('https://example.com/large-file.zip');
   TFileKit.WriteFile('download.zip', Response.Text);
 end;
@@ -668,22 +676,26 @@ end;
 
 | Module                | Windows 11 | Ubuntu 24.04.2 |
 |-----------------------|------------|----------------|
-| TidyKit.Strings       | ✅         | 🚧            |
+| TidyKit.Strings       | ✅         | ✅            |
 | TidyKit.FS            | ✅         | ✅            |
 | TidyKit.DateTime      | ✅         | ✅            |
-| TidyKit.JSON          | ✅         | 🚧            |
-| TidyKit.Logging       | ✅         | 🚧            |
-| TidyKit.Request       | ✅         | 🚧            |
-| TidyKit.Crypto        | ✅         | 🚧            |
-| TidyKit.Archive       | ✅         | 🚧            |
-| TidyKit.Math.Stats    | ✅         | 🚧            |
-| TidyKit.Math.Matrices | ✅         | 🚧            |
-| TidyKit.Math.Trig     | ✅         | 🚧            |
-| TidyKit.Math.Finance  | ✅         | 🚧            |
+| TidyKit.JSON          | ✅         | ✅            |
+| TidyKit.Logging       | ✅         | ✅            |
+| TidyKit.Request       | ✅         | ✅            |
+| TidyKit.Crypto        | ✅         | ✅            |
+| TidyKit.Archive       | ✅         | ✅            |
+| TidyKit.Math.Stats    | ✅         | ✅            |
+| TidyKit.Math.Matrices | ✅         | ✅            |
+| TidyKit.Math.Trig     | ✅         | ✅            |
+| TidyKit.Math.Finance  | ✅         | ✅            |
 
 
 ### Dependencies
-- No external dependencies required
+- Windows
+  - No external dependencies required
+- Linux
+  - Ubuntu/Debian: `sudo apt-get install libssl-dev` (needed for HTTPS in `TidyKit.Request`)
+  - Fedora/RHEL: `sudo dnf install openssl-devel` (needed for HTTPS in `TidyKit.Request`)
 - Uses only standard Free Pascal RTL units
 
 ### Build Requirements
