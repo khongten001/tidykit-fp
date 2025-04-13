@@ -14,6 +14,7 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Parsing \& Formatting](#parsing--formatting)
     - [Error Handling](#error-handling)
   - [📁File System Operations](#file-system-operations)
+  - [🌐 HTTP Request Operations](#-http-request-operations)
   - [🧵String operations](#string-operations)
   - [🕙 DateTime Operations](#-datetime-operations)
     - [Basic Operations](#basic-operations)
@@ -35,11 +36,6 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Use Cases](#common-use-cases)
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
-    - [Using the Fluent Interface](#using-the-fluent-interface)
-    - [Error Handling](#error-handling-1)
-    - [Working with JSON](#working-with-json)
-  - [📊 Math Operations](#-math-operations)
-    - [Statistics (TStatsKit)](#statistics-tstatskit)
     - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
     - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
     - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
@@ -257,6 +253,79 @@ Count := TFileKit.CountMatches('dir', '*.txt');          // Count matching files
 
 // Note: On Windows, creating symlinks requires Administrator privileges or Developer Mode
 // On Unix/Linux, regular users can create symlinks in their own directories
+```
+
+## 🌐 HTTP Request Operations
+
+```pascal
+// Simple requests
+Response := Http.Get('https://api.example.com/data');         // GET request
+Response := Http.Post('https://api.example.com/data', 'text'); // POST with data
+Response := Http.Put('https://api.example.com/data', 'text');  // PUT with data
+Response := Http.Delete('https://api.example.com/data');       // DELETE request
+
+// Status code and response handling
+if Response.StatusCode = 200 then                             // Check status code
+  WriteLn(Response.Text);                                     // Get response text
+if Response.StatusCode = 200 then                             // Check status code
+  JsonObj := Response.JSON.AsObject;                          // Get JSON object
+
+// Error handling with try-except
+try
+  Response := Http.Get('https://api.example.com/secure');     // Request might fail
+except
+  on E: ERequestError do 
+    WriteLn('HTTP Error: ', E.Message);                       // Handle HTTP errors
+end;
+
+// Error handling with Try-pattern (recommended)
+Result := Http.TryGet('https://api.example.com/secure');      // Won't throw exceptions
+if Result.Success then
+  WriteLn('Status: ', Result.Response.StatusCode)             // Access successful response
+else
+  WriteLn('Error: ', Result.Error);                           // Get error message
+
+// Fluent interface for complex requests
+Response := THttpRequest.Create
+  .Get                                                        // HTTP Method
+  .URL('https://api.example.com/v2/data')                     // URL
+  .AddHeader('X-API-Key', 'abc123')                           // Add header
+  .AddHeader('Accept', 'application/json')                    // Add another header
+  .AddParam('page', '1')                                      // Add query parameter
+  .AddParam('limit', '10')                                    // Add another parameter
+  .BasicAuth('username', 'password')                          // Add authentication
+  .WithTimeout(5000)                                          // Set timeout in ms
+  .Send;                                                      // Execute request
+
+// POST JSON data
+JsonObj := TJSON.Obj;                                          // Create JSON
+JsonObj.Add('name', 'John');                                   // Add properties
+JsonObj.Add('age', 30);
+Response := Http.PostJSON('https://api.example.com/users',     // POST with JSON
+  JsonObj.ToString);
+
+// POST form data
+Response := THttpRequest.Create
+  .Post                                                        // POST method
+  .URL('https://api.example.com/form')                         // URL
+  .WithData('name=John&age=30')                                // Form data
+  .Send;                                                       // Execute
+
+// SSL/TLS HTTPS errors
+Result := Http.TryGet('https://secure.example.com');           // Try HTTPS request
+if not Result.Success and
+   (Pos('OpenSSL', Result.Error) > 0) then                     // Check for SSL error
+begin
+  // Handle SSL library missing
+  WriteLn('Please install OpenSSL libraries for HTTPS support');
+  // On Linux: sudo apt-get install libssl-dev
+end;
+
+// OpenSSL requirements
+// Windows: Included with application
+// Linux: 
+//   - Ubuntu/Debian: sudo apt-get install libssl-dev
+//   - Fedora/RHEL: sudo dnf install openssl-devel
 ```
 
 ## 🧵String operations
@@ -791,131 +860,6 @@ end;
    - Supports FIPS-compliant modes of operation
    - Includes PKCS7 padding for CBC mode
    - Raw mode available for NIST test vectors
-```
-
-## HTTP Client (TidyKit.Request.Simple)
-
-### Simple Requests
-```pascal
-uses TidyKit;
-
-// GET request
-var Response := Http.Get('https://api.example.com/data');
-if Response.StatusCode = 200 then
-  WriteLn(Response.Text);
-
-// POST with form data
-Response := Http.Post('https://api.example.com/submit', 'name=John&age=30');
-
-// POST with JSON
-Response := Http.PostJSON('https://api.example.com/users', '{"name": "John"}');
-
-// PUT request
-Response := Http.Put('https://api.example.com/users/1', 'status=active');
-
-// DELETE request
-Response := Http.Delete('https://api.example.com/users/1');
-```
-
-### Using the Fluent Interface
-```pascal
-// Request with headers, params, and JSON
-var
-  Request: THttpRequest;
-  Response: TResponse;
-begin
-  Response := Request
-    .Post
-    .URL('https://api.example.com/users')
-    .AddHeader('X-API-Key', 'your-key')
-    .AddHeader('Accept', 'application/json')
-    .AddParam('version', '2.0')
-    .WithJSON('{"name": "John"}')
-    .Send;
-end;
-
-// Authenticated request with timeout
-var
-  Request: THttpRequest;
-  Response: TResponse;
-begin
-  Response := Request
-    .Get
-    .URL('https://api.example.com/secure')
-    .BasicAuth('username', 'password')
-    .WithTimeout(5000)  // 5 seconds
-    .Send;
-end;
-
-// Form data with custom headers
-var
-  Request: THttpRequest;
-  Response: TResponse;
-begin
-  Response := Request
-    .Post
-    .URL('https://api.example.com/submit')
-    .AddHeader('Content-Type', 'application/x-www-form-urlencoded')
-    .WithData('name=John&age=30')
-    .Send;
-end;
-```
-
-### Error Handling
-```pascal
-// Using try-except
-var
-  Response: TResponse;
-begin
-  try
-    Response := Http.Get('https://api.example.com/data');
-    if Response.StatusCode = 200 then
-      WriteLn(Response.Text);
-  except
-    on E: ETidyKitException do
-      WriteLn('Error: ', E.Message);
-  end;
-end;
-
-// Using result pattern
-var
-  Result: TRequestResult;
-begin
-  Result := Http.TryGet('https://api.example.com/data');
-  if Result.Success then
-    WriteLn(Result.Response.Text)
-  else
-    WriteLn('Error: ', Result.Error);
-end;
-```
-
-### Working with JSON
-```pascal
-var
-  Request: THttpRequest;
-  Response: TResponse;
-  UserName: string;
-  UserAge: Integer;
-  Items: TJSONArray;
-  I: Integer;
-begin
-  Response := Request
-    .Get
-    .URL('https://api.example.com/users')
-    .Send;
-
-  if Response.StatusCode = 200 then
-  begin
-    // Access JSON data
-    UserName := Response.JSON.FindPath('user.name').AsString;
-    UserAge := Response.JSON.FindPath('user.age').AsInteger;
-    
-    // Array iteration
-    Items := Response.JSON.FindPath('items').AsArray;
-    for I := 0 to Items.Count - 1 do
-      WriteLn(Items[I].AsString);
-  end;
-end;
 ```
 
 ## 📊 Math Operations
