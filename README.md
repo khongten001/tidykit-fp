@@ -1,12 +1,14 @@
 # 🧰 TidyKit
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
-[![Lazarus](https://img.shields.io/badge/Lazarus-3.8-blue.svg)](https://www.lazarus-ide.org/)
+[![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
-[![Documentation](https://img.shields.io/badge/Docs-Available-grightgreen.svg)](docs/)
+[![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
+[![GitHub Stars](https://img.shields.io/github/stars/ikelaiah/TidyKit.svg)](https://github.com/ikelaiah/TidyKit/stargazers)
+[![GitHub Issues](https://img.shields.io/github/issues/ikelaiah/TidyKit.svg)](https://github.com/ikelaiah/TidyKit/issues)
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
@@ -14,8 +16,19 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 > [!WARNING]
 > ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
 
+## 🌟 Why TidyKit?
+
+- **All-in-One Solution**: Stop hunting for separate libraries - TidyKit provides everything in one package
+- **Modern Pascal**: Designed with modern programming practices while maintaining FPC 3.2.2 compatibility
+- **Thoroughly Tested**: Extensive test suite ensures reliability and stability
+- **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
+- **Well-Documented**: Every component has detailed documentation with examples
+- **Memory Safe**: Interface-based design with automatic reference counting
+- **Beginner Friendly**: Consistent API design makes learning easy
+
 ## 📑 Table of Contents
 - [🧰 TidyKit](#-tidykit)
+  - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
@@ -39,6 +52,12 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [Dependencies](#dependencies)
     - [Build Requirements](#build-requirements)
   - [📚 Documentation](#-documentation)
+  - [📊 Real-World Examples](#-real-world-examples)
+  - [🗺️ Roadmap](#️-roadmap)
+    - [Coming in v0.2.0 (Q3 2025)](#coming-in-v020-q3-2025)
+    - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
+  - [💬 Community \& Support](#-community--support)
+  - [⚠️ Known Limitations](#️-known-limitations)
   - [✅ Testing](#-testing)
   - [🤝 Contributing](#-contributing)
   - [⚖️ License](#️-license)
@@ -139,9 +158,6 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - Full Unicode support
     - Unicode escape sequence parsing (\uXXXX)
     - UTF-8/16 character handling
-    - Control character escaping (\n, \r, \t, etc.)
-  - Comprehensive error handling with detailed messages
-  - Factory methods for easy value creation
   - Support for all JSON data types
     - Objects with ordered properties
     - Arrays with type-safe elements
@@ -194,7 +210,7 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 3. Go to `Package` → `Open Package File (.lpk)...`
 
-4. Navigate to the TidyKit packages in the `directory/lazarus/` folder and select `TidyKit.lpk`
+4. Navigate to the TidyKit packages in the `packages/lazarus/` folder and select `TidyKit.lpk`
 
 5. In the package window that opens, click `Compile`
 
@@ -680,7 +696,7 @@ end;
 | TidyKit.FS            | ✅         | ✅            |
 | TidyKit.DateTime      | ✅         | ✅            |
 | TidyKit.JSON          | ✅         | ✅            |
-| TidyKit.Logging       | ✅         | ✅            |
+| TidyKit.Logger        | ✅         | ✅            |
 | TidyKit.Request       | ✅         | ✅            |
 | TidyKit.Crypto        | ✅         | ✅            |
 | TidyKit.Archive       | ✅         | ✅            |
@@ -720,6 +736,51 @@ For detailed documentation, see:
   - 🔢 [Matrices](docs/TidyKit.Math.Matrices.md)
   - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
   - 💰 [Finance](docs/TidyKit.Math.Finance.md)
+
+## 📊 Real-World Examples
+
+TidyKit can be used to build a wide variety of applications quickly:
+
+| Example Project | Description | Source Code |
+|-----------------|-------------|-------------|
+| Simple Data Logger | Record sensor readings with timestamp and export as CSV | [View Example](examples/LoggerExample/) |
+| Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
+| Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
+| Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
+| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
+
+Check out our [examples directory](examples/) for all sample projects.
+
+## 🗺️ Roadmap
+
+TidyKit is continuously evolving. Here's what we're planning for future releases:
+
+### Coming in v0.2.0 (Q3 2025)
+- 🧠 **Machine Learning Module** - Simple classification, regression, and clustering algorithms
+- 🔢 **Data Manipulation** - Data frame implementation for tabular data processing
+- 🌐 **WebSocket Client** - Real-time bidirectional communication for modern applications
+- 🧪 **Property-Based Testing** - Generate test cases automatically
+
+### Coming in v0.3.0 (Q4 2025)
+- 🖼️ **Image Processing** - Basic image manipulation and analysis
+- 🔌 **Database Connectors** - Unified API for SQL and NoSQL databases
+- 📱 **Mobile Support** - Optimized for mobile development with FPC
+
+## 💬 Community & Support
+
+- **Questions?** [Open a discussion](https://github.com/ikelaiah/TidyKit/discussions)
+- **Found a bug?** [Report an issue](https://github.com/ikelaiah/TidyKit/issues)
+- **IRC:** Join our chat on Libera.Chat at #tidykit
+- **Newsletter:** [Subscribe](https://example.com/newsletter) for updates
+
+## ⚠️ Known Limitations
+
+- **Platform Support**: Currently only tested on Windows 11 and Ubuntu 24.04. MacOS and FreeBSD are not officially supported.
+- **Threading**: Batch logging mode is not thread-safe. Use in single-threaded contexts or implement your own synchronization.
+- **HTTP SSL**: HTTPS requests require OpenSSL libraries on Linux systems (see Dependencies section).
+- **Timezone Support**: Limited timezone support on Unix-like systems.
+- **Language Features**: Designed for FPC 3.2.2, so no use of inline var declarations or anonymous functions.
+- **Library Integration**: Currently no integration with package managers.
 
 ## ✅ Testing
 
