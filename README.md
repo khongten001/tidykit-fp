@@ -7,8 +7,7 @@
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
-[![GitHub Stars](https://img.shields.io/github/stars/ikelaiah/TidyKit.svg)](https://github.com/ikelaiah/TidyKit/stargazers)
-[![GitHub Issues](https://img.shields.io/github/issues/ikelaiah/TidyKit.svg)](https://github.com/ikelaiah/TidyKit/issues)
+
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
@@ -63,6 +62,10 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [🤝 Contributing](#-contributing)
   - [⚖️ License](#️-license)
   - [🙏 Acknowledgments](#-acknowledgments)
+  - [🗺️ Roadmap](#️-roadmap)
+    - [Coming in v0.2.0 (Q3–Q4 2025)](#coming-in-v020-q3q4-2025)
+    - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
+    - [Future Goals](#future-goals)
 
 ## 🏗️ Architectural Patterns
 
@@ -73,6 +76,9 @@ TidyKit implements different architectural patterns across its modules to balanc
 | **Static Class Functions** | TidyKit.FS, TidyKit.DateTime, TidyKit.Archive, TidyKit.Crypto | <ul><li>Procedural-style API</li><li>Simple usage</li><li>No instance creation</li><li>Direct function calls through class name</li></ul> | No manual management needed |
 | **Interface-Based** | TidyKit.Math.Matrices, TidyKit.JSON | <ul><li>Object-oriented design</li><li>Greater flexibility</li><li>Fluent API</li><li>Value semantics</li></ul> | Automatic reference counting through interfaces |
 | **Hybrid Approach** | TidyKit.Logger, TidyKit.JSON | <ul><li>Static factory methods</li><li>Interface-based instances</li><li>Balance of simplicity and power</li></ul> | Factory creates objects, interfaces handle cleanup |
+
+> [!IMPORTANT]
+> See [🗺️ Roadmap](#️-roadmap), currently working on a unified API for this library.
 
 ### Example: Static Class Functions
 
@@ -852,3 +858,28 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 - FPC Team for Free Pascal
 - Contributors and maintainers
+
+## 🗺️ Roadmap
+
+TidyKit is under active development. Here’s what’s planned for the future:
+
+### Coming in v0.2.0 (Q3–Q4 2025)
+- **API Unification & Simplification:**  
+  Unify and simplify the API across all modules to lower the cognitive load for new developers.  
+  - Move towards a consistent, interface-based architecture for all major modules  
+  - Deprecate mixed patterns (static class methods, factories) in favor of a unified interface-first approach  
+  - Provide migration guides and compatibility layers for existing users  
+  - Update documentation and examples to reflect the new unified API
+
+### Coming in v0.3.0 (Q4 2025)
+- More real-world examples and tutorials
+- Improved error messages and diagnostics
+- Additional unit tests for edge cases
+
+### Future Goals
+- Integration with package managers (fpm, fpcupdeluxe, etc.)
+- More advanced math/statistics modules
+
+---
+
+*Feedback and suggestions are welcome! See the [issues](https://github.com/ikelaiah/TidyKit/issues) page to contribute ideas or track progress.*
