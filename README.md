@@ -26,10 +26,14 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Memory Safe**: Interface-based design with automatic reference counting
 - **Beginner Friendly**: Consistent API design makes learning easy
 
-## 📑 Table of Contents
+## 📑 Table of Contents 
 - [🧰 TidyKit](#-tidykit)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
+  - [🏗️ Architectural Patterns](#️-architectural-patterns)
+    - [Example: Static Class Functions](#example-static-class-functions)
+    - [Example: Interface-Based with Automatic Memory Management](#example-interface-based-with-automatic-memory-management)
+    - [Example: Hybrid Approach](#example-hybrid-approach)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
@@ -53,15 +57,66 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [Build Requirements](#build-requirements)
   - [📚 Documentation](#-documentation)
   - [📊 Real-World Examples](#-real-world-examples)
-  - [🗺️ Roadmap](#️-roadmap)
-    - [Coming in v0.2.0 (Q3 2025)](#coming-in-v020-q3-2025)
-    - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
   - [💬 Community \& Support](#-community--support)
   - [⚠️ Known Limitations](#️-known-limitations)
   - [✅ Testing](#-testing)
   - [🤝 Contributing](#-contributing)
   - [⚖️ License](#️-license)
   - [🙏 Acknowledgments](#-acknowledgments)
+
+## 🏗️ Architectural Patterns
+
+TidyKit implements different architectural patterns across its modules to balance ease of use with flexibility and power. Understanding these patterns will help you use the library more effectively:
+
+| Pattern | Modules | Characteristics | Memory Management |
+|---------|---------|-----------------|------------------|
+| **Static Class Functions** | TidyKit.FS, TidyKit.DateTime, TidyKit.Archive, TidyKit.Crypto | <ul><li>Procedural-style API</li><li>Simple usage</li><li>No instance creation</li><li>Direct function calls through class name</li></ul> | No manual management needed |
+| **Interface-Based** | TidyKit.Math.Matrices, TidyKit.JSON | <ul><li>Object-oriented design</li><li>Greater flexibility</li><li>Fluent API</li><li>Value semantics</li></ul> | Automatic reference counting through interfaces |
+| **Hybrid Approach** | TidyKit.Logger, TidyKit.JSON | <ul><li>Static factory methods</li><li>Interface-based instances</li><li>Balance of simplicity and power</li></ul> | Factory creates objects, interfaces handle cleanup |
+
+### Example: Static Class Functions
+
+```pascal
+// TidyKit.FS - No instance needed, simple function calls
+TFileKit.WriteFile('example.txt', 'Hello World');
+Content := TFileKit.ReadFile('example.txt');
+```
+
+### Example: Interface-Based with Automatic Memory Management
+
+```pascal
+// TidyKit.Math.Matrices - Creating and using matrices
+var
+  A, B, C: IMatrix; // Interfaces manage memory automatically
+begin
+  // Factory method creates concrete implementation
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0], 
+    [3.0, 4.0]
+  ]);
+  
+  // Methods return new matrix instances
+  B := A.Transpose;
+  C := A.Multiply(B);
+  
+  // No manual Free needed - interfaces handle cleanup
+end;
+```
+
+### Example: Hybrid Approach
+
+```pascal
+// TidyKit.JSON - Static factory with interface instances
+var
+  Person: IJSONObject; // Interface manages memory
+begin
+  // Static factory method
+  Person := TJSON.Obj;
+  Person.Add('name', 'John Smith');
+  
+  // Interface handles cleanup automatically
+end;
+```
 
 
 ## ✨ Features
@@ -751,20 +806,6 @@ TidyKit can be used to build a wide variety of applications quickly:
 
 Check out our [examples directory](examples/) for all sample projects.
 
-## 🗺️ Roadmap
-
-TidyKit is continuously evolving. Here's what we're planning for future releases:
-
-### Coming in v0.2.0 (Q3 2025)
-- 🧠 **Machine Learning Module** - Simple classification, regression, and clustering algorithms
-- 🔢 **Data Manipulation** - Data frame implementation for tabular data processing
-- 🌐 **WebSocket Client** - Real-time bidirectional communication for modern applications
-- 🧪 **Property-Based Testing** - Generate test cases automatically
-
-### Coming in v0.3.0 (Q4 2025)
-- 🖼️ **Image Processing** - Basic image manipulation and analysis
-- 🔌 **Database Connectors** - Unified API for SQL and NoSQL databases
-- 📱 **Mobile Support** - Optimized for mobile development with FPC
 
 ## 💬 Community & Support
 
