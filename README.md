@@ -1,12 +1,13 @@
 # 🧰 TidyKit
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
-[![Lazarus](https://img.shields.io/badge/Lazarus-3.8-blue.svg)](https://www.lazarus-ide.org/)
+[![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
 [![License](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE.md)
-[![Documentation](https://img.shields.io/badge/Docs-Available-grightgreen.svg)](docs/)
+[![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
+
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
@@ -14,9 +15,24 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 > [!WARNING]
 > ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
 
-## 📑 Table of Contents
+## 🌟 Why TidyKit?
+
+- **All-in-One Solution**: Stop hunting for separate libraries - TidyKit provides everything in one package
+- **Modern Pascal**: Designed with modern programming practices while maintaining FPC 3.2.2 compatibility
+- **Thoroughly Tested**: Extensive test suite ensures reliability and stability
+- **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
+- **Well-Documented**: Every component has detailed documentation with examples
+- **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
+- **Evolving API**: Currently transitioning toward a unified API design (see [Roadmap](#️-roadmap))
+
+## 📑 Table of Contents 
 - [🧰 TidyKit](#-tidykit)
+  - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
+  - [🏗️ Architectural Patterns](#️-architectural-patterns)
+    - [Example: Static Class Functions](#example-static-class-functions)
+    - [Example: Interface-Based with Automatic Memory Management](#example-interface-based-with-automatic-memory-management)
+    - [Example: Hybrid Approach](#example-hybrid-approach)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
@@ -39,10 +55,75 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
     - [Dependencies](#dependencies)
     - [Build Requirements](#build-requirements)
   - [📚 Documentation](#-documentation)
+  - [📊 Real-World Examples](#-real-world-examples)
+  - [💬 Community \& Support](#-community--support)
+  - [⚠️ Known Limitations](#️-known-limitations)
   - [✅ Testing](#-testing)
   - [🤝 Contributing](#-contributing)
   - [⚖️ License](#️-license)
   - [🙏 Acknowledgments](#-acknowledgments)
+  - [🗺️ Roadmap](#️-roadmap)
+    - [In Progress (May 2025)](#in-progress-may-2025)
+    - [Coming in v0.2.0 (Q3 2025)](#coming-in-v020-q3-2025)
+    - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
+    - [Future Goals](#future-goals)
+
+## 🏗️ Architectural Patterns
+
+TidyKit implements different architectural patterns across its modules to balance ease of use with flexibility and power. Understanding these patterns will help you use the library more effectively:
+
+| Pattern | Modules | Characteristics | Memory Management |
+|---------|---------|-----------------|------------------|
+| **Static Class Functions** | TidyKit.FS, TidyKit.DateTime, TidyKit.Archive, TidyKit.Crypto | <ul><li>Procedural-style API</li><li>Simple usage</li><li>No instance creation</li><li>Direct function calls through class name</li></ul> | No manual management needed |
+| **Interface-Based** | TidyKit.Math.Matrices, TidyKit.JSON | <ul><li>Object-oriented design</li><li>Greater flexibility</li><li>Fluent API</li><li>Value semantics</li></ul> | Automatic reference counting through interfaces |
+| **Hybrid Approach** | TidyKit.Logger, TidyKit.JSON | <ul><li>Static factory methods</li><li>Interface-based instances</li><li>Balance of simplicity and power</li></ul> | Factory creates objects, interfaces handle cleanup |
+
+> [!IMPORTANT]
+> See [🗺️ Roadmap](#️-roadmap), currently working on a unified API for this library.
+
+### Example: Static Class Functions
+
+```pascal
+// TidyKit.FS - No instance needed, simple function calls
+TFileKit.WriteFile('example.txt', 'Hello World');
+Content := TFileKit.ReadFile('example.txt');
+```
+
+### Example: Interface-Based with Automatic Memory Management
+
+```pascal
+// TidyKit.Math.Matrices - Creating and using matrices
+var
+  A, B, C: IMatrix; // Interfaces manage memory automatically
+begin
+  // Factory method creates concrete implementation
+  A := TMatrixKit.CreateFromArray([
+    [1.0, 2.0], 
+    [3.0, 4.0]
+  ]);
+  
+  // Methods return new matrix instances
+  B := A.Transpose;
+  C := A.Multiply(B);
+  
+  // No manual Free needed - interfaces handle cleanup
+end;
+```
+
+### Example: Hybrid Approach
+
+```pascal
+// TidyKit.JSON - Static factory with interface instances
+var
+  Person: IJSONObject; // Interface manages memory
+begin
+  // Static factory method
+  Person := TJSON.Obj;
+  Person.Add('name', 'John Smith');
+  
+  // Interface handles cleanup automatically
+end;
+```
 
 
 ## ✨ Features
@@ -139,9 +220,6 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - Full Unicode support
     - Unicode escape sequence parsing (\uXXXX)
     - UTF-8/16 character handling
-    - Control character escaping (\n, \r, \t, etc.)
-  - Comprehensive error handling with detailed messages
-  - Factory methods for easy value creation
   - Support for all JSON data types
     - Objects with ordered properties
     - Arrays with type-safe elements
@@ -194,7 +272,7 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 3. Go to `Package` → `Open Package File (.lpk)...`
 
-4. Navigate to the TidyKit packages in the `directory/lazarus/` folder and select `TidyKit.lpk`
+4. Navigate to the TidyKit packages in the `packages/lazarus/` folder and select `TidyKit.lpk`
 
 5. In the package window that opens, click `Compile`
 
@@ -564,14 +642,46 @@ end;
 var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
+  CI: TDoublePair;
+  CorrelationCoef: Double;
+  X, Y: TDoubleArray;
 begin
-  // Analyze product ratings
-  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8);
+  // Basic descriptive statistics
+  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8, 3.2, 4.5, 4.9);
   Stats := TStatsKit.Describe(Data);
   
+  // Print formatted statistics
+  WriteLn(Stats.ToString);
+  // Or use individual properties
   WriteLn(Format('Average rating: %.2f', [Stats.Mean]));
   WriteLn(Format('Rating spread: %.2f', [Stats.StdDev]));
   WriteLn(Format('Most common: %.1f', [Stats.Mode]));
+  WriteLn(Format('Median: %.1f', [Stats.Median]));
+  WriteLn(Format('Range: %.1f', [Stats.Range]));
+  
+  // Advanced statistics
+  WriteLn(Format('Distribution skewness: %.2f', [Stats.Skewness]));
+  WriteLn(Format('Kurtosis: %.2f', [Stats.Kurtosis]));
+  
+  // Robust statistics
+  WriteLn(Format('Median Absolute Deviation: %.2f', 
+                [TStatsKit.MedianAbsoluteDeviation(Data)]));
+  WriteLn(Format('Trimmed Mean (10%%): %.2f', 
+                [TStatsKit.TrimmedMean(Data, 10)]));
+  
+  // Bootstrapping for confidence intervals
+  CI := TStatsKit.BootstrapConfidenceInterval(Data);
+  WriteLn(Format('95%% CI: [%.2f, %.2f]', [CI.Lower, CI.Upper]));
+  
+  // Correlation analysis
+  X := TDoubleArray.Create(1.0, 2.0, 3.0, 4.0, 5.0);
+  Y := TDoubleArray.Create(2.0, 3.5, 4.8, 6.1, 8.0);
+  
+  CorrelationCoef := TStatsKit.PearsonCorrelation(X, Y);
+  WriteLn(Format('Pearson correlation: %.2f', [CorrelationCoef]));
+  
+  CorrelationCoef := TStatsKit.SpearmanCorrelation(X, Y);
+  WriteLn(Format('Spearman correlation: %.2f', [CorrelationCoef]));
 end;
 ```
 
@@ -579,7 +689,7 @@ end;
 ```pascal
 var
   A, B, C: IMatrix;
-begin
+  begin
   // Create and initialize matrices
   A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
@@ -619,16 +729,16 @@ begin
   // Vector operations
   V1 := TMatrixKit.CreateFromArray([[1.0], [2.0], [3.0]]);
   V2 := TMatrixKit.CreateFromArray([[4.0], [5.0], [6.0]]);
-  DotProd := V1.DotProduct(V2);
-  Cross := V1.CrossProduct(V2);
-  Norm := V1.Normalize;
+  DotProd := V1.DotProduct(V2);     // Dot/inner product
+  Cross := V1.CrossProduct(V2);     // Cross product (3D vectors only)
+  Norm := V1.Normalize;             // Normalize to unit length
   
   // Statistical operations
-  Mean := A.Mean;            // Overall mean
-  ColMeans := A.Mean(0);     // Column means
-  RowMeans := A.Mean(1);     // Row means
-  Cov := A.Covariance;       // Covariance matrix
-  Corr := A.Correlation;     // Correlation matrix
+  Mean := A.Mean;                   // Overall mean
+  ColMeans := A.Mean(0);            // Column means
+  RowMeans := A.Mean(1);            // Row means
+  Cov := A.Covariance;              // Covariance matrix
+  Corr := A.Correlation;            // Correlation matrix
   
   // Solving linear systems
   X := A.Inverse.Multiply(B);                    // Direct solution
@@ -680,7 +790,7 @@ end;
 | TidyKit.FS            | ✅         | ✅            |
 | TidyKit.DateTime      | ✅         | ✅            |
 | TidyKit.JSON          | ✅         | ✅            |
-| TidyKit.Logging       | ✅         | ✅            |
+| TidyKit.Logger        | ✅         | ✅            |
 | TidyKit.Request       | ✅         | ✅            |
 | TidyKit.Crypto        | ✅         | ✅            |
 | TidyKit.Archive       | ✅         | ✅            |
@@ -721,6 +831,37 @@ For detailed documentation, see:
   - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
   - 💰 [Finance](docs/TidyKit.Math.Finance.md)
 
+## 📊 Real-World Examples
+
+TidyKit can be used to build a wide variety of applications quickly:
+
+| Example Project | Description | Source Code |
+|-----------------|-------------|-------------|
+| Simple Data Logger | Record sensor readings with timestamp and export as CSV | [View Example](examples/LoggerExample/) |
+| Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
+| Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
+| Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
+| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
+
+Check out our [examples directory](examples/) for all sample projects.
+
+
+## 💬 Community & Support
+
+- **Questions?** [Open a discussion](https://github.com/ikelaiah/TidyKit/discussions)
+- **Found a bug?** [Report an issue](https://github.com/ikelaiah/TidyKit/issues)
+- **IRC:** Join our chat on Libera.Chat at #tidykit
+- **Newsletter:** [Subscribe](https://example.com/newsletter) for updates
+
+## ⚠️ Known Limitations
+
+- **Platform Support**: Currently only tested on Windows 11 and Ubuntu 24.04. MacOS and FreeBSD are not officially supported.
+- **Threading**: Batch logging mode is not thread-safe. Use in single-threaded contexts or implement your own synchronization.
+- **HTTP SSL**: HTTPS requests require OpenSSL libraries on Linux systems (see Dependencies section).
+- **Timezone Support**: Limited timezone support on Unix-like systems.
+- **Language Features**: Designed for FPC 3.2.2, so no use of inline var declarations or anonymous functions.
+- **Library Integration**: Currently no integration with package managers.
+
 ## ✅ Testing
 
 1. Open the TestRunner.lpi using Lazarus IDE
@@ -750,3 +891,37 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 - FPC Team for Free Pascal
 - Contributors and maintainers
+
+## 🗺️ Roadmap
+
+TidyKit is under active development. Here's what's planned for the future:
+
+### In Progress (May 2025)
+- **API Unification:**  
+  Currently implementing factory methods across all modules to provide a consistent API experience:
+  - Transitioning from static class methods to interface-based designs with factory patterns
+  - Maintaining backward compatibility where possible
+  - Ensuring memory safety through interface-based reference counting for complex objects
+  - Progress: ~40% complete (JSON, Matrix modules already using interface-based approach, naming will be updated to match the new API)
+
+### Coming in v0.2.0 (Q3 2025)
+- **API Unification Completion:**
+  - Complete conversion of all modules to use consistent factory methods and interface-based design
+  - Finalize unified error handling approach across all modules
+  - Update all examples and documentation to demonstrate the unified API
+  - Provide comprehensive migration guide for users of earlier versions
+
+### Coming in v0.3.0 (Q4 2025)
+- More real-world examples and tutorials
+- Performance optimizations across all modules
+- Improved error messages and diagnostics
+- Additional unit tests for edge cases
+
+### Future Goals
+- Integration with package managers (fpm, fpcupdeluxe, etc.)
+- More advanced math/statistics modules
+- Improved cross-platform support, especially for macOS and FreeBSD
+
+---
+
+*Feedback and suggestions are welcome! See the [issues](https://github.com/ikelaiah/TidyKit/issues) page to contribute ideas or track progress.*
