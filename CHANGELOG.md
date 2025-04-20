@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+...
+
+## [0.1.5] - 2025-04-21
+
 ### Added
 - Added Ubuntu 24.04.02 compatibility for TidKit.DateTime and TidyKit.FS modules
 - Added automatic test environment detection for TidyKit.Request
@@ -31,6 +35,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Updated documentation to include Linux OpenSSL dependencies for HTTPS support
 
 ### Removed
+
+...
 
 ## [0.1.0] - 2025-03-13
 
@@ -78,4 +84,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Known Issues
 - Limited timezone support on Unix-like systems
-- Untested on macOS and FreeBSD platforms 
+- Untested on macOS and FreeBSD platforms
