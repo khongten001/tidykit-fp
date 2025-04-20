@@ -22,8 +22,8 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Thoroughly Tested**: Extensive test suite ensures reliability and stability
 - **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
 - **Well-Documented**: Every component has detailed documentation with examples
-- **Memory Safe**: Interface-based design with automatic reference counting
-- **Beginner Friendly**: Consistent API design makes learning easy
+- **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
+- **Evolving API**: Currently transitioning toward a unified API design (see [Roadmap](#️-roadmap))
 
 ## 📑 Table of Contents 
 - [🧰 TidyKit](#-tidykit)
@@ -63,7 +63,8 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [⚖️ License](#️-license)
   - [🙏 Acknowledgments](#-acknowledgments)
   - [🗺️ Roadmap](#️-roadmap)
-    - [Coming in v0.2.0 (Q3–Q4 2025)](#coming-in-v020-q3q4-2025)
+    - [In Progress (May 2025)](#in-progress-may-2025)
+    - [Coming in v0.2.0 (Q3 2025)](#coming-in-v020-q3-2025)
     - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
     - [Future Goals](#future-goals)
 
@@ -641,14 +642,46 @@ end;
 var
   Data: TDoubleArray;
   Stats: TDescriptiveStats;
+  CI: TDoublePair;
+  CorrelationCoef: Double;
+  X, Y: TDoubleArray;
 begin
-  // Analyze product ratings
-  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8);
+  // Basic descriptive statistics
+  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8, 3.2, 4.5, 4.9);
   Stats := TStatsKit.Describe(Data);
   
+  // Print formatted statistics
+  WriteLn(Stats.ToString);
+  // Or use individual properties
   WriteLn(Format('Average rating: %.2f', [Stats.Mean]));
   WriteLn(Format('Rating spread: %.2f', [Stats.StdDev]));
   WriteLn(Format('Most common: %.1f', [Stats.Mode]));
+  WriteLn(Format('Median: %.1f', [Stats.Median]));
+  WriteLn(Format('Range: %.1f', [Stats.Range]));
+  
+  // Advanced statistics
+  WriteLn(Format('Distribution skewness: %.2f', [Stats.Skewness]));
+  WriteLn(Format('Kurtosis: %.2f', [Stats.Kurtosis]));
+  
+  // Robust statistics
+  WriteLn(Format('Median Absolute Deviation: %.2f', 
+                [TStatsKit.MedianAbsoluteDeviation(Data)]));
+  WriteLn(Format('Trimmed Mean (10%%): %.2f', 
+                [TStatsKit.TrimmedMean(Data, 10)]));
+  
+  // Bootstrapping for confidence intervals
+  CI := TStatsKit.BootstrapConfidenceInterval(Data);
+  WriteLn(Format('95%% CI: [%.2f, %.2f]', [CI.Lower, CI.Upper]));
+  
+  // Correlation analysis
+  X := TDoubleArray.Create(1.0, 2.0, 3.0, 4.0, 5.0);
+  Y := TDoubleArray.Create(2.0, 3.5, 4.8, 6.1, 8.0);
+  
+  CorrelationCoef := TStatsKit.PearsonCorrelation(X, Y);
+  WriteLn(Format('Pearson correlation: %.2f', [CorrelationCoef]));
+  
+  CorrelationCoef := TStatsKit.SpearmanCorrelation(X, Y);
+  WriteLn(Format('Spearman correlation: %.2f', [CorrelationCoef]));
 end;
 ```
 
@@ -656,7 +689,7 @@ end;
 ```pascal
 var
   A, B, C: IMatrix;
-begin
+  begin
   // Create and initialize matrices
   A := TMatrixKit.CreateFromArray([
     [1.0, 2.0],
@@ -696,16 +729,16 @@ begin
   // Vector operations
   V1 := TMatrixKit.CreateFromArray([[1.0], [2.0], [3.0]]);
   V2 := TMatrixKit.CreateFromArray([[4.0], [5.0], [6.0]]);
-  DotProd := V1.DotProduct(V2);
-  Cross := V1.CrossProduct(V2);
-  Norm := V1.Normalize;
+  DotProd := V1.DotProduct(V2);     // Dot/inner product
+  Cross := V1.CrossProduct(V2);     // Cross product (3D vectors only)
+  Norm := V1.Normalize;             // Normalize to unit length
   
   // Statistical operations
-  Mean := A.Mean;            // Overall mean
-  ColMeans := A.Mean(0);     // Column means
-  RowMeans := A.Mean(1);     // Row means
-  Cov := A.Covariance;       // Covariance matrix
-  Corr := A.Correlation;     // Correlation matrix
+  Mean := A.Mean;                   // Overall mean
+  ColMeans := A.Mean(0);            // Column means
+  RowMeans := A.Mean(1);            // Row means
+  Cov := A.Covariance;              // Covariance matrix
+  Corr := A.Correlation;            // Correlation matrix
   
   // Solving linear systems
   X := A.Inverse.Multiply(B);                    // Direct solution
@@ -861,24 +894,33 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 ## 🗺️ Roadmap
 
-TidyKit is under active development. Here’s what’s planned for the future:
+TidyKit is under active development. Here's what's planned for the future:
 
-### Coming in v0.2.0 (Q3–Q4 2025)
-- **API Unification & Simplification:**  
-  Unify and simplify the API across all modules to lower the cognitive load for new developers.  
-  - Move towards a consistent, interface-based architecture for all major modules  
-  - Deprecate mixed patterns (static class methods, factories) in favor of a unified interface-first approach  
-  - Provide migration guides and compatibility layers for existing users  
-  - Update documentation and examples to reflect the new unified API
+### In Progress (May 2025)
+- **API Unification:**  
+  Currently implementing factory methods across all modules to provide a consistent API experience:
+  - Transitioning from static class methods to interface-based designs with factory patterns
+  - Maintaining backward compatibility where possible
+  - Ensuring memory safety through interface-based reference counting for complex objects
+  - Progress: ~40% complete (JSON, Matrix modules already using interface-based approach, naming will be updated to match the new API)
+
+### Coming in v0.2.0 (Q3 2025)
+- **API Unification Completion:**
+  - Complete conversion of all modules to use consistent factory methods and interface-based design
+  - Finalize unified error handling approach across all modules
+  - Update all examples and documentation to demonstrate the unified API
+  - Provide comprehensive migration guide for users of earlier versions
 
 ### Coming in v0.3.0 (Q4 2025)
 - More real-world examples and tutorials
+- Performance optimizations across all modules
 - Improved error messages and diagnostics
 - Additional unit tests for edge cases
 
 ### Future Goals
 - Integration with package managers (fpm, fpcupdeluxe, etc.)
 - More advanced math/statistics modules
+- Improved cross-platform support, especially for macOS and FreeBSD
 
 ---
 
