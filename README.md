@@ -23,16 +23,15 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
 - **Well-Documented**: Every component has detailed documentation with examples
 - **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
-- **Evolving API**: Currently transitioning toward a unified API design (see [Roadmap](#️-roadmap))
+- **Evolving API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
 
 ## 📑 Table of Contents 
 - [🧰 TidyKit](#-tidykit)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
-    - [Example: Static Class Functions](#example-static-class-functions)
-    - [Example: Interface-Based with Automatic Memory Management](#example-interface-based-with-automatic-memory-management)
-    - [Example: Hybrid Approach](#example-hybrid-approach)
+    - [Example: Static Class Functions (Stable Pattern)](#example-static-class-functions-stable-pattern)
+    - [Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)](#example-factoryinterface-target-pattern-for-fs-json-logger-request-matrices)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
@@ -63,68 +62,57 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [⚖️ License](#️-license)
   - [🙏 Acknowledgments](#-acknowledgments)
   - [🗺️ Roadmap](#️-roadmap)
-    - [In Progress (May 2025)](#in-progress-may-2025)
-    - [Coming in v0.2.0 (Q3 2025)](#coming-in-v020-q3-2025)
-    - [Coming in v0.3.0 (Q4 2025)](#coming-in-v030-q4-2025)
+    - [Planned for v0.2.0 (Q3 2025) - Simplify API](#planned-for-v020-q3-2025---simplify-api)
+    - [Planned for v0.3.0 (Q4 2025) - Examples \& Refinements](#planned-for-v030-q4-2025---examples--refinements)
     - [Future Goals](#future-goals)
 
 ## 🏗️ Architectural Patterns
 
-TidyKit implements different architectural patterns across its modules to balance ease of use with flexibility and power. Understanding these patterns will help you use the library more effectively:
+TidyKit currently uses a mix of architectural patterns. We are actively working towards a more simplified API for release **v0.2.0**.
 
-| Pattern | Modules | Characteristics | Memory Management |
-|---------|---------|-----------------|------------------|
-| **Static Class Functions** | TidyKit.FS, TidyKit.DateTime, TidyKit.Archive, TidyKit.Crypto | <ul><li>Procedural-style API</li><li>Simple usage</li><li>No instance creation</li><li>Direct function calls through class name</li></ul> | No manual management needed |
-| **Interface-Based** | TidyKit.Math.Matrices, TidyKit.JSON | <ul><li>Object-oriented design</li><li>Greater flexibility</li><li>Fluent API</li><li>Value semantics</li></ul> | Automatic reference counting through interfaces |
-| **Hybrid Approach** | TidyKit.Logger, TidyKit.JSON | <ul><li>Static factory methods</li><li>Interface-based instances</li><li>Balance of simplicity and power</li></ul> | Factory creates objects, interfaces handle cleanup |
+**Current & Target State (v0.2.0):**
+
+| Pattern | Target Modules (v0.2.0) | Characteristics | Memory Management | Status |
+|---------|-------------------------|-----------------|-------------------|--------|
+| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (underway), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
+| **Static Class Functions** | `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` (excluding Matrices) | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed | Stable |
+
+\* `TidyKit.Matrices` is currently Class/Interface based and is planned to transition to Factory/Interface for consistency in v0.2.0.
 
 > [!IMPORTANT]
-> See [🗺️ Roadmap](#️-roadmap), currently working on a unified API for this library.
+> The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
 
-### Example: Static Class Functions
+### Example: Static Class Functions (Stable Pattern)
 
 ```pascal
-// TidyKit.FS - No instance needed, simple function calls
-TFileKit.WriteFile('example.txt', 'Hello World');
-Content := TFileKit.ReadFile('example.txt');
+// TidyKit.Strings - No instance needed, simple function calls
+IsValid := TStringKit.MatchesPattern('test@example.com', TStringKit.REGEX_EMAIL);
+Padded := TStringKit.PadLeft('123', 5, '0'); // Result: '00123'
 ```
 
-### Example: Interface-Based with Automatic Memory Management
+### Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)
 
 ```pascal
-// TidyKit.Math.Matrices - Creating and using matrices
+// TidyKit.FS - Using the factory and interface
 var
-  A, B, C: IMatrix; // Interfaces manage memory automatically
+  FS: IFileKit;
+  Content: string;
 begin
-  // Factory method creates concrete implementation
-  A := TMatrixKit.CreateFromArray([
-    [1.0, 2.0], 
-    [3.0, 4.0]
-  ]);
-  
-  // Methods return new matrix instances
-  B := A.Transpose;
-  C := A.Multiply(B);
-  
-  // No manual Free needed - interfaces handle cleanup
+  FS := TFSFactory.CreateFileKit; // Factory creates the object
+  FS.WriteTextFile('example.txt', 'Hello via Interface');
+  Content := FS.ReadTextFile('example.txt');
+  // FS interface goes out of scope, memory managed automatically
+end;
+
+// TidyKit.JSON - Existing Factory/Interface pattern
+var
+  Person: IJSONObject;
+begin
+  Person := TJSONFactory.CreateObject; // Factory method
+  Person.Add('name', 'Jane Doe');
+  // Person interface manages memory
 end;
 ```
-
-### Example: Hybrid Approach
-
-```pascal
-// TidyKit.JSON - Static factory with interface instances
-var
-  Person: IJSONObject; // Interface manages memory
-begin
-  // Static factory method
-  Person := TJSON.Obj;
-  Person.Add('name', 'John Smith');
-  
-  // Interface handles cleanup automatically
-end;
-```
-
 
 ## ✨ Features
 
@@ -850,8 +838,6 @@ Check out our [examples directory](examples/) for all sample projects.
 
 - **Questions?** [Open a discussion](https://github.com/ikelaiah/TidyKit/discussions)
 - **Found a bug?** [Report an issue](https://github.com/ikelaiah/TidyKit/issues)
-- **IRC:** Join our chat on Libera.Chat at #tidykit
-- **Newsletter:** [Subscribe](https://example.com/newsletter) for updates
 
 ## ⚠️ Known Limitations
 
@@ -864,7 +850,7 @@ Check out our [examples directory](examples/) for all sample projects.
 
 ## ✅ Testing
 
-1. Open the TestRunner.lpi using Lazarus IDE
+1. Open the `TestRunner.lpi` using Lazarus IDE
 2. Compile the project
 3. Run the Test Runner:
 
@@ -894,33 +880,26 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 
 ## 🗺️ Roadmap
 
-TidyKit is under active development. Here's what's planned for the future:
+TidyKit is under active development. Here's what's planned:
 
-### In Progress (May 2025)
-- **API Unification:**  
-  Currently implementing factory methods across all modules to provide a consistent API experience:
-  - Transitioning from static class methods to interface-based designs with factory patterns
-  - Maintaining backward compatibility where possible
-  - Ensuring memory safety through interface-based reference counting for complex objects
-  - Progress: ~40% complete (JSON, Matrix modules already using interface-based approach, naming will be updated to match the new API)
+### Planned for v0.2.0 (Q3 2025) - Simplify API
+- **Goal:** Provide a simpler, more consistent API.
+- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (work underway)
+- **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Remain as Static Class Methods for stateless utilities.
+- **`TidyKit.Matrices`:** Transition from Class/Interface to **Factory/Interface** for consistency with `JSON` and improved testability/flexibility.
+- **`TidyKit.Request`:** Implement using **Factory/Interface** pattern for better testability (mocking network calls).
+- **`TidyKit.JSON`, `TidyKit.Logger`:** Refine existing Factory/Interface patterns for consistency.
+- Update all examples and documentation to reflect the simplified  API structure.
 
-### Coming in v0.2.0 (Q3 2025)
-- **API Unification Completion:**
-  - Complete conversion of all modules to use consistent factory methods and interface-based design
-  - Finalize unified error handling approach across all modules
-  - Update all examples and documentation to demonstrate the unified API
-  - Provide comprehensive migration guide for users of earlier versions
-
-### Coming in v0.3.0 (Q4 2025)
-- More real-world examples and tutorials
-- Performance optimizations across all modules
-- Improved error messages and diagnostics
-- Additional unit tests for edge cases
+### Planned for v0.3.0 (Q4 2025) - Examples & Refinements
+- Add **more real-world examples** and tutorials demonstrating common use cases.
+- Performance optimizations based on profiling.
+- Improved error messages and diagnostics.
+- Expand unit test coverage, especially for edge cases identified during API simplification.
 
 ### Future Goals
-- Integration with package managers (fpm, fpcupdeluxe, etc.)
-- More advanced math/statistics modules
-- Improved cross-platform support, especially for macOS and FreeBSD
+- More advanced math/statistics modules.
+- Easy to use API
 
 ---
 
