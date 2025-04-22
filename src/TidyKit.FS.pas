@@ -53,132 +53,6 @@ function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePa
 
 type
 
-  { Main interface for file operations }
-  IFileKit = interface
-    ['{2F7A8C4D-E51B-45A3-9D6C-8AA8F4E231E7}']
-
-    { Basic File Operations }
-    function ReadTextFile(const APath: string): string;
-    procedure WriteTextFile(const APath: string; const AContent: string);
-    procedure DeleteFile(const APath: string);
-    procedure CopyFile(const ASourcePath, ADestPath: string);
-    procedure MoveFile(const ASourcePath, ADestPath: string);
-    procedure AppendText(const APath, AText: string);
-    procedure PrependText(const APath, AText: string);
-    procedure ReplaceText(const APath, OldText, NewText: string);
-
-    { Directory Operations }
-    procedure CreateDirectory(const APath: string);
-    procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
-    procedure EnsureDirectory(const APath: string);
-    function ListDirectories(const APath: string; 
-      const Pattern: string = '*'; 
-      const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-    function ListFiles(const APath: string; 
-      const Pattern: string = '*'; 
-      const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-
-    { Path Operations }
-    function ChangeExtension(const APath, NewExt: string): string;
-    function GetFileName(const APath: string): string;
-    function GetFileNameWithoutExt(const APath: string): string;
-    function GetDirectory(const APath: string): string;
-    function GetExtension(const APath: string): string;
-    function Exists(const APath: string): Boolean;
-    function DirectoryExists(const APath: string): Boolean;
-    function GetParentDir(const APath: string): string;
-    function CombinePaths(const APath1, APath2: string): string;
-    function IsAbsolutePath(const APath: string): Boolean;
-    function NormalizePath(const APath: string): string;
-
-    { File Attributes and Metadata }
-    function GetSize(const APath: string): Int64;
-    function GetCreationTime(const APath: string): TDateTime;
-    function GetLastAccessTime(const APath: string): TDateTime;
-    function GetLastWriteTime(const APath: string): TDateTime;
-    function GetAttributes(const APath: string): TFileAttributes;
-
-    { Symbolic Link Operations }
-    procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
-    procedure DeleteSymLink(const ALinkPath: string);
-    function ResolveSymLink(const ALinkPath: string): string;
-    function IsSymLink(const APath: string): Boolean;
-
-    { File Search and Analysis }
-    function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
-    function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
-    function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-    function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-    function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-    function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-
-    { File Content Operations }
-    function CountLines(const FilePath: string): Integer;
-    function GetFirstLine(const FilePath: string): string;
-    function GetLastLine(const FilePath: string): string;
-    function IsFileEmpty(const FilePath: string): Boolean;
-    function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
-
-    { File Type Detection }
-    function IsTextFile(const APath: string): Boolean;
-    function GetFileEncoding(const APath: string): string;
-    function IsBinaryFile(const FilePath: string): Boolean;
-    function GetMimeType(const FilePath: string): string;
-    function IsExecutable(const FilePath: string): Boolean;
-    function IsHidden(const FilePath: string): Boolean;
-
-    { Space and Capacity }
-    function GetDriveFreeSpace(const Path: string): Int64;
-    function GetDriveCapacity(const Path: string): Int64;
-    function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
-
-    { File Comparison }
-    function AreFilesIdentical(const File1, File2: string): Boolean;
-    function GetNewerFile(const File1, File2: string): string;
-    function GetFileDifferences(const File1, File2: string): TStringArray;
-
-    { File Locking }
-    function LockFile(const FilePath: string): Boolean;
-    function UnlockFile(const FilePath: string): Boolean;
-    function IsFileLocked(const FilePath: string): Boolean;
-
-    { Path Validation and Sanitization }
-    function IsValidFileName(const FileName: string): Boolean;
-    function SanitizeFileName(const FileName: string): string;
-    function MakeValidPath(const Path: string): string;
-    function IsPathTooLong(const Path: string): Boolean;
-
-    { Directory Summary }
-    function GetDirectoryInfo(const Path: string): TDirectoryInfo;
-
-    { File Patterns }
-    function MatchesPattern(const FileName, Pattern: string): Boolean;
-    function FindFirstMatch(const Directory, Pattern: string): string;
-    function CountMatches(const Directory, Pattern: string): Integer;
-    function GetMatches(const Directory, Pattern: string): TStringArray;
-
-    { File Chunk Operations }
-    function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
-
-    { Batch File Operations }
-    procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
-    procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
-    procedure DeleteFiles(const ASourceDir, APattern: string);
-
-    { Path Analysis }
-    function IsEmptyDirectory(const Path: string): Boolean;
-    function GetCommonPath(const Path1, Path2: string): string;
-    function GetRelativePath(const BasePath, TargetPath: string): string;
-    function IsSubPath(const ParentPath, ChildPath: string): Boolean;
-
-    { Environment Directories }
-    function GetUserDir: string;
-    function GetCurrentDir: string;
-    function GetTempDir: string;
-  end;
-  
   { 
     TFileAttributes 
     ----------------
@@ -255,6 +129,133 @@ type
   }
   TSearchResults = array of TSearchResult;
 
+  { Main interface for file operations }
+    IFileKit = interface
+      ['{2F7A8C4D-E51B-45A3-9D6C-8AA8F4E231E7}']
+
+      { Basic File Operations }
+      function ReadTextFile(const APath: string): string;
+      procedure WriteTextFile(const APath: string; const AContent: string);
+      procedure DeleteFile(const APath: string);
+      procedure CopyFile(const ASourcePath, ADestPath: string);
+      procedure MoveFile(const ASourcePath, ADestPath: string);
+      procedure AppendText(const APath, AText: string);
+      procedure PrependText(const APath, AText: string);
+      procedure ReplaceText(const APath, OldText, NewText: string);
+
+      { Directory Operations }
+      procedure CreateDirectory(const APath: string);
+      procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
+      procedure EnsureDirectory(const APath: string);
+      function ListDirectories(const APath: string;
+        const Pattern: string = '*';
+        const Recursive: Boolean = False;
+        const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
+      function ListFiles(const APath: string;
+        const Pattern: string = '*';
+        const Recursive: Boolean = False;
+        const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
+
+      { Path Operations }
+      function ChangeExtension(const APath, NewExt: string): string;
+      function GetFileName(const APath: string): string;
+      function GetFileNameWithoutExt(const APath: string): string;
+      function GetDirectory(const APath: string): string;
+      function GetExtension(const APath: string): string;
+      function Exists(const APath: string): Boolean;
+      function DirectoryExists(const APath: string): Boolean;
+      function GetParentDir(const APath: string): string;
+      function CombinePaths(const APath1, APath2: string): string;
+      function IsAbsolutePath(const APath: string): Boolean;
+      function NormalizePath(const APath: string): string;
+      function CreateTempFile(const APrefix: string = ''): string;
+      function CreateTempDirectory(const APrefix: string = ''): string;
+
+      { File Attributes and Metadata }
+      function GetSize(const APath: string): Int64;
+      function GetCreationTime(const APath: string): TDateTime;
+      function GetLastAccessTime(const APath: string): TDateTime;
+      function GetLastWriteTime(const APath: string): TDateTime;
+      function GetAttributes(const APath: string): TFileAttributes;
+
+      { Symbolic Link Operations }
+      procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
+      procedure DeleteSymLink(const ALinkPath: string);
+      function ResolveSymLink(const ALinkPath: string): string;
+      function IsSymLink(const APath: string): Boolean;
+
+      { File Search and Analysis }
+      function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
+      function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
+      function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+      function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+      function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+      function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+
+      { File Content Operations }
+      function CountLines(const FilePath: string): Integer;
+      function GetFirstLine(const FilePath: string): string;
+      function GetLastLine(const FilePath: string): string;
+      function IsFileEmpty(const FilePath: string): Boolean;
+      function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
+
+      { File Type Detection }
+      function IsTextFile(const APath: string): Boolean;
+      function GetFileEncoding(const APath: string): string;
+      function IsBinaryFile(const FilePath: string): Boolean;
+      function GetMimeType(const FilePath: string): string;
+      function IsExecutable(const FilePath: string): Boolean;
+      function IsHidden(const FilePath: string): Boolean;
+
+      { Space and Capacity }
+      function GetDriveFreeSpace(const Path: string): Int64;
+      function GetDriveCapacity(const Path: string): Int64;
+      function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
+
+      { File Comparison }
+      function AreFilesIdentical(const File1, File2: string): Boolean;
+      function GetNewerFile(const File1, File2: string): string;
+      function GetFileDifferences(const File1, File2: string): TStringArray;
+
+      { File Locking }
+      function LockFile(const FilePath: string): Boolean;
+      function UnlockFile(const FilePath: string): Boolean;
+      function IsFileLocked(const FilePath: string): Boolean;
+
+      { Path Validation and Sanitization }
+      function IsValidFileName(const FileName: string): Boolean;
+      function SanitizeFileName(const FileName: string): string;
+      function MakeValidPath(const Path: string): string;
+      function IsPathTooLong(const Path: string): Boolean;
+
+      { Directory Summary }
+      function GetDirectoryInfo(const Path: string): TDirectoryInfo;
+
+      { File Patterns }
+      function MatchesPattern(const FileName, Pattern: string): Boolean;
+      function FindFirstMatch(const Directory, Pattern: string): string;
+      function CountMatches(const Directory, Pattern: string): Integer;
+
+      { File Chunk Operations }
+      function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
+
+      { Batch File Operations }
+      procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
+      procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
+      procedure DeleteFiles(const ASourceDir, APattern: string);
+
+      { Path Analysis }
+      function IsEmptyDirectory(const Path: string): Boolean;
+      function GetCommonPath(const Path1, Path2: string): string;
+      function GetRelativePath(const BasePath, TargetPath: string): string;
+      function IsSubPath(const ParentPath, ChildPath: string): Boolean;
+
+      { Environment Directories }
+      function GetUserDir: string;
+      function GetCurrentDir: string;
+      function GetTempDir: string;
+    end;
+
   {Factory class for file operations}
   TFSFactory = class
   public
@@ -268,6 +269,10 @@ type
     It provides a unified way to report and manage errors that occur during file handling.
   }
   EFileSystemError = class(Exception);
+
+
+  
+
 
 {$IFDEF UNIX}
 // Helper functions for Unix file system operations
@@ -331,7 +336,6 @@ type
         A TSearchResult record populated with the file or directory's details. }
     function CreateSearchResult(const APath: string): TSearchResult;
 
-    function NormalizePath(const APath: string): string;
     function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
     function MatchPattern(const FileName, Pattern: string): Boolean;
 
@@ -906,20 +910,6 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.NormalizePath(const APath: string): string;
-var
-  TempPath: string;
-begin
-  TempPath := APath;
-  {$IFDEF WINDOWS}
-  TempPath := StringReplace(TempPath, '/', '\', [rfReplaceAll]);
-  {$ELSE}
-  TempPath := StringReplace(TempPath, '\', '/', [rfReplaceAll]);
-  {$ENDIF}
-  Result := ExpandFileName(TempPath);
-  TempPath := '';
-end;
-
 function TFileKitImpl.FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
 {$IFDEF WINDOWS}
 var
@@ -948,6 +938,24 @@ begin
   // On Unix systems, just return the datetime directly
   Result := FileTime;
 {$ENDIF}
+end;
+
+
+function TFileKitImpl.MatchPattern(const FileName, Pattern: string): Boolean;
+begin
+  Result := False;
+  if Pattern = '*' then
+    Exit(True);
+
+  // Simple wildcard matching for now
+  if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
+    Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
+  else if Pattern[1] = '*' then
+    Result := AnsiEndsText(Copy(Pattern, 2, MaxInt), FileName)
+  else if Pattern[Length(Pattern)] = '*' then
+    Result := AnsiStartsText(Copy(Pattern, 1, Length(Pattern)-1), FileName)
+  else
+    Result := AnsiSameText(Pattern, FileName);
 end;
 
 function TFileKitImpl.LoadTextFromFile(const APath: string): string;
