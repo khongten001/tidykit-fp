@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.5-blueviolet.svg)]()
 
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
