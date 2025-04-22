@@ -286,10 +286,23 @@ implementation
 function CompareByDate(List: TStringList; Index1, Index2: Integer): Integer;
 var
   Time1, Time2: TDateTime;
+  Info1, Info2: TSearchRec;
 begin
-  // Use standard FileAge and FileDateToDateTime
-  Time1 := FileDateToDateTime(FileAge(List[Index1]));
-  Time2 := FileDateToDateTime(FileAge(List[Index2]));
+  // Use FindFirst/FindClose to get file dates for more robust handling
+  if FindFirst(List[Index1], faAnyFile, Info1) = 0 then
+  begin
+    Time1 := FileDateToDateTime(Info1.Time);
+    FindClose(Info1);
+  end else
+    Time1 := 0;
+
+  if FindFirst(List[Index2], faAnyFile, Info2) = 0 then
+  begin
+    Time2 := FileDateToDateTime(Info2.Time);
+    FindClose(Info2);
+  end else
+    Time2 := 0;
+    
   Result := CompareDateTime(Time1, Time2);
 end;
 
@@ -3621,4 +3634,4 @@ end;
 finalization
   if Assigned(LockedFiles) then
     FreeAndNil(LockedFiles);
-end. 
+end.
