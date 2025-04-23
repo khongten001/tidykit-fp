@@ -826,13 +826,15 @@ TidyKit can be used to build a wide variety of applications quickly:
 
 | Example Project | Description | Source Code |
 |-----------------|-------------|-------------|
+| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
+| Simple File Explorer | Navigate directories, view files, and perform file operations with an interactive console UI | [View Example](examples/SimpleFileExplorer/) |
+| File Analyzer | Analyze text files, count word frequencies, and gather directory statistics | [View Example](examples/FileAnalyzer/) |
+| File Backup | Backup files and folders, supports simulate run | [View Example](examples/FileBackup/) |
 | Simple Data Logger | Record sensor readings with timestamp and export as CSV | [View Example](examples/LoggerExample/) |
 | Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
 | Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
 | Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
-| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
 
-Check out our [examples directory](examples/) for all sample projects.
 
 
 ## 💬 Community & Support
