@@ -19,7 +19,7 @@ uses
 // Platform-specific constants
 //
 const
-  DEBUG_MODE = True; // Enable debugging output
+  DEBUG_MODE = False; // Enable debugging output
   
   {$IFDEF WINDOWS}
   // Windows API flag constants
