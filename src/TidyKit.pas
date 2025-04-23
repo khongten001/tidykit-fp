@@ -28,7 +28,8 @@ type
   TKitBase = TidyKit.Core.TKitBase;
 
   { Re-export the filesystem types }
-  TFileKit = TidyKit.FS.TFileKit;
+  IFileKit = TidyKit.FS.IFileKit; // Add IFileKit interface
+  TFSFactory = TidyKit.FS.TFSFactory; // Add TFSFactory class
   TSearchResults = TidyKit.FS.TSearchResults;
   TFileSortOrder = TidyKit.FS.TFileSortOrder;
   TFileAttributes = TidyKit.FS.TFileAttributes;
@@ -307,4 +308,4 @@ end;
 initialization
   Http := Default(THttp);
 
-end. 
+end.

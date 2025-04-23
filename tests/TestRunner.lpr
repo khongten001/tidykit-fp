@@ -6,7 +6,7 @@ uses
   Classes
   , consoletestrunner
   , TestCaseDateTime
-  , TestCaseFS
+  , TidyKit.FS.Test
   , TidyKit.Strings.Test
   , TestCaseCrypto
   , TestCaseRequest

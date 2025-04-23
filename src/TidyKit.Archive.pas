@@ -80,11 +80,13 @@ class procedure TArchiveKit.CompressToZip(const APath, ADestPath: string; const 
 var
   Zipper: TZipper;
   Files: TFilePathArray;
-  Dirs: TStringArray;
   I: Integer;
   BaseDir: string;
   RelativePath: string;
+  FileKit: IFileKit;
 begin
+  FileKit := TFSFactory.CreateFileKit;
+
   if DEBUG_MODE then
     WriteLn('CompressToZip: Starting compression of ', APath, ' to ', ADestPath);
     
@@ -93,8 +95,7 @@ begin
   if DEBUG_MODE then
     WriteLn('CompressToZip: Base directory is ', BaseDir);
   
-  // Get files first
-  Files := TFileKit.ListFiles(APath, Pattern, Recursive);
+  Files := FileKit.ListFiles(APath, Pattern, Recursive);
   
   if DEBUG_MODE then
     WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
@@ -103,26 +104,24 @@ begin
   try
     Zipper.FileName := ADestPath;
     
-    // Add each file with its relative path
     for I := 0 to High(Files) do
     begin
       RelativePath := ExtractRelativePath(BaseDir, Files[I]);
       if DEBUG_MODE then
         WriteLn('CompressToZip: Adding file ', RelativePath);
         
-      // Store only the relative path in the ZIP
       Zipper.Entries.AddFileEntry(Files[I], RelativePath);
     end;
     
     if DEBUG_MODE then
       WriteLn('CompressToZip: Creating ZIP file');
       
-    Zipper.ZipAllFiles;  // This will create the ZIP file
+    Zipper.ZipAllFiles;
     
     if DEBUG_MODE then
       WriteLn('CompressToZip: ZIP file created successfully');
   finally
-    Zipper.Free;  // This will close all resources
+    Zipper.Free;
     if DEBUG_MODE then
       WriteLn('CompressToZip: Resources freed');
   end;
@@ -132,11 +131,13 @@ class procedure TArchiveKit.DecompressFromZip(const AZipPath, ADestPath: string;
 var
   UnZipper: TUnZipper;
   DestDir: string;
+  FileKit: IFileKit;
 begin
+  FileKit := TFSFactory.CreateFileKit;
+
   if DEBUG_MODE then
     WriteLn('DecompressFromZip: Starting decompression of ', AZipPath, ' to ', ADestPath);
     
-  // Ensure absolute, normalized path with trailing delimiter
   DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
   
   if DEBUG_MODE then
@@ -159,12 +160,12 @@ begin
   UnZipper := TUnZipper.Create;
   try
     UnZipper.FileName := AZipPath;
-    UnZipper.OutputPath := ExcludeTrailingPathDelimiter(DestDir);  // UnZipper adds its own delimiter
+    UnZipper.OutputPath := ExcludeTrailingPathDelimiter(DestDir);
     
     if DEBUG_MODE then
       WriteLn('DecompressFromZip: Examining ZIP file');
       
-    UnZipper.Examine;  // Read the ZIP directory
+    UnZipper.Examine;
     
     if DEBUG_MODE then
     begin
@@ -172,12 +173,12 @@ begin
       WriteLn('DecompressFromZip: Output path is ', UnZipper.OutputPath);
     end;
       
-    UnZipper.UnZipAllFiles;  // Extract all files
+    UnZipper.UnZipAllFiles;
     
     if DEBUG_MODE then
       WriteLn('DecompressFromZip: Files extracted successfully');
   finally
-    UnZipper.Free;  // This will close all resources
+    UnZipper.Free;
     if DEBUG_MODE then
       WriteLn('DecompressFromZip: Resources freed');
   end;
@@ -194,17 +195,19 @@ var
   TarFileName: string;
   RelativePath: string;
   ModTime: TDateTime;
+  FileKit: IFileKit;
 begin
+  FileKit := TFSFactory.CreateFileKit;
+
   if DEBUG_MODE then
     WriteLn('CompressToTar: Starting compression of ', APath, ' to ', ADestPath);
     
   BaseDir := IncludeTrailingPathDelimiter(ExpandFileName(APath));
-  TarFileName := ExpandFileName(ADestPath);  // Get full path of TAR file
+  TarFileName := ExpandFileName(ADestPath);
   
   if DEBUG_MODE then
     WriteLn('CompressToTar: Base directory is ', BaseDir);
   
-  // Delete existing file if it exists
   if FileExists(TarFileName) then
   begin
     if DEBUG_MODE then
@@ -212,18 +215,15 @@ begin
     DeleteFile(TarFileName);
   end;
   
-  // Get directories first (if recursive)
   if Recursive then
   begin
-    Dirs := TFileKit.ListDirectories(APath, '*', True);
+    Dirs := FileKit.ListDirectories(APath, '*', True);
     if DEBUG_MODE then
       WriteLn('CompressToTar: Found ', Length(Dirs), ' directories');
   end;
   
-  // Get files
-  Files := TFileKit.ListFiles(APath, Pattern, Recursive);
+  Files := FileKit.ListFiles(APath, Pattern, Recursive);
   
-  // Filter out the TAR file itself from the list
   for I := High(Files) downto 0 do
   begin
     if SameFileName(Files[I], TarFileName) then
@@ -237,7 +237,6 @@ begin
   if DEBUG_MODE then
     WriteLn('CompressToTar: Found ', Length(Files), ' files to compress');
   
-  // Create output file with exclusive access
   FileStream := TFileStream.Create(TarFileName, fmCreate or fmShareExclusive);
   try
     if DEBUG_MODE then
@@ -245,41 +244,37 @@ begin
       
     TarWriter := TTarWriter.Create(FileStream);
     try
-      // Add directories first (if recursive)
       if Recursive then
       begin
         for I := 0 to High(Dirs) do
         begin
-          // TAR format requires trailing path delimiter for directories
           RelativePath := IncludeTrailingPathDelimiter(ExtractRelativePath(BaseDir, Dirs[I]));
-          ModTime := TFileKit.GetLastWriteTime(Dirs[I]);
+          ModTime := FileKit.GetLastWriteTime(Dirs[I]);
           if DEBUG_MODE then
             WriteLn('CompressToTar: Adding directory ', RelativePath);
           TarWriter.AddDir(RelativePath, ModTime);
         end;
       end;
       
-      // Add each file with its relative path
       for I := 0 to High(Files) do
       begin
         RelativePath := ExtractRelativePath(BaseDir, Files[I]);
         if DEBUG_MODE then
           WriteLn('CompressToTar: Adding file ', RelativePath);
           
-        // Store only the relative path in the TAR
         TarWriter.AddFile(Files[I], RelativePath);
       end;
       
       if DEBUG_MODE then
         WriteLn('CompressToTar: Writing TAR footer');
         
-      TarWriter.Finalize;  // Write TAR footer
+      TarWriter.Finalize;
       
       if DEBUG_MODE then
-        begin
-          WriteLn('CompressToTar: TAR file created successfully');
-          WriteLn('CompressToTar: Final file size is ', FileStream.Size, ' bytes');
-        end;
+      begin
+        WriteLn('CompressToTar: TAR file created successfully');
+        WriteLn('CompressToTar: Final file size is ', FileStream.Size, ' bytes');
+      end;
     finally
       TarWriter.Free;
       if DEBUG_MODE then
@@ -300,13 +295,15 @@ var
   DestDir: string;
   EntryCount: Integer;
   DirToCreate: string;
+  FileKit: IFileKit;
 begin
-  DirRec := Default(TTarDirRec);  // Initialize DirRec using Default
+  FileKit := TFSFactory.CreateFileKit;
+
+  DirRec := Default(TTarDirRec);
   
   if DEBUG_MODE then
     WriteLn('DecompressFromTar: Starting decompression of ', ATarPath, ' to ', ADestPath);
     
-  // Ensure absolute, normalized path with trailing delimiter
   DestDir := IncludeTrailingPathDelimiter(ExpandFileName(ADestPath));
   
   if DEBUG_MODE then
@@ -326,13 +323,11 @@ begin
     raise EArchiveError.CreateFmt('TAR file not found: %s', [ATarPath]);
   end;
   
-  // Create TAR archive directly with filename
   TarArchive := TTarArchive.Create(ATarPath);
   try
     if DEBUG_MODE then
       WriteLn('DecompressFromTar: Reading TAR entries');
       
-    // Reset the archive to start reading from the beginning
     TarArchive.Reset;
       
     EntryCount := 0;
@@ -348,10 +343,8 @@ begin
         WriteLn('DecompressFromTar: Type = ', Integer(DirRec.FileType));
       end;
         
-      // Handle directory entries
       if DirRec.FileType = ftDirectory then
       begin
-        // For directory entries, use the full path
         DirToCreate := DestDir + ExcludeTrailingPathDelimiter(DirRec.Name);
         
         if DEBUG_MODE then
@@ -364,10 +357,9 @@ begin
           raise EArchiveError.CreateFmt('Failed to create directory: %s', [DirToCreate]);
         end;
         
-        Continue;  // Skip to next entry
+        Continue;
       end;
       
-      // Handle file entries
       if DirRec.FileType = ftNormal then
       begin
         OutputFile := DestDir + DirRec.Name;
@@ -380,7 +372,6 @@ begin
           if DEBUG_MODE then
             WriteLn('DecompressFromTar: Extracting file ', OutputFile);
             
-          // Create parent directory for file
           DirToCreate := ExtractFilePath(OutputFile);
           if not ForceDirectories(DirToCreate) then
           begin
@@ -419,4 +410,4 @@ begin
   end;
 end;
 
-end. 
+end.

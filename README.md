@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.0-blueviolet.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.5-blueviolet.svg)]()
 
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
@@ -74,7 +74,7 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 
 | Pattern | Target Modules (v0.2.0) | Characteristics | Memory Management | Status |
 |---------|-------------------------|-----------------|-------------------|--------|
-| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (underway), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
+| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (completed), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
 | **Static Class Functions** | `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` (excluding Matrices) | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed | Stable |
 
 \* `TidyKit.Matrices` is currently Class/Interface based and is planned to transition to Factory/Interface for consistency in v0.2.0.
@@ -361,34 +361,35 @@ end;
 ### 📂 File System Operations
 ```pascal
 var
-  Files: TFilePathArray;
-  Attrs: TFileAttributes;
-  Content: string;
+  FileKit: IFileKit;
 begin
+  // Create FileKit instance using factory
+  FileKit := TFSFactory.CreateFileKit;
+  
   // Basic file operations
-  TFileKit.WriteFile('example.txt', 'Hello World');
-  Content := TFileKit.ReadFile('example.txt');
+  FileKit.WriteTextFile('example.txt', 'Hello World');
+  Content := FileKit.ReadTextFile('example.txt');
   
   // Directory operations
-  TFileKit.CreateDirectory('new_folder');
-  TFileKit.EnsureDirectory('path/to/folder');
+  FileKit.CreateDirectory('new_folder');
+  FileKit.EnsureDirectory('path/to/folder');
   
   // List files with pattern matching
-  Files := TFileKit.ListFiles('src', '*.pas', True, fsName);
+  Files := FileKit.ListFiles('src', '*.pas', True, fsName);
   
   // Get file attributes
-  Attrs := TFileKit.GetAttributes('example.txt');
+  Attrs := FileKit.GetAttributes('example.txt');
   WriteLn(Format('Read-only: %s', [BoolToStr(Attrs.ReadOnly, True)]));
   
   // File manipulation
-  TFileKit.CopyFile('source.txt', 'dest.txt');
-  TFileKit.MoveFile('old.txt', 'new.txt');
-  TFileKit.DeleteFile('temp.txt');
+  FileKit.CopyFile('source.txt', 'dest.txt');
+  FileKit.MoveFile('old.txt', 'new.txt');
+  FileKit.DeleteFile('temp.txt');
   
   // Path operations
-  WriteLn(TFileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
-  WriteLn(TFileKit.GetExtension('script.pas')); // Returns '.pas'
-  WriteLn(TFileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
+  WriteLn(FileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
+  WriteLn(FileKit.GetExtension('script.pas')); // Returns '.pas'
+  WriteLn(FileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
 end;
 ```
 
@@ -825,13 +826,15 @@ TidyKit can be used to build a wide variety of applications quickly:
 
 | Example Project | Description | Source Code |
 |-----------------|-------------|-------------|
+| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
+| Simple File Explorer | Navigate directories, view files, and perform file operations with an interactive console UI | [View Example](examples/SimpleFileExplorer/) |
+| File Analyzer | Analyze text files, count word frequencies, and gather directory statistics | [View Example](examples/FileAnalyzer/) |
+| File Backup | Backup files and folders, supports simulate run | [View Example](examples/FileBackup/) |
 | Simple Data Logger | Record sensor readings with timestamp and export as CSV | [View Example](examples/LoggerExample/) |
 | Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
 | Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
 | Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
-| File System Utility | Batch operations on files with pattern matching | [View Example](examples/FileKitExample/) |
 
-Check out our [examples directory](examples/) for all sample projects.
 
 
 ## 💬 Community & Support
@@ -884,7 +887,7 @@ TidyKit is under active development. Here's what's planned:
 
 ### Planned for v0.2.0 (Q3 2025) - Simplify API
 - **Goal:** Provide a simpler, more consistent API.
-- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (work underway)
+- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (completed)
 - **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Remain as Static Class Methods for stateless utilities.
 - **`TidyKit.Matrices`:** Transition from Class/Interface to **Factory/Interface** for consistency with `JSON` and improved testability/flexibility.
 - **`TidyKit.Request`:** Implement using **Factory/Interface** pattern for better testability (mocking network calls).
