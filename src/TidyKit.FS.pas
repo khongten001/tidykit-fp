@@ -270,10 +270,6 @@ type
   }
   EFileSystemError = class(Exception);
 
-
-  
-
-
 {$IFDEF UNIX}
 // Helper functions for Unix file system operations
 function S_ISDIR(Mode: mode_t): Boolean;
