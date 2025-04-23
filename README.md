@@ -887,7 +887,7 @@ TidyKit is under active development. Here's what's planned:
 
 ### Planned for v0.2.0 (Q3 2025) - Simplify API
 - **Goal:** Provide a simpler, more consistent API.
-- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (work underway)
+- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (completed)
 - **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Remain as Static Class Methods for stateless utilities.
 - **`TidyKit.Matrices`:** Transition from Class/Interface to **Factory/Interface** for consistency with `JSON` and improved testability/flexibility.
 - **`TidyKit.Request`:** Implement using **Factory/Interface** pattern for better testability (mocking network calls).
