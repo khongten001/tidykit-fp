@@ -30,8 +30,6 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
-    - [Example: Static Class Functions (Stable Pattern)](#example-static-class-functions-stable-pattern)
-    - [Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)](#example-factoryinterface-target-pattern-for-fs-json-logger-request-matrices)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
@@ -79,37 +77,6 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 > [!IMPORTANT]
 > The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
 
-### Example: Static Class Functions (Stable Pattern)
-
-```pascal
-// TidyKit.Strings - No instance needed, simple function calls
-IsValid := TStringKit.MatchesPattern('test@example.com', TStringKit.REGEX_EMAIL);
-Padded := TStringKit.PadLeft('123', 5, '0'); // Result: '00123'
-```
-
-### Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)
-
-```pascal
-// TidyKit.FS - Using the factory and interface
-var
-  FS: IFileKit;
-  Content: string;
-begin
-  FS := TFSFactory.CreateFileKit; // Factory creates the object
-  FS.WriteTextFile('example.txt', 'Hello via Interface');
-  Content := FS.ReadTextFile('example.txt');
-  // FS interface goes out of scope, memory managed automatically
-end;
-
-// TidyKit.JSON - Existing Factory/Interface pattern
-var
-  Person: IJSONObject;
-begin
-  Person := TJSONFactory.CreateObject; // Factory method
-  Person.Add('name', 'Jane Doe');
-  // Person interface manages memory
-end;
-```
 
 ## ✨ Features
 
@@ -358,35 +325,34 @@ end;
 ### 📂 File System Operations
 ```pascal
 var
-  FileKit: IFileKit;
+  Files: TFilePathArray;
+  Attrs: TFileAttributes;
+  Content: string;
 begin
-  // Create FileKit instance using factory
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Basic file operations
-  FileKit.WriteTextFile('example.txt', 'Hello World');
-  Content := FileKit.ReadTextFile('example.txt');
+  TFileKit.WriteFile('example.txt', 'Hello World');
+  Content := TFileKit.ReadFile('example.txt');
   
   // Directory operations
-  FileKit.CreateDirectory('new_folder');
-  FileKit.EnsureDirectory('path/to/folder');
+  TFileKit.CreateDirectory('new_folder');
+  TFileKit.EnsureDirectory('path/to/folder');
   
   // List files with pattern matching
-  Files := FileKit.ListFiles('src', '*.pas', True, fsName);
+  Files := TFileKit.ListFiles('src', '*.pas', True, fsName);
   
   // Get file attributes
-  Attrs := FileKit.GetAttributes('example.txt');
+  Attrs := TFileKit.GetAttributes('example.txt');
   WriteLn(Format('Read-only: %s', [BoolToStr(Attrs.ReadOnly, True)]));
   
   // File manipulation
-  FileKit.CopyFile('source.txt', 'dest.txt');
-  FileKit.MoveFile('old.txt', 'new.txt');
-  FileKit.DeleteFile('temp.txt');
+  TFileKit.CopyFile('source.txt', 'dest.txt');
+  TFileKit.MoveFile('old.txt', 'new.txt');
+  TFileKit.DeleteFile('temp.txt');
   
   // Path operations
-  WriteLn(FileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
-  WriteLn(FileKit.GetExtension('script.pas')); // Returns '.pas'
-  WriteLn(FileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
+  WriteLn(TFileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
+  WriteLn(TFileKit.GetExtension('script.pas')); // Returns '.pas'
+  WriteLn(TFileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
 end;
 ```
 
