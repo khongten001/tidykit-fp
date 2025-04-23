@@ -74,7 +74,7 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 
 | Pattern | Target Modules (v0.2.0) | Characteristics | Memory Management | Status |
 |---------|-------------------------|-----------------|-------------------|--------|
-| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (underway), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
+| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (completed), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
 | **Static Class Functions** | `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` (excluding Matrices) | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed | Stable |
 
 \* `TidyKit.Matrices` is currently Class/Interface based and is planned to transition to Factory/Interface for consistency in v0.2.0.
@@ -361,34 +361,35 @@ end;
 ### 📂 File System Operations
 ```pascal
 var
-  Files: TFilePathArray;
-  Attrs: TFileAttributes;
-  Content: string;
+  FileKit: IFileKit;
 begin
+  // Create FileKit instance using factory
+  FileKit := TFSFactory.CreateFileKit;
+  
   // Basic file operations
-  TFileKit.WriteFile('example.txt', 'Hello World');
-  Content := TFileKit.ReadFile('example.txt');
+  FileKit.WriteTextFile('example.txt', 'Hello World');
+  Content := FileKit.ReadTextFile('example.txt');
   
   // Directory operations
-  TFileKit.CreateDirectory('new_folder');
-  TFileKit.EnsureDirectory('path/to/folder');
+  FileKit.CreateDirectory('new_folder');
+  FileKit.EnsureDirectory('path/to/folder');
   
   // List files with pattern matching
-  Files := TFileKit.ListFiles('src', '*.pas', True, fsName);
+  Files := FileKit.ListFiles('src', '*.pas', True, fsName);
   
   // Get file attributes
-  Attrs := TFileKit.GetAttributes('example.txt');
+  Attrs := FileKit.GetAttributes('example.txt');
   WriteLn(Format('Read-only: %s', [BoolToStr(Attrs.ReadOnly, True)]));
   
   // File manipulation
-  TFileKit.CopyFile('source.txt', 'dest.txt');
-  TFileKit.MoveFile('old.txt', 'new.txt');
-  TFileKit.DeleteFile('temp.txt');
+  FileKit.CopyFile('source.txt', 'dest.txt');
+  FileKit.MoveFile('old.txt', 'new.txt');
+  FileKit.DeleteFile('temp.txt');
   
   // Path operations
-  WriteLn(TFileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
-  WriteLn(TFileKit.GetExtension('script.pas')); // Returns '.pas'
-  WriteLn(TFileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
+  WriteLn(FileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
+  WriteLn(FileKit.GetExtension('script.pas')); // Returns '.pas'
+  WriteLn(FileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
 end;
 ```
 
