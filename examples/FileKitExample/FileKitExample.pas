@@ -27,7 +27,6 @@ type
   TFileOperations = class
   private
     FBasePath: string;  // Base path for all operations
-    FFileKit: IFileKit; // Our file operations interface
     procedure CreateSampleFiles;    // Creates test files and directories
     procedure CleanupSampleFiles;   // Cleans up test files when done
   public
@@ -48,11 +47,8 @@ type
 
 constructor TFileOperations.Create(const ABasePath: string);
 begin
-  // Create our FileKit instance using the factory
-  FFileKit := TFSFactory.CreateFileKit;
-  
   // Normalize the base path to ensure consistent path separators
-  FBasePath := FFileKit.NormalizePath(ABasePath);
+  FBasePath := TFileKit.NormalizePath(ABasePath);
   CreateSampleFiles;
 end;
 
@@ -66,33 +62,33 @@ end;
 procedure TFileOperations.CreateSampleFiles;
 begin
   // Create a test directory structure with subdirectories
-  FFileKit.CreateDirectory(FFileKit.CombinePaths(FBasePath, 'test'));
-  FFileKit.CreateDirectory(FFileKit.CombinePaths(FBasePath, 'test/subdir1'));
-  FFileKit.CreateDirectory(FFileKit.CombinePaths(FBasePath, 'test/subdir2'));
+  TFileKit.CreateDirectory(TFileKit.CombinePaths(FBasePath, 'test'));
+  TFileKit.CreateDirectory(TFileKit.CombinePaths(FBasePath, 'test/subdir1'));
+  TFileKit.CreateDirectory(TFileKit.CombinePaths(FBasePath, 'test/subdir2'));
   
   // Create various test files with different content types:
   
   // Text file with multiple lines
-  FFileKit.WriteTextFile(
-    FFileKit.CombinePaths(FBasePath, 'test/file1.txt'),
+  TFileKit.WriteTextFile(
+    TFileKit.CombinePaths(FBasePath, 'test/file1.txt'),
     'This is file 1' + LineEnding + 'With multiple lines'
   );
   
   // Simple text file
-  FFileKit.WriteTextFile(
-    FFileKit.CombinePaths(FBasePath, 'test/file2.txt'),
+  TFileKit.WriteTextFile(
+    TFileKit.CombinePaths(FBasePath, 'test/file2.txt'),
     'This is file 2'
   );
   
   // Text file in subdirectory
-  FFileKit.WriteTextFile(
-    FFileKit.CombinePaths(FBasePath, 'test/subdir1/file3.txt'),
+  TFileKit.WriteTextFile(
+    TFileKit.CombinePaths(FBasePath, 'test/subdir1/file3.txt'),
     'This is file 3'
   );
   
   // Binary file with null characters
-  FFileKit.WriteTextFile(
-    FFileKit.CombinePaths(FBasePath, 'test/subdir2/file4.dat'),
+  TFileKit.WriteTextFile(
+    TFileKit.CombinePaths(FBasePath, 'test/subdir2/file4.dat'),
     'Binary'#0'Data'#0'Here'
   );
 end;
@@ -100,8 +96,8 @@ end;
 procedure TFileOperations.CleanupSampleFiles;
 begin
   // Remove all test files and directories recursively
-  if FFileKit.DirectoryExists(FFileKit.CombinePaths(FBasePath, 'test')) then
-    FFileKit.DeleteDirectory(FFileKit.CombinePaths(FBasePath, 'test'), True);
+  if TFileKit.DirectoryExists(TFileKit.CombinePaths(FBasePath, 'test')) then
+    TFileKit.DeleteDirectory(TFileKit.CombinePaths(FBasePath, 'test'), True);
 end;
 
 procedure TFileOperations.ShowBasicOperations;
@@ -113,35 +109,35 @@ begin
   WriteLn('---------------------');
   
   // Create a test file path
-  FilePath := FFileKit.CombinePaths(FBasePath, 'test/basic.txt');
+  FilePath := TFileKit.CombinePaths(FBasePath, 'test/basic.txt');
   
   // Demonstrate basic file writing
   WriteLn('Writing to file...');
-  FFileKit.WriteTextFile(FilePath, 'Hello, World!');
+  TFileKit.WriteTextFile(FilePath, 'Hello, World!');
   
   // Read and display file content
   WriteLn('Reading from file...');
-  Content := FFileKit.ReadTextFile(FilePath);
+  Content := TFileKit.ReadTextFile(FilePath);
   WriteLn('Content: ', Content);
   
   // Append additional content to existing file
   WriteLn('Appending to file...');
-  FFileKit.AppendText(FilePath, LineEnding + 'Additional content');
-  Content := FFileKit.ReadTextFile(FilePath);
+  TFileKit.AppendText(FilePath, LineEnding + 'Additional content');
+  Content := TFileKit.ReadTextFile(FilePath);
   WriteLn('Updated content: ', Content);
   
   // Create a backup copy of the file
   WriteLn('Copying file...');
-  FFileKit.CopyFile(FilePath, FilePath + '.backup');
+  TFileKit.CopyFile(FilePath, FilePath + '.backup');
   
   // Move/rename the backup file
   WriteLn('Moving file...');
-  FFileKit.MoveFile(FilePath + '.backup', FilePath + '.moved');
+  TFileKit.MoveFile(FilePath + '.backup', FilePath + '.moved');
   
   // Clean up by deleting test files
   WriteLn('Deleting files...');
-  FFileKit.DeleteFile(FilePath);
-  FFileKit.DeleteFile(FilePath + '.moved');
+  TFileKit.DeleteFile(FilePath);
+  TFileKit.DeleteFile(FilePath + '.moved');
   
   WriteLn;
 end;
@@ -153,26 +149,26 @@ begin
   WriteLn('File Content Manipulation:');
   WriteLn('------------------------');
   
-  FilePath := FFileKit.CombinePaths(FBasePath, 'test/manipulation.txt');
+  FilePath := TFileKit.CombinePaths(FBasePath, 'test/manipulation.txt');
   
   // Create a file with initial content
-  FFileKit.WriteTextFile(FilePath, 'Line 1' + LineEnding + 'Line 2' + LineEnding + 'Line 3');
+  TFileKit.WriteTextFile(FilePath, 'Line 1' + LineEnding + 'Line 2' + LineEnding + 'Line 3');
   
   // Add text to end of file
   WriteLn('Appending text...');
-  FFileKit.AppendText(FilePath, LineEnding + 'Appended line');
+  TFileKit.AppendText(FilePath, LineEnding + 'Appended line');
   
   // Add text to beginning of file
   WriteLn('Prepending text...');
-  FFileKit.PrependText(FilePath, 'Prepended line' + LineEnding);
+  TFileKit.PrependText(FilePath, 'Prepended line' + LineEnding);
   
   // Replace text throughout file
   WriteLn('Replacing text...');
-  FFileKit.ReplaceText(FilePath, 'Line', 'TEXT');
+  TFileKit.ReplaceText(FilePath, 'Line', 'TEXT');
   
   // Display the final result
   WriteLn('Final content:');
-  WriteLn(FFileKit.ReadTextFile(FilePath));
+  WriteLn(TFileKit.ReadTextFile(FilePath));
   WriteLn;
 end;
 
@@ -187,32 +183,32 @@ begin
   
   // List files in test directory (non-recursive)
   WriteLn('Files in test directory:');
-  Files := FFileKit.ListFiles(FFileKit.CombinePaths(FBasePath, 'test'), '*.*', False, fsName);
+  Files := TFileKit.ListFiles(TFileKit.CombinePaths(FBasePath, 'test'), '*.*', False, fsName);
   for I := 0 to High(Files) do
-    WriteLn('- ', FFileKit.GetFileName(Files[I]));
+    WriteLn('- ', TFileKit.GetFileName(Files[I]));
   WriteLn;
   
   // List all files including subdirectories
   WriteLn('All files (recursive):');
-  Files := FFileKit.ListFiles(FFileKit.CombinePaths(FBasePath, 'test'), '*.*', True, fsName);
+  Files := TFileKit.ListFiles(TFileKit.CombinePaths(FBasePath, 'test'), '*.*', True, fsName);
   for I := 0 to High(Files) do
-    WriteLn('- ', FFileKit.GetFileName(Files[I]));
+    WriteLn('- ', TFileKit.GetFileName(Files[I]));
   WriteLn;
   
   // List all directories
   WriteLn('Directories:');
-  Dirs := FFileKit.ListDirectories(FFileKit.CombinePaths(FBasePath, 'test'), '*', True, fsName);
+  Dirs := TFileKit.ListDirectories(TFileKit.CombinePaths(FBasePath, 'test'), '*', True, fsName);
   for I := 0 to High(Dirs) do
-    WriteLn('- ', FFileKit.GetFileName(Dirs[I]));
+    WriteLn('- ', TFileKit.GetFileName(Dirs[I]));
   WriteLn;
   
   // Create new directory
   WriteLn('Creating new directory...');
-  FFileKit.CreateDirectory(FFileKit.CombinePaths(FBasePath, 'test/newdir'));
+  TFileKit.CreateDirectory(TFileKit.CombinePaths(FBasePath, 'test/newdir'));
   
   // Create directory and any missing parent directories
   WriteLn('Ensuring directory exists...');
-  FFileKit.EnsureDirectory(FFileKit.CombinePaths(FBasePath, 'test/newdir/subdir'));
+  TFileKit.EnsureDirectory(TFileKit.CombinePaths(FBasePath, 'test/newdir/subdir'));
   
   WriteLn;
 end;
@@ -225,22 +221,22 @@ begin
   WriteLn('File Information:');
   WriteLn('-----------------');
   
-  FilePath := FFileKit.CombinePaths(FBasePath, 'test/file1.txt');
+  FilePath := TFileKit.CombinePaths(FBasePath, 'test/file1.txt');
   
   // Display basic file properties
-  WriteLn('File: ', FFileKit.GetFileName(FilePath));
-  WriteLn('Exists: ', FFileKit.Exists(FilePath));
-  WriteLn('Size: ', FFileKit.GetSize(FilePath), ' bytes');
-  WriteLn('Is Text File: ', FFileKit.IsTextFile(FilePath));
-  WriteLn('Encoding: ', FFileKit.GetFileEncoding(FilePath));
+  WriteLn('File: ', TFileKit.GetFileName(FilePath));
+  WriteLn('Exists: ', TFileKit.Exists(FilePath));
+  WriteLn('Size: ', TFileKit.GetSize(FilePath), ' bytes');
+  WriteLn('Is Text File: ', TFileKit.IsTextFile(FilePath));
+  WriteLn('Encoding: ', TFileKit.GetFileEncoding(FilePath));
   
   // Show file timestamps
-  WriteLn('Created: ', DateTimeToStr(FFileKit.GetCreationTime(FilePath)));
-  WriteLn('Last Accessed: ', DateTimeToStr(FFileKit.GetLastAccessTime(FilePath)));
-  WriteLn('Last Modified: ', DateTimeToStr(FFileKit.GetLastWriteTime(FilePath)));
+  WriteLn('Created: ', DateTimeToStr(TFileKit.GetCreationTime(FilePath)));
+  WriteLn('Last Accessed: ', DateTimeToStr(TFileKit.GetLastAccessTime(FilePath)));
+  WriteLn('Last Modified: ', DateTimeToStr(TFileKit.GetLastWriteTime(FilePath)));
   
   // Display detailed file attributes
-  Attrs := FFileKit.GetAttributes(FilePath);
+  Attrs := TFileKit.GetAttributes(FilePath);
   WriteLn('Attributes:');
   WriteLn('- Read Only: ', Attrs.ReadOnly);
   WriteLn('- Hidden: ', Attrs.Hidden);
@@ -265,7 +261,7 @@ begin
   
   // Search for files with pattern matching
   WriteLn('Searching for *.txt files:');
-  Results := FFileKit.SearchFiles(FFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
+  Results := TFileKit.SearchFiles(TFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
   for I := 0 to High(Results) do
   begin
     WriteLn('Found: ', Results[I].FileName);
@@ -275,14 +271,14 @@ begin
   WriteLn;
   
   // Find files based on various criteria
-  LatestFile := FFileKit.FindLastModifiedFile(
-    FFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
-  OldestFile := FFileKit.FindFirstModifiedFile(
-    FFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
-  LargestFile := FFileKit.FindLargestFile(
-    FFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
-  SmallestFile := FFileKit.FindSmallestFile(
-    FFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
+  LatestFile := TFileKit.FindLastModifiedFile(
+    TFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
+  OldestFile := TFileKit.FindFirstModifiedFile(
+    TFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
+  LargestFile := TFileKit.FindLargestFile(
+    TFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
+  SmallestFile := TFileKit.FindSmallestFile(
+    TFileKit.CombinePaths(FBasePath, 'test'), '*.txt', True);
     
   WriteLn('File Analysis:');
   WriteLn('Most recently modified: ', LatestFile);
@@ -299,20 +295,20 @@ begin
   WriteLn('Path Operations:');
   WriteLn('---------------');
   
-  TestPath := FFileKit.CombinePaths(FBasePath, 'test/subdir1/file.txt');
+  TestPath := TFileKit.CombinePaths(FBasePath, 'test/subdir1/file.txt');
   
   // Demonstrate various path manipulation operations
   WriteLn('Test Path: ', TestPath);
-  WriteLn('File Name: ', FFileKit.GetFileName(TestPath));
-  WriteLn('File Name (no ext): ', FFileKit.GetFileNameWithoutExt(TestPath));
-  WriteLn('Directory: ', FFileKit.GetDirectory(TestPath));
-  WriteLn('Extension: ', FFileKit.GetExtension(TestPath));
-  WriteLn('Parent Directory: ', FFileKit.GetParentDir(TestPath));
-  WriteLn('Is Absolute Path: ', FFileKit.IsAbsolutePath(TestPath));
-  WriteLn('Normalized Path: ', FFileKit.NormalizePath(TestPath));
+  WriteLn('File Name: ', TFileKit.GetFileName(TestPath));
+  WriteLn('File Name (no ext): ', TFileKit.GetFileNameWithoutExt(TestPath));
+  WriteLn('Directory: ', TFileKit.GetDirectory(TestPath));
+  WriteLn('Extension: ', TFileKit.GetExtension(TestPath));
+  WriteLn('Parent Directory: ', TFileKit.GetParentDir(TestPath));
+  WriteLn('Is Absolute Path: ', TFileKit.IsAbsolutePath(TestPath));
+  WriteLn('Normalized Path: ', TFileKit.NormalizePath(TestPath));
   
   // Change file extension
-  WriteLn('With new extension: ', FFileKit.ChangeExtension(TestPath, '.dat'));
+  WriteLn('With new extension: ', TFileKit.ChangeExtension(TestPath, '.dat'));
   WriteLn;
 end;
 
@@ -326,21 +322,21 @@ begin
   
   // Show system directory locations
   WriteLn('System Directories:');
-  WriteLn('User Directory: ', FFileKit.GetUserDir);
-  WriteLn('Current Directory: ', FFileKit.GetCurrentDir);
-  WriteLn('Temp Directory: ', FFileKit.GetTempDir);
+  WriteLn('User Directory: ', TFileKit.GetUserDir);
+  WriteLn('Current Directory: ', TFileKit.GetCurrentDir);
+  WriteLn('Temp Directory: ', TFileKit.GetTempDir);
   WriteLn;
   
   // Create temporary files and directories
-  TempFile := FFileKit.CreateTempFile('example_');
+  TempFile := TFileKit.CreateTempFile('example_');
   WriteLn('Created temp file: ', TempFile);
   
-  TempDir := FFileKit.CreateTempDirectory('example_');
+  TempDir := TFileKit.CreateTempDirectory('example_');
   WriteLn('Created temp directory: ', TempDir);
   
   // Clean up temporary items
-  FFileKit.DeleteFile(TempFile);
-  FFileKit.DeleteDirectory(TempDir);
+  TFileKit.DeleteFile(TempFile);
+  TFileKit.DeleteDirectory(TempDir);
   WriteLn;
 end;
 
@@ -352,35 +348,32 @@ begin
   WriteLn('-------------------');
   
   // Compare text vs binary files
-  TextPath := FFileKit.CombinePaths(FBasePath, 'test/file1.txt');
-  BinaryPath := FFileKit.CombinePaths(FBasePath, 'test/subdir2/file4.dat');
+  TextPath := TFileKit.CombinePaths(FBasePath, 'test/file1.txt');
+  BinaryPath := TFileKit.CombinePaths(FBasePath, 'test/subdir2/file4.dat');
   
   // Check text file properties
   WriteLn(TextPath);
-  WriteLn('Is Text File: ', FFileKit.IsTextFile(TextPath));
-  WriteLn('Encoding: ', FFileKit.GetFileEncoding(TextPath));
+  WriteLn('Is Text File: ', TFileKit.IsTextFile(TextPath));
+  WriteLn('Encoding: ', TFileKit.GetFileEncoding(TextPath));
   WriteLn;
   
   // Check binary file properties
   WriteLn(BinaryPath);
-  WriteLn('Is Text File: ', FFileKit.IsTextFile(BinaryPath));
-  WriteLn('Encoding: ', FFileKit.GetFileEncoding(BinaryPath));
+  WriteLn('Is Text File: ', TFileKit.IsTextFile(BinaryPath));
+  WriteLn('Encoding: ', TFileKit.GetFileEncoding(BinaryPath));
   WriteLn;
 end;
 
 var
   FileOps: TFileOperations;
   WorkDir: string;
-  FileKit: IFileKit; // Temporary filekit for initial setup
 
 begin
   try
-    // Create a FileKit instance for initial setup
-    FileKit := TFSFactory.CreateFileKit;
-    
+
     // Create a working directory for our examples
-    WorkDir := FileKit.CombinePaths(FileKit.GetCurrentDir, 'FileKitTest');
-    FileKit.CreateDirectory(WorkDir);
+    WorkDir := TFileKit.CombinePaths(TFileKit.GetCurrentDir, 'FileKitTest');
+    TFileKit.CreateDirectory(WorkDir);
     
     // Create our file operations demo object
     FileOps := TFileOperations.Create(WorkDir);
@@ -405,8 +398,8 @@ begin
     end;
     
     // Clean up our working directory
-    if FileKit.DirectoryExists(WorkDir) then
-      FileKit.DeleteDirectory(WorkDir, True);
+    if TFileKit.DirectoryExists(WorkDir) then
+      TFileKit.DeleteDirectory(WorkDir, True);
       
     WriteLn('Press Enter to exit...');
     ReadLn;

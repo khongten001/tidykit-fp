@@ -18,9 +18,6 @@ uses
 const
   LINE_SEPARATOR = '-----------------------------------------------';
 
-var
-  FileKit: IFileKit; // Our file operations interface
-
 // Custom comparison function for word frequency sorting
 function CompareWordCounts(List: TStringList; Index1, Index2: Integer): Integer;
 begin
@@ -38,22 +35,22 @@ var
   InWord: Boolean;
 begin
   // Make sure file exists before analyzing
-  if not FileKit.Exists(FilePath) then
+  if not TFileKit.Exists(FilePath) then
   begin
     WriteLn('Error: File not found: ', FilePath);
     Exit;
   end;
   
   // Check if this is a text file
-  if not FileKit.IsTextFile(FilePath) then
+  if not TFileKit.IsTextFile(FilePath) then
   begin
     WriteLn('Warning: File does not appear to be a text file: ', FilePath);
-    WriteLn('File type: ', FileKit.GetMimeType(FilePath));
+    WriteLn('File type: ', TFileKit.GetMimeType(FilePath));
     Exit;
   end;
   
   // Read the entire file content
-  Content := FileKit.ReadTextFile(FilePath);
+  Content := TFileKit.ReadTextFile(FilePath);
   
   // Calculate statistics
   LineCount := 0;
@@ -92,12 +89,12 @@ begin
   WriteLn(LINE_SEPARATOR);
   WriteLn('File Analysis: ', ExtractFileName(FilePath));
   WriteLn(LINE_SEPARATOR);
-  WriteLn('Size: ', FileKit.GetSize(FilePath), ' bytes');
+  WriteLn('Size: ', TFileKit.GetSize(FilePath), ' bytes');
   WriteLn('Lines: ', LineCount);
   WriteLn('Words: ', WordCount);
   WriteLn('Characters: ', CharCount);
-  WriteLn('Last modified: ', DateTimeToStr(FileKit.GetLastWriteTime(FilePath)));
-  WriteLn('Encoding: ', FileKit.GetFileEncoding(FilePath));
+  WriteLn('Last modified: ', DateTimeToStr(TFileKit.GetLastWriteTime(FilePath)));
+  WriteLn('Encoding: ', TFileKit.GetFileEncoding(FilePath));
   WriteLn(LINE_SEPARATOR);
 end;
 
@@ -110,13 +107,13 @@ var
   CurrentWord: string;
   InWord: Boolean;
 begin
-  if not FileKit.Exists(FilePath) then
+  if not TFileKit.Exists(FilePath) then
   begin
     WriteLn('Error: File not found: ', FilePath);
     Exit;
   end;
   
-  Content := FileKit.ReadTextFile(FilePath);
+  Content := TFileKit.ReadTextFile(FilePath);
   WordList := TStringList.Create;
   UniqueWords := TStringList.Create;
   try
@@ -205,15 +202,15 @@ var
   FilePath: string;
 begin
   // Make sure directory exists
-  if not FileKit.DirectoryExists(DirPath) then
+  if not TFileKit.DirectoryExists(DirPath) then
   begin
     WriteLn('Error: Directory not found: ', DirPath);
     Exit;
   end;
   
   // Get all files and directories
-  Files := FileKit.ListFiles(DirPath, '*', Recursive, fsName);
-  Dirs := FileKit.ListDirectories(DirPath, '*', Recursive, fsName);
+  Files := TFileKit.ListFiles(DirPath, '*', Recursive, fsName);
+  Dirs := TFileKit.ListDirectories(DirPath, '*', Recursive, fsName);
   
   FileCount := Length(Files);
   DirCount := Length(Dirs);
@@ -238,8 +235,8 @@ begin
   for i := 0 to High(Files) do
   begin
     FilePath := Files[i];
-    TotalSize := TotalSize + FileKit.GetSize(FilePath);
-    WriteLn(' - ', ExtractFileName(FilePath), ' (', FileKit.GetSize(FilePath), ' bytes)');
+    TotalSize := TotalSize + TFileKit.GetSize(FilePath);
+    WriteLn(' - ', ExtractFileName(FilePath), ' (', TFileKit.GetSize(FilePath), ' bytes)');
   end;
   
   // Print summary
@@ -264,17 +261,17 @@ var
   HasFiles: Boolean;
   IsFileAccessible: Boolean;
 begin
-  if not FileKit.DirectoryExists(DirPath) then
+  if not TFileKit.DirectoryExists(DirPath) then
   begin
     WriteLn('Error: Directory not found: ', DirPath);
     Exit;
   end;
   
   // Get basic directory info
-  DirInfo := FileKit.GetDirectoryInfo(DirPath);
+  DirInfo := TFileKit.GetDirectoryInfo(DirPath);
   
   // Find oldest and newest files
-  Files := FileKit.SearchFiles(DirPath, '*', True);
+  Files := TFileKit.SearchFiles(DirPath, '*', True);
   NewestTime := 0;
   OldestTime := Now + 1000; // Far in the future
   
@@ -303,7 +300,7 @@ begin
             
             // Check file type with error handling
             try
-              if FileKit.IsTextFile(Files[i].FullPath) then
+              if TFileKit.IsTextFile(Files[i].FullPath) then
                 Inc(TextFileCount)
               else
                 Inc(BinaryFileCount);
@@ -465,9 +462,6 @@ begin
   try
     WriteLn('File Analysis Tool - Using TidyKit.FS');
     WriteLn;
-    
-    // Create the FileKit interface
-    FileKit := TFSFactory.CreateFileKit;
     
     // Show the main menu
     ShowMenu;

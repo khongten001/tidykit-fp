@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.5-blueviolet.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.6-blueviolet.svg)]()
 
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
@@ -23,7 +23,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
 - **Well-Documented**: Every component has detailed documentation with examples
 - **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
-- **Evolving API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
+- **Easy to use API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
 
 ## 📑 Table of Contents 
 - [🧰 TidyKit](#-tidykit)
@@ -70,14 +70,11 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 
 TidyKit currently uses a mix of architectural patterns. We are actively working towards a more simplified API for release **v0.2.0**.
 
-**Current & Target State (v0.2.0):**
-
-| Pattern | Target Modules (v0.2.0) | Characteristics | Memory Management | Status |
-|---------|-------------------------|-----------------|-------------------|--------|
-| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (completed), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
-| **Static Class Functions** | `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` (excluding Matrices) | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed | Stable |
-
-\* `TidyKit.Matrices` is currently Class/Interface based and is planned to transition to Factory/Interface for consistency in v0.2.0.
+| Pattern | Modules | Characteristics | Memory Management |
+|---------|-------------------------|-----------------|-------------------|
+| **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`| <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
+| **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
+| **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li><ul> | No manual management needed |
 
 > [!IMPORTANT]
 > The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
@@ -886,23 +883,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 TidyKit is under active development. Here's what's planned:
 
 ### Planned for v0.2.0 (Q3 2025) - Simplify API
-- **Goal:** Provide a simpler, more consistent API.
-- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (completed)
-- **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Remain as Static Class Methods for stateless utilities.
-- **`TidyKit.Matrices`:** Transition from Class/Interface to **Factory/Interface** for consistency with `JSON` and improved testability/flexibility.
-- **`TidyKit.Request`:** Implement using **Factory/Interface** pattern for better testability (mocking network calls).
-- **`TidyKit.JSON`, `TidyKit.Logger`:** Refine existing Factory/Interface patterns for consistency.
-- Update all examples and documentation to reflect the simplified  API structure.
+- Provide a simpler API.
 
 ### Planned for v0.3.0 (Q4 2025) - Examples & Refinements
 - Add **more real-world examples** and tutorials demonstrating common use cases.
 - Performance optimizations based on profiling.
-- Improved error messages and diagnostics.
 - Expand unit test coverage, especially for edge cases identified during API simplification.
 
 ### Future Goals
 - More advanced math/statistics modules.
-- Easy to use API
+- DataFrame-like structures for data manipulation.
+- Support for more file formats (e.g., XML, CSV).
 
 ---
 

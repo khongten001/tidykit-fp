@@ -15,103 +15,72 @@ The `TidyKit.FS` unit provides comprehensive file system operations for FreePasc
 
 ## Basic Usage
 
-The TidyKit.FS module now uses a Factory/Interface pattern. This provides several benefits:
-- Automatic memory management through interface reference counting
-- Ability to mock file operations for testing
-- More object-oriented design
-- Potential for different implementations in the future
-
-### Creating a FileKit Instance
-
-```pascal
-var
-  FileKit: IFileKit;
-begin
-  // Create an instance using the factory
-  FileKit := TFSFactory.CreateFileKit;
-  
-  // Use the instance for file operations
-  // When FileKit goes out of scope, memory is automatically managed
-end;
-```
-
 ### File Operations
 
 ```pascal
 // Reading and writing files
 var
-  FileKit: IFileKit;
   Content: string;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Read entire file
-  Content := FileKit.ReadTextFile('input.txt');
+  Content := TFileKit.ReadTextFile('input.txt');
   
   // Write to file (creates file if it doesn't exist)
-  FileKit.WriteTextFile('output.txt', 'Hello, World!');
+  TFileKit.WriteTextFile('output.txt', 'Hello, World!');
   
   // Append text to file
-  FileKit.AppendText('log.txt', 'New log entry');
+  TFileKit.AppendText('log.txt', 'New log entry');
   
   // Prepend text to file
-  FileKit.PrependText('log.txt', 'Log header');
+  TFileKit.PrependText('log.txt', 'Log header');
   
   // Replace text in file
-  FileKit.ReplaceText('config.txt', 'old_value', 'new_value');
+  TFileKit.ReplaceText('config.txt', 'old_value', 'new_value');
 end;
 ```
 
 ### Directory Operations
 
 ```pascal
-var
-  FileKit: IFileKit;
-begin
-  FileKit := TFSFactory.CreateFileKit;
-  
-  // Basic directory operations
-  FileKit.CreateDirectory('new_dir');                // Create single directory
-  FileKit.EnsureDirectory('path/to/deep/dir');      // Create directory tree
-  FileKit.DeleteDirectory('old_dir', True);         // Delete with contents
+// Basic directory operations
+TFileKit.CreateDirectory('new_dir');                // Create single directory
+TFileKit.EnsureDirectory('path/to/deep/dir');      // Create directory tree
+TFileKit.DeleteDirectory('old_dir', True);         // Delete with contents
 
-  // List directory contents
-  var
-    Files: TFilePathArray;
-    Dirs: TFilePathArray;
-  begin
-    // List files with various options
-    Files := FileKit.ListFiles('.', '*.txt');                // List .txt files
-    Files := FileKit.ListFiles('.', '*', True);              // Recursive listing
-    Files := FileKit.ListFiles('.', '*', False, fsName);     // Sort by name
-    
-    // List directories
-    Dirs := FileKit.ListDirectories('.', '*', True);         // Recursive
-    Dirs := FileKit.ListDirectories('.', 'test_*');          // Pattern matching
-  end;
+// List directory contents
+var
+  Files: TFilePathArray;
+  Dirs: TFilePathArray;
+begin
+  // List files with various options
+  Files := TFileKit.ListFiles('.', '*.txt');                // List .txt files
+  Files := TFileKit.ListFiles('.', '*', True);              // Recursive listing
+  Files := TFileKit.ListFiles('.', '*', False, fsName);     // Sort by name
+  
+  // List directories
+  Dirs := TFileKit.ListDirectories('.', '*', True);         // Recursive
+  Dirs := TFileKit.ListDirectories('.', 'test_*');          // Pattern matching
 end;
 ```
 
 ### Path Analysis
 
 ```pascal
+// Path manipulation and analysis
 var
-  FileKit: IFileKit;
   CommonPath: string;
   RelPath: string;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Find common path between two paths
-  CommonPath := FileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib');
+  CommonPath := TFileKit.GetCommonPath('/usr/local/bin', '/usr/local/lib');
   // Returns '/usr/local'
   
   // Get relative path
-  RelPath := FileKit.GetRelativePath('/usr/share', '/usr/local/bin');
+  RelPath := TFileKit.GetRelativePath('/usr/share', '/usr/local/bin');
   // Returns '../local/bin'
   
   // Check if one path is subpath of another
-  if FileKit.IsSubPath('/usr/local', '/usr/local/bin') then
+  if TFileKit.IsSubPath('/usr/local', '/usr/local/bin') then
     WriteLn('Is subpath');
 end;
 ```
@@ -119,66 +88,60 @@ end;
 ### File Information
 
 ```pascal
+// Get file information
 var
-  FileKit: IFileKit;
   Attrs: TFileAttributes;
   Size: Int64;
   ModTime: TDateTime;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Get file attributes
-  Attrs := FileKit.GetAttributes('file.txt');
+  Attrs := TFileKit.GetAttributes('file.txt');
   WriteLn('Read-only: ', Attrs.ReadOnly);
   WriteLn('Hidden: ', Attrs.Hidden);
   
   // Get file size
-  Size := FileKit.GetSize('file.txt');
+  Size := TFileKit.GetSize('file.txt');
   
   // Get modification time
-  ModTime := FileKit.GetLastWriteTime('file.txt');
+  ModTime := TFileKit.GetLastWriteTime('file.txt');
 end;
 ```
 
 ### Search Operations
 
 ```pascal
+// Search for files
 var
-  FileKit: IFileKit;
   Results: TSearchResults;
   NewestFile: string;
   LargestFile: string;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Search files recursively
-  Results := FileKit.SearchFiles('.', '*.txt', True);
+  Results := TFileKit.SearchFiles('.', '*.txt', True);
   
   // Find specific files
-  NewestFile := FileKit.FindLastModifiedFile('.', '*.txt');
-  LargestFile := FileKit.FindLargestFile('.', '*.txt');
+  NewestFile := TFileKit.FindLastModifiedFile('.', '*.txt');
+  LargestFile := TFileKit.FindLargestFile('.', '*.txt');
 end;
 ```
 
 ### File Validation and Sanitization
 
 ```pascal
+// Validate and sanitize file names and paths
 var
-  FileKit: IFileKit;
   SafeName: string;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Check if filename is valid
-  if FileKit.IsValidFileName('file*.txt') then
+  if TFileKit.IsValidFileName('file*.txt') then
     WriteLn('Valid filename');
     
   // Sanitize filename
-  SafeName := FileKit.SanitizeFileName('file*.txt');
+  SafeName := TFileKit.SanitizeFileName('file*.txt');
   // Returns 'file_txt'
   
   // Make path valid
-  Path := FileKit.MakeValidPath('/path//to/./file');
+  Path := TFileKit.MakeValidPath('/path//to/./file');
   // Returns '/path/to/file'
 end;
 ```
@@ -186,13 +149,11 @@ end;
 ### Directory Information
 
 ```pascal
+// Get directory statistics
 var
-  FileKit: IFileKit;
   Info: TDirectoryInfo;
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
-  Info := FileKit.GetDirectoryInfo('dir');
+  Info := TFileKit.GetDirectoryInfo('dir');
   WriteLn('Files: ', Info.FileCount);
   WriteLn('Directories: ', Info.DirectoryCount);
   WriteLn('Total size: ', Info.TotalSize);
@@ -203,23 +164,19 @@ end;
 ### Symbolic Links
 
 ```pascal
-var
-  FileKit: IFileKit;
-  Target: string;
+// Work with symbolic links
 begin
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Create symlink
-  FileKit.CreateSymLink('target.txt', 'link.txt');
+  TFileKit.CreateSymLink('target.txt', 'link.txt');
   
   // Create directory symlink
-  FileKit.CreateSymLink('target_dir', 'link_dir', True);
+  TFileKit.CreateSymLink('target_dir', 'link_dir', True);
   
   // Get target of symlink
-  Target := FileKit.ResolveSymLink('link.txt');
+  Target := TFileKit.ResolveSymLink('link.txt');
   
   // Check if path is symlink
-  if FileKit.IsSymLink('link.txt') then
+  if TFileKit.IsSymLink('link.txt') then
     WriteLn('Is symlink');
 end;
 ```
@@ -249,19 +206,13 @@ end;
 The TidyKit.FS module uses a dedicated exception class, `EFileSystemError`, for file system-related errors. This allows you to specifically catch file system errors while letting other types of exceptions propagate as normal.
 
 ```pascal
-var
-  FileKit: IFileKit;
-begin
-  FileKit := TFSFactory.CreateFileKit;
-  
-  try
-    FileKit.CopyFile('source.txt', 'dest.txt');
-  except
-    on E: EFileSystemError do
-      WriteLn('File System Error: ', E.Message);
-    on E: Exception do
-      WriteLn('Other Error: ', E.Message);
-  end;
+try
+  TFileKit.CopyFile('source.txt', 'dest.txt');
+except
+  on E: EFileSystemError do
+    WriteLn('File System Error: ', E.Message);
+  on E: Exception do
+    WriteLn('Other Error: ', E.Message);
 end;
 ```
 
@@ -277,22 +228,22 @@ Specific errors that might be raised include:
 
 1. Always check file existence before operations:
    ```pascal
-   if FileKit.Exists(FilePath) then
-     FileKit.DeleteFile(FilePath);
+   if TFileKit.Exists(FilePath) then
+     TFileKit.DeleteFile(FilePath);
    ```
 
 2. Use path manipulation functions for cross-platform compatibility:
    ```pascal
-   Path := FileKit.CombinePaths(Dir, FileName);
+   Path := TFileKit.CombinePaths(Dir, FileName);
    ```
 
 3. Handle file locks properly:
    ```pascal
-   if FileKit.LockFile(FilePath) then
+   if TFileKit.LockFile(FilePath) then
    try
      // Work with file
    finally
-     FileKit.UnlockFile(FilePath);
+     TFileKit.UnlockFile(FilePath);
    end;
    ```
 
@@ -303,7 +254,7 @@ Specific errors that might be raised include:
 
 5. Sanitize file names from user input:
    ```pascal
-   SafeName := FileKit.SanitizeFileName(UserInput);
+   SafeName := TFileKit.SanitizeFileName(UserInput);
    ```
 
 ## Performance Considerations
@@ -319,4 +270,4 @@ Specific errors that might be raised include:
 
 3. For large files:
    - Consider chunked processing for very large files
-   - Use appropriate buffer sizes for file operations
+   - Use appropriate buffer sizes for file operations 
