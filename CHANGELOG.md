@@ -7,20 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Planned for v0.2.0 - Simpler API Structure
-- **Goal:** Introduce a simpler, more consistent API structure.
-- **`TidyKit.FS`:** Will be using the Factory/Interface pattern (`TFSFactory`, `IFileKit`).
-- **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Will remain as Static Class Methods (`TStringKit`, `TDateTimeKit`, etc.) for stateless utilities.
-- **`TidyKit.Matrices`:** Planned transition from the current Class/Interface (`TMatrix`) to a Factory/Interface pattern (`TMatrixFactory`, `IMatrix`) for consistency and improved testability.
-- **`TidyKit.Request`:** Planned implementation using a Factory/Interface pattern (`TRequestFactory`, `IRequestClient`) for enhanced testability (mocking network requests).
-- **`TidyKit.JSON`, `TidyKit.Logger`:** Existing Factory/Interface patterns will be reviewed and potentially refined for consistency.
-- Documentation and examples will be updated to reflect these changes.
+...
 
-### Planned for v0.3.0 - Examples & Refinements
-- Focus on adding more comprehensive real-world examples and tutorials.
-- Performance analysis and optimization efforts.
-- Refinement of error handling and diagnostic messages.
-- Increased unit test coverage.
+## [0.1.6] - 2025-04-24
+
+### Added
+- More examples to showcase the usage of TidyKit.FS module.
+- Various bugfixes and improvements to the TidyKit.FS module.
 
 ## [0.1.5] - 2025-04-21
 
