@@ -21,7 +21,6 @@ type
   private
     FTestDir: string;
     FTestFile: string;
-    FFileKit:IFileKit;
   protected
     procedure SetUp; override;
     procedure TearDown; override;
@@ -62,14 +61,11 @@ begin
               'TidyKitTest_' + FormatDateTime('yyyymmddhhnnsszzz', Now);
   FTestFile := FTestDir + PathDelim + 'test.txt';
 
-  // Create an intance of File Kit
-  FFileKit := TFSFactory.CreateFileKit;
-
   // Ensure clean test environment
   if DirectoryExists(FTestDir) then
   begin
     try
-      FFileKit.DeleteDirectory(FTestDir, True);
+      TFileKit.DeleteDirectory(FTestDir, True);
       Sleep(100); // Give OS time to release handles
       RemoveDir(FTestDir);
     except
@@ -93,7 +89,7 @@ begin
   if DirectoryExists(FTestDir) then
   try
     // First try to delete any remaining files
-    FFileKit.DeleteDirectory(FTestDir, True);
+    TFileKit.DeleteDirectory(FTestDir, True);
     Sleep(100); // Give OS time to release handles
     RemoveDir(FTestDir);
   except
@@ -113,11 +109,11 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    FFileKit.DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if FileExists(FTestFile) then
-    FFileKit.DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
-  FFileKit.WriteTextFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TArchiveKit.CompressToZip(FTestDir, ZipFile);
   AssertTrue('ZIP file should be created', FileExists(ZipFile));
   WriteLn('Test01_CompressToZip: Finished');
@@ -138,15 +134,15 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    FFileKit.DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if DirectoryExists(ExtractDir) then
     RemoveDir(ExtractDir);
   if FileExists(FTestFile) then
-    FFileKit.DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
-  FFileKit.WriteTextFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TArchiveKit.CompressToZip(FTestDir, ZipFile);
   
   // Verify ZIP was created
@@ -156,7 +152,7 @@ begin
   TArchiveKit.DecompressFromZip(ZipFile, ExtractDir);
   AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
   AssertEquals('Extracted content should match original',
-    TestContent, FFileKit.ReadTextFile(ExtractedFile));
+    TestContent, TFileKit.ReadTextFile(ExtractedFile));
   WriteLn('Test02_DecompressFromZip: Finished');
 end;
 
@@ -171,10 +167,10 @@ begin
   
   // Clean up any existing files
   if FileExists(ZipFile) then
-    FFileKit.DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
   if DirectoryExists(FTestDir) then
   begin
-    FFileKit.DeleteDirectory(FTestDir, True);
+    TFileKit.DeleteDirectory(FTestDir, True);
     RemoveDir(FTestDir);
   end;
   ForceDirectories(FTestDir);
@@ -193,10 +189,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  FFileKit.WriteTextFile(TestFile1, 'Root content 1');
-  FFileKit.WriteTextFile(TestFile2, 'Dir1 content');
-  FFileKit.WriteTextFile(TestFile3, 'Dir2 content');
-  FFileKit.WriteTextFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Compress the entire directory structure
   TArchiveKit.CompressToZip(FTestDir, ZipFile, True);
@@ -219,7 +215,7 @@ begin
   // Clean up and prepare directories
   if DirectoryExists(ExtractDir) then
   begin
-    FFileKit.DeleteDirectory(ExtractDir, True);
+    TFileKit.DeleteDirectory(ExtractDir, True);
     RemoveDir(ExtractDir);
   end;
   ForceDirectories(ExtractDir);
@@ -237,15 +233,15 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  FFileKit.WriteTextFile(TestFile1, 'Root content 1');
-  FFileKit.WriteTextFile(TestFile2, 'Dir1 content');
-  FFileKit.WriteTextFile(TestFile3, 'Dir2 content');
-  FFileKit.WriteTextFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Create ZIP file in a different directory to avoid including it in the archive
   ZipFile := GetTempDir + PathDelim + 'test_recursive.zip';
   if FileExists(ZipFile) then
-    FFileKit.DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
     
   // Compress then extract
   TArchiveKit.CompressToZip(FTestDir, ZipFile, True);
@@ -271,17 +267,17 @@ begin
     
   // Verify content integrity
   AssertEquals('Root file content should match',
-    'Root content 1', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
+    'Root content 1', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
   AssertEquals('Dir1 file content should match',
-    'Dir1 content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+    'Dir1 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
   AssertEquals('Dir2 file content should match',
-    'Dir2 content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+    'Dir2 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
   AssertEquals('Deep file content should match',
-    'Deep content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    'Deep content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
     
   // Clean up
   if FileExists(ZipFile) then
-    FFileKit.DeleteFile(ZipFile);
+    TFileKit.DeleteFile(ZipFile);
     
   WriteLn('Test04_DecompressFromZipRecursive: Finished');
 end;
@@ -297,11 +293,11 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    FFileKit.DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if FileExists(FTestFile) then
-    FFileKit.DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
-  FFileKit.WriteTextFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TArchiveKit.CompressToTar(FTestDir, TarFile);
   AssertTrue('TAR file should be created', FileExists(TarFile));
   WriteLn('Test05_CompressToTar: Finished');
@@ -322,15 +318,15 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    FFileKit.DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if DirectoryExists(ExtractDir) then
     RemoveDir(ExtractDir);
   if FileExists(FTestFile) then
-    FFileKit.DeleteFile(FTestFile);
+    TFileKit.DeleteFile(FTestFile);
     
   // Create test file and compress it
   ForceDirectories(ExtractDir);
-  FFileKit.WriteTextFile(FTestFile, TestContent);
+  TFileKit.WriteTextFile(FTestFile, TestContent);
   TArchiveKit.CompressToTar(FTestDir, TarFile);
   
   // Verify TAR was created
@@ -340,7 +336,7 @@ begin
   TArchiveKit.DecompressFromTar(TarFile, ExtractDir);
   AssertTrue('Extracted file should exist', FileExists(ExtractedFile));
   AssertEquals('Extracted content should match original',
-    TestContent, FFileKit.ReadTextFile(ExtractedFile));
+    TestContent, TFileKit.ReadTextFile(ExtractedFile));
   WriteLn('Test06_DecompressFromTar: Finished');
 end;
 
@@ -355,10 +351,10 @@ begin
   
   // Clean up any existing files
   if FileExists(TarFile) then
-    FFileKit.DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
   if DirectoryExists(FTestDir) then
   begin
-    FFileKit.DeleteDirectory(FTestDir, True);
+    TFileKit.DeleteDirectory(FTestDir, True);
     RemoveDir(FTestDir);
   end;
   ForceDirectories(FTestDir);
@@ -377,10 +373,10 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  FFileKit.WriteTextFile(TestFile1, 'Root content 1');
-  FFileKit.WriteTextFile(TestFile2, 'Dir1 content');
-  FFileKit.WriteTextFile(TestFile3, 'Dir2 content');
-  FFileKit.WriteTextFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Compress the entire directory structure
   TArchiveKit.CompressToTar(FTestDir, TarFile, True);
@@ -402,7 +398,7 @@ begin
   // Clean up and prepare directories
   if DirectoryExists(ExtractDir) then
   begin
-    FFileKit.DeleteDirectory(ExtractDir, True);
+    TFileKit.DeleteDirectory(ExtractDir, True);
     RemoveDir(ExtractDir);
   end;
   ForceDirectories(ExtractDir);
@@ -420,15 +416,15 @@ begin
   TestFile3 := SubDir2 + PathDelim + 'file2.dat';
   TestFile4 := DeepDir + PathDelim + 'deep.txt';
   
-  FFileKit.WriteTextFile(TestFile1, 'Root content 1');
-  FFileKit.WriteTextFile(TestFile2, 'Dir1 content');
-  FFileKit.WriteTextFile(TestFile3, 'Dir2 content');
-  FFileKit.WriteTextFile(TestFile4, 'Deep content');
+  TFileKit.WriteTextFile(TestFile1, 'Root content 1');
+  TFileKit.WriteTextFile(TestFile2, 'Dir1 content');
+  TFileKit.WriteTextFile(TestFile3, 'Dir2 content');
+  TFileKit.WriteTextFile(TestFile4, 'Deep content');
   
   // Create TAR file in a different directory to avoid including it in the archive
   TarFile := GetTempDir + PathDelim + 'test_recursive.tar';
   if FileExists(TarFile) then
-    FFileKit.DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
     
   // Compress then extract
   TArchiveKit.CompressToTar(FTestDir, TarFile, True);
@@ -454,17 +450,17 @@ begin
     
   // Verify content integrity
   AssertEquals('Root file content should match',
-    'Root content 1', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
+    'Root content 1', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'root1.txt'));
   AssertEquals('Dir1 file content should match',
-    'Dir1 content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
+    'Dir1 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'file1.txt'));
   AssertEquals('Dir2 file content should match',
-    'Dir2 content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
+    'Dir2 content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir2' + PathDelim + 'file2.dat'));
   AssertEquals('Deep file content should match',
-    'Deep content', FFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
+    'Deep content', TFileKit.ReadTextFile(ExtractDir + PathDelim + 'dir1' + PathDelim + 'deep' + PathDelim + 'deep.txt'));
     
   // Clean up
   if FileExists(TarFile) then
-    FFileKit.DeleteFile(TarFile);
+    TFileKit.DeleteFile(TarFile);
     
   WriteLn('Test08_DecompressFromTarRecursive: Finished');
 end;

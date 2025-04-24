@@ -6,8 +6,7 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.5-blueviolet.svg)]()
-
+[![Version](https://img.shields.io/badge/Version-0.1.6-blueviolet.svg)]()
 
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
@@ -23,15 +22,14 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
 - **Well-Documented**: Every component has detailed documentation with examples
 - **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
-- **Evolving API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
+- **Easy to use API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
 
 ## 📑 Table of Contents 
+
 - [🧰 TidyKit](#-tidykit)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
-    - [Example: Static Class Functions (Stable Pattern)](#example-static-class-functions-stable-pattern)
-    - [Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)](#example-factoryinterface-target-pattern-for-fs-json-logger-request-matrices)
   - [✨ Features](#-features)
   - [💻 Installation (Lazarus IDE)](#-installation-lazarus-ide)
   - [💻 Installation (General)](#-installation-general)
@@ -70,49 +68,14 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 
 TidyKit currently uses a mix of architectural patterns. We are actively working towards a more simplified API for release **v0.2.0**.
 
-**Current & Target State (v0.2.0):**
-
-| Pattern | Target Modules (v0.2.0) | Characteristics | Memory Management | Status |
-|---------|-------------------------|-----------------|-------------------|--------|
-| **Factory/Interface** | `TidyKit.FS`, `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`, `TidyKit.Matrices`* | <ul><li>Object-oriented design</li><li>Testability (Mocking)</li><li>Flexibility</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces | `FS` (completed), `JSON`, `Logger` (require naming consistency). `Request`, `Matrices` planned for v0.2.0. |
-| **Static Class Functions** | `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` (excluding Matrices) | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed | Stable |
-
-\* `TidyKit.Matrices` is currently Class/Interface based and is planned to transition to Factory/Interface for consistency in v0.2.0.
+| Pattern | Modules | Characteristics | Memory Management |
+|---------|-------------------------|-----------------|-------------------|
+| **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`| <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
+| **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
+| **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li></ul> | No manual management needed |
 
 > [!IMPORTANT]
 > The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
-
-### Example: Static Class Functions (Stable Pattern)
-
-```pascal
-// TidyKit.Strings - No instance needed, simple function calls
-IsValid := TStringKit.MatchesPattern('test@example.com', TStringKit.REGEX_EMAIL);
-Padded := TStringKit.PadLeft('123', 5, '0'); // Result: '00123'
-```
-
-### Example: Factory/Interface (Target Pattern for FS, JSON, Logger, Request, Matrices)
-
-```pascal
-// TidyKit.FS - Using the factory and interface
-var
-  FS: IFileKit;
-  Content: string;
-begin
-  FS := TFSFactory.CreateFileKit; // Factory creates the object
-  FS.WriteTextFile('example.txt', 'Hello via Interface');
-  Content := FS.ReadTextFile('example.txt');
-  // FS interface goes out of scope, memory managed automatically
-end;
-
-// TidyKit.JSON - Existing Factory/Interface pattern
-var
-  Person: IJSONObject;
-begin
-  Person := TJSONFactory.CreateObject; // Factory method
-  Person.Add('name', 'Jane Doe');
-  // Person interface manages memory
-end;
-```
 
 ## ✨ Features
 
@@ -268,7 +231,6 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 The TidyKit package is now ready to use in your Lazarus project.
 
-
 ## 💻 Installation (General)
 
 1. Clone the repository:
@@ -329,6 +291,7 @@ uses
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
 
 Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
+
 - ⚡ Reduces compilation time
 - 📦 Minimizes executable size
 - 🔍 Makes dependencies more explicit
@@ -339,6 +302,7 @@ Note: Some units may have interdependencies. The compiler will inform you if add
 ## 🚀 Quick Start
 
 ### 📝 String Operations
+
 ```pascal
 var
   Text: string;
@@ -359,41 +323,42 @@ end;
 ```
 
 ### 📂 File System Operations
+
 ```pascal
 var
-  FileKit: IFileKit;
+  Files: TFilePathArray;
+  Attrs: TFileAttributes;
+  Content: string;
 begin
-  // Create FileKit instance using factory
-  FileKit := TFSFactory.CreateFileKit;
-  
   // Basic file operations
-  FileKit.WriteTextFile('example.txt', 'Hello World');
-  Content := FileKit.ReadTextFile('example.txt');
+  TFileKit.WriteFile('example.txt', 'Hello World');
+  Content := TFileKit.ReadFile('example.txt');
   
   // Directory operations
-  FileKit.CreateDirectory('new_folder');
-  FileKit.EnsureDirectory('path/to/folder');
+  TFileKit.CreateDirectory('new_folder');
+  TFileKit.EnsureDirectory('path/to/folder');
   
   // List files with pattern matching
-  Files := FileKit.ListFiles('src', '*.pas', True, fsName);
+  Files := TFileKit.ListFiles('src', '*.pas', True, fsName);
   
   // Get file attributes
-  Attrs := FileKit.GetAttributes('example.txt');
+  Attrs := TFileKit.GetAttributes('example.txt');
   WriteLn(Format('Read-only: %s', [BoolToStr(Attrs.ReadOnly, True)]));
   
   // File manipulation
-  FileKit.CopyFile('source.txt', 'dest.txt');
-  FileKit.MoveFile('old.txt', 'new.txt');
-  FileKit.DeleteFile('temp.txt');
+  TFileKit.CopyFile('source.txt', 'dest.txt');
+  TFileKit.MoveFile('old.txt', 'new.txt');
+  TFileKit.DeleteFile('temp.txt');
   
   // Path operations
-  WriteLn(FileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
-  WriteLn(FileKit.GetExtension('script.pas')); // Returns '.pas'
-  WriteLn(FileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
+  WriteLn(TFileKit.GetFileName('path/to/file.txt')); // Returns 'file.txt'
+  WriteLn(TFileKit.GetExtension('script.pas')); // Returns '.pas'
+  WriteLn(TFileKit.ChangeExtension('test.txt', '.bak')); // Returns 'test.bak'
 end;
 ```
 
 ### 📅 DateTime Operations
+
 ```pascal
 var
   CurrentTime: TDateTime;
@@ -450,6 +415,7 @@ end;
 ```
 
 ### 🔄 JSON Operations
+
 ```pascal
 var
   Person: IJSONObject;
@@ -503,6 +469,7 @@ end;
 ```
 
 ### 📝 Logging Operations
+
 ```pascal
 // Simple one-line setup for console and file logging
 TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
@@ -543,6 +510,7 @@ end;
 ```
 
 ### 🌐 HTTP Request Operations
+
 ```pascal
 var
   Response: TResponse;
@@ -585,6 +553,7 @@ end;
 ```
 
 ### 🔐 Crypto Operations
+
 ```pascal
 var
   Hash: string;
@@ -606,6 +575,7 @@ end;
 ```
 
 ### 📦 Archive Operations
+
 ```pascal
 var
   SourceDir, DestDir: string;
@@ -627,6 +597,7 @@ end;
 ```
 
 ### 📈 Statistical Operations
+
 ```pascal
 var
   Data: TDoubleArray;
@@ -675,6 +646,7 @@ end;
 ```
 
 ### 🔢 Matrix Operations
+
 ```pascal
 var
   A, B, C: IMatrix;
@@ -737,6 +709,7 @@ end;
 ```
 
 ### 📐 Trigonometric Operations
+
 ```pascal
 var
   Angle, Height, Distance: Double;
@@ -753,6 +726,7 @@ end;
 ```
 
 ### 💰 Financial Operations
+
 ```pascal
 var
   CashFlows: TDoubleArray;
@@ -886,23 +860,17 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 TidyKit is under active development. Here's what's planned:
 
 ### Planned for v0.2.0 (Q3 2025) - Simplify API
-- **Goal:** Provide a simpler, more consistent API.
-- **`TidyKit.FS`:** Transition to Factory/Interface pattern. (completed)
-- **`TidyKit.DateTime`, `Strings`, `Math.*` (excluding Matrices), `Crypto.*`, `Archive`:** Remain as Static Class Methods for stateless utilities.
-- **`TidyKit.Matrices`:** Transition from Class/Interface to **Factory/Interface** for consistency with `JSON` and improved testability/flexibility.
-- **`TidyKit.Request`:** Implement using **Factory/Interface** pattern for better testability (mocking network calls).
-- **`TidyKit.JSON`, `TidyKit.Logger`:** Refine existing Factory/Interface patterns for consistency.
-- Update all examples and documentation to reflect the simplified  API structure.
+- Provide a simpler API.
 
 ### Planned for v0.3.0 (Q4 2025) - Examples & Refinements
 - Add **more real-world examples** and tutorials demonstrating common use cases.
 - Performance optimizations based on profiling.
-- Improved error messages and diagnostics.
 - Expand unit test coverage, especially for edge cases identified during API simplification.
 
 ### Future Goals
 - More advanced math/statistics modules.
-- Easy to use API
+- DataFrame-like structures for data manipulation.
+- Support for more file formats (e.g., XML, CSV).
 
 ---
 

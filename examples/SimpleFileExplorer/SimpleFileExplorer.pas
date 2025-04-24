@@ -24,10 +24,6 @@ uses
   TidyKit.Core, TidyKit.FS;
 
 var
-  // Our file operations helper - this gives us access to all
-  // the functions we need to work with files and folders
-  FileKit: IFileKit;
-  
   // The current directory we're exploring
   CurrentDirectory: string;
   
@@ -59,17 +55,17 @@ var
   IsTextFile: Boolean;
 begin
   // First check if the file actually exists
-  if not FileKit.Exists(FilePath) then
+  if not TFileKit.Exists(FilePath) then
   begin
     WriteLn('File does not exist: ', FilePath);
     Exit;
   end;
   
   // Get the basic file information using our FileKit helper
-  FileName := FileKit.GetFileName(FilePath);
-  FileSize := FileKit.GetSize(FilePath);
-  LastModified := FileKit.GetLastWriteTime(FilePath);
-  IsTextFile := FileKit.IsTextFile(FilePath);
+  FileName := TFileKit.GetFileName(FilePath);
+  FileSize := TFileKit.GetSize(FilePath);
+  LastModified := TFileKit.GetLastWriteTime(FilePath);
+  IsTextFile := TFileKit.IsTextFile(FilePath);
   
   // Display a nice header
   WriteLn('=============================================');
@@ -99,8 +95,8 @@ begin
   // If it's a text file, show additional information
   if IsTextFile then
   begin
-    WriteLn('Encoding: ', FileKit.GetFileEncoding(FilePath));
-    WriteLn('Lines: ', FileKit.CountLines(FilePath));
+    WriteLn('Encoding: ', TFileKit.GetFileEncoding(FilePath));
+    WriteLn('Lines: ', TFileKit.CountLines(FilePath));
   end;
   
   WriteLn('=============================================');
@@ -117,7 +113,7 @@ var
   FileSize: Int64;
 begin
   // First make sure the directory exists
-  if not FileKit.DirectoryExists(DirPath) then
+  if not TFileKit.DirectoryExists(DirPath) then
   begin
     WriteLn('Directory does not exist: ', DirPath);
     Exit;
@@ -135,10 +131,10 @@ begin
   WriteLn('=============================================');
   
   // Get all directories in this location
-  Directories := FileKit.ListDirectories(DirPath, '*', False, fsName);
+  Directories := TFileKit.ListDirectories(DirPath, '*', False, fsName);
   
   // Show parent directory option if we're not at the root
-  if FileKit.GetParentDir(DirPath) <> DirPath then
+  if TFileKit.GetParentDir(DirPath) <> DirPath then
     WriteLn('[..] Parent Directory');
   
   // List all directories first with a special [dir] prefix
@@ -150,13 +146,13 @@ begin
   end;
   
   // Get all files in this location
-  Files := FileKit.ListFiles(DirPath, '*', False, fsName);
+  Files := TFileKit.ListFiles(DirPath, '*', False, fsName);
   
   // List all files with their sizes
   for i := 0 to High(Files) do
   begin
-    FileName := FileKit.GetFileName(Files[i]);
-    FileSize := FileKit.GetSize(Files[i]);
+    FileName := TFileKit.GetFileName(Files[i]);
+    FileSize := TFileKit.GetSize(Files[i]);
     
     // Show the file with its size
     Write(FileName);
@@ -188,14 +184,14 @@ var
   i, LineCount: Integer;
 begin
   // First check if the file exists
-  if not FileKit.Exists(FilePath) then
+  if not TFileKit.Exists(FilePath) then
   begin
     WriteLn('File does not exist: ', FilePath);
     Exit;
   end;
   
   // Check if it's a text file
-  if not FileKit.IsTextFile(FilePath) then
+  if not TFileKit.IsTextFile(FilePath) then
   begin
     WriteLn('Not a text file: ', FilePath);
     WriteLn('Press Enter to continue...');
@@ -204,7 +200,7 @@ begin
   end;
   
   // Read the file content
-  Content := FileKit.ReadTextFile(FilePath);
+  Content := TFileKit.ReadTextFile(FilePath);
   
   // Split into lines for display
   Lines := TStringList.Create;
@@ -215,7 +211,7 @@ begin
     ClearScreen;
     
     // Show a header with the file name
-    WriteLn('=== FILE: ', FileKit.GetFileName(FilePath), ' ===');
+    WriteLn('=== FILE: ', TFileKit.GetFileName(FilePath), ' ===');
     WriteLn;
     
     // Show the content with line numbers
@@ -252,7 +248,7 @@ var
   Response: string;
 begin
   // Check if the file already exists
-  if FileKit.Exists(FilePath) then
+  if TFileKit.Exists(FilePath) then
   begin
     Write('File already exists. Overwrite? (Y/N): ');
     ReadLn(Response);
@@ -264,7 +260,7 @@ begin
   end;
   
   // Write the content to the file
-  FileKit.WriteTextFile(FilePath, Content);
+  TFileKit.WriteTextFile(FilePath, Content);
   WriteLn('File created successfully: ', FilePath);
 end;
 
@@ -274,14 +270,14 @@ var
   Response: string;
 begin
   // Check if the source file exists
-  if not FileKit.Exists(SourcePath) then
+  if not TFileKit.Exists(SourcePath) then
   begin
     WriteLn('Source file does not exist: ', SourcePath);
     Exit;
   end;
   
   // Check if the destination file already exists
-  if FileKit.Exists(DestPath) then
+  if TFileKit.Exists(DestPath) then
   begin
     Write('Destination file already exists. Overwrite? (Y/N): ');
     ReadLn(Response);
@@ -293,7 +289,7 @@ begin
   end;
   
   // Copy the file
-  FileKit.CopyFile(SourcePath, DestPath);
+  TFileKit.CopyFile(SourcePath, DestPath);
   WriteLn('File copied successfully.');
   WriteLn('From: ', SourcePath);
   WriteLn('To: ', DestPath);
@@ -305,14 +301,14 @@ var
   Response: string;
 begin
   // Check if the source file exists
-  if not FileKit.Exists(SourcePath) then
+  if not TFileKit.Exists(SourcePath) then
   begin
     WriteLn('Source file does not exist: ', SourcePath);
     Exit;
   end;
   
   // Check if the destination file already exists
-  if FileKit.Exists(DestPath) then
+  if TFileKit.Exists(DestPath) then
   begin
     Write('Destination file already exists. Overwrite? (Y/N): ');
     ReadLn(Response);
@@ -324,7 +320,7 @@ begin
   end;
   
   // Move the file
-  FileKit.MoveFile(SourcePath, DestPath);
+  TFileKit.MoveFile(SourcePath, DestPath);
   WriteLn('File moved successfully.');
   WriteLn('From: ', SourcePath);
   WriteLn('To: ', DestPath);
@@ -380,13 +376,13 @@ begin
     if Param1 = '..' then
     begin
       // Go to parent directory
-      ListDirectory(FileKit.GetParentDir(CurrentDirectory));
+      ListDirectory(TFileKit.GetParentDir(CurrentDirectory));
     end
     else
     begin
       // Form the full path and check if it exists
-      if FileKit.DirectoryExists(FileKit.CombinePaths(CurrentDirectory, Param1)) then
-        ListDirectory(FileKit.CombinePaths(CurrentDirectory, Param1))
+      if TFileKit.DirectoryExists(TFileKit.CombinePaths(CurrentDirectory, Param1)) then
+        ListDirectory(TFileKit.CombinePaths(CurrentDirectory, Param1))
       else
         WriteLn('Directory not found: ', Param1);
     end;
@@ -394,7 +390,7 @@ begin
   else if Cmd = 'VIEW' then
   begin
     if Param1 <> '' then
-      ViewTextFile(FileKit.CombinePaths(CurrentDirectory, Param1))
+      ViewTextFile(TFileKit.CombinePaths(CurrentDirectory, Param1))
     else
       WriteLn('Please specify a file to view.');
   end
@@ -402,7 +398,7 @@ begin
   begin
     if Param1 <> '' then
     begin
-      ShowFileInfo(FileKit.CombinePaths(CurrentDirectory, Param1));
+      ShowFileInfo(TFileKit.CombinePaths(CurrentDirectory, Param1));
       WriteLn('Press Enter to continue...');
       ReadLn;
       ListDirectory(CurrentDirectory);
@@ -414,8 +410,8 @@ begin
   begin
     if (Param1 <> '') and (Param2 <> '') then
       CopyFileToLocation(
-        FileKit.CombinePaths(CurrentDirectory, Param1),
-        FileKit.CombinePaths(CurrentDirectory, Param2)
+        TFileKit.CombinePaths(CurrentDirectory, Param1),
+        TFileKit.CombinePaths(CurrentDirectory, Param2)
       )
     else
       WriteLn('Usage: COPY sourcefile destinationfile');
@@ -424,8 +420,8 @@ begin
   begin
     if (Param1 <> '') and (Param2 <> '') then
       MoveFileToLocation(
-        FileKit.CombinePaths(CurrentDirectory, Param1),
-        FileKit.CombinePaths(CurrentDirectory, Param2)
+        TFileKit.CombinePaths(CurrentDirectory, Param1),
+        TFileKit.CombinePaths(CurrentDirectory, Param2)
       )
     else
       WriteLn('Usage: MOVE sourcefile destinationfile');
@@ -443,7 +439,7 @@ begin
             NewContent.Add(Param2);
         until UpperCase(Param2) = 'END';
         
-        CreateTextFile(FileKit.CombinePaths(CurrentDirectory, Param1), NewContent.Text);
+        CreateTextFile(TFileKit.CombinePaths(CurrentDirectory, Param1), NewContent.Text);
       finally
         NewContent.Free;
       end;
@@ -455,13 +451,13 @@ begin
   begin
     if Param1 <> '' then
     begin
-      if FileKit.Exists(FileKit.CombinePaths(CurrentDirectory, Param1)) then
+      if TFileKit.Exists(TFileKit.CombinePaths(CurrentDirectory, Param1)) then
       begin
         Write('Are you sure you want to delete "', Param1, '"? (Y/N): ');
         ReadLn(Response);
         if UpperCase(Copy(Response, 1, 1)) = 'Y' then
         begin
-          FileKit.DeleteFile(FileKit.CombinePaths(CurrentDirectory, Param1));
+          TFileKit.DeleteFile(TFileKit.CombinePaths(CurrentDirectory, Param1));
           WriteLn('File deleted.');
         end
         else
@@ -498,11 +494,8 @@ var
 // Main program entry point
 begin
   try
-    // Initialize our file operations helper
-    FileKit := TFSFactory.CreateFileKit;
-    
     // Start in the current directory
-    CurrentDirectory := FileKit.GetCurrentDir;
+    CurrentDirectory := TFileKit.GetCurrentDir;
     
     // Show welcome message
     WriteLn('===============================================');

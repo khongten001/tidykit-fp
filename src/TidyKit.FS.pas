@@ -129,140 +129,7 @@ type
   }
   TSearchResults = array of TSearchResult;
 
-  { Main interface for file operations }
-    IFileKit = interface
-      ['{2F7A8C4D-E51B-45A3-9D6C-8AA8F4E231E7}']
-
-      { Basic File Operations }
-      function ReadTextFile(const APath: string): string;
-      procedure WriteTextFile(const APath: string; const AContent: string);
-      procedure DeleteFile(const APath: string);
-      procedure CopyFile(const ASourcePath, ADestPath: string);
-      procedure MoveFile(const ASourcePath, ADestPath: string);
-      procedure AppendText(const APath, AText: string);
-      procedure PrependText(const APath, AText: string);
-      procedure ReplaceText(const APath, OldText, NewText: string);
-
-      { Directory Operations }
-      procedure CreateDirectory(const APath: string);
-      procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
-      procedure EnsureDirectory(const APath: string);
-      function ListDirectories(const APath: string;
-        const Pattern: string = '*';
-        const Recursive: Boolean = False;
-        const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-      function ListFiles(const APath: string;
-        const Pattern: string = '*';
-        const Recursive: Boolean = False;
-        const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-
-      { Path Operations }
-      function ChangeExtension(const APath, NewExt: string): string;
-      function GetFileName(const APath: string): string;
-      function GetFileNameWithoutExt(const APath: string): string;
-      function GetDirectory(const APath: string): string;
-      function GetExtension(const APath: string): string;
-      function Exists(const APath: string): Boolean;
-      function DirectoryExists(const APath: string): Boolean;
-      function GetParentDir(const APath: string): string;
-      function CombinePaths(const APath1, APath2: string): string;
-      function IsAbsolutePath(const APath: string): Boolean;
-      function NormalizePath(const APath: string): string;
-      function CreateTempFile(const APrefix: string = ''): string;
-      function CreateTempDirectory(const APrefix: string = ''): string;
-
-      { File Attributes and Metadata }
-      function GetSize(const APath: string): Int64;
-      function GetCreationTime(const APath: string): TDateTime;
-      function GetLastAccessTime(const APath: string): TDateTime;
-      function GetLastWriteTime(const APath: string): TDateTime;
-      function GetAttributes(const APath: string): TFileAttributes;
-
-      { Symbolic Link Operations }
-      procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
-      procedure DeleteSymLink(const ALinkPath: string);
-      function ResolveSymLink(const ALinkPath: string): string;
-      function IsSymLink(const APath: string): Boolean;
-
-      { File Search and Analysis }
-      function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
-      function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
-      function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-      function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-      function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-      function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-
-      { File Content Operations }
-      function CountLines(const FilePath: string): Integer;
-      function GetFirstLine(const FilePath: string): string;
-      function GetLastLine(const FilePath: string): string;
-      function IsFileEmpty(const FilePath: string): Boolean;
-      function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
-
-      { File Type Detection }
-      function IsTextFile(const APath: string): Boolean;
-      function GetFileEncoding(const APath: string): string;
-      function IsBinaryFile(const FilePath: string): Boolean;
-      function GetMimeType(const FilePath: string): string;
-      function IsExecutable(const FilePath: string): Boolean;
-      function IsHidden(const FilePath: string): Boolean;
-
-      { Space and Capacity }
-      function GetDriveFreeSpace(const Path: string): Int64;
-      function GetDriveCapacity(const Path: string): Int64;
-      function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
-
-      { File Comparison }
-      function AreFilesIdentical(const File1, File2: string): Boolean;
-      function GetNewerFile(const File1, File2: string): string;
-      function GetFileDifferences(const File1, File2: string): TStringArray;
-
-      { File Locking }
-      function LockFile(const FilePath: string): Boolean;
-      function UnlockFile(const FilePath: string): Boolean;
-      function IsFileLocked(const FilePath: string): Boolean;
-
-      { Path Validation and Sanitization }
-      function IsValidFileName(const FileName: string): Boolean;
-      function SanitizeFileName(const FileName: string): string;
-      function MakeValidPath(const Path: string): string;
-      function IsPathTooLong(const Path: string): Boolean;
-
-      { Directory Summary }
-      function GetDirectoryInfo(const Path: string): TDirectoryInfo;
-
-      { File Patterns }
-      function MatchesPattern(const FileName, Pattern: string): Boolean;
-      function FindFirstMatch(const Directory, Pattern: string): string;
-      function CountMatches(const Directory, Pattern: string): Integer;
-
-      { File Chunk Operations }
-      function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
-
-      { Batch File Operations }
-      procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
-      procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
-      procedure DeleteFiles(const ASourceDir, APattern: string);
-
-      { Path Analysis }
-      function IsEmptyDirectory(const Path: string): Boolean;
-      function GetCommonPath(const Path1, Path2: string): string;
-      function GetRelativePath(const BasePath, TargetPath: string): string;
-      function IsSubPath(const ParentPath, ChildPath: string): Boolean;
-
-      { Environment Directories }
-      function GetUserDir: string;
-      function GetCurrentDir: string;
-      function GetTempDir: string;
-    end;
-
-  {Factory class for file operations}
-  TFSFactory = class
-  public
-    class function CreateFileKit: IFileKit; static;
-  end;
-
-  { 
+  {
     EFileSystemError 
     ----------------
     This exception class is used to handle errors related to file system operations.
@@ -275,6 +142,522 @@ type
 function S_ISDIR(Mode: mode_t): Boolean;
 function S_ISLNK(Mode: mode_t): Boolean;
 {$ENDIF}
+
+
+
+type 
+
+  TFileKit = class
+  private
+    { Creates a TSearchResult record for a given path. This internal helper function
+      gathers all necessary information about the file or directory, including size,
+      modification date, and attributes, to provide a detailed overview.
+      
+      Parameters:
+        APath - The file or directory path for which the search result is to be created.
+      
+      Returns:
+        A TSearchResult record populated with the file or directory's details. }
+    class function CreateSearchResult(const APath: string): TSearchResult;
+
+    class function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
+    class function MatchPattern(const FileName, Pattern: string): Boolean;
+
+    class function LoadTextFromFile(const APath: string): string;
+    class procedure SaveTextToFile(const APath: string; const AContent: string);
+  public
+    { Reads the entire content of a file and returns it as a string.
+      
+      Parameters:
+        APath - The path to the file to read.
+        
+      Returns:
+        The entire content of the file as a string. }
+    class function ReadTextFile(const APath: string): string;
+
+    { Writes content to a file, overwriting any existing content.
+      
+      Parameters:
+        APath - The path to the file to write.
+        AContent - The string content to write to the file. }
+    class procedure WriteTextFile(const APath: string; const AContent: string);
+
+    { Deletes a file from the file system.
+      
+      Parameters:
+        APath - The path to the file to delete. }
+    class procedure DeleteFile(const APath: string);
+
+    { Copies a file from one location to another.
+      
+      Parameters:
+        ASourcePath - The path to the source file.
+        ADestPath - The destination path where the file should be copied. }
+    class procedure CopyFile(const ASourcePath, ADestPath: string);
+
+    { Moves a file from one location to another.
+      
+      Parameters:
+        ASourcePath - The path to the source file.
+        ADestPath - The destination path where the file should be moved. }
+    class procedure MoveFile(const ASourcePath, ADestPath: string);
+    
+    { Appends text to the end of a file.
+      
+      Parameters:
+        APath - The path to the file to append to.
+        AText - The text to append to the file. }
+    class procedure AppendText(const APath, AText: string);
+
+    { Prepends text to the beginning of a file.
+      
+      Parameters:
+        APath - The path to the file to prepend to.
+        AText - The text to prepend to the file. }
+    class procedure PrependText(const APath, AText: string);
+
+    { Replaces all occurrences of text in a file.
+      
+      Parameters:
+        APath - The path to the file to modify.
+        OldText - The text to find and replace.
+        NewText - The text to replace with. }
+    class procedure ReplaceText(const APath, OldText, NewText: string);
+    
+    { Creates a new directory.
+      
+      Parameters:
+        APath - The path where the directory should be created. }
+    class procedure CreateDirectory(const APath: string);
+
+    { Deletes a directory and optionally its contents.
+      
+      Parameters:
+        APath - The path to the directory to delete.
+        Recursive - If True, deletes all subdirectories and files. }
+    class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
+
+    { Ensures a directory exists, creating it if necessary.
+      
+      Parameters:
+        APath - The path to the directory to ensure exists. }
+    class procedure EnsureDirectory(const APath: string);
+
+    { Lists all directories in a specified path.
+      
+      Parameters:
+        APath - The path to search in.
+        Pattern - File pattern to match (e.g., '*' for all).
+        Recursive - If True, includes subdirectories.
+        SortOrder - How to sort the results.
+        
+      Returns:
+        Array of directory paths matching the criteria. }
+    class function ListDirectories(const APath: string; 
+      const Pattern: string = '*'; 
+      const Recursive: Boolean = False;
+      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
+
+    { Lists all files in a specified path.
+      
+      Parameters:
+        APath - The path to search in.
+        Pattern - File pattern to match (e.g., '*.txt').
+        Recursive - If True, includes files in subdirectories.
+        SortOrder - How to sort the results.
+        
+      Returns:
+        Array of file paths matching the criteria. }
+    class function ListFiles(const APath: string; 
+      const Pattern: string = '*'; 
+      const Recursive: Boolean = False;
+      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
+    
+    { Changes a file's extension.
+      
+      Parameters:
+        APath - The original file path.
+        NewExt - The new extension (with or without dot).
+        
+      Returns:
+        The path with the new extension. }
+    class function ChangeExtension(const APath, NewExt: string): string;
+
+    { Extracts the filename from a path.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The filename with extension. }
+    class function GetFileName(const APath: string): string;
+
+    { Extracts the filename without extension.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The filename without extension. }
+    class function GetFileNameWithoutExt(const APath: string): string;
+
+    { Gets the directory part of a path.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The directory containing the file. }
+    class function GetDirectory(const APath: string): string;
+
+    { Gets a file's extension.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The file extension (with dot). }
+    class function GetExtension(const APath: string): string;
+    
+    { Checks if a file or directory exists.
+      
+      Parameters:
+        APath - The path to check.
+        
+      Returns:
+        True if the path exists. }
+    class function Exists(const APath: string): Boolean;
+
+    { Checks if a directory exists.
+      
+      Parameters:
+        APath - The path to check.
+        
+      Returns:
+        True if the directory exists. }
+    class function DirectoryExists(const APath: string): Boolean;
+
+    { Gets a file's size in bytes.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The file size in bytes. }
+    class function GetSize(const APath: string): Int64;
+
+    { Gets a file's creation time.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The creation timestamp. }
+    class function GetCreationTime(const APath: string): TDateTime;
+
+    { Gets a file's last access time.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The last access timestamp. }
+    class function GetLastAccessTime(const APath: string): TDateTime;
+
+    { Gets a file's last write time.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The last modification timestamp. }
+    class function GetLastWriteTime(const APath: string): TDateTime;
+
+    { Gets a file's attributes.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The file's attributes. }
+    class function GetAttributes(const APath: string): TFileAttributes;
+
+    { Checks if a file is a text file.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        True if the file appears to be text. }
+    class function IsTextFile(const APath: string): Boolean;
+
+    { Determines a text file's encoding.
+      
+      Parameters:
+        APath - The file path.
+        
+      Returns:
+        The detected encoding (e.g., 'UTF-8', 'ASCII'). }
+    class function GetFileEncoding(const APath: string): string;
+    
+    { Searches for files matching a pattern.
+      
+      Parameters:
+        APath - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Array of search results. }
+    class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
+
+    { Searches for files in a specific directory.
+      
+      Parameters:
+        ADirectory - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Array of search results. }
+    class function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
+
+    { Finds the most recently modified file.
+      
+      Parameters:
+        APath - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Path to the newest file. }
+    class function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+
+    { Finds the oldest file.
+      
+      Parameters:
+        APath - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Path to the oldest file. }
+    class function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+
+    { Finds the largest file by size.
+      
+      Parameters:
+        APath - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Path to the largest file. }
+    class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+
+    { Finds the smallest file by size.
+      
+      Parameters:
+        APath - The directory to search in.
+        APattern - The file pattern to match.
+        Recursive - If True, searches subdirectories.
+        
+      Returns:
+        Path to the smallest file. }
+    class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+    
+    { Gets the current user's home directory.
+      
+      Returns:
+        Path to the user's home directory. }
+    class function GetUserDir: string;
+
+    { Gets the current working directory.
+      
+      Returns:
+        Path to the current directory. }
+    class function GetCurrentDir: string;
+
+    { Gets the system's temporary directory.
+      
+      Returns:
+        Path to the temp directory. }
+    class function GetTempDir: string;
+
+    { Gets a directory's parent directory.
+      
+      Parameters:
+        APath - The path to get the parent of.
+        
+      Returns:
+        The parent directory path. }
+    class function GetParentDir(const APath: string): string;
+    
+    { Combines two paths safely.
+      
+      Parameters:
+        APath1 - The first path.
+        APath2 - The second path.
+        
+      Returns:
+        The combined path. }
+    class function CombinePaths(const APath1, APath2: string): string;
+
+    { Checks if a path is absolute.
+      
+      Parameters:
+        APath - The path to check.
+        
+      Returns:
+        True if the path is absolute. }
+    class function IsAbsolutePath(const APath: string): Boolean;
+
+    { Normalizes a path's format.
+      
+      Parameters:
+        APath - The path to normalize.
+        
+      Returns:
+        The normalized path. }
+    class function NormalizePath(const APath: string): string;
+    
+    { Creates a temporary file.
+      
+      Parameters:
+        APrefix - Optional prefix for the filename.
+        
+      Returns:
+        Path to the new temp file. }
+    class function CreateTempFile(const APrefix: string = ''): string;
+
+    { Creates a temporary directory.
+      
+      Parameters:
+        APrefix - Optional prefix for the directory name.
+        
+      Returns:
+        Path to the new temp directory. }
+    class function CreateTempDirectory(const APrefix: string = ''): string;
+
+    { Creates a symbolic link.
+      
+      Platform-specific behavior:
+      -------------------------
+      Windows:
+      - By default, requires Administrator privileges
+      - Exception: Windows 10/11 with Developer Mode enabled allows non-admin users to create symlinks
+      - Both creating and copying symlinks require appropriate privileges
+      - Use SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE flag for Developer Mode support
+      
+      Unix/Linux:
+      - Regular users can create symlinks by default in their own directories
+      - No special privileges (sudo) needed for basic symlink operations
+      - Only requires sudo/root for:
+        * Creating symlinks in system directories (e.g., /usr/bin, /etc)
+        * Creating symlinks in other users' directories
+        * Some special filesystem operations
+      - Regular users can copy symlinks they have read access to
+      
+      Error handling:
+      --------------
+      Windows errors:
+      - ERROR_PRIVILEGE_NOT_HELD: Run as Administrator or enable Developer Mode
+      - ERROR_INVALID_PARAMETER: Check if target path exists
+      - ERROR_PATH_NOT_FOUND: Verify directory structure
+      
+      Unix errors:
+      - EACCES: Check directory write permissions
+      - EEXIST: Link path already exists
+      - ENOENT: Target path doesn't exist
+      - EPERM: Operation requires elevated privileges
+      
+      Parameters:
+        ATargetPath - The path that the symlink will point to.
+        ALinkPath - The path where the symlink will be created.
+        IsDirectory - Whether the target is a directory (matters on Windows). }
+    class procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
+
+    { Deletes a symbolic link.
+      
+      Parameters:
+        ALinkPath - The path to the symlink to delete. }
+    class procedure DeleteSymLink(const ALinkPath: string);
+
+    { Resolves a symbolic link to its target path.
+      
+      Parameters:
+        ALinkPath - The path to the symlink to resolve.
+        
+      Returns:
+        The target path that the symlink points to. }
+    class function ResolveSymLink(const ALinkPath: string): string;
+
+    { Checks if a path is a symbolic link.
+      
+      Parameters:
+        APath - The path to check.
+        
+      Returns:
+        True if the path is a symbolic link. }
+    class function IsSymLink(const APath: string): Boolean;
+
+    { Batch file operations }
+
+    class procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
+    class procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
+    class procedure DeleteFiles(const ASourceDir, APattern: string);
+
+    { Simple Path Analysis }
+    class function IsEmptyDirectory(const Path: string): Boolean;
+    class function GetCommonPath(const Path1, Path2: string): string;
+    class function GetRelativePath(const BasePath, TargetPath: string): string;
+    class function IsSubPath(const ParentPath, ChildPath: string): Boolean;
+
+    { Basic File Content Operations }
+    class function CountLines(const FilePath: string): Integer;
+    class function GetFirstLine(const FilePath: string): string;
+    class function GetLastLine(const FilePath: string): string;
+    class function IsFileEmpty(const FilePath: string): Boolean;
+    class function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
+
+    { Simple File Type Detection }
+    class function IsBinaryFile(const FilePath: string): Boolean;
+    class function GetMimeType(const FilePath: string): string;
+    class function IsExecutable(const FilePath: string): Boolean;
+    class function IsHidden(const FilePath: string): Boolean;
+
+    { Basic Space Operations }
+    class function GetDriveFreeSpace(const Path: string): Int64;
+    class function GetDriveCapacity(const Path: string): Int64;
+    class function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
+
+    { Basic File Comparison }
+    class function AreFilesIdentical(const File1, File2: string): Boolean;
+    class function GetNewerFile(const File1, File2: string): string;
+    class function GetFileDifferences(const File1, File2: string): TStringArray;
+
+    { Simple File Locking }
+    class function LockFile(const FilePath: string): Boolean;
+    class function UnlockFile(const FilePath: string): Boolean;
+    class function IsFileLocked(const FilePath: string): Boolean;
+
+    { Path Validation and Sanitization }
+    class function IsValidFileName(const FileName: string): Boolean;
+    class function SanitizeFileName(const FileName: string): string;
+    class function MakeValidPath(const Path: string): string;
+    class function IsPathTooLong(const Path: string): Boolean;
+
+    { Simple Directory Summary }
+    class function GetDirectoryInfo(const Path: string): TDirectoryInfo;
+
+    { Basic File Patterns }
+    class function MatchesPattern(const FileName, Pattern: string): Boolean;
+    class function FindFirstMatch(const Directory, Pattern: string): string;
+    class function CountMatches(const Directory, Pattern: string): Integer;
+
+    class function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
+  end;
+
 
 implementation
 
@@ -330,519 +713,6 @@ begin
     Result := 0;
 end;
 
-type 
-
-  TFileKitImpl = class(TInterfacedObject, IFileKit)
-  private
-    { Creates a TSearchResult record for a given path. This internal helper function
-      gathers all necessary information about the file or directory, including size,
-      modification date, and attributes, to provide a detailed overview.
-      
-      Parameters:
-        APath - The file or directory path for which the search result is to be created.
-      
-      Returns:
-        A TSearchResult record populated with the file or directory's details. }
-    function CreateSearchResult(const APath: string): TSearchResult;
-
-    function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
-    function MatchPattern(const FileName, Pattern: string): Boolean;
-
-    function LoadTextFromFile(const APath: string): string;
-    procedure SaveTextToFile(const APath: string; const AContent: string);
-  public
-    { Reads the entire content of a file and returns it as a string.
-      
-      Parameters:
-        APath - The path to the file to read.
-        
-      Returns:
-        The entire content of the file as a string. }
-    function ReadTextFile(const APath: string): string;
-
-    { Writes content to a file, overwriting any existing content.
-      
-      Parameters:
-        APath - The path to the file to write.
-        AContent - The string content to write to the file. }
-    procedure WriteTextFile(const APath: string; const AContent: string);
-
-    { Deletes a file from the file system.
-      
-      Parameters:
-        APath - The path to the file to delete. }
-    procedure DeleteFile(const APath: string);
-
-    { Copies a file from one location to another.
-      
-      Parameters:
-        ASourcePath - The path to the source file.
-        ADestPath - The destination path where the file should be copied. }
-    procedure CopyFile(const ASourcePath, ADestPath: string);
-
-    { Moves a file from one location to another.
-      
-      Parameters:
-        ASourcePath - The path to the source file.
-        ADestPath - The destination path where the file should be moved. }
-    procedure MoveFile(const ASourcePath, ADestPath: string);
-    
-    { Appends text to the end of a file.
-      
-      Parameters:
-        APath - The path to the file to append to.
-        AText - The text to append to the file. }
-    procedure AppendText(const APath, AText: string);
-
-    { Prepends text to the beginning of a file.
-      
-      Parameters:
-        APath - The path to the file to prepend to.
-        AText - The text to prepend to the file. }
-    procedure PrependText(const APath, AText: string);
-
-    { Replaces all occurrences of text in a file.
-      
-      Parameters:
-        APath - The path to the file to modify.
-        OldText - The text to find and replace.
-        NewText - The text to replace with. }
-    procedure ReplaceText(const APath, OldText, NewText: string);
-    
-    { Creates a new directory.
-      
-      Parameters:
-        APath - The path where the directory should be created. }
-    procedure CreateDirectory(const APath: string);
-
-    { Deletes a directory and optionally its contents.
-      
-      Parameters:
-        APath - The path to the directory to delete.
-        Recursive - If True, deletes all subdirectories and files. }
-    procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
-
-    { Ensures a directory exists, creating it if necessary.
-      
-      Parameters:
-        APath - The path to the directory to ensure exists. }
-    procedure EnsureDirectory(const APath: string);
-
-    { Lists all directories in a specified path.
-      
-      Parameters:
-        APath - The path to search in.
-        Pattern - File pattern to match (e.g., '*' for all).
-        Recursive - If True, includes subdirectories.
-        SortOrder - How to sort the results.
-        
-      Returns:
-        Array of directory paths matching the criteria. }
-    function ListDirectories(const APath: string; 
-      const Pattern: string = '*'; 
-      const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-
-    { Lists all files in a specified path.
-      
-      Parameters:
-        APath - The path to search in.
-        Pattern - File pattern to match (e.g., '*.txt').
-        Recursive - If True, includes files in subdirectories.
-        SortOrder - How to sort the results.
-        
-      Returns:
-        Array of file paths matching the criteria. }
-    function ListFiles(const APath: string; 
-      const Pattern: string = '*'; 
-      const Recursive: Boolean = False;
-      const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
-    
-    { Changes a file's extension.
-      
-      Parameters:
-        APath - The original file path.
-        NewExt - The new extension (with or without dot).
-        
-      Returns:
-        The path with the new extension. }
-    function ChangeExtension(const APath, NewExt: string): string;
-
-    { Extracts the filename from a path.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The filename with extension. }
-    function GetFileName(const APath: string): string;
-
-    { Extracts the filename without extension.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The filename without extension. }
-    function GetFileNameWithoutExt(const APath: string): string;
-
-    { Gets the directory part of a path.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The directory containing the file. }
-    function GetDirectory(const APath: string): string;
-
-    { Gets a file's extension.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file extension (with dot). }
-    function GetExtension(const APath: string): string;
-    
-    { Checks if a file or directory exists.
-      
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path exists. }
-    function Exists(const APath: string): Boolean;
-
-    { Checks if a directory exists.
-      
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the directory exists. }
-    function DirectoryExists(const APath: string): Boolean;
-
-    { Gets a file's size in bytes.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file size in bytes. }
-    function GetSize(const APath: string): Int64;
-
-    { Gets a file's creation time.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The creation timestamp. }
-    function GetCreationTime(const APath: string): TDateTime;
-
-    { Gets a file's last access time.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The last access timestamp. }
-    function GetLastAccessTime(const APath: string): TDateTime;
-
-    { Gets a file's last write time.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The last modification timestamp. }
-    function GetLastWriteTime(const APath: string): TDateTime;
-
-    { Gets a file's attributes.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file's attributes. }
-    function GetAttributes(const APath: string): TFileAttributes;
-
-    { Checks if a file is a text file.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        True if the file appears to be text. }
-    function IsTextFile(const APath: string): Boolean;
-
-    { Determines a text file's encoding.
-      
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The detected encoding (e.g., 'UTF-8', 'ASCII'). }
-    function GetFileEncoding(const APath: string): string;
-    
-    { Searches for files matching a pattern.
-      
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Array of search results. }
-    function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
-
-    { Searches for files in a specific directory.
-      
-      Parameters:
-        ADirectory - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Array of search results. }
-    function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
-
-    { Finds the most recently modified file.
-      
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the newest file. }
-    function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-
-    { Finds the oldest file.
-      
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the oldest file. }
-    function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-
-    { Finds the largest file by size.
-      
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the largest file. }
-    function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-
-    { Finds the smallest file by size.
-      
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the smallest file. }
-    function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
-    
-    { Gets the current user's home directory.
-      
-      Returns:
-        Path to the user's home directory. }
-    function GetUserDir: string;
-
-    { Gets the current working directory.
-      
-      Returns:
-        Path to the current directory. }
-    function GetCurrentDir: string;
-
-    { Gets the system's temporary directory.
-      
-      Returns:
-        Path to the temp directory. }
-    function GetTempDir: string;
-
-    { Gets a directory's parent directory.
-      
-      Parameters:
-        APath - The path to get the parent of.
-        
-      Returns:
-        The parent directory path. }
-    function GetParentDir(const APath: string): string;
-    
-    { Combines two paths safely.
-      
-      Parameters:
-        APath1 - The first path.
-        APath2 - The second path.
-        
-      Returns:
-        The combined path. }
-    function CombinePaths(const APath1, APath2: string): string;
-
-    { Checks if a path is absolute.
-      
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path is absolute. }
-    function IsAbsolutePath(const APath: string): Boolean;
-
-    { Normalizes a path's format.
-      
-      Parameters:
-        APath - The path to normalize.
-        
-      Returns:
-        The normalized path. }
-    function NormalizePath(const APath: string): string;
-    
-    { Creates a temporary file.
-      
-      Parameters:
-        APrefix - Optional prefix for the filename.
-        
-      Returns:
-        Path to the new temp file. }
-    function CreateTempFile(const APrefix: string = ''): string;
-
-    { Creates a temporary directory.
-      
-      Parameters:
-        APrefix - Optional prefix for the directory name.
-        
-      Returns:
-        Path to the new temp directory. }
-    function CreateTempDirectory(const APrefix: string = ''): string;
-
-    { Creates a symbolic link.
-      
-      Platform-specific behavior:
-      -------------------------
-      Windows:
-      - By default, requires Administrator privileges
-      - Exception: Windows 10/11 with Developer Mode enabled allows non-admin users to create symlinks
-      - Both creating and copying symlinks require appropriate privileges
-      - Use SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE flag for Developer Mode support
-      
-      Unix/Linux:
-      - Regular users can create symlinks by default in their own directories
-      - No special privileges (sudo) needed for basic symlink operations
-      - Only requires sudo/root for:
-        * Creating symlinks in system directories (e.g., /usr/bin, /etc)
-        * Creating symlinks in other users' directories
-        * Some special filesystem operations
-      - Regular users can copy symlinks they have read access to
-      
-      Error handling:
-      --------------
-      Windows errors:
-      - ERROR_PRIVILEGE_NOT_HELD: Run as Administrator or enable Developer Mode
-      - ERROR_INVALID_PARAMETER: Check if target path exists
-      - ERROR_PATH_NOT_FOUND: Verify directory structure
-      
-      Unix errors:
-      - EACCES: Check directory write permissions
-      - EEXIST: Link path already exists
-      - ENOENT: Target path doesn't exist
-      - EPERM: Operation requires elevated privileges
-      
-      Parameters:
-        ATargetPath - The path that the symlink will point to.
-        ALinkPath - The path where the symlink will be created.
-        IsDirectory - Whether the target is a directory (matters on Windows). }
-    procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
-
-    { Deletes a symbolic link.
-      
-      Parameters:
-        ALinkPath - The path to the symlink to delete. }
-    procedure DeleteSymLink(const ALinkPath: string);
-
-    { Resolves a symbolic link to its target path.
-      
-      Parameters:
-        ALinkPath - The path to the symlink to resolve.
-        
-      Returns:
-        The target path that the symlink points to. }
-    function ResolveSymLink(const ALinkPath: string): string;
-
-    { Checks if a path is a symbolic link.
-      
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path is a symbolic link. }
-    function IsSymLink(const APath: string): Boolean;
-
-    { Batch file operations }
-
-    procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
-    procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
-    procedure DeleteFiles(const ASourceDir, APattern: string);
-
-    { Simple Path Analysis }
-    function IsEmptyDirectory(const Path: string): Boolean;
-    function GetCommonPath(const Path1, Path2: string): string;
-    function GetRelativePath(const BasePath, TargetPath: string): string;
-    function IsSubPath(const ParentPath, ChildPath: string): Boolean;
-
-    { Basic File Content Operations }
-    function CountLines(const FilePath: string): Integer;
-    function GetFirstLine(const FilePath: string): string;
-    function GetLastLine(const FilePath: string): string;
-    function IsFileEmpty(const FilePath: string): Boolean;
-    function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
-
-    { Simple File Type Detection }
-    function IsBinaryFile(const FilePath: string): Boolean;
-    function GetMimeType(const FilePath: string): string;
-    function IsExecutable(const FilePath: string): Boolean;
-    function IsHidden(const FilePath: string): Boolean;
-
-    { Basic Space Operations }
-    function GetDriveFreeSpace(const Path: string): Int64;
-    function GetDriveCapacity(const Path: string): Int64;
-    function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
-
-    { Basic File Comparison }
-    function AreFilesIdentical(const File1, File2: string): Boolean;
-    function GetNewerFile(const File1, File2: string): string;
-    function GetFileDifferences(const File1, File2: string): TStringArray;
-
-    { Simple File Locking }
-    function LockFile(const FilePath: string): Boolean;
-    function UnlockFile(const FilePath: string): Boolean;
-    function IsFileLocked(const FilePath: string): Boolean;
-
-    { Path Validation and Sanitization }
-    function IsValidFileName(const FileName: string): Boolean;
-    function SanitizeFileName(const FileName: string): string;
-    function MakeValidPath(const Path: string): string;
-    function IsPathTooLong(const Path: string): Boolean;
-
-    { Simple Directory Summary }
-    function GetDirectoryInfo(const Path: string): TDirectoryInfo;
-
-    { Basic File Patterns }
-    function MatchesPattern(const FileName, Pattern: string): Boolean;
-    function FindFirstMatch(const Directory, Pattern: string): string;
-    function CountMatches(const Directory, Pattern: string): Integer;
-
-    function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
-  end;
-
 
 
 {$IFDEF UNIX}
@@ -857,13 +727,7 @@ begin
 end;
 {$ENDIF}
 
-
-class function TFSFactory.CreateFileKit: IFileKit;
-begin
-  Result := TFileKitImpl.Create;
-end;
-
-function TFileKitImpl.GetAttributes(const APath: string): TFileAttributes;
+class function TFileKit.GetAttributes(const APath: string): TFileAttributes;
 {$IFDEF UNIX}
 var
   Info: BaseUnix.Stat;
@@ -919,7 +783,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
+class function TFileKit.FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
 {$IFDEF WINDOWS}
 var
   LocalFileTime: TFileTime;
@@ -950,7 +814,7 @@ begin
 end;
 
 
-function TFileKitImpl.MatchPattern(const FileName, Pattern: string): Boolean;
+class function TFileKit.MatchPattern(const FileName, Pattern: string): Boolean;
 begin
   Result := False;
   if Pattern = '*' then
@@ -967,7 +831,7 @@ begin
     Result := AnsiSameText(Pattern, FileName);
 end;
 
-function TFileKitImpl.LoadTextFromFile(const APath: string): string;
+class function TFileKit.LoadTextFromFile(const APath: string): string;
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -990,7 +854,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.SaveTextToFile(const APath: string; const AContent: string);
+class procedure TFileKit.SaveTextToFile(const APath: string; const AContent: string);
 var
   FileStream: TFileStream;
   StringStream: TStringStream;
@@ -1010,7 +874,7 @@ begin
 end;
 
 
-function TFileKitImpl.CreateSearchResult(const APath: string): TSearchResult;
+class function TFileKit.CreateSearchResult(const APath: string): TSearchResult;
 var
   SearchRec: TSearchRec;
   Found: Boolean;
@@ -1068,12 +932,12 @@ begin
   NormalPath := '';
 end;
 
-function TFileKitImpl.ReadTextFile(const APath: string): string;
+class function TFileKit.ReadTextFile(const APath: string): string;
 begin
   Result := LoadTextFromFile(APath);
 end;
 
-procedure TFileKitImpl.WriteTextFile(const APath: string; const AContent: string);
+class procedure TFileKit.WriteTextFile(const APath: string; const AContent: string);
 begin
   if APath <> '' then
   begin
@@ -1082,13 +946,13 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.DeleteFile(const APath: string);
+class procedure TFileKit.DeleteFile(const APath: string);
 begin
   if FileExists(APath) then
     SysUtils.DeleteFile(APath);
 end;
 
-procedure TFileKitImpl.CopyFile(const ASourcePath, ADestPath: string);
+class procedure TFileKit.CopyFile(const ASourcePath, ADestPath: string);
 var
   SourceStream, DestStream: TFileStream;
   {$IFDEF WINDOWS}
@@ -1170,7 +1034,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.MoveFile(const ASourcePath, ADestPath: string);
+class procedure TFileKit.MoveFile(const ASourcePath, ADestPath: string);
 var
   DestDir: string;
 begin
@@ -1197,7 +1061,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.AppendText(const APath, AText: string);
+class procedure TFileKit.AppendText(const APath, AText: string);
 var
   Content: string;
 begin
@@ -1213,7 +1077,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.PrependText(const APath, AText: string);
+class procedure TFileKit.PrependText(const APath, AText: string);
 var
   Content: string;
 begin
@@ -1229,7 +1093,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.ReplaceText(const APath, OldText, NewText: string);
+class procedure TFileKit.ReplaceText(const APath, OldText, NewText: string);
 var
   Content: string;
 begin
@@ -1244,13 +1108,13 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.CreateDirectory(const APath: string);
+class procedure TFileKit.CreateDirectory(const APath: string);
 begin
   if not SysUtils.DirectoryExists(APath) then
     ForceDirectories(APath);
 end;
 
-procedure TFileKitImpl.DeleteDirectory(const APath: string; const Recursive: Boolean = True);
+class procedure TFileKit.DeleteDirectory(const APath: string; const Recursive: Boolean = True);
 var
   SearchRec: TSearchRec;
   FullPath: string;
@@ -1281,27 +1145,27 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.EnsureDirectory(const APath: string);
+class procedure TFileKit.EnsureDirectory(const APath: string);
 begin
   ForceDirectories(ExtractFilePath(APath));
 end;
 
-function TFileKitImpl.ChangeExtension(const APath, NewExt: string): string;
+class function TFileKit.ChangeExtension(const APath, NewExt: string): string;
 begin
   Result := ChangeFileExt(APath, NewExt);
 end;
 
-function TFileKitImpl.GetFileName(const APath: string): string;
+class function TFileKit.GetFileName(const APath: string): string;
 begin
   Result := ExtractFileName(APath);
 end;
 
-function TFileKitImpl.GetFileNameWithoutExt(const APath: string): string;
+class function TFileKit.GetFileNameWithoutExt(const APath: string): string;
 begin
   Result := ChangeFileExt(ExtractFileName(APath), '');
 end;
 
-function TFileKitImpl.GetDirectory(const APath: string): string;
+class function TFileKit.GetDirectory(const APath: string): string;
 begin
   if DirectoryExists(APath) then
     Result := ExtractFileName(ExcludeTrailingPathDelimiter(APath))
@@ -1311,22 +1175,22 @@ begin
     Result := ExtractFileName(ExcludeTrailingPathDelimiter(GetCurrentDir));
 end;
 
-function TFileKitImpl.GetExtension(const APath: string): string;
+class function TFileKit.GetExtension(const APath: string): string;
 begin
   Result := ExtractFileExt(APath);
 end;
 
-function TFileKitImpl.Exists(const APath: string): Boolean;
+class function TFileKit.Exists(const APath: string): Boolean;
 begin
   Result := FileExists(APath);
 end;
 
-function TFileKitImpl.DirectoryExists(const APath: string): Boolean;
+class function TFileKit.DirectoryExists(const APath: string): Boolean;
 begin
   Result := SysUtils.DirectoryExists(APath);
 end;
 
-function TFileKitImpl.GetSize(const APath: string): Int64;
+class function TFileKit.GetSize(const APath: string): Int64;
 var
   SearchRec: TSearchRec;
   Found: Boolean;
@@ -1361,7 +1225,7 @@ begin
   NormalPath := '';
 end;
 
-function TFileKitImpl.GetCreationTime(const APath: string): TDateTime;
+class function TFileKit.GetCreationTime(const APath: string): TDateTime;
 {$IFDEF WINDOWS}
 var
   Handle: THandle;
@@ -1383,7 +1247,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.GetLastAccessTime(const APath: string): TDateTime;
+class function TFileKit.GetLastAccessTime(const APath: string): TDateTime;
 {$IFDEF WINDOWS}
 var
   Handle: THandle;
@@ -1405,7 +1269,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.GetLastWriteTime(const APath: string): TDateTime;
+class function TFileKit.GetLastWriteTime(const APath: string): TDateTime;
 {$IFDEF WINDOWS}
 var
   Handle: THandle;
@@ -1427,7 +1291,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
+class function TFileKit.SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
 var
   SearchDir: string;
   I: Integer;
@@ -1477,7 +1341,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
+class function TFileKit.SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
   function DoSearch(const RawDir, Pat: string; Rec: Boolean; Visited: TStrings): TSearchResults;
   var
     NDir: string;
@@ -1636,7 +1500,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -1696,7 +1560,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -1756,7 +1620,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -1818,7 +1682,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
+class function TFileKit.FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 var
   Files: TSearchResults;
   I: Integer;
@@ -1912,7 +1776,7 @@ begin
     WriteLn('FindSmallestFile: Final result = ', Result, ' with size = ', SmallestSize);
 end;
 
-function TFileKitImpl.GetUserDir: string;
+class function TFileKit.GetUserDir: string;
 begin
   {$IFDEF WINDOWS}
   Result := GetEnvironmentVariable('USERPROFILE');
@@ -1923,22 +1787,22 @@ begin
     Result := GetCurrentDir;
 end;
 
-function TFileKitImpl.GetCurrentDir: string;
+class function TFileKit.GetCurrentDir: string;
 begin
   Result := SysUtils.GetCurrentDir;
 end;
 
-function TFileKitImpl.GetTempDir: string;
+class function TFileKit.GetTempDir: string;
 begin
   Result := SysUtils.GetTempDir;
 end;
 
-function TFileKitImpl.GetParentDir(const APath: string): string;
+class function TFileKit.GetParentDir(const APath: string): string;
 begin
   Result := ExtractFileDir(ExcludeTrailingPathDelimiter(ExpandFileName(APath)));
 end;
 
-function TFileKitImpl.CombinePaths(const APath1, APath2: string): string;
+class function TFileKit.CombinePaths(const APath1, APath2: string): string;
 begin
   if APath1 = '' then
     Result := APath2
@@ -1952,7 +1816,7 @@ begin
     Result := NormalizePath(Result);
 end;
 
-function TFileKitImpl.IsAbsolutePath(const APath: string): Boolean;
+class function TFileKit.IsAbsolutePath(const APath: string): Boolean;
 begin
   {$IFDEF WINDOWS}
   Result := (Length(APath) >= 2) and
@@ -1963,7 +1827,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.NormalizePath(const APath: string): string;
+class function TFileKit.NormalizePath(const APath: string): string;
 begin
   {$IFDEF WINDOWS}
   Result := StringReplace(APath, '/', '\', [rfReplaceAll]);
@@ -1973,7 +1837,7 @@ begin
   Result := ExpandFileName(Result);
 end;
 
-function TFileKitImpl.CreateTempFile(const APrefix: string = ''): string;
+class function TFileKit.CreateTempFile(const APrefix: string = ''): string;
 var
   TempPath: string;
   GUID: TGUID;
@@ -1993,7 +1857,7 @@ begin
     raise EFileSystemError.Create('Failed to create GUID for temporary file');
 end;
 
-function TFileKitImpl.CreateTempDirectory(const APrefix: string = ''): string;
+class function TFileKit.CreateTempDirectory(const APrefix: string = ''): string;
 var
   TempPath: string;
   GUID: TGUID;
@@ -2013,36 +1877,59 @@ begin
     raise EFileSystemError.Create('Failed to create GUID for temporary directory');
 end;
 
-function TFileKitImpl.IsTextFile(const APath: string): Boolean;
+class function TFileKit.IsTextFile(const APath: string): Boolean;
 const
   MaxBytesToCheck = 512;
 var
-  F: file;
+  Stream: TFileStream;
   Buffer: array[0..MaxBytesToCheck-1] of Byte;
   BytesRead: Integer;
   I: Integer;
+  IsBinary: Boolean;
 begin
-  Result := False;
+  Result := False; // Assume not text by default
   if not FileExists(APath) then
     Exit;
-    
-  AssignFile(F, APath);
+
+  Stream := nil; // Initialize stream to nil
   try
-    Reset(F, 1);  // Open in binary mode
-    BlockRead(F, Buffer, MaxBytesToCheck, BytesRead);
-    
-    // Check for binary characters
-    for I := 0 to BytesRead - 1 do
-      if (Buffer[I] < 7) or ((Buffer[I] > 14) and (Buffer[I] < 32) and (Buffer[I] <> 27)) then
+    Stream := TFileStream.Create(APath, fmOpenRead or fmShareDenyNone);
+    try
+      // Read a sample of the file
+      BytesRead := Stream.Read(Buffer, Min(Stream.Size, MaxBytesToCheck));
+
+      // If the file is empty, consider it text
+      if BytesRead = 0 then
+      begin
+        Result := True;
         Exit;
-        
-    Result := True;
+      end;
+
+      // Check for binary characters (control chars other than TAB, LF, CR, ESC)
+      IsBinary := False;
+      for I := 0 to BytesRead - 1 do
+      begin
+        if (Buffer[I] < 7) or ((Buffer[I] > 14) and (Buffer[I] < 32) and (Buffer[I] <> 27)) then
+        begin
+          IsBinary := True;
+          Break; // Found a binary character, no need to check further
+        end;
+      end;
+
+      Result := not IsBinary; // It's text if no binary characters were found
+
+    except
+      // Handle potential exceptions during stream reading
+      Result := False; // Assume not text if reading fails
+    end;
   finally
-    CloseFile(F);
+    // Ensure the stream is always freed
+    if Assigned(Stream) then
+      Stream.Free;
   end;
 end;
 
-function TFileKitImpl.GetFileEncoding(const APath: string): string;
+class function TFileKit.GetFileEncoding(const APath: string): string;
 const
   MaxBytesToCheck = 4;
 var
@@ -2081,7 +1968,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.ListDirectories(const APath: string; 
+class function TFileKit.ListDirectories(const APath: string; 
   const Pattern: string = '*'; 
   const Recursive: Boolean = False;
   const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
@@ -2146,7 +2033,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.ListFiles(const APath: string; 
+class function TFileKit.ListFiles(const APath: string; 
   const Pattern: string = '*'; 
   const Recursive: Boolean = False;
   const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
@@ -2229,7 +2116,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
+class procedure TFileKit.CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
 var
   {$IFDEF WINDOWS}
   Flags: DWORD;
@@ -2290,7 +2177,7 @@ begin
   {$ENDIF}
 end;
 
-procedure TFileKitImpl.DeleteSymLink(const ALinkPath: string);
+class procedure TFileKit.DeleteSymLink(const ALinkPath: string);
 var
   ErrorCode: DWORD;
   ErrMsg: string;
@@ -2315,7 +2202,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.ResolveSymLink(const ALinkPath: string): string;
+class function TFileKit.ResolveSymLink(const ALinkPath: string): string;
 {$IFDEF WINDOWS}
 const
   MAXIMUM_REPARSE_DATA_BUFFER_SIZE = 16384;
@@ -2446,7 +2333,7 @@ begin
   Result := NormalizePath(Result);
 end;
 
-function TFileKitImpl.IsSymLink(const APath: string): Boolean;
+class function TFileKit.IsSymLink(const APath: string): Boolean;
 {$IFDEF WINDOWS}
 var
   Attrs: DWord;
@@ -2471,7 +2358,7 @@ end;
 
 { Batch file operations }
 
-procedure TFileKitImpl.CopyFiles(const ASourceDir, ADestDir, APattern: string);
+class procedure TFileKit.CopyFiles(const ASourceDir, ADestDir, APattern: string);
 var
   Files: TFilePathArray;
   I: Integer;
@@ -2506,7 +2393,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.MoveFiles(const ASourceDir, ADestDir, APattern: string);
+class procedure TFileKit.MoveFiles(const ASourceDir, ADestDir, APattern: string);
 var
   Files: TFilePathArray;
   I: Integer;
@@ -2541,7 +2428,7 @@ begin
   end;
 end;
 
-procedure TFileKitImpl.DeleteFiles(const ASourceDir, APattern: string);
+class procedure TFileKit.DeleteFiles(const ASourceDir, APattern: string);
 var
   Files: TFilePathArray;
   I: Integer;
@@ -2576,7 +2463,7 @@ end;
 
 { Simple Path Analysis }
 
-function TFileKitImpl.IsEmptyDirectory(const Path: string): Boolean;
+class function TFileKit.IsEmptyDirectory(const Path: string): Boolean;
 var
   SearchRec: TSearchRec;
   FindResult: Integer;
@@ -2609,7 +2496,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetCommonPath(const Path1, Path2: string): string;
+class function TFileKit.GetCommonPath(const Path1, Path2: string): string;
 var
   Parts1, Parts2: TStringArray;
   I, MinLen: Integer;
@@ -2720,7 +2607,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetRelativePath(const BasePath, TargetPath: string): string;
+class function TFileKit.GetRelativePath(const BasePath, TargetPath: string): string;
 var
   BaseNorm, TargetNorm: string;
   BaseParts, TargetParts: TStringArray;
@@ -2801,7 +2688,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.IsSubPath(const ParentPath, ChildPath: string): Boolean;
+class function TFileKit.IsSubPath(const ParentPath, ChildPath: string): Boolean;
 var
   ParentNorm, ChildNorm: string;
 begin
@@ -2814,7 +2701,7 @@ end;
 
 { Basic File Content Operations }
 
-function TFileKitImpl.CountLines(const FilePath: string): Integer;
+class function TFileKit.CountLines(const FilePath: string): Integer;
 var
   FileStream: TFileStream;
   Buffer: array[0..4095] of Byte;
@@ -2843,7 +2730,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetFirstLine(const FilePath: string): string;
+class function TFileKit.GetFirstLine(const FilePath: string): string;
 var
   FileStream: TFileStream;
   Buffer: array[0..4095] of Char;
@@ -2870,7 +2757,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetLastLine(const FilePath: string): string;
+class function TFileKit.GetLastLine(const FilePath: string): string;
 var
   Lines: TStringList;
 begin
@@ -2888,7 +2775,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.IsFileEmpty(const FilePath: string): Boolean;
+class function TFileKit.IsFileEmpty(const FilePath: string): Boolean;
 var
   FileStream: TFileStream;
 begin
@@ -2903,7 +2790,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
+class function TFileKit.ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
 var
   FileStream: TFileStream;
   Buffer: array[0..4095] of Char;
@@ -2936,7 +2823,7 @@ end;
 
 { Simple File Type Detection }
 
-function TFileKitImpl.IsBinaryFile(const FilePath: string): Boolean;
+class function TFileKit.IsBinaryFile(const FilePath: string): Boolean;
 var
   FileStream: TFileStream;
   Buffer: array[0..4095] of Byte;
@@ -2971,7 +2858,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetMimeType(const FilePath: string): string;
+class function TFileKit.GetMimeType(const FilePath: string): string;
 const
   ExtToMime: array[0..19] of array[0..1] of string = (
     ('.txt', 'text/plain'),
@@ -3010,7 +2897,7 @@ begin
     end;
 end;
 
-function TFileKitImpl.IsExecutable(const FilePath: string): Boolean;
+class function TFileKit.IsExecutable(const FilePath: string): Boolean;
 {$IFDEF UNIX}
 var
   Info: BaseUnix.Stat;
@@ -3026,7 +2913,7 @@ begin
   {$ENDIF}
 end;
 
-function TFileKitImpl.IsHidden(const FilePath: string): Boolean;
+class function TFileKit.IsHidden(const FilePath: string): Boolean;
 begin
   {$IFDEF WINDOWS}
   Result := (Windows.GetFileAttributes(PChar(FilePath)) and DWORD(FILE_ATTRIBUTE_HIDDEN)) <> 0;
@@ -3037,7 +2924,7 @@ end;
 
 { Basic Space Operations }
 
-function TFileKitImpl.GetDriveFreeSpace(const Path: string): Int64;
+class function TFileKit.GetDriveFreeSpace(const Path: string): Int64;
 {$IFDEF WINDOWS}
 var
   FreeAvailable, TotalSpace: Int64;
@@ -3058,7 +2945,7 @@ begin
 end;
 {$ENDIF}
 
-function TFileKitImpl.GetDriveCapacity(const Path: string): Int64;
+class function TFileKit.GetDriveCapacity(const Path: string): Int64;
 {$IFDEF WINDOWS}
 var
   FreeAvailable, TotalSpace: Int64;
@@ -3079,7 +2966,7 @@ begin
 end;
 {$ENDIF}
 
-function TFileKitImpl.HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
+class function TFileKit.HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
 var
   FreeSpace: Int64;
 begin
@@ -3089,7 +2976,7 @@ end;
 
 { Basic File Comparison }
 
-function TFileKitImpl.AreFilesIdentical(const File1, File2: string): Boolean;
+class function TFileKit.AreFilesIdentical(const File1, File2: string): Boolean;
 var
   File1Stream, File2Stream: TFileStream;
   Buffer1, Buffer2: array[0..4095] of Byte;
@@ -3124,7 +3011,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.GetNewerFile(const File1, File2: string): string;
+class function TFileKit.GetNewerFile(const File1, File2: string): string;
 begin
   if FileExists(File1) and FileExists(File2) then
   begin
@@ -3141,7 +3028,7 @@ begin
     raise EFileSystemError.Create('Both files do not exist');
 end;
 
-function TFileKitImpl.GetFileDifferences(const File1, File2: string): TStringArray;
+class function TFileKit.GetFileDifferences(const File1, File2: string): TStringArray;
 var
   File1Stream, File2Stream: TFileStream;
   Buffer1, Buffer2: array[0..4095] of Byte;
@@ -3193,7 +3080,7 @@ end;
 var
   LockedFiles: TStringList = nil;
 
-function TFileKitImpl.LockFile(const FilePath: string): Boolean;
+class function TFileKit.LockFile(const FilePath: string): Boolean;
 {$IFDEF WINDOWS}
 var
   Handle: THandle;
@@ -3255,7 +3142,7 @@ begin
 end;
 {$ENDIF}
 
-function TFileKitImpl.UnlockFile(const FilePath: string): Boolean;
+class function TFileKit.UnlockFile(const FilePath: string): Boolean;
 {$IFDEF WINDOWS}
 begin
   Result := False;
@@ -3291,7 +3178,7 @@ begin
 end;
 {$ENDIF}
 
-function TFileKitImpl.IsFileLocked(const FilePath: string): Boolean;
+class function TFileKit.IsFileLocked(const FilePath: string): Boolean;
 {$IFDEF WINDOWS}
 begin
   if not FileExists(FilePath) then
@@ -3310,7 +3197,7 @@ end;
 
 { Path Validation and Sanitization }
 
-function TFileKitImpl.IsValidFileName(const FileName: string): Boolean;
+class function TFileKit.IsValidFileName(const FileName: string): Boolean;
 const
   InvalidChars: set of Char = ['<', '>', ':', '"', '/', '\', '|', '?', '*'];
 var
@@ -3334,7 +3221,7 @@ begin
   Result := True;
 end;
 
-function TFileKitImpl.SanitizeFileName(const FileName: string): string;
+class function TFileKit.SanitizeFileName(const FileName: string): string;
 const
   InvalidChars: set of Char = ['<', '>', ':', '"', '/', '\', '|', '?', '*'];
 var
@@ -3376,7 +3263,7 @@ begin
     Result := '_';
 end;
 
-function TFileKitImpl.MakeValidPath(const Path: string): string;
+class function TFileKit.MakeValidPath(const Path: string): string;
 var
   Parts: TStringArray;
   ValidParts: TStringArray;
@@ -3469,7 +3356,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.IsPathTooLong(const Path: string): Boolean;
+class function TFileKit.IsPathTooLong(const Path: string): Boolean;
 begin
   {$IFDEF WINDOWS}
   Result := Length(Path) > 260;  // MAX_PATH
@@ -3483,7 +3370,7 @@ end;
 
 { Simple Directory Summary }
 
-function TFileKitImpl.GetDirectoryInfo(const Path: string): TDirectoryInfo;
+class function TFileKit.GetDirectoryInfo(const Path: string): TDirectoryInfo;
 var
   SearchRec: TSearchRec;
   OldestTime, NewestTime: TDateTime;
@@ -3545,7 +3432,7 @@ end;
 
 { Basic File Patterns }
 
-function TFileKitImpl.MatchesPattern(const FileName, Pattern: string): Boolean;
+class function TFileKit.MatchesPattern(const FileName, Pattern: string): Boolean;
 begin
   Result := False;
   if Pattern = '*' then
@@ -3562,7 +3449,7 @@ begin
     Result := AnsiSameText(Pattern, FileName);
 end;
 
-function TFileKitImpl.FindFirstMatch(const Directory, Pattern: string): string;
+class function TFileKit.FindFirstMatch(const Directory, Pattern: string): string;
 var
   SearchRec: TSearchRec;
 begin
@@ -3575,7 +3462,7 @@ begin
   end;
 end;
 
-function TFileKitImpl.CountMatches(const Directory, Pattern: string): Integer;
+class function TFileKit.CountMatches(const Directory, Pattern: string): Integer;
 var
   SearchRec: TSearchRec;
   DirCount: Integer;
@@ -3593,7 +3480,7 @@ begin
   Result := DirCount;
 end;
 
-function TFileKitImpl.GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
+class function TFileKit.GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
 var
   FileStream: TFileStream;
   BytesRead: Integer;

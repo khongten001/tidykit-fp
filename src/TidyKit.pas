@@ -28,8 +28,7 @@ type
   TKitBase = TidyKit.Core.TKitBase;
 
   { Re-export the filesystem types }
-  IFileKit = TidyKit.FS.IFileKit; // Add IFileKit interface
-  TFSFactory = TidyKit.FS.TFSFactory; // Add TFSFactory class
+  TFileKit = TidyKit.FS.TFileKit;
   TSearchResults = TidyKit.FS.TSearchResults;
   TFileSortOrder = TidyKit.FS.TFileSortOrder;
   TFileAttributes = TidyKit.FS.TFileAttributes;

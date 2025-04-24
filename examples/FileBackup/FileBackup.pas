@@ -26,7 +26,6 @@ type
 
 var
   Options: TBackupOptions;
-  FileKit: IFileKit;
   StartTime: TDateTime;
   
 { Prints help information }
@@ -94,7 +93,7 @@ begin
       EqualPos := Pos('=', Param);
       Options.DestDir := Copy(Param, EqualPos + 1, Length(Param));
     end
-    else if (Param.StartsWith('-p=') or Param.StartsWith('--pattern=')) then
+    else if (Param.StartsWith('-p=')or Param.StartsWith('--pattern=')) then
     begin
       EqualPos := Pos('=', Param);
       Value := Copy(Param, EqualPos + 1, Length(Param));
@@ -154,7 +153,7 @@ begin
   // Create a default log file if not specified
   if Options.LogFile = '' then
   begin
-    Options.LogFile := FileKit.CombinePaths(Options.DestDir, 
+    Options.LogFile := TFileKit.CombinePaths(Options.DestDir, 
                          'backup_log_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now) + '.log');
   end;
 end;
@@ -165,7 +164,7 @@ begin
   WriteLn(Msg);
   
   if ToFile and (Options.LogFile <> '') then
-    FileKit.AppendText(Options.LogFile, Msg + sLineBreak);
+    TFileKit.AppendText(Options.LogFile, Msg + sLineBreak);
 end;
 
 { Checks if a file should be excluded based on patterns }
@@ -179,7 +178,7 @@ begin
   
   for Pattern in Options.ExcludePatterns do
   begin
-    if FileKit.MatchesPattern(FileName, Pattern) then
+    if TFileKit.MatchesPattern(FileName, Pattern) then
       Exit(True);
   end;
 end;
@@ -203,16 +202,16 @@ begin
   BackupStartTime := Now;
   
   // Create the destination directory with timestamp
-  BackupDirName := FileKit.CombinePaths(Options.DestDir, 
+  BackupDirName := TFileKit.CombinePaths(Options.DestDir, 
                      'backup_' + FormatDateTime('yyyy-mm-dd_hh-nn-ss', Now));
   
   if not Options.Simulate then
-    FileKit.CreateDirectory(BackupDirName);
+    TFileKit.CreateDirectory(BackupDirName);
   
   // Initialize log file
   if (Options.LogFile <> '') and not Options.Simulate then
   begin
-    FileKit.WriteTextFile(Options.LogFile, 
+    TFileKit.WriteTextFile(Options.LogFile, 
       'Backup started at: ' + FormatDateTime('yyyy-mm-dd hh:nn:ss', BackupStartTime) + sLineBreak + 
       'Source: ' + Options.SourceDir + sLineBreak +
       'Destination: ' + BackupDirName + sLineBreak +
@@ -230,7 +229,7 @@ begin
     LogMessage('Processing pattern: ' + Pattern, False);
     
     // Find all files matching the pattern
-    Files := FileKit.SearchFiles(Options.SourceDir, Pattern, Options.Recursive);
+    Files := TFileKit.SearchFiles(Options.SourceDir, Pattern, Options.Recursive);
     
     // Process each file
     for SearchResult in Files do // Use renamed variable
@@ -251,11 +250,11 @@ begin
       end;
       
       // Get relative path for preserving directory structure
-      RelativePath := FileKit.GetRelativePath(Options.SourceDir, SearchResult.FullPath); // Use renamed variable
+      RelativePath := TFileKit.GetRelativePath(Options.SourceDir, SearchResult.FullPath); // Use renamed variable
       if RelativePath = '.' then  // File is directly in source dir
         RelativePath := SearchResult.FileName; // Use renamed variable
         
-      TargetPath := FileKit.CombinePaths(BackupDirName, RelativePath);
+      TargetPath := TFileKit.CombinePaths(BackupDirName, RelativePath);
       
       if Options.Verbose then
         LogMessage('Copying: ' + SearchResult.FullPath + ' -> ' + TargetPath); // Use renamed variable
@@ -263,8 +262,8 @@ begin
       // Copy the file unless we're in simulation mode
       if not Options.Simulate then
       begin
-        FileKit.EnsureDirectory(ExtractFilePath(TargetPath));
-        FileKit.CopyFile(SearchResult.FullPath, TargetPath); // Use renamed variable
+        TFileKit.EnsureDirectory(ExtractFilePath(TargetPath));
+        TFileKit.CopyFile(SearchResult.FullPath, TargetPath); // Use renamed variable
       end;
       
       Inc(FileCount);
@@ -288,15 +287,12 @@ end;
 
 begin
   try
-    // Create a FileKit instance
-    FileKit := TFSFactory.CreateFileKit;
-    
     // Parse command line parameters
     if not ParseCommandLine then
       Exit;
       
     // Validate source directory
-    if not FileKit.DirectoryExists(Options.SourceDir) then
+    if not TFileKit.DirectoryExists(Options.SourceDir) then
     begin
       WriteLn('Error: Source directory does not exist: ', Options.SourceDir);
       Exit;

@@ -83,9 +83,9 @@ var
   I: Integer;
   BaseDir: string;
   RelativePath: string;
-  FileKit: IFileKit;
+  
 begin
-  FileKit := TFSFactory.CreateFileKit;
+  
 
   if DEBUG_MODE then
     WriteLn('CompressToZip: Starting compression of ', APath, ' to ', ADestPath);
@@ -95,7 +95,7 @@ begin
   if DEBUG_MODE then
     WriteLn('CompressToZip: Base directory is ', BaseDir);
   
-  Files := FileKit.ListFiles(APath, Pattern, Recursive);
+  Files := TFileKit.ListFiles(APath, Pattern, Recursive);
   
   if DEBUG_MODE then
     WriteLn('CompressToZip: Found ', Length(Files), ' files to compress');
@@ -131,9 +131,9 @@ class procedure TArchiveKit.DecompressFromZip(const AZipPath, ADestPath: string;
 var
   UnZipper: TUnZipper;
   DestDir: string;
-  FileKit: IFileKit;
+  
 begin
-  FileKit := TFSFactory.CreateFileKit;
+  
 
   if DEBUG_MODE then
     WriteLn('DecompressFromZip: Starting decompression of ', AZipPath, ' to ', ADestPath);
@@ -195,9 +195,9 @@ var
   TarFileName: string;
   RelativePath: string;
   ModTime: TDateTime;
-  FileKit: IFileKit;
+  
 begin
-  FileKit := TFSFactory.CreateFileKit;
+  
 
   if DEBUG_MODE then
     WriteLn('CompressToTar: Starting compression of ', APath, ' to ', ADestPath);
@@ -217,12 +217,12 @@ begin
   
   if Recursive then
   begin
-    Dirs := FileKit.ListDirectories(APath, '*', True);
+    Dirs := TFileKit.ListDirectories(APath, '*', True);
     if DEBUG_MODE then
       WriteLn('CompressToTar: Found ', Length(Dirs), ' directories');
   end;
   
-  Files := FileKit.ListFiles(APath, Pattern, Recursive);
+  Files := TFileKit.ListFiles(APath, Pattern, Recursive);
   
   for I := High(Files) downto 0 do
   begin
@@ -249,7 +249,7 @@ begin
         for I := 0 to High(Dirs) do
         begin
           RelativePath := IncludeTrailingPathDelimiter(ExtractRelativePath(BaseDir, Dirs[I]));
-          ModTime := FileKit.GetLastWriteTime(Dirs[I]);
+          ModTime := TFileKit.GetLastWriteTime(Dirs[I]);
           if DEBUG_MODE then
             WriteLn('CompressToTar: Adding directory ', RelativePath);
           TarWriter.AddDir(RelativePath, ModTime);
@@ -295,9 +295,9 @@ var
   DestDir: string;
   EntryCount: Integer;
   DirToCreate: string;
-  FileKit: IFileKit;
+  
 begin
-  FileKit := TFSFactory.CreateFileKit;
+  
 
   DirRec := Default(TTarDirRec);
   
