@@ -790,7 +790,14 @@ begin
   
   // Only initialize the file if file logging is enabled
   if ldFile in FLogDestinations then
-    InitLogFile(NewLogFile);
+  begin
+    try
+      InitLogFile(NewLogFile);
+    except
+      // Ignore initialization errors - we'll still add the file to our list
+      // but it won't be usable until the issue is fixed
+    end;
+  end;
 
   SetLength(FLogFiles, Length(FLogFiles) + 1);
   FLogFiles[High(FLogFiles)] := NewLogFile;
