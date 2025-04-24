@@ -9,15 +9,32 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ...
 
-## [0.1.6] - 2025-04-24
+## Release [0.1.7] - 2025-05-dd
 
 ### Added
+
+- ...
+
+### Fixes
+
+- ...
+
+
+## Release [0.1.6] - 2025-04-24
+
+### Added
+
 - More examples to showcase the usage of TidyKit.FS module.
+
+### Fixes
+
 - Various bugfixes and improvements to the TidyKit.FS module.
+- Bugfix TidyKit.Logger.pas unit
 
 ## [0.1.5] - 2025-04-21
 
 ### Added
+
 - Added Ubuntu 24.04.02 compatibility for TidKit.DateTime and TidyKit.FS modules
 - Added automatic test environment detection for TidyKit.Request
 - Added HTTP fallback mechanism for testing HTTPS endpoints when OpenSSL is unavailable
@@ -25,6 +42,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added cross-platform SSL/TLS initialization support for HTTP requests
 
 ### Fixed
+
 - Fixed file timestamp handling issues on Unix systems
 - Fixed path normalization for cross-platform compatibility
 - Resolved file path length detection issues on Linux
@@ -34,6 +52,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved TryGet and TryPost error handling for SSL failures
 
 ### Changed
+
 - Reorganized platform-specific code for better readability
 - Improved test organization with clearer platform-specific sections 
 - Enhanced comments throughout platform-specific code sections
@@ -47,6 +66,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.1.0] - 2025-03-13
 
 ### Added
+
 - Comprehensive Math modules:
   - Statistical calculations (`TStatsKit` class)
   - Financial mathematics (`TFinanceKit` class)
@@ -73,6 +93,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Basic error handling
 
 ### Improved
+
 - Comprehensive documentation:
   - Created dedicated documentation files for each math module
   - Added detailed examples for all operations
@@ -83,11 +104,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Code organization and naming consistency
 
 ### Fixed
+
 - String representation format for matrix decompositions
 - Precision handling in financial calculations
 - Memory leaks in matrix operations
 - Error handling in statistical functions
 
 ### Known Issues
+
 - Limited timezone support on Unix-like systems
 - Untested on macOS and FreeBSD platforms
