@@ -142,6 +142,13 @@ TFileKit.DeleteFile('temp.txt');                           // Delete file
 TFileKit.CopyFile('source.txt', 'dest.txt');               // Copy file with attributes
 TFileKit.MoveFile('old.txt', 'new.txt');                   // Move/rename file
 
+// File content operations
+LineCount := TFileKit.CountLines('file.txt');              // Count lines in file
+FirstLine := TFileKit.GetFirstLine('file.txt');            // Get the first line
+LastLine := TFileKit.GetLastLine('file.txt');              // Get the last line
+if TFileKit.ContainsText('file.txt', 'search term') then ... // Check if file contains text
+Chunk := TFileKit.GetChunk('file.txt', 1024, 2048);        // Read 2048 bytes starting at offset 1024
+
 // Batch file operations
 TFileKit.CopyFiles('source_dir', 'dest_dir', '*.txt');     // Copy all .txt files
 TFileKit.MoveFiles('source_dir', 'dest_dir', '*.doc');     // Move all .doc files
@@ -195,8 +202,18 @@ Time := TFileKit.GetLastAccessTime('file.txt');         // Get last access time
 Time := TFileKit.GetLastWriteTime('file.txt');          // Get last write time
 Attrs := TFileKit.GetAttributes('file.txt');            // Get file attributes
 if TFileKit.IsTextFile('file.txt') then ...             // Check if text file
+if TFileKit.IsBinaryFile('image.jpg') then ...          // Check if binary file
+if TFileKit.IsFileEmpty('empty.txt') then ...           // Check if file is empty
+Mime := TFileKit.GetMimeType('document.pdf');           // Get MIME type (e.g., 'application/pdf')
+if TFileKit.IsExecutable('app.exe') then ...            // Check if file is executable (platform-specific)
+if TFileKit.IsHidden('system.dat') then ...             // Check if file is hidden
 Encoding := TFileKit.GetFileEncoding('file.txt');       // Get file encoding
 if TFileKit.IsEmptyDirectory('dir') then ...            // Check if directory is empty
+
+// File comparison
+if TFileKit.AreFilesIdentical('file1.txt', 'file2.txt') then ... // Check if files are identical
+Newer := TFileKit.GetNewerFile('file1.txt', 'file2.txt');       // Get the path of the newer file
+Diffs := TFileKit.GetFileDifferences('file1.txt', 'file2.txt'); // Get differences between text files
 
 // Search operations
 Results := TFileKit.SearchFiles('.', '*.txt', True);    // Search files recursively
@@ -210,6 +227,11 @@ File := TFileKit.FindSmallestFile('.', '*.txt');        // Find smallest file
 Dir := TFileKit.GetUserDir;                             // Get user directory
 Dir := TFileKit.GetCurrentDir;                          // Get current directory
 Dir := TFileKit.GetTempDir;                             // Get temp directory
+
+// Drive information
+FreeSpace := TFileKit.GetDriveFreeSpace('C:\');         // Get free space on drive (bytes)
+Capacity := TFileKit.GetDriveCapacity('C:\');           // Get total capacity of drive (bytes)
+if TFileKit.HasEnoughSpace('C:\', 1024*1024) then ...   // Check if drive has at least 1MB free
 
 // Temporary files
 TempFile := TFileKit.CreateTempFile('prefix_');         // Create temp file

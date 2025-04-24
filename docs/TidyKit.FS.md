@@ -12,6 +12,9 @@ The `TidyKit.FS` unit provides comprehensive file system operations for FreePasc
 - File locking mechanisms
 - Directory information and statistics
 - File validation and sanitization
+- File content operations
+- File comparison
+- Drive information
 
 ## Basic Usage
 
@@ -93,6 +96,8 @@ var
   Attrs: TFileAttributes;
   Size: Int64;
   ModTime: TDateTime;
+  Mime: string;
+  IsEmpty, IsBin, IsExec, IsHid: Boolean;
 begin
   // Get file attributes
   Attrs := TFileKit.GetAttributes('file.txt');
@@ -104,6 +109,70 @@ begin
   
   // Get modification time
   ModTime := TFileKit.GetLastWriteTime('file.txt');
+  
+  // Check if file is empty
+  IsEmpty := TFileKit.IsFileEmpty('file.txt');
+  
+  // Check if file is likely binary
+  IsBin := TFileKit.IsBinaryFile('image.jpg');
+  
+  // Get MIME type (content type detection)
+  Mime := TFileKit.GetMimeType('document.pdf'); // e.g., 'application/pdf'
+  
+  // Check if file is executable
+  IsExec := TFileKit.IsExecutable('app.exe');
+  
+  // Check if file is hidden (cross-platform)
+  IsHid := TFileKit.IsHidden('~tempfile'); // Checks attributes (Win) or leading dot (Unix)
+end;
+```
+
+### File Content Operations
+
+```pascal
+// Operations related to file content
+var
+  LineCount: Integer;
+  FirstLine, LastLine: string;
+  Contains: Boolean;
+  Chunk: TBytes;
+begin
+  // Count lines in a text file
+  LineCount := TFileKit.CountLines('log.txt');
+  
+  // Get the first line of a text file
+  FirstLine := TFileKit.GetFirstLine('config.ini');
+  
+  // Get the last line of a text file
+  LastLine := TFileKit.GetLastLine('log.txt');
+  
+  // Check if a file contains specific text
+  Contains := TFileKit.ContainsText('readme.txt', 'TidyKit');
+  
+  // Read a specific chunk (e.g., bytes 100-199)
+  Chunk := TFileKit.GetChunk('data.bin', 100, 100); // Offset, Size
+end;
+```
+
+### File Comparison
+
+```pascal
+// Compare files
+var
+  AreIdentical: Boolean;
+  Newer: string;
+  Diffs: TFileDifferences; // Record containing comparison results
+begin
+  // Check if two files have identical content
+  AreIdentical := TFileKit.AreFilesIdentical('file1.txt', 'file2.txt');
+  
+  // Get the path of the newer file based on modification time
+  Newer := TFileKit.GetNewerFile('file_v1.dat', 'file_v2.dat');
+  
+  // Get detailed differences between two files
+  Diffs := TFileKit.GetFileDifferences('text1.txt', 'text2.txt');
+  WriteLn('Different lines: ', Diffs.LineCount);
+  WriteLn('First difference at byte: ', Diffs.FirstDiffPosition);
 end;
 ```
 
@@ -158,6 +227,28 @@ begin
   WriteLn('Directories: ', Info.DirectoryCount);
   WriteLn('Total size: ', Info.TotalSize);
   WriteLn('Newest file: ', Info.NewestFile);
+end;
+```
+
+### Drive Information
+
+```pascal
+// Get information about drives/volumes
+var
+  FreeSpace, Capacity: Int64;
+  HasSpace: Boolean;
+  DrivePath: string;
+begin
+  DrivePath := 'C:\'; // Windows example, use '/' for Unix-like systems
+  
+  // Get free space on the drive
+  FreeSpace := TFileKit.GetDriveFreeSpace(DrivePath);
+  
+  // Get total capacity of the drive
+  Capacity := TFileKit.GetDriveCapacity(DrivePath);
+  
+  // Check if there is enough space for a given size (e.g., 100 MB)
+  HasSpace := TFileKit.HasEnoughSpace(DrivePath, 100 * 1024 * 1024); 
 end;
 ```
 
@@ -270,4 +361,4 @@ Specific errors that might be raised include:
 
 3. For large files:
    - Consider chunked processing for very large files
-   - Use appropriate buffer sizes for file operations 
+   - Use appropriate buffer sizes for file operations
