@@ -70,7 +70,8 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 
 | Pattern | Modules | Characteristics | Memory Management |
 |---------|-------------------------|-----------------|-------------------|
-| **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`| <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
+| **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger` | <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
+| **Advanced Records** | `TidyKit.Request` | <ul><li>Record-based design</li><li>Fluent API</li><li>Value semantics</li></ul> | No manual management needed |
 | **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
 | **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li></ul> | No manual management needed |
 
@@ -780,6 +781,7 @@ end;
 
 For detailed documentation, see:
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
+- ❓ [FAQ](docs/FAQ.md) - Common questions about design decisions and patterns
 - 📝 [Strings](docs/TidyKit.Strings.md)
 - 📂 [File System](docs/TidyKit.FS.md)
 - 📅 [DateTime](docs/TidyKit.DateTime.md)
