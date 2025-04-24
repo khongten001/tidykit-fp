@@ -8,7 +8,6 @@
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.6-blueviolet.svg)]()
 
-
 A comprehensive toolkit providing essential utilities for development in Free Pascal.  
 **Streamlining your Pascal programming experience with reliable tools.**
 
@@ -26,6 +25,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 - **Easy to use API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
 
 ## 📑 Table of Contents 
+
 - [🧰 TidyKit](#-tidykit)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
@@ -72,11 +72,10 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 |---------|-------------------------|-----------------|-------------------|
 | **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger`, `TidyKit.Request`| <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
 | **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
-| **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li><ul> | No manual management needed |
+| **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li></ul> | No manual management needed |
 
 > [!IMPORTANT]
 > The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
-
 
 ## ✨ Features
 
@@ -232,7 +231,6 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 The TidyKit package is now ready to use in your Lazarus project.
 
-
 ## 💻 Installation (General)
 
 1. Clone the repository:
@@ -293,6 +291,7 @@ uses
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
 
 Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
+
 - ⚡ Reduces compilation time
 - 📦 Minimizes executable size
 - 🔍 Makes dependencies more explicit
@@ -303,6 +302,7 @@ Note: Some units may have interdependencies. The compiler will inform you if add
 ## 🚀 Quick Start
 
 ### 📝 String Operations
+
 ```pascal
 var
   Text: string;
@@ -323,6 +323,7 @@ end;
 ```
 
 ### 📂 File System Operations
+
 ```pascal
 var
   Files: TFilePathArray;
@@ -357,6 +358,7 @@ end;
 ```
 
 ### 📅 DateTime Operations
+
 ```pascal
 var
   CurrentTime: TDateTime;
@@ -413,6 +415,7 @@ end;
 ```
 
 ### 🔄 JSON Operations
+
 ```pascal
 var
   Person: IJSONObject;
@@ -466,6 +469,7 @@ end;
 ```
 
 ### 📝 Logging Operations
+
 ```pascal
 // Simple one-line setup for console and file logging
 TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
@@ -506,6 +510,7 @@ end;
 ```
 
 ### 🌐 HTTP Request Operations
+
 ```pascal
 var
   Response: TResponse;
@@ -548,6 +553,7 @@ end;
 ```
 
 ### 🔐 Crypto Operations
+
 ```pascal
 var
   Hash: string;
@@ -569,6 +575,7 @@ end;
 ```
 
 ### 📦 Archive Operations
+
 ```pascal
 var
   SourceDir, DestDir: string;
@@ -590,6 +597,7 @@ end;
 ```
 
 ### 📈 Statistical Operations
+
 ```pascal
 var
   Data: TDoubleArray;
@@ -638,6 +646,7 @@ end;
 ```
 
 ### 🔢 Matrix Operations
+
 ```pascal
 var
   A, B, C: IMatrix;
@@ -700,6 +709,7 @@ end;
 ```
 
 ### 📐 Trigonometric Operations
+
 ```pascal
 var
   Angle, Height, Distance: Double;
@@ -716,6 +726,7 @@ end;
 ```
 
 ### 💰 Financial Operations
+
 ```pascal
 var
   CashFlows: TDoubleArray;
