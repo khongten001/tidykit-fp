@@ -166,495 +166,1469 @@ type
     class function LoadTextFromFile(const APath: string): string;
     class procedure SaveTextToFile(const APath: string; const AContent: string);
   public
-    { Reads the entire content of a file and returns it as a string.
+    { @description Reads the entire content of a file and returns it as a string
       
-      Parameters:
-        APath - The path to the file to read.
-        
-      Returns:
-        The entire content of the file as a string. }
+      @usage Use when you need to load the complete text content of a file into memory
+      
+      @param APath The path to the file to read
+      
+      @returns The entire content of the file as a string
+      
+      @pitfalls May cause memory issues with extremely large files
+                Returns empty string if file doesn't exist instead of raising an exception
+      
+      @example
+        Content := TFileKit.ReadTextFile('C:\config.txt');
+        // Returns the entire content of config.txt as a string
+    }
     class function ReadTextFile(const APath: string): string;
 
-    { Writes content to a file, overwriting any existing content.
+    { @description Writes content to a file, overwriting any existing content
       
-      Parameters:
-        APath - The path to the file to write.
-        AContent - The string content to write to the file. }
+      @usage Use when you need to save text content to a file
+      
+      @param APath The path to the file to write
+      @param AContent The string content to write to the file
+      
+      @pitfalls Will overwrite existing files without confirmation
+                Creates parent directories if they don't exist
+      
+      @example
+        TFileKit.WriteTextFile('C:\logs\app.log', 'Application started');
+        // Creates or overwrites app.log with the specified content
+    }
     class procedure WriteTextFile(const APath: string; const AContent: string);
 
-    { Deletes a file from the file system.
+    { @description Deletes a file from the file system
       
-      Parameters:
-        APath - The path to the file to delete. }
+      @usage Use when you need to remove a file permanently
+      
+      @param APath The path to the file to delete
+      
+      @pitfalls Does not raise exceptions if file doesn't exist
+                No confirmation or recovery mechanism
+                Operation cannot be undone
+      
+      @example
+        TFileKit.DeleteFile('C:\temp\temporary.tmp');
+        // Removes the specified file from the file system
+    }
     class procedure DeleteFile(const APath: string);
 
-    { Copies a file from one location to another.
+    { @description Copies a file from one location to another
       
-      Parameters:
-        ASourcePath - The path to the source file.
-        ADestPath - The destination path where the file should be copied. }
+      @usage Use when you need to duplicate a file while preserving attributes and timestamps
+      
+      @param ASourcePath The path to the source file
+      @param ADestPath The destination path where the file should be copied
+      
+      @pitfalls Will create destination directory structure if it doesn't exist
+                Will overwrite destination without confirmation if it exists
+                May fail if destination is read-only or in use
+      
+      @example
+        TFileKit.CopyFile('C:\original.txt', 'D:\backup\original.txt');
+        // Creates a copy of original.txt at the specified destination
+    }
     class procedure CopyFile(const ASourcePath, ADestPath: string);
 
-    { Moves a file from one location to another.
+    { @description Moves a file from one location to another
       
-      Parameters:
-        ASourcePath - The path to the source file.
-        ADestPath - The destination path where the file should be moved. }
+      @usage Use when you need to relocate a file rather than copying it
+      
+      @param ASourcePath The path to the source file
+      @param ADestPath The destination path where the file should be moved
+      
+      @pitfalls Will create destination directory structure if it doesn't exist
+                Will overwrite destination without confirmation if it exists
+                Falls back to copy+delete if simple rename fails
+                Verifies sizes match before deleting source in copy+delete scenario
+      
+      @example
+        TFileKit.MoveFile('C:\temp.txt', 'D:\archive\temp.txt');
+        // Moves temp.txt from C: to D:\archive
+    }
     class procedure MoveFile(const ASourcePath, ADestPath: string);
     
-    { Appends text to the end of a file.
+    { @description Appends text to the end of a file
       
-      Parameters:
-        APath - The path to the file to append to.
-        AText - The text to append to the file. }
+      @usage Use when you need to add content to the end of a file without rewriting it
+             Particularly useful for log files and incremental data collection
+      
+      @param APath The path to the file to append to
+      @param AText The text to append to the file
+      
+      @pitfalls Creates new file if it doesn't exist
+                May cause issues with newlines if not handled properly in AText
+                Requires careful handling for non-ASCII text encodings
+      
+      @example
+        TFileKit.AppendText('C:\logs\app.log', 'New log entry at ' + DateTimeToStr(Now));
+        // Adds the text to the end of the log file
+    }
     class procedure AppendText(const APath, AText: string);
 
-    { Prepends text to the beginning of a file.
+    { @description Prepends text to the beginning of a file
       
-      Parameters:
-        APath - The path to the file to prepend to.
-        AText - The text to prepend to the file. }
+      @usage Use when you need to add content to the start of a file, such as headers or initial configuration
+      
+      @param APath The path to the file to prepend to
+      @param AText The text to prepend to the file
+      
+      @pitfalls Creates new file if it doesn't exist
+                Requires loading entire file into memory, potentially inefficient for large files
+                May cause issues with newlines if not handled properly in AText
+      
+      @example
+        TFileKit.PrependText('C:\logs\app.log', '=== Log started ===' + LineEnding);
+        // Adds the text to the beginning of the log file
+    }
     class procedure PrependText(const APath, AText: string);
 
-    { Replaces all occurrences of text in a file.
+    { @description Replaces all occurrences of text in a file
       
-      Parameters:
-        APath - The path to the file to modify.
-        OldText - The text to find and replace.
-        NewText - The text to replace with. }
+      @usage Use when you need to find and replace text across an entire file, like updating configuration values
+      
+      @param APath The path to the file to modify
+      @param OldText The text to find and replace
+      @param NewText The text to replace with
+      
+      @pitfalls Requires loading entire file into memory, potentially inefficient for large files
+                Case-sensitive by default (uses StringReplace)
+                Does nothing if file doesn't exist
+      
+      @example
+        TFileKit.ReplaceText('C:\config.ini', 'DEBUG=FALSE', 'DEBUG=TRUE');
+        // Replaces all instances of 'DEBUG=FALSE' with 'DEBUG=TRUE'
+    }
     class procedure ReplaceText(const APath, OldText, NewText: string);
     
-    { Creates a new directory.
+    { @description Creates a new directory
       
-      Parameters:
-        APath - The path where the directory should be created. }
+      @usage Use when you need to create a directory and its parent directories if they don't exist
+      
+      @param APath The path where the directory should be created
+      
+      @pitfalls May fail due to permissions or invalid path characters
+                No error is raised if the directory already exists
+      
+      @example
+        TFileKit.CreateDirectory('C:\Projects\MyApp\logs');
+        // Creates the logs directory and any non-existent parent directories
+    }
     class procedure CreateDirectory(const APath: string);
 
-    { Deletes a directory and optionally its contents.
+    { @description Deletes a directory and optionally its contents
       
-      Parameters:
-        APath - The path to the directory to delete.
-        Recursive - If True, deletes all subdirectories and files. }
+      @usage Use when you need to remove a directory and its contents permanently
+      
+      @param APath The path to the directory to delete
+      @param Recursive If True (default), deletes all subdirectories and files within the directory
+      
+      @pitfalls No confirmation or recovery mechanism; operation is irreversible
+                Without Recursive=True, will fail if directory is not empty
+                With Recursive=True, performs dangerous recursive deletion; use with extreme caution
+                May fail due to permissions or if files/directories are in use
+      
+      @example
+        TFileKit.DeleteDirectory('C:\temp\cache', True);
+        // Deletes the cache directory and all its contents
+    }
     class procedure DeleteDirectory(const APath: string; const Recursive: Boolean = True);
 
-    { Ensures a directory exists, creating it if necessary.
+    { @description Ensures a directory exists, creating it and any necessary parent directories if they don't exist
       
-      Parameters:
-        APath - The path to the directory to ensure exists. }
+      @usage Use when you need to make sure a directory path exists before writing a file to it
+      
+      @param APath The full path to the directory to ensure exists (including potential parent directories)
+      
+      @pitfalls Creates the full directory tree if needed
+                No specific permissions checking before attempting creation
+                Relies on underlying ForceDirectories behavior
+      
+      @example
+        TFileKit.EnsureDirectory('C:\Users\username\AppData\Local\MyApp\data');
+        // Creates the complete directory path if any part doesn't exist
+    }
     class procedure EnsureDirectory(const APath: string);
 
-    { Lists all directories in a specified path.
+    { @description Lists all directories in a specified path, optionally recursively
       
-      Parameters:
-        APath - The path to search in.
-        Pattern - File pattern to match (e.g., '*' for all).
-        Recursive - If True, includes subdirectories.
-        SortOrder - How to sort the results.
-        
-      Returns:
-        Array of directory paths matching the criteria. }
+      @usage Use when you need to enumerate directories that match specific criteria (pattern, recursion)
+      
+      @param APath The path to search in
+      @param Pattern File pattern to match directory names (e.g., '*' for all, 'temp*' for names starting with temp)
+      @param Recursive If True, includes subdirectories in the search
+      @param SortOrder Specifies how to sort the resulting list of directories (name, date)
+      
+      @returns A dynamic array (TFilePathArray) of full directory paths matching the criteria
+      
+      @pitfalls May be slow on large directory trees, especially when Recursive=True
+                Avoids following symbolic links to prevent infinite loops
+                Returns an empty array if the base path doesn't exist or no directories match
+      
+      @example
+        Dirs := TFileKit.ListDirectories('C:\Projects', '*', False, fsName);
+        // Returns a sorted array of all top-level directories in C:\Projects
+    }
     class function ListDirectories(const APath: string; 
       const Pattern: string = '*'; 
       const Recursive: Boolean = False;
       const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
 
-    { Lists all files in a specified path.
+    { @description Lists all files in a specified path, optionally recursively
       
-      Parameters:
-        APath - The path to search in.
-        Pattern - File pattern to match (e.g., '*.txt').
-        Recursive - If True, includes files in subdirectories.
-        SortOrder - How to sort the results.
-        
-      Returns:
-        Array of file paths matching the criteria. }
+      @usage Use when you need to enumerate files that match a specific pattern (e.g., '*.txt', 'image?.jpg')
+      
+      @param APath The path to search in
+      @param Pattern File pattern to match filenames (e.g., '*.log', 'data_*.csv')
+      @param Recursive If True, includes files in subdirectories
+      @param SortOrder Specifies how to sort the resulting list of files (name, date, size)
+      
+      @returns A dynamic array (TFilePathArray) of full file paths matching the criteria
+      
+      @pitfalls May be slow on large directory trees, especially when Recursive=True
+                Returns an empty array if the base path doesn't exist or no files match
+                Pattern matching is basic wildcard matching
+      
+      @example
+        Files := TFileKit.ListFiles('C:\Documents', '*.pdf', True, fsDateDesc);
+        // Returns an array of all PDF files in C:\Documents and its subdirectories, sorted newest first
+    }
     class function ListFiles(const APath: string; 
       const Pattern: string = '*'; 
       const Recursive: Boolean = False;
       const SortOrder: TFileSortOrder = fsNone): TFilePathArray;
     
-    { Changes a file's extension.
+    { @description Changes the extension of a file path string
       
-      Parameters:
-        APath - The original file path.
-        NewExt - The new extension (with or without dot).
-        
-      Returns:
-        The path with the new extension. }
+      @usage Use when you need to modify the extension part of a path string, e.g., before renaming or creating a related file
+      
+      @param APath The original file path string
+      @param NewExt The new extension (can include or omit the leading dot)
+      
+      @returns The path string with the new extension applied
+      
+      @pitfalls Only changes the path string in memory; does not rename the actual file on disk
+                Automatically adds a dot if NewExt doesn't start with one
+                If APath has no extension, NewExt is simply appended
+      
+      @example
+        NewPath := TFileKit.ChangeExtension('C:\document.doc', '.pdf');
+        // Returns: 'C:\document.pdf'
+        BackupPath := TFileKit.ChangeExtension('C:\data.csv', 'bak');
+        // Returns: 'C:\data.bak'
+    }
     class function ChangeExtension(const APath, NewExt: string): string;
 
-    { Extracts the filename from a path.
+    { @description Extracts the filename (including extension) from a full path string
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The filename with extension. }
+      @usage Use when you need just the name part of a file path, discarding the directory information
+      
+      @param APath The full file path string
+      
+      @returns The filename with its extension
+      
+      @pitfalls Returns an empty string if APath is empty or represents a root directory
+      
+      @example
+        Name := TFileKit.GetFileName('C:\Users\docs\report.docx');
+        // Returns: 'report.docx'
+    }
     class function GetFileName(const APath: string): string;
 
-    { Extracts the filename without extension.
+    { @description Extracts the filename from a path string, excluding the extension
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The filename without extension. }
+      @usage Use when you need the base name of a file without its type identifier
+      
+      @param APath The full file path string
+      
+      @returns The filename without its extension
+      
+      @pitfalls Returns an empty string if APath is empty or represents a root directory
+      
+      @example
+        BaseName := TFileKit.GetFileNameWithoutExt('C:\images\photo.jpeg');
+        BaseName := TFileKit.GetFileNameWithoutExt('C:\images\photo.jpeg');
+        // Returns: 'photo'
+    }
     class function GetFileNameWithoutExt(const APath: string): string;
 
-    { Gets the directory part of a path.
+    { @description Gets the directory part of a full path string
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The directory containing the file. }
+      @usage Use when you need the path to the folder containing a file or directory
+      
+      @param APath The full file or directory path string
+      
+      @returns The path of the containing directory
+      
+      @pitfalls Behavior might differ slightly based on whether APath is a file or directory and if it has a trailing delimiter
+                Uses ExpandFileName internally, so relative paths are resolved
+      
+      @example
+        Dir := TFileKit.GetDirectory('C:\Users\docs\report.docx');
+        // Returns: 'docs' (or similar, depending on implementation details)
+        ParentDir := TFileKit.GetDirectory('C:\Users\docs\');
+        // Returns: 'Users' (or similar)
+    }
     class function GetDirectory(const APath: string): string;
 
-    { Gets a file's extension.
+    { @description Gets the extension part of a file path string
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file extension (with dot). }
+      @usage Use when you need to determine the type of a file based on its extension
+      
+      @param APath The full file path string
+      
+      @returns The file extension, including the leading dot (e.g., '.txt', '.docx')
+               Returns an empty string if the path has no extension
+      
+      @pitfalls Case-sensitive based on the input path string
+      
+      @example
+        Ext := TFileKit.GetExtension('C:\archive\backup.zip');
+        // Returns: '.zip'
+    }
     class function GetExtension(const APath: string): string;
     
-    { Checks if a file or directory exists.
+    { @description Checks if a file or directory exists at the specified path
       
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path exists. }
+      @usage Use to verify the existence of a file or directory before attempting operations on it
+      
+      @param APath The path to check
+      
+      @returns True if a file or directory exists at the path, False otherwise
+      
+      @pitfalls Does not distinguish between files and directories (use DirectoryExists for that)
+                May return False due to permission issues even if the path exists
+      
+      @example
+        if TFileKit.Exists('C:\config.ini') then
+          // Proceed to read the file
+    }
     class function Exists(const APath: string): Boolean;
 
-    { Checks if a directory exists.
+    { @description Checks if a directory exists at the specified path
       
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the directory exists. }
+      @usage Use specifically to verify if a path points to an existing directory
+      
+      @param APath The path to check
+      
+      @returns True if a directory exists at the path, False otherwise (including if it's a file)
+      
+      @pitfalls May return False due to permission issues even if the directory exists
+      
+      @example
+        if TFileKit.DirectoryExists('C:\Users\Public\Documents') then
+          // Proceed with directory operations
+    }
     class function DirectoryExists(const APath: string): Boolean;
 
-    { Gets a file's size in bytes.
+    { @description Gets the size of a file in bytes
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file size in bytes. }
+      @usage Use to determine the size of a file, e.g., for progress indicators or validation
+      
+      @param APath The path to the file
+      
+      @returns The size of the file in bytes (Int64). Returns 0 if the file does not exist or is empty.
+      
+      @pitfalls Returns 0 for non-existent files instead of raising an error
+                May return 0 if there are permission issues accessing the file
+      
+      @example
+        FileSize := TFileKit.GetSize('C:\data\large_dataset.bin');
+        // Returns the size of the file in bytes
+    }
     class function GetSize(const APath: string): Int64;
 
-    { Gets a file's creation time.
+    { @description Gets the creation timestamp of a file or directory
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The creation timestamp. }
+      @usage Use to find out when a file or directory was originally created
+      
+      @param APath The path to the file or directory
+      
+      @returns The creation timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
+      
+      @pitfalls Timestamp resolution and availability depend on the operating system and file system
+                On Unix, often returns the last status change time (ctime) instead of true creation time
+      
+      @example
+        Created := TFileKit.GetCreationTime('C:\boot.ini');
+        // Returns the creation date and time
+    }
     class function GetCreationTime(const APath: string): TDateTime;
 
-    { Gets a file's last access time.
+    { @description Gets the last access timestamp of a file or directory
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The last access timestamp. }
+      @usage Use to find out when a file or directory was last accessed (read or executed)
+      
+      @param APath The path to the file or directory
+      
+      @returns The last access timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
+      
+      @pitfalls Last access time updates might be disabled on some systems (especially Windows) for performance reasons
+                Timestamp resolution depends on the OS and file system
+      
+      @example
+        LastRead := TFileKit.GetLastAccessTime('C:\Users\user\document.txt');
+        // Returns the last access date and time
+    }
     class function GetLastAccessTime(const APath: string): TDateTime;
 
-    { Gets a file's last write time.
+    { @description Gets the last modification (write) timestamp of a file or directory
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The last modification timestamp. }
+      @usage Use to find out when the content of a file or directory was last changed
+      
+      @param APath The path to the file or directory
+      
+      @returns The last modification timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
+      
+      @pitfalls Timestamp resolution depends on the OS and file system
+      
+      @example
+        Modified := TFileKit.GetLastWriteTime('C:\config.ini');
+        // Returns the last modification date and time
+    }
     class function GetLastWriteTime(const APath: string): TDateTime;
 
-    { Gets a file's attributes.
+    { @description Gets the attributes of a file or directory
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The file's attributes. }
+      @usage Use to retrieve detailed properties like ReadOnly, Hidden, Directory, SymLink, etc.
+      
+      @param APath The path to the file or directory
+      
+      @returns A TFileAttributes record populated with the attributes. Fields are initialized to default values (False, empty strings) if attributes cannot be retrieved.
+      
+      @pitfalls The specific attributes available (Owner, Group, Permissions) vary between Windows and Unix
+                Retrieval might fail due to permission issues
+      
+      @example
+        Attrs := TFileKit.GetAttributes('C:\Windows\System32\kernel32.dll');
+        if Attrs.ReadOnly then WriteLn('File is read-only');
+        if Attrs.System then WriteLn('File is a system file');
+    }
     class function GetAttributes(const APath: string): TFileAttributes;
 
-    { Checks if a file is a text file.
+    { @description Attempts to determine if a file contains primarily text data
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        True if the file appears to be text. }
+      @usage Use as a heuristic check to guess if a file is text-based before trying to read it as text
+      
+      @param APath The path to the file
+      
+      @returns True if the file appears to be text (based on checking a sample for control characters), False otherwise or if the file doesn't exist/can't be read.
+      
+      @pitfalls This is a heuristic and not foolproof; it might misclassify some binary files as text or vice-versa
+                Only checks a small initial portion of the file (MaxBytesToCheck)
+                Empty files are considered text
+      
+      @example
+        if TFileKit.IsTextFile('C:\data.log') then
+          Content := TFileKit.ReadTextFile('C:\data.log');
+    }
     class function IsTextFile(const APath: string): Boolean;
 
-    { Determines a text file's encoding.
+    { @description Attempts to detect the text encoding of a file by checking for a Byte Order Mark (BOM)
       
-      Parameters:
-        APath - The file path.
-        
-      Returns:
-        The detected encoding (e.g., 'UTF-8', 'ASCII'). }
+      @usage Use to guess the encoding (UTF-8, UTF-16LE/BE, UTF-32LE/BE) before reading a text file
+      
+      @param APath The path to the file
+      
+      @returns A string representing the detected encoding ('UTF-8', 'UTF-16LE', 'UTF-16BE', 'UTF-32LE', 'UTF-32BE'). Returns 'ASCII' as the default if no BOM is found or the file cannot be read.
+      
+      @pitfalls Only detects encodings based on the presence of a BOM at the very beginning of the file
+                Files saved without a BOM (like many UTF-8 files) will be reported as 'ASCII'
+                Only checks the first few bytes (MaxBytesToCheck)
+      
+      @example
+        Encoding := TFileKit.GetFileEncoding('C:\unicode_file.txt');
+        // Might return 'UTF-16LE' or 'UTF-8' depending on the file's BOM
+    }
     class function GetFileEncoding(const APath: string): string;
     
-    { Searches for files matching a pattern.
+    { @description Searches for files matching a pattern within a directory, optionally recursively
       
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Array of search results. }
+      @usage Use to find files based on name patterns and retrieve detailed information about each match
+      
+      @param APath The directory path to start the search from
+      @param APattern The file pattern to match (e.g., '*.log', 'report_*.docx')
+      @param Recursive If True (default is False), searches subdirectories as well
+      
+      @returns A dynamic array (TSearchResults) containing detailed TSearchResult records for each matching file
+      
+      @pitfalls Can be slow on large directory structures, especially with recursion
+                Pattern matching is basic wildcard matching
+                Returns an empty array if the path doesn't exist or no files match
+      
+      @example
+        Results := TFileKit.SearchFiles('C:\Projects', '*.pas', True);
+        for Result in Results do
+          WriteLn('Found: ', Result.FullPath, ' Size: ', Result.Size);
+    }
     class function SearchFiles(const APath, APattern: string; const Recursive: Boolean = False): TSearchResults;
 
-    { Searches for files in a specific directory.
+    { @description Searches for files matching a pattern strictly within the specified directory (and optionally subdirectories)
       
-      Parameters:
-        ADirectory - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Array of search results. }
+      @usage Internal helper for SearchFiles, but can be used directly if the input path is guaranteed to be a directory
+      
+      @param ADirectory The directory path to search within
+      @param APattern The file pattern to match
+      @param Recursive If True, searches subdirectories
+      
+      @returns A dynamic array (TSearchResults) of matching files
+      
+      @pitfalls Assumes ADirectory exists; behavior is undefined if it doesn't
+                Avoids following symbolic links during recursion to prevent cycles
+      
+      @example
+        // Assuming 'C:\logs' exists
+        LogFiles := TFileKit.SearchFilesIn('C:\logs', '*.log', False);
+    }
     class function SearchFilesIn(const ADirectory, APattern: string; const Recursive: Boolean = False): TSearchResults;
 
-    { Finds the most recently modified file.
+    { @description Finds the file with the most recent modification date matching a pattern
       
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the newest file. }
+      @usage Use to identify the latest version of a file based on timestamp
+      
+      @param APath The directory path to search in
+      @param APattern The file pattern to match
+      @param Recursive If True, searches subdirectories
+      
+      @returns The full path to the most recently modified file matching the criteria. Returns an empty string if no matching files are found.
+      
+      @pitfalls If multiple files have the exact same latest timestamp, the one found first (OS-dependent order) is returned
+                Can be slow on large directories, especially with recursion
+      
+      @example
+        LatestLog := TFileKit.FindLastModifiedFile('C:\App\Logs', 'app_*.log', True);
+        // Returns the path to the newest log file
+    }
     class function FindLastModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 
-    { Finds the oldest file.
+    { @description Finds the file with the oldest modification date matching a pattern
       
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the oldest file. }
+      @usage Use to identify the earliest version of a file based on timestamp
+      
+      @param APath The directory path to search in
+      @param APattern The file pattern to match
+      @param Recursive If True, searches subdirectories
+      
+      @returns The full path to the oldest modified file matching the criteria. Returns an empty string if no matching files are found.
+      
+      @pitfalls If multiple files have the exact same oldest timestamp, the one found first (OS-dependent order) is returned
+                Can be slow on large directories, especially with recursion
+      
+      @example
+        OldestBackup := TFileKit.FindFirstModifiedFile('D:\Backups', 'db_backup_*.bak', False);
+        // Returns the path to the oldest backup file in that directory
+    }
     class function FindFirstModifiedFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 
-    { Finds the largest file by size.
+    { @description Finds the largest file (by size in bytes) matching a pattern
       
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the largest file. }
+      @usage Use to identify the file consuming the most disk space within a set
+      
+      @param APath The directory path to search in
+      @param APattern The file pattern to match
+      @param Recursive If True, searches subdirectories
+      
+      @returns The full path to the largest file matching the criteria. Returns an empty string if no matching files are found.
+      
+      @pitfalls If multiple files have the exact same largest size, the one found first (OS-dependent order) is returned
+                Can be slow on large directories, especially with recursion
+      
+      @example
+        LargestVideo := TFileKit.FindLargestFile('C:\Videos', '*.mp4', True);
+        // Returns the path to the largest MP4 file
+    }
     class function FindLargestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
 
-    { Finds the smallest file by size.
+    { @description Finds the smallest file (by size in bytes) matching a pattern
       
-      Parameters:
-        APath - The directory to search in.
-        APattern - The file pattern to match.
-        Recursive - If True, searches subdirectories.
-        
-      Returns:
-        Path to the smallest file. }
+      @usage Use to identify the smallest file, potentially for finding empty or near-empty files
+      
+      @param APath The directory path to search in
+      @param APattern The file pattern to match
+      @param Recursive If True, searches subdirectories
+      
+      @returns The full path to the smallest file matching the criteria. Returns an empty string if no matching files are found.
+      
+      @pitfalls If multiple files have the exact same smallest size, the one found first alphabetically is returned
+                Can be slow on large directories, especially with recursion
+      
+      @example
+        SmallestConfig := TFileKit.FindSmallestFile('C:\Configs', '*.ini', False);
+        // Returns the path to the smallest INI file
+    }
     class function FindSmallestFile(const APath, APattern: string; const Recursive: Boolean = False): string;
     
-    { Gets the current user's home directory.
+    { @description Gets the current user's home directory path
       
-      Returns:
-        Path to the user's home directory. }
+      @usage Use to locate user-specific configuration files, documents, or application data directories
+      
+      @returns The full path to the user's home directory (e.g., 'C:\Users\username' on Windows, '/home/username' on Linux). Falls back to GetCurrentDir if the home directory cannot be determined.
+      
+      @pitfalls Relies on environment variables ('USERPROFILE' on Windows, 'HOME' on Unix), which might not be set in all environments
+      
+      @example
+        UserConfigPath := TFileKit.CombinePaths(TFileKit.GetUserDir, '.myapp\config.json');
+        // Constructs a path within the user's home directory
+    }
     class function GetUserDir: string;
 
-    { Gets the current working directory.
+    { @description Gets the current working directory of the application
       
-      Returns:
-        Path to the current directory. }
+      @usage Use when you need to know the directory from which the application was launched or where relative paths are resolved by default
+      
+      @returns The full path to the current working directory
+      
+      @pitfalls The current directory can be changed during runtime (e.g., using ChDir), so it might not always be the application's startup directory
+      
+      @example
+        CurrentPath := TFileKit.GetCurrentDir;
+        // Returns the application's current working directory path
+    }
     class function GetCurrentDir: string;
 
-    { Gets the system's temporary directory.
+    { @description Gets the system's designated temporary directory path
       
-      Returns:
-        Path to the temp directory. }
+      @usage Use to find a standard location for creating temporary files or directories
+      
+      @returns The full path to the system's temporary directory (e.g., 'C:\Users\user\AppData\Local\Temp' on Windows, '/tmp' on Linux)
+      
+      @pitfalls Relies on system settings or environment variables (TEMP, TMP) which might vary
+                Ensure you have write permissions to this directory
+      
+      @example
+        TempFilePath := TFileKit.CombinePaths(TFileKit.GetTempDir, 'my_temp_data.tmp');
+        // Constructs a path within the system temporary directory
+    }
     class function GetTempDir: string;
 
-    { Gets a directory's parent directory.
+    { @description Gets the parent directory of a given path
       
-      Parameters:
-        APath - The path to get the parent of.
-        
-      Returns:
-        The parent directory path. }
+      @usage Use to navigate up the directory hierarchy from a file or directory path
+      
+      @param APath The file or directory path
+      
+      @returns The full path of the parent directory. Returns the root or drive if APath is already a root/drive.
+      
+      @pitfalls Behavior with root paths ('C:\', '/') might vary slightly
+                Uses ExpandFileName and ExcludeTrailingPathDelimiter internally
+      
+      @example
+        Parent := TFileKit.GetParentDir('C:\Users\docs\report.docx');
+        // Returns: 'C:\Users\docs' (or similar)
+        GrandParent := TFileKit.GetParentDir(Parent);
+        // Returns: 'C:\Users' (or similar)
+    }
     class function GetParentDir(const APath: string): string;
     
-    { Combines two paths safely.
+    { @description Safely combines two path components into a single path string
       
-      Parameters:
-        APath1 - The first path.
-        APath2 - The second path.
-        
-      Returns:
-        The combined path. }
+      @usage Use to construct full paths from directory and file/subdirectory names without worrying about missing or extra path delimiters
+      
+      @param APath1 The first path component (typically a directory)
+      @param APath2 The second path component (typically a file or subdirectory)
+      
+      @returns The combined path string, normalized with correct path delimiters. Returns APath2 if APath1 is empty, APath1 if APath2 is empty.
+      
+      @pitfalls Normalizes the path, which might resolve '..' components or change slashes depending on the OS
+      
+      @example
+        FullPath := TFileKit.CombinePaths('C:\Data', 'Subdir\file.txt');
+        // Returns: 'C:\Data\Subdir\file.txt' (on Windows)
+    }
     class function CombinePaths(const APath1, APath2: string): string;
 
-    { Checks if a path is absolute.
+    { @description Checks if a path string represents an absolute path
       
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path is absolute. }
+      @usage Use to determine if a path is fully qualified or relative to the current directory
+      
+      @param APath The path string to check
+      
+      @returns True if the path starts with a drive letter and colon (Windows) or a forward slash (Unix), False otherwise
+      
+      @pitfalls Does not validate the existence or correctness of the path, only checks the format
+      
+      @example
+        IsAbs := TFileKit.IsAbsolutePath('C:\Windows\System32'); // True on Windows
+        IsRel := TFileKit.IsAbsolutePath('mydir\myfile.txt');   // False
+    }
     class function IsAbsolutePath(const APath: string): Boolean;
 
-    { Normalizes a path's format.
+    { @description Normalizes a path string to a standard format for the current OS
       
-      Parameters:
-        APath - The path to normalize.
-        
-      Returns:
-        The normalized path. }
+      @usage Use to clean up path strings, resolve relative components ('.', '..'), and ensure consistent path delimiters
+      
+      @param APath The path string to normalize
+      
+      @returns The expanded, normalized path string with OS-specific delimiters (e.g., '\' on Windows, '/' on Unix)
+      
+      @pitfalls Resolves symbolic links as part of ExpandFileName
+                Final path might look different if '..' components navigate above the root
+      
+      @example
+        NormPath := TFileKit.NormalizePath('C:/Users/../Public/./Documents');
+        // Returns: 'C:\Public\Documents' (on Windows)
+    }
     class function NormalizePath(const APath: string): string;
     
-    { Creates a temporary file.
+    { @description Creates an empty temporary file with a unique name in the system's temporary directory
       
-      Parameters:
-        APrefix - Optional prefix for the filename.
-        
-      Returns:
-        Path to the new temp file. }
+      @usage Use when you need a temporary file for intermediate data storage, ensuring a unique name to avoid conflicts
+      
+      @param APrefix Optional prefix string to include in the temporary filename
+      
+      @returns The full path to the newly created empty temporary file
+      
+      @pitfalls The created file is *not* automatically deleted; requires manual cleanup (e.g., using DeleteFile)
+                Relies on GUID creation, which could theoretically fail
+                Requires write permissions to the temporary directory
+      
+      @example
+        TempFile := TFileKit.CreateTempFile('myapp-');
+        // Returns path like 'C:\Temp\myapp-_...GUID....tmp' and creates the empty file
+        // ... use TempFile ...
+        TFileKit.DeleteFile(TempFile); // Manual cleanup needed
+    }
     class function CreateTempFile(const APrefix: string = ''): string;
 
-    { Creates a temporary directory.
+    { @description Creates an empty temporary directory with a unique name in the system's temporary directory
       
-      Parameters:
-        APrefix - Optional prefix for the directory name.
-        
-      Returns:
-        Path to the new temp directory. }
+      @usage Use when you need a temporary directory for storing multiple temporary files or complex structures
+      
+      @param APrefix Optional prefix string to include in the temporary directory name
+      
+      @returns The full path to the newly created empty temporary directory
+      
+      @pitfalls The created directory and its contents are *not* automatically deleted; requires manual cleanup (e.g., using DeleteDirectory)
+                Relies on GUID creation, which could theoretically fail
+                Requires write permissions to the temporary directory
+      
+      @example
+        TempDir := TFileKit.CreateTempDirectory('session-');
+        // Returns path like 'C:\Temp\session-_...GUID...' and creates the empty directory
+        // ... use TempDir ...
+        TFileKit.DeleteDirectory(TempDir, True); // Manual cleanup needed
+    }
     class function CreateTempDirectory(const APrefix: string = ''): string;
 
-    { Creates a symbolic link.
+    { @description Creates a symbolic link (symlink) pointing from one path to another
       
-      Platform-specific behavior:
-      -------------------------
-      Windows:
-      - By default, requires Administrator privileges
-      - Exception: Windows 10/11 with Developer Mode enabled allows non-admin users to create symlinks
-      - Both creating and copying symlinks require appropriate privileges
-      - Use SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE flag for Developer Mode support
+                   Platform-specific behavior:
+                   -------------------------
+                   Windows:
+                   - By default, requires Administrator privileges
+                   - Exception: Windows 10/11 with Developer Mode enabled allows non-admin users to create symlinks
+                   - Both creating and copying symlinks require appropriate privileges
+                   - Use SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE flag for Developer Mode support
+                   
+                   Unix/Linux:
+                   - Regular users can create symlinks by default in their own directories
+                   - No special privileges (sudo) needed for basic symlink operations
+                   - Only requires sudo/root for:
+                     * Creating symlinks in system directories (e.g., /usr/bin, /etc)
+                     * Creating symlinks in other users' directories
+                     * Some special filesystem operations
+                   - Regular users can copy symlinks they have read access to
+                   
+                   Error handling:
+                   --------------
+                   Windows errors:
+                   - ERROR_PRIVILEGE_NOT_HELD: Run as Administrator or enable Developer Mode
+                   - ERROR_INVALID_PARAMETER: Check if target path exists
+                   - ERROR_PATH_NOT_FOUND: Verify directory structure
+                   
+                   Unix errors:
+                   - EACCES: Check directory write permissions
+                   - EEXIST: Link path already exists
+                   - ENOENT: Target path doesn't exist
+                   - EPERM: Operation requires elevated privileges
+
+      @usage Use to create shortcuts or aliases to files or directories, useful for organizing files or managing different versions
       
-      Unix/Linux:
-      - Regular users can create symlinks by default in their own directories
-      - No special privileges (sudo) needed for basic symlink operations
-      - Only requires sudo/root for:
-        * Creating symlinks in system directories (e.g., /usr/bin, /etc)
-        * Creating symlinks in other users' directories
-        * Some special filesystem operations
-      - Regular users can copy symlinks they have read access to
+      @param ATargetPath The existing file or directory path that the link should point to
+      @param ALinkPath The path where the new symbolic link file should be created
+      @param IsDirectory Set to True if the ATargetPath is a directory (especially important on Windows)
       
-      Error handling:
-      --------------
-      Windows errors:
-      - ERROR_PRIVILEGE_NOT_HELD: Run as Administrator or enable Developer Mode
-      - ERROR_INVALID_PARAMETER: Check if target path exists
-      - ERROR_PATH_NOT_FOUND: Verify directory structure
+      @pitfalls Requires specific privileges on Windows (Admin or Developer Mode)
+                Requires write permissions in the directory where ALinkPath is created
+                Behavior and requirements differ significantly between Windows and Unix
+                Raises EFileSystemError on failure with OS-specific error details
       
-      Unix errors:
-      - EACCES: Check directory write permissions
-      - EEXIST: Link path already exists
-      - ENOENT: Target path doesn't exist
-      - EPERM: Operation requires elevated privileges
-      
-      Parameters:
-        ATargetPath - The path that the symlink will point to.
-        ALinkPath - The path where the symlink will be created.
-        IsDirectory - Whether the target is a directory (matters on Windows). }
+      @example
+        // Link C:\MyLink.txt to C:\Data\RealFile.txt
+        TFileKit.CreateSymLink('C:\Data\RealFile.txt', 'C:\MyLink.txt', False); 
+        // Link /home/user/linked_dir to /mnt/data/real_dir
+        TFileKit.CreateSymLink('/mnt/data/real_dir', '/home/user/linked_dir', True); 
+    }
     class procedure CreateSymLink(const ATargetPath, ALinkPath: string; const IsDirectory: Boolean = False);
 
-    { Deletes a symbolic link.
+    { @description Deletes a symbolic link file itself, without affecting the target
       
-      Parameters:
-        ALinkPath - The path to the symlink to delete. }
+      @usage Use to remove a previously created symbolic link
+      
+      @param ALinkPath The path to the symbolic link file to delete
+      
+      @pitfalls Only deletes the link; the original target file or directory remains untouched
+                Raises EFileSystemError if deletion fails (e.g., due to permissions)
+                Does nothing if the path doesn't exist
+      
+      @example
+        TFileKit.DeleteSymLink('C:\MyLink.txt');
+        // Removes the link file C:\MyLink.txt
+    }
     class procedure DeleteSymLink(const ALinkPath: string);
 
-    { Resolves a symbolic link to its target path.
+    { @description Resolves a symbolic link to find the actual path it points to
       
-      Parameters:
-        ALinkPath - The path to the symlink to resolve.
-        
-      Returns:
-        The target path that the symlink points to. }
+      @usage Use to determine the target of a symbolic link
+      
+      @param ALinkPath The path of the symbolic link to resolve
+      
+      @returns The full, normalized path of the target file or directory
+      
+      @pitfalls Raises EFileSystemError if ALinkPath is not a symbolic link or if resolution fails
+                The returned path is normalized
+                Implementation details differ between Windows and Unix
+      
+      @example
+        TargetPath := TFileKit.ResolveSymLink('C:\MyLink.txt');
+        // Returns 'C:\Data\RealFile.txt' (or its normalized equivalent)
+    }
     class function ResolveSymLink(const ALinkPath: string): string;
 
-    { Checks if a path is a symbolic link.
+    { @description Checks if a given path represents a symbolic link
       
-      Parameters:
-        APath - The path to check.
-        
-      Returns:
-        True if the path is a symbolic link. }
+      @usage Use to distinguish symbolic links from regular files or directories
+      
+      @param APath The path to check
+      
+      @returns True if the path exists and is a symbolic link, False otherwise
+      
+      @pitfalls Uses different system calls on Windows (GetFileAttributes with FILE_ATTRIBUTE_REPARSE_POINT) and Unix (lstat)
+                Returns False if the path doesn't exist
+      
+      @example
+        if TFileKit.IsSymLink('/usr/bin/python') then
+          WriteLn('Python path is a symlink');
+    }
     class function IsSymLink(const APath: string): Boolean;
 
-    { Batch file operations }
-
+    { @description Copies multiple files matching a pattern from one directory to another (non-recursive)
+      
+      @usage Use for batch copying files within a single directory level
+      
+      @param ASourceDir The source directory containing the files to copy
+      @param ADestDir The destination directory where files should be copied
+      @param APattern The file pattern to match (e.g., '*.txt')
+      
+      @pitfalls Only copies files directly within ASourceDir; does not recurse into subdirectories
+                Will overwrite existing files in ADestDir without confirmation
+                Creates ADestDir if it doesn't exist
+      
+      @example
+        TFileKit.CopyFiles('C:\Images\Raw', 'C:\Images\Processed', '*.jpg');
+        // Copies all JPG files from Raw to Processed
+    }
     class procedure CopyFiles(const ASourceDir, ADestDir, APattern: string);
+
+    { @description Moves multiple files matching a pattern from one directory to another (non-recursive)
+      
+      @usage Use for batch moving files within a single directory level
+      
+      @param ASourceDir The source directory containing the files to move
+      @param ADestDir The destination directory where files should be moved
+      @param APattern The file pattern to match (e.g., '*.tmp')
+      
+      @pitfalls Only moves files directly within ASourceDir; does not recurse into subdirectories
+                Will overwrite existing files in ADestDir without confirmation
+                Creates ADestDir if it doesn't exist
+                Uses MoveFile internally, which may fall back to copy+delete
+      
+      @example
+        TFileKit.MoveFiles('C:\Downloads', 'C:\Archive', '*.zip');
+        // Moves all ZIP files from Downloads to Archive
+    }
     class procedure MoveFiles(const ASourceDir, ADestDir, APattern: string);
+
+    { @description Deletes multiple files matching a pattern within a directory (non-recursive)
+      
+      @usage Use for batch deleting files within a single directory level
+      
+      @param ASourceDir The directory containing the files to delete
+      @param APattern The file pattern to match (e.g., '*.log', 'temp_*')
+      
+      @pitfalls Only deletes files directly within ASourceDir; does not recurse into subdirectories
+                No confirmation or recovery; deletion is permanent
+                Does nothing if ASourceDir doesn't exist
+      
+      @example
+        TFileKit.DeleteFiles('C:\Temp', '*.tmp');
+        // Deletes all TMP files in C:\Temp
+    }
     class procedure DeleteFiles(const ASourceDir, APattern: string);
 
-    { Simple Path Analysis }
+    { @description Checks if a directory is empty (contains no files or subdirectories)
+      
+      @usage Use to determine if a directory is empty before deleting it or performing other actions
+      
+      @param Path The path to the directory to check
+      
+      @returns True if the directory exists and contains no files or subdirectories (other than '.' and '..'), False otherwise
+      
+      @pitfalls Raises EFileSystemError if the directory does not exist
+                Considers hidden files/directories when checking for emptiness
+      
+      @example
+        if TFileKit.IsEmptyDirectory('C:\EmptyFolder') then
+          TFileKit.DeleteDirectory('C:\EmptyFolder', False);
+    }
     class function IsEmptyDirectory(const Path: string): Boolean;
+
+    { @description Finds the longest common starting path between two path strings
+      
+      @usage Use to determine the shared base directory of two paths
+      
+      @param Path1 The first path string
+      @param Path2 The second path string
+      
+      @returns The longest common path prefix shared by both Path1 and Path2. Returns an empty string if there's no common prefix (e.g., different drives on Windows).
+      
+      @pitfalls Normalizes paths before comparison
+                Comparison is case-insensitive (due to NormalizePath and splitting)
+                Handles drive letters on Windows and leading slashes on Unix
+      
+      @example
+        Common := TFileKit.GetCommonPath('C:\Projects\App1\Source', 'C:\Projects\App2\Data');
+        // Returns: 'C:\Projects' (or similar normalized path)
+    }
     class function GetCommonPath(const Path1, Path2: string): string;
+
+    { @description Calculates the relative path from a base path to a target path
+      
+      @usage Use to express a path relative to another, often used for configuration files or project structures
+      
+      @param BasePath The path to be relative from
+      @param TargetPath The path to point to
+      
+      @returns A string representing the relative path from BasePath to TargetPath (e.g., '..\Data\file.txt', 'Subdir/image.png'). Uses '..' to navigate up directories. Returns '.' if paths are identical. Uses '/' as separator.
+      
+      @pitfalls Normalizes paths before calculation
+                Assumes both paths exist and are valid for calculation logic
+                Handles drive letters on Windows and leading slashes on Unix
+      
+      @example
+        Relative := TFileKit.GetRelativePath('C:\Projects\App\Source', 'C:\Projects\App\Data\config.ini');
+        // Returns: '../Data/config.ini'
+    }
     class function GetRelativePath(const BasePath, TargetPath: string): string;
+
+    { @description Checks if one path is a subdirectory (or file within a subdirectory) of another path
+      
+      @usage Use to verify if a file or folder resides within a specific parent directory tree
+      
+      @param ParentPath The potential parent directory path
+      @param ChildPath The path to check if it's under ParentPath
+      
+      @returns True if ChildPath starts with the normalized ParentPath (including trailing delimiter), False otherwise
+      
+      @pitfalls Normalizes both paths before comparison
+                Comparison is case-insensitive (due to NormalizePath)
+      
+      @example
+        IsInside := TFileKit.IsSubPath('C:\Users\Public', 'C:\Users\Public\Documents\report.txt');
+        // Returns: True
+    }
     class function IsSubPath(const ParentPath, ChildPath: string): Boolean;
 
-    { Basic File Content Operations }
+    { @description Counts the number of lines in a text file
+      
+      @usage Use to get a quick estimate of file length or for processing line-based data
+      
+      @param FilePath The path to the text file
+      
+      @returns The number of lines based on counting Line Feed (LF, #10) characters. Adds 1 if the file is non-empty and doesn't end with LF.
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+                Reads the file in chunks; performance depends on file size
+                Assumes LF as the primary line ending; might miscount files with only CR endings
+      
+      @example
+        LineCount := TFileKit.CountLines('C:\logfile.log');
+        // Returns the number of lines in the log file
+    }
     class function CountLines(const FilePath: string): Integer;
+
+    { @description Reads and returns the first line of a text file
+      
+      @usage Use to quickly peek at the header or first record of a text file
+      
+      @param FilePath The path to the text file
+      
+      @returns The content of the first line, up to the first CR or LF character. Returns an empty string if the file is empty or doesn't exist.
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+                Only reads a small initial chunk (4KB) of the file
+      
+      @example
+        Header := TFileKit.GetFirstLine('C:\data.csv');
+        // Returns the first line (header row) of the CSV file
+    }
     class function GetFirstLine(const FilePath: string): string;
+
+    { @description Reads and returns the last line of a text file
+      
+      @usage Use to get the most recent entry in a log file or the last record in a data file
+      
+      @param FilePath The path to the text file
+      
+      @returns The content of the last line. Returns an empty string if the file is empty or doesn't exist.
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+                Loads the entire file into a TStringList, which can be inefficient for very large files
+      
+      @example
+        LastLogEntry := TFileKit.GetLastLine('C:\server.log');
+        // Returns the last line written to the log file
+    }
     class function GetLastLine(const FilePath: string): string;
+
+    { @description Checks if a file is empty (has a size of 0 bytes)
+      
+      @usage Use to quickly determine if a file contains any data
+      
+      @param FilePath The path to the file
+      
+      @returns True if the file exists and its size is 0, False otherwise
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+      
+      @example
+        if TFileKit.IsFileEmpty('C:\output.txt') then
+          WriteLn('Output file is empty.');
+    }
     class function IsFileEmpty(const FilePath: string): Boolean;
+
+    { @description Checks if a file contains a specific text string
+      
+      @usage Use to quickly search for the presence of a keyword or marker within a file
+      
+      @param FilePath The path to the file
+      @param SearchText The text string to search for
+      @param CaseSensitive If True (default is False), the search is case-sensitive
+      
+      @returns True if the SearchText is found within the file content, False otherwise
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+                Loads the entire file content into memory, inefficient for large files
+                Uses simple Pos search, not optimized for large-scale text searching
+      
+      @example
+        HasError := TFileKit.ContainsText('C:\app.log', 'ERROR:', False);
+        // Returns True if the log file contains 'ERROR:' (case-insensitive)
+    }
     class function ContainsText(const FilePath, SearchText: string; CaseSensitive: Boolean = False): Boolean;
 
-    { Simple File Type Detection }
+    { @description Attempts to determine if a file is binary rather than text
+      
+      @usage Use as a heuristic to guess if a file contains non-textual data
+      
+      @param FilePath The path to the file
+      
+      @returns True if the file appears to be binary (based on checking a sample for a high percentage of control characters), False otherwise (considered text or empty).
+      
+      @pitfalls Raises EFileSystemError if the file does not exist
+                This is a heuristic and not foolproof; might misclassify some files
+                Only checks a small initial portion (512 bytes)
+                Empty files are considered non-binary (text)
+      
+      @example
+        if not TFileKit.IsBinaryFile('C:\image.jpg') then
+          WriteLn('Warning: Expected image.jpg to be binary.');
+    }
     class function IsBinaryFile(const FilePath: string): Boolean;
+
+    { @description Guesses the MIME type of a file based on its extension
+      
+      @usage Use to determine the likely content type of a file for web servers or file handling logic
+      
+      @param FilePath The path to the file
+      
+      @returns A string representing the guessed MIME type (e.g., 'text/plain', 'image/jpeg', 'application/pdf'). Returns 'application/octet-stream' if the extension is unknown.
+      
+      @pitfalls Relies solely on the file extension; does not inspect file content
+                Only knows a limited set of common extensions defined internally
+                Comparison is case-insensitive
+      
+      @example
+        Mime := TFileKit.GetMimeType('C:\document.pdf');
+        // Returns: 'application/pdf'
+    }
     class function GetMimeType(const FilePath: string): string;
+
+    { @description Checks if a file is likely executable based on extension (Windows) or permissions (Unix)
+      
+      @usage Use to identify files that can be executed by the operating system
+      
+      @param FilePath The path to the file
+      
+      @returns True if the file has an executable extension (.exe, .com, .bat, .cmd on Windows) or has execute permissions (Unix), False otherwise.
+      
+      @pitfalls On Windows, relies only on common executable extensions
+                On Unix, requires file system access to check permissions (fpStat)
+                Does not guarantee the file is actually a valid executable program
+      
+      @example
+        if TFileKit.IsExecutable('C:\MyApp\run.exe') then
+          // It's likely an executable file
+    }
     class function IsExecutable(const FilePath: string): Boolean;
+
+    { @description Checks if a file or directory is hidden
+      
+      @usage Use to identify files or directories that are typically hidden from standard listings
+      
+      @param FilePath The path to the file or directory
+      
+      @returns True if the file/directory has the hidden attribute (Windows) or its name starts with a dot (Unix), False otherwise.
+      
+      @pitfalls Definition of "hidden" differs between Windows and Unix
+                On Windows, requires checking file attributes
+                On Unix, relies purely on the naming convention
+      
+      @example
+        if TFileKit.IsHidden('C:\Users\user\NTUSER.DAT') then
+          WriteLn('File is hidden.');
+    }
     class function IsHidden(const FilePath: string): Boolean;
 
-    { Basic Space Operations }
+    { @description Gets the amount of free space available on the drive containing the specified path
+      
+      @usage Use to check available disk space before writing large files or performing installations
+      
+      @param Path A path located on the drive to check (e.g., 'C:\', '/home/user')
+      
+      @returns The number of free bytes available to the current user on the drive (Int64). Returns -1 on error (e.g., path doesn't exist, permission error).
+      
+      @pitfalls Requires access to the specified path to determine the drive
+                Uses platform-specific API calls (GetDiskFreeSpaceEx on Windows, statfs on Unix)
+      
+      @example
+        FreeSpace := TFileKit.GetDriveFreeSpace('D:\Data');
+        if FreeSpace > 1024*1024*100 then // Check for > 100 MB
+          // Proceed with operation
+    }
     class function GetDriveFreeSpace(const Path: string): Int64;
+
+    { @description Gets the total capacity of the drive containing the specified path
+      
+      @usage Use to determine the total size of a storage volume
+      
+      @param Path A path located on the drive to check (e.g., 'C:\', '/mnt/data')
+      
+      @returns The total size of the drive in bytes (Int64). Returns -1 on error.
+      
+      @pitfalls Requires access to the specified path to determine the drive
+                Uses platform-specific API calls
+      
+      @example
+        Capacity := TFileKit.GetDriveCapacity('C:\');
+        // Returns the total size of the C: drive
+    }
     class function GetDriveCapacity(const Path: string): Int64;
+
+    { @description Checks if a drive has at least a specified amount of free space
+      
+      @usage A convenience function combining GetDriveFreeSpace with a comparison
+      
+      @param Path A path located on the drive to check
+      @param RequiredBytes The minimum number of free bytes required
+      
+      @returns True if the drive has at least RequiredBytes of free space available, False otherwise or on error.
+      
+      @pitfalls Returns False if GetDriveFreeSpace returns -1 (error)
+      
+      @example
+        if TFileKit.HasEnoughSpace('C:\InstallDir', 500 * 1024 * 1024) then // Need 500MB
+          // Start installation
+    }
     class function HasEnoughSpace(const Path: string; RequiredBytes: Int64): Boolean;
 
-    { Basic File Comparison }
+    { @description Compares two files byte-by-byte to check if their content is identical
+      
+      @usage Use for verifying file copies, detecting changes, or comparing data integrity
+      
+      @param File1 Path to the first file
+      @param File2 Path to the second file
+      
+      @returns True if both files exist and contain the exact same sequence of bytes, False otherwise (including if sizes differ or content mismatches).
+      
+      @pitfalls Returns False if either file does not exist
+                Reads files in chunks (4KB); performance depends on file size
+      
+      @example
+        if TFileKit.AreFilesIdentical('C:\original.dat', 'C:\backup.dat') then
+          WriteLn('Files are identical.');
+    }
     class function AreFilesIdentical(const File1, File2: string): Boolean;
+
+    { @description Compares the modification times of two files and returns the path of the newer one
+      
+      @usage Use to determine which of two files was modified more recently
+      
+      @param File1 Path to the first file
+      @param File2 Path to the second file
+      
+      @returns The path of the file with the later modification timestamp. If timestamps are equal, returns File2. If only one file exists, returns that file's path.
+      
+      @pitfalls Raises EFileSystemError if neither file exists
+                Relies on FileAge, which might have limited resolution depending on the file system
+      
+      @example
+        Newer := TFileKit.GetNewerFile('config.ini', 'config.bak');
+        // Returns the path of the more recently saved config file
+    }
     class function GetNewerFile(const File1, File2: string): string;
+
+    { @description Compares two files byte-by-byte and returns a list of differences
+      
+      @usage Use for basic file comparison to identify where two files differ
+      
+      @param File1 Path to the first file
+      @param File2 Path to the second file
+      
+      @returns A TStringArray containing descriptions of the differences found (e.g., differing bytes at specific positions, size mismatches). Returns an empty array if files are identical or if either file doesn't exist.
+      
+      @pitfalls Reads files in chunks (4KB)
+                Only reports the first differing byte within each chunk comparison
+                Can generate a large array if files differ significantly
+                Not a sophisticated diff algorithm
+      
+      @example
+        Diffs := TFileKit.GetFileDifferences('file_v1.txt', 'file_v2.txt');
+        if Length(Diffs) > 0 then
+          WriteLn('Files differ: ', Diffs[0]);
+    }
     class function GetFileDifferences(const File1, File2: string): TStringArray;
 
-    { Simple File Locking }
+    { @description Attempts to acquire an exclusive lock on a file (simple implementation)
+      
+      @usage Use to prevent other processes or parts of the application from modifying a file while it's being processed
+      
+      @param FilePath The path to the file to lock
+      
+      @returns True if the lock was successfully acquired, False otherwise (e.g., file doesn't exist, already locked by this mechanism).
+      
+      @pitfalls This is a very basic, advisory locking mechanism using a global list (Windows) or a '.lock' file (Unix). It's not a robust OS-level lock.
+                Does not prevent other applications unaware of this mechanism from accessing the file.
+                Requires calling UnlockFile to release the lock.
+                The global list `LockedFiles` is not thread-safe.
+      
+      @example
+        if TFileKit.LockFile('C:\data.db') then
+        try
+          // Process the file exclusively
+        finally
+          TFileKit.UnlockFile('C:\data.db');
+        end;
+    }
     class function LockFile(const FilePath: string): Boolean;
+
+    { @description Releases a lock previously acquired by LockFile
+      
+      @usage Must be called to release a lock obtained via LockFile to allow others to lock it
+      
+      @param FilePath The path to the file whose lock should be released
+      
+      @returns True if the lock was found and released, False otherwise (e.g., file wasn't locked by this mechanism).
+      
+      @pitfalls Only releases locks managed by this specific LockFile/UnlockFile implementation.
+                The global list `LockedFiles` is not thread-safe.
+      
+      @example
+        // (Inside a try..finally block after LockFile)
+        TFileKit.UnlockFile('C:\data.db');
+    }
     class function UnlockFile(const FilePath: string): Boolean;
+
+    { @description Checks if a file is currently locked by this TFileKit's simple locking mechanism
+      
+      @usage Use to check the status of the advisory lock before attempting an operation
+      
+      @param FilePath The path to the file to check
+      
+      @returns True if the file path is present in the internal list of locked files, False otherwise.
+      
+      @pitfalls Only checks the internal advisory lock status; does not check for OS-level locks or locks held by other applications.
+                The global list `LockedFiles` is not thread-safe.
+      
+      @example
+        if TFileKit.IsFileLocked('C:\status.flag') then
+          WriteLn('Status file is currently locked.');
+    }
     class function IsFileLocked(const FilePath: string): Boolean;
 
-    { Path Validation and Sanitization }
+    { @description Checks if a filename string contains invalid characters or violates basic naming rules
+      
+      @usage Use to validate user input or generated filenames before attempting to create files
+      
+      @param FileName The filename string to validate (just the name, not the full path)
+      
+      @returns True if the filename is considered valid (non-empty, within length limits, no forbidden characters), False otherwise.
+      
+      @pitfalls Checks against a common set of invalid characters ('<', '>', ':', '"', '/', '\', '|', '?', '*'); OS might have additional restrictions.
+                Checks for basic length limit (255); actual filesystem limits might vary.
+                Does not check for reserved filenames (CON, PRN, AUX, etc. on Windows).
+      
+      @example
+        if TFileKit.IsValidFileName('report_final.docx') then
+          // Proceed to create file
+    }
     class function IsValidFileName(const FileName: string): Boolean;
+
+    { @description Replaces invalid characters in a filename string with underscores
+      
+      @usage Use to clean up potentially invalid filenames to make them safe for file system use
+      
+      @param FileName The filename string to sanitize
+      
+      @returns A sanitized version of the filename with invalid characters replaced by '_'. Also trims trailing spaces/dots and ensures the result is not empty.
+      
+      @pitfalls Replaces invalid characters with '_'; might lead to collisions if multiple invalid names sanitize to the same result.
+                Does not handle reserved filenames (CON, PRN, etc.).
+                Resulting filename might still exceed path length limits when combined with a directory.
+      
+      @example
+        SafeName := TFileKit.SanitizeFileName('My Report / Version? *final*:.txt');
+        // Returns: 'My Report _ Version_ _final__.txt' (or similar)
+    }
     class function SanitizeFileName(const FileName: string): string;
+
+    { @description Attempts to create a valid, normalized path string by sanitizing components and resolving relative parts
+      
+      @usage Use to clean up and normalize a potentially complex or invalid path string
+      
+      @param Path The path string to make valid
+      
+      @returns A normalized path string with invalid filename components sanitized and relative parts ('.', '..') resolved.
+      
+      @pitfalls Combines normalization (like NormalizePath) with filename sanitization (SanitizeFileName) for each component.
+                Resolution of '..' might lead to unexpected results if the input path is unusual.
+      
+      @example
+        ValidPath := TFileKit.MakeValidPath('C:/Temp/../My Data?/report<1>.txt');
+        // Returns: 'C:\My Data_\report_1_.txt' (on Windows)
+    }
     class function MakeValidPath(const Path: string): string;
+
+    { @description Checks if a path string potentially exceeds typical operating system path length limits
+      
+      @usage Use as a preliminary check to avoid errors caused by excessively long paths
+      
+      @param Path The path string to check
+      
+      @returns True if the path length exceeds a predefined limit (260 for Windows, 1024 for Unix), False otherwise.
+      
+      @pitfalls The actual path length limits can be complex and depend on the OS version, filesystem, and API used. This is a simplified check.
+                Windows has mechanisms (like '\\?\') to handle longer paths, which this check doesn't account for.
+      
+      @example
+        LongPath := StringOfChar('A', 300);
+        if TFileKit.IsPathTooLong('C:\' + LongPath + '\file.txt') then
+          WriteLn('Warning: Path might be too long.');
+    }
     class function IsPathTooLong(const Path: string): Boolean;
 
-    { Simple Directory Summary }
+    { @description Gathers summary information about a directory's contents (non-recursive)
+      
+      @usage Use to get a quick overview of a directory (file/subdir count, total size, oldest/newest/largest files)
+      
+      @param Path The path to the directory
+      
+      @returns A TDirectoryInfo record populated with the summary. Fields are zero/empty if the directory doesn't exist or is empty.
+      
+      @pitfalls Only scans the immediate contents of the directory; does not recurse.
+                Performance depends on the number of items in the directory.
+                File times/sizes are retrieved during the scan.
+      
+      @example
+        Info := TFileKit.GetDirectoryInfo('C:\Downloads');
+        WriteLn('Files: ', Info.FileCount, ', Size: ', Info.TotalSize);
+        WriteLn('Newest: ', Info.NewestFile);
+    }
     class function GetDirectoryInfo(const Path: string): TDirectoryInfo;
 
-    { Basic File Patterns }
+    { @description Checks if a filename matches a simple wildcard pattern
+      
+      @usage A basic pattern matching function used internally by listing/searching functions
+      
+      @param FileName The filename to check
+      @param Pattern The wildcard pattern ('*', '*ext', 'name*', '*part*')
+      
+      @returns True if the FileName matches the Pattern, False otherwise. Case-insensitive.
+      
+      @pitfalls Very basic wildcard support: '*' anywhere, '*text', 'text*', '*text*'. Does not support '?'.
+      
+      @example
+        if TFileKit.MatchesPattern('document.txt', '*.txt') then // True
+        if TFileKit.MatchesPattern('image.jpg', 'img*') then // False
+    }
     class function MatchesPattern(const FileName, Pattern: string): Boolean;
+
+    { @description Finds the first file or directory matching a pattern within a directory (non-recursive)
+      
+      @usage Use to quickly find if at least one item matches a pattern, without listing all items
+      
+      @param Directory The directory path to search in
+      @param Pattern The file/directory pattern to match
+      
+      @returns The name (not full path) of the first matching item found. Returns an empty string if no match is found or the directory doesn't exist.
+      
+      @pitfalls The order of items returned by FindFirst is OS-dependent.
+                Only searches the immediate contents of the directory.
+      
+      @example
+        FirstLog := TFileKit.FindFirstMatch('C:\Logs', '*.log');
+        if FirstLog <> '' then WriteLn('Found log file: ', FirstLog);
+    }
     class function FindFirstMatch(const Directory, Pattern: string): string;
+
+    { @description Counts the number of files or directories matching a pattern within a directory (non-recursive)
+      
+      @usage Use to quickly count items matching a pattern without retrieving the full list
+      
+      @param Directory The directory path to search in
+      @param Pattern The file/directory pattern to match
+      
+      @returns The number of items (excluding '.' and '..') matching the pattern in the directory.
+      
+      @pitfalls Only counts items directly within the specified directory.
+      
+      @example
+        TmpFileCount := TFileKit.CountMatches('C:\Temp', '*.tmp');
+        WriteLn('Found ', TmpFileCount, ' temporary files.');
+    }
     class function CountMatches(const Directory, Pattern: string): Integer;
 
+    { @description Reads a specific chunk of bytes from a file
+      
+      @usage Use for reading parts of large files without loading the entire content, e.g., for partial processing or random access
+      
+      @param FilePath The path to the file
+      @param Offset The starting byte position (0-based) to read from
+      @param Size The maximum number of bytes to read
+      
+      @returns A TBytes dynamic array containing the bytes read. The array length might be less than Size if EOF is reached or Offset is invalid. Returns an empty array on error or if Offset is out of bounds.
+      
+      @pitfalls Returns empty array if FilePath doesn't exist or Offset is invalid
+                Actual bytes read might be less than requested Size if near EOF
+      
+      @example
+        // Read 1024 bytes starting from position 4096
+        Chunk := TFileKit.GetChunk('C:\largefile.bin', 4096, 1024);
+        if Length(Chunk) > 0 then
+          // Process the chunk
+    }
     class function GetChunk(const FilePath: string; Offset, Size: Int64): TBytes;
   end;
 
