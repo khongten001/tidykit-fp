@@ -149,21 +149,98 @@ type
 
   TFileKit = class
   private
-    { Creates a TSearchResult record for a given path. This internal helper function
-      gathers all necessary information about the file or directory, including size,
-      modification date, and attributes, to provide a detailed overview.
+    { @description Creates a detailed information record for a file or directory
       
-      Parameters:
-        APath - The file or directory path for which the search result is to be created.
+      @usage Internal helper used by search and listing methods to collect file information
       
-      Returns:
-        A TSearchResult record populated with the file or directory's details. }
+      @param APath The file or directory path to analyze
+      
+      @returns A populated TSearchResult record with details like path, size, timestamps, and attributes
+      
+      @pitfalls Only retrieves basic file information; some advanced attributes may not be available
+                Path is normalized which could resolve symbolic links
+                Returns zero values for size/dates if file information cannot be retrieved
+      
+      @example
+        Result := CreateSearchResult('C:\Windows\notepad.exe');
+        // Returns a TSearchResult with details about notepad.exe
+    }
     class function CreateSearchResult(const APath: string): TSearchResult;
 
+    { @description Converts a platform-specific file time value to TDateTime format
+      
+      @usage Internal helper for normalizing timestamp formats across platforms
+      
+      @param FileTime A platform-specific file time structure (FILETIME on Windows, TDateTime on Unix)
+      
+      @returns The converted value as a TDateTime value, normalized for the local time zone
+               Returns 0 if the conversion fails
+      
+      @pitfalls On Windows, performs multiple conversions that may lose precision
+                Windows FILETIME and Delphi TDateTime have different base dates and resolutions
+                On Unix systems, simply passes through the existing TDateTime value
+      
+      @example
+        DateTime := FileTimeToDateTime(FindData.ftLastWriteTime);
+        // Converts a Windows FILETIME to TDateTime
+    }
     class function FileTimeToDateTime(const FileTime: {$IFDEF WINDOWS}FILETIME{$ELSE}TDateTime{$ENDIF}): TDateTime;
+    
+    { @description Performs simple wildcard pattern matching for filenames
+    
+      @usage Internal helper used by file search and listing methods to match filenames against patterns
+      
+      @param FileName The filename to check against the pattern
+      @param Pattern The pattern to match against (supports '*' at start, end, or both)
+      
+      @returns True if the filename matches the pattern, False otherwise
+      
+      @pitfalls Uses case-insensitive comparison
+                Limited wildcard support: only handles '*' (not '?')
+                Only supports patterns with a single '*' at start, end, or both ends
+                Complex patterns will not work as expected
+      
+      @example
+        if MatchPattern('document.txt', '*.txt') then // Returns True
+        if MatchPattern('image.jpg', 'img*') then // Returns False
+    }
     class function MatchPattern(const FileName, Pattern: string): Boolean;
 
+    { @description Loads the entire content of a text file into a string
+    
+      @usage Internal helper used by text manipulation methods (ReadTextFile, etc.)
+      
+      @param APath The path of the file to read
+      
+      @returns The complete text content of the file as a string
+               Returns an empty string if the file doesn't exist or cannot be read
+      
+      @pitfalls No exception handling for read errors
+                Loads the entire file content into memory, which may be problematic for very large files
+                No text encoding detection or conversion
+      
+      @example
+        Content := LoadTextFromFile('C:\config.ini');
+        // Returns the complete content of config.ini
+    }
     class function LoadTextFromFile(const APath: string): string;
+    
+    { @description Saves a string to a text file, creating the directory structure if needed
+    
+      @usage Internal helper used by text modification methods (WriteTextFile, etc.)
+      
+      @param APath The path where the file should be created or overwritten
+      @param AContent The string content to write to the file
+      
+      @pitfalls Always creates parent directories if they don't exist
+                Always overwrites existing file without confirmation
+                No exception handling for write errors
+                No text encoding specification
+      
+      @example
+        SaveTextToFile('C:\logs\app.log', 'Application started');
+        // Creates or overwrites app.log with the specified content
+    }
     class procedure SaveTextToFile(const APath: string; const AContent: string);
   public
     { @description Reads the entire content of a file and returns it as a string
@@ -3384,47 +3461,6 @@ begin
   
   // Move each file
   for I := 0 to High(Files) do
-  begin
-    // Get relative path from source directory
-    RelativePath := ExtractRelativePath(
-      IncludeTrailingPathDelimiter(ASourceDir),
-      Files[I]
-    );
-    
-    // Construct destination path
-    DestPath := CombinePaths(ADestDir, RelativePath);
-    
-    // Create destination directory if needed
-    ForceDirectories(ExtractFilePath(DestPath));
-    
-    // Move the file
-    MoveFile(Files[I], DestPath);
-  end;
-end;
-
-class procedure TFileKit.DeleteFiles(const ASourceDir, APattern: string);
-var
-  Files: TFilePathArray;
-  I: Integer;
-begin
-  if not DirectoryExists(ASourceDir) then
-    Exit;
-    
-  // Get list of files matching pattern
-  Files := ListFiles(ASourceDir, APattern, False);
-  
-  // Delete each file
-  for I := 0 to High(Files) do
-    DeleteFile(Files[I]);
-end;
-
-function MatchPattern(const FileName, Pattern: string): Boolean;
-begin
-  Result := False;
-  if Pattern = '*' then
-    Exit(True);
-
-  // Simple wildcard matching for now
   if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
     Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
   else if Pattern[1] = '*' then
