@@ -3,35 +3,193 @@ unit TidyKit.Math;
 {$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 
+{
+  TidyKit.Math is a helper unit providing foundational mathematical types and functions
+  for other specialized math units in the TidyKit library (Statistics, Finance, etc.)
+}
+
 interface
 
 uses
   Classes, SysUtils;
 
 type
-  { Array types for different numeric data }
+  
+  { Standardized numeric array types for consistent type handling across the library }
   TIntegerArray = array of Integer;
   TDoubleArray = array of Double;
   TSingleArray = array of Single;
   TExtendedArray = array of Extended;
   
-  { Pair of doubles used in various mathematical operations }
+  { A record containing two double values representing a range or interval }
   TDoublePair = record
     Lower: Double;
     Upper: Double;
   end;
 
-{ Statistical distribution functions }
+{
+  @description Statistical distribution function for the Student's t cumulative distribution
+  
+  @usage Use to calculate p-values and critical values in hypothesis testing and when
+         working with small samples where the normal approximation is not appropriate
+  
+  @param DF Degrees of freedom (integer)
+  @param X The value for which to evaluate the CDF
+  
+  @returns The probability that a value sampled from a t-distribution with DF degrees of
+           freedom is less than X
+  
+  @warning Numerical approximation, accuracy may diminish for very large or small values
+  
+  @example
+    // Calculate the probability of observing a value less than 2.5
+    // for a t-distribution with 10 degrees of freedom
+    Probability := StudentT(10, 2.5);
+}
 function StudentT(const DF: Integer; const X: Double): Double;
+
+{
+  @description Incomplete beta function, used as a building block for many statistical distributions
+  
+  @usage Used internally by distribution functions; rarely needed directly
+  
+  @param A First shape parameter 
+  @param B Second shape parameter
+  @param X Value at which to evaluate the function (between 0 and 1)
+  
+  @returns The value of the incomplete beta function at X
+}
 function BetaInc(const A, B, X: Double): Double;
+
+{
+  @description Beta function, a special function defined by B(z,w) = Γ(z)Γ(w)/Γ(z+w)
+  
+  @usage Used in probability theory and mathematical statistics
+  
+  @param Z First parameter
+  @param W Second parameter
+  
+  @returns The value of the beta function
+}
 function Beta(const Z, W: Double): Double;
+
+{
+  @description Natural logarithm of the gamma function
+  
+  @usage Used as a building block for many statistical calculations,
+         especially when working with distributions
+  
+  @param X Input value (must be positive)
+  
+  @returns The natural logarithm of the gamma function at X
+  
+  @warning Computes ln(Γ(x)) rather than Γ(x) directly to avoid overflow
+           for large values of X
+}
 function GammaLn(const X: Double): Double;
+
+{
+  @description Standard normal cumulative distribution function (CDF)
+  
+  @usage Use to calculate probabilities for the normal distribution
+  
+  @param X The value for which to evaluate the CDF
+  
+  @returns The probability that a standard normal random variable is less than X
+  
+  @example
+    // Calculate the probability that a standard normal random variable
+    // is less than 1.96 (97.5th percentile)
+    Probability := NormalCDF(1.96); // Expected result: approx. 0.975
+}
 function NormalCDF(const X: Double): Double;
+
+{
+  @description Error function, a special function used in probability and statistics
+  
+  @usage Used as a building block for the normal distribution and related functions
+  
+  @param X Input value
+  
+  @returns The value of the error function at X
+}
 function Erf(const X: Double): Double;
 
-{ Array conversion functions }
+{
+  @description Converts an array of Integer values to an array of Double values
+  
+  @usage Use when you need to perform double-precision calculations on integer data
+  
+  @param Data The source integer array
+  
+  @returns A double-precision array with the same values
+  
+  @example
+    var
+      IntArray: TIntegerArray;
+      DoubleArray: TDoubleArray;
+    begin
+      SetLength(IntArray, 3);
+      IntArray[0] := 1;
+      IntArray[1] := 2;
+      IntArray[2] := 3;
+      
+      DoubleArray := ToDoubleArray(IntArray);
+      // DoubleArray now contains [1.0, 2.0, 3.0]
+    end;
+}
 function ToDoubleArray(const Data: TIntegerArray): TDoubleArray;
+
+{
+  @description Converts an array of Single values to an array of Double values
+  
+  @usage Use when you need increased precision for calculations
+  
+  @param Data The source single-precision array
+  
+  @returns A double-precision array with the same values
+  
+  @example
+    var
+      SingleArray: TSingleArray;
+      DoubleArray: TDoubleArray;
+    begin
+      SetLength(SingleArray, 2);
+      SingleArray[0] := 1.5;
+      SingleArray[1] := 2.5;
+      
+      DoubleArray := ToDoubleArray(SingleArray);
+      // DoubleArray now contains [1.5, 2.5] with double precision
+    end;
+}
 function ToDoubleArray(const Data: TSingleArray): TDoubleArray;
+
+{
+  @description Converts an array of Extended values to an array of Double values
+  
+  @usage Use when you need to standardize extended-precision data to double precision
+         for consistent calculations
+  
+  @param Data The source extended-precision array
+  
+  @returns A double-precision array with the same values
+  
+  @warning May lose precision if Extended has higher precision than Double 
+           on your platform
+  
+  @example
+    var
+      ExtArray: TExtendedArray;
+      DoubleArray: TDoubleArray;
+    begin
+      SetLength(ExtArray, 2);
+      ExtArray[0] := 1.1;
+      ExtArray[1] := 2.2;
+      
+      DoubleArray := ToDoubleArray(ExtArray);
+      // DoubleArray now contains [1.1, 2.2] with double precision
+    end;
+}
 function ToDoubleArray(const Data: TExtendedArray): TDoubleArray;
 
 implementation

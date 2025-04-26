@@ -65,277 +65,671 @@ type
   { Financial calculations class }
   TFinanceKit = class
   private
-    { Helper function for Black-Scholes calculations }
+    {
+      @description Helper function for Black-Scholes calculations
+      
+      @usage Used internally by the Black-Scholes option pricing model to calculate
+             the cumulative normal distribution function
+      
+      @param X The value at which to evaluate the standard normal CDF
+      
+      @returns The probability that a standard normal random variable is less than X
+      
+      @warning Uses polynomial approximation, so values in extreme tails 
+               (beyond ±8) may have reduced accuracy
+      
+      @example
+        var
+          Probability: Double;
+        begin
+          Probability := CumulativeNormal(1.96);
+          // Returns approximately 0.975
+        end;
+    }
     class function CumulativeNormal(const X: Double): Double; static;
   public
-    { Present Value calculations
+    {
+      @description Present Value (PV) represents the current worth of a future sum of money.
+                   Formula: PV = FV / (1 + r)^n
+                   where:
+                   - FV = Future Value
+                   - r = Interest rate per period
+                   - n = Number of periods
       
-      Present Value (PV) represents the current worth of a future sum of money.
-      Formula: PV = FV / (1 + r)^n
-      where:
-      - FV = Future Value
-      - r = Interest rate per period
-      - n = Number of periods
+      @usage Use to calculate the present value of a single future cash flow
       
-      Source: CFA Institute's Financial Mathematics }
+      @param AFutureValue The future cash flow amount
+      @param ARate The interest/discount rate per period (e.g., 0.05 for 5%)
+      @param APeriods The number of periods until the future cash flow
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The present value of the future cash flow, rounded to ADecimals places
+      
+      @references CFA Institute's Financial Mathematics
+      
+      @warning Raises EFinanceError if APeriods is negative.
+               For very small rates (near zero), returns AFutureValue directly.
+      
+      @example
+        var
+          PV: Double;
+        begin
+          // Calculate the present value of $1000 received in 5 years at 8% annual interest
+          PV := TFinanceKit.PresentValue(1000, 0.08, 5);
+          // Returns approximately 680.5832
+        end;
+    }
     class function PresentValue(const AFutureValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Future Value represents the value of a present sum at a future date.
-      Formula: FV = PV * (1 + r)^n
-      where:
-      - PV = Present Value
-      - r = Interest rate per period
-      - n = Number of periods
+    {
+      @description Future Value represents the value of a present sum at a future date.
+                   Formula: FV = PV * (1 + r)^n
+                   where:
+                   - PV = Present Value
+                   - r = Interest rate per period
+                   - n = Number of periods
       
-      Source: CFA Institute's Financial Mathematics }
+      @usage Use to calculate how much a current investment will be worth in the future
+      
+      @param APresentValue The initial investment amount
+      @param ARate The interest rate per period (e.g., 0.05 for 5%)
+      @param APeriods The number of periods to project into the future
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The future value of the investment, rounded to ADecimals places
+      
+      @references CFA Institute's Financial Mathematics
+      
+      @example
+        var
+          FV: Double;
+        begin
+          // Calculate the future value of $1000 invested for 5 years at 8% annual interest
+          FV := TFinanceKit.FutureValue(1000, 0.08, 5);
+          // Returns approximately 1469.3282
+        end;
+    }
     class function FutureValue(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Compound Interest calculations
+    {
+      @description Compound Interest is the interest earned on both initial principal and accumulated interest.
+                   Formula: CI = P * ((1 + r)^n - 1)
+                   where:
+                   - P = Principal amount
+                   - r = Interest rate per period
+                   - n = Number of periods
       
-      Compound Interest is the interest earned on both initial principal and accumulated interest.
-      Formula: CI = P * ((1 + r)^n - 1)
-      where:
-      - P = Principal amount
-      - r = Interest rate per period
-      - n = Number of periods
+      @usage Use to calculate the total interest earned on an investment over time
       
-      Source: Financial Mathematics for Actuaries }
+      @param APrincipal The initial principal amount
+      @param ARate The interest rate per period (e.g., 0.05 for 5%)
+      @param APeriods The number of compounding periods
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The compound interest earned (not including the principal),
+               rounded to ADecimals places
+      
+      @references Financial Mathematics for Actuaries
+      
+      @example
+        var
+          Interest: Double;
+        begin
+          // Calculate the compound interest earned on $1000 invested for 5 years at 8% annual interest
+          Interest := TFinanceKit.CompoundInterest(1000, 0.08, 5);
+          // Returns approximately 469.3282 (the difference between future value and principal)
+        end;
+    }
     class function CompoundInterest(const APrincipal, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Payment calculation for loans and annuities
+    {
+      @description Calculates the periodic payment required to amortize a loan.
+                   Formula: PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
+                   where:
+                   - PV = Present Value (loan amount)
+                   - r = Interest rate per period
+                   - n = Total number of payments
+                   
+                   This formula assumes:
+                   - Payments are made at the end of each period
+                   - Interest rate remains constant
+                   - All payments are equal
       
-      Calculates the periodic payment required to amortize a loan.
-      Formula: PMT = PV * r * (1 + r)^n / ((1 + r)^n - 1)
-      where:
-      - PV = Present Value (loan amount)
-      - r = Interest rate per period
-      - n = Total number of payments
+      @usage Use to calculate payment amounts for loans, mortgages, or annuities
       
-      This formula assumes:
-      - Payments are made at the end of each period
-      - Interest rate remains constant
-      - All payments are equal
+      @param APresentValue The loan amount or present value of the annuity
+      @param ARate The interest rate per period (e.g., 0.05 for 5%)
+      @param APeriods The total number of payments
+      @param ADecimals Number of decimal places to round to (default: 4)
       
-      Source: Financial Mathematics for Actuaries }
+      @returns The periodic payment amount, rounded to ADecimals places
+      
+      @references Financial Mathematics for Actuaries
+      
+      @warning Raises EFinanceError if APeriods is not positive.
+               For very small rates (near zero), calculates as simple division of principal by periods.
+      
+      @example
+        var
+          Payment: Double;
+        begin
+          // Calculate the monthly payment for a $200,000 30-year mortgage at 4.5% annual interest
+          // (note: convert annual rate to monthly by dividing by 12)
+          Payment := TFinanceKit.Payment(200000, 0.045/12, 30*12);
+          // Returns approximately 1013.3721 per month
+        end;
+    }
     class function Payment(const APresentValue, ARate: Double; const APeriods: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Net Present Value (NPV) calculation
+    {
+      @description NPV is the difference between the present value of cash inflows and outflows.
+                   Formula: NPV = -I + Σ(CFt / (1+r)^t)
+                   where:
+                   - I = Initial investment
+                   - CFt = Cash flow at time t
+                   - r = Discount rate
+                   - t = Time period
+                   
+                   A positive NPV indicates a profitable investment.
       
-      NPV is the difference between the present value of cash inflows and outflows.
-      Formula: NPV = -I + Σ(CFt / (1+r)^t)
-      where:
-      - I = Initial investment
-      - CFt = Cash flow at time t
-      - r = Discount rate
-      - t = Time period
+      @usage Use to evaluate the profitability of an investment or project
       
-      A positive NPV indicates a profitable investment.
+      @param AInitialInvestment The initial cash outflow (positive value)
+      @param ACashFlows Array of future cash flows (positive for inflows, negative for outflows)
+      @param Rate The discount rate per period (e.g., 0.10 for 10%)
+      @param ADecimals Number of decimal places to round to (default: 4)
       
-      Source: Corporate Finance Institute }
+      @returns The net present value of the investment, rounded to ADecimals places
+      
+      @references Corporate Finance Institute
+      
+      @warning Raises EFinanceError if the cash flows array is empty.
+               The initial investment is treated as a cash outflow at time 0.
+               The first element of ACashFlows is considered to occur one period after the initial investment.
+      
+      @example
+        var
+          CashFlows: TDoubleArray;
+          NPV: Double;
+        begin
+          SetLength(CashFlows, 5);
+          CashFlows[0] := 20000;  // Year 1
+          CashFlows[1] := 25000;  // Year 2
+          CashFlows[2] := 30000;  // Year 3
+          CashFlows[3] := 35000;  // Year 4
+          CashFlows[4] := 40000;  // Year 5
+          
+          // Calculate NPV of a $100,000 investment with the above cash flows at 10% discount rate
+          NPV := TFinanceKit.NetPresentValue(100000, CashFlows, 0.10);
+          // Returns positive value if project is profitable at 10% discount rate
+        end;
+    }
     class function NetPresentValue(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const Rate: Double; const ADecimals: Integer = 4): Double; static;
     
-    { Internal Rate of Return (IRR) calculation
+    {
+      @description IRR is the discount rate that makes NPV = 0.
+                   Found by solving: 0 = -I + Σ(CFt / (1+IRR)^t)
+                   
+                   Implementation uses the Secant Method with dampening:
+                   1. Start with initial guess
+                   2. Use secant method: r_new = r - NPV * (r - r_last)/(NPV - NPV_last)
+                   3. Apply dampening to improve convergence
+                   4. Repeat until |NPV| < tolerance
       
-      IRR is the discount rate that makes NPV = 0.
-      Found by solving: 0 = -I + Σ(CFt / (1+IRR)^t)
+      @usage Use to find the rate of return of an investment based on its cash flows
       
-      Implementation uses the Secant Method with dampening:
-      1. Start with initial guess
-      2. Use secant method: r_new = r - NPV * (r - r_last)/(NPV - NPV_last)
-      3. Apply dampening to improve convergence
-      4. Repeat until |NPV| < tolerance
+      @param AInitialInvestment The initial cash outflow (positive value)
+      @param ACashFlows Array of future cash flows (typically positive values)
+      @param ADecimals Number of decimal places to round to (default: 4)
       
-      Source: Financial Mathematics for Actuaries }
+      @returns The internal rate of return, rounded to ADecimals places
+      
+      @references Financial Mathematics for Actuaries
+      
+      @warning Returns NaN if no convergence is achieved or if the problem has no solution.
+               No IRR exists if the cash flow series does not change sign at least once.
+               Multiple IRRs can exist mathematically if there are multiple sign changes in the cash flows.
+      
+      @example
+        var
+          CashFlows: TDoubleArray;
+          IRR: Double;
+        begin
+          SetLength(CashFlows, 5);
+          CashFlows[0] := 20000;  // Year 1
+          CashFlows[1] := 25000;  // Year 2
+          CashFlows[2] := 30000;  // Year 3
+          CashFlows[3] := 35000;  // Year 4
+          CashFlows[4] := 40000;  // Year 5
+          
+          // Calculate IRR of a $100,000 investment with the above cash flows
+          IRR := TFinanceKit.InternalRateOfReturn(100000, CashFlows);
+          // Returns approximately 0.1797 (17.97%) if convergence is reached
+        end;
+    }
     class function InternalRateOfReturn(const AInitialInvestment: Double; const ACashFlows: TDoubleArray; const ADecimals: Integer = 4): Double; static;
     
-    { Depreciation calculations
+    {
+      @description Straight-Line Depreciation:
+                   Annual depreciation = (Cost - Salvage) / Life
       
-      Straight-Line Depreciation:
-      Annual depreciation = (Cost - Salvage) / Life
+      @usage Use to calculate the constant annual depreciation expense for an asset
       
-      Source: IFRS IAS 16 }
+      @param ACost The initial cost of the asset
+      @param ASalvage The salvage (residual) value at the end of the asset's useful life
+      @param ALife The useful life of the asset in years
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The annual depreciation expense, rounded to ADecimals places
+      
+      @references IFRS IAS 16
+      
+      @example
+        var
+          AnnualDepreciation: Double;
+        begin
+          // Calculate the annual depreciation for a $50,000 machine with $5,000 salvage value over 10 years
+          AnnualDepreciation := TFinanceKit.StraightLineDepreciation(50000, 5000, 10);
+          // Returns 4500.0000 per year
+        end;
+    }
     class function StraightLineDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Double Declining Balance Depreciation
+    {
+      @description A form of accelerated depreciation using twice the straight-line rate.
+                   Formula: Dep = Cost * Rate * (1-Rate)^(period-1)
+                   where:
+                   - Rate = 2/Life (twice straight-line rate)
+                   - Cost = Initial asset cost
+                   - Period = Current period
       
-      A form of accelerated depreciation using twice the straight-line rate.
-      Formula: Dep = Cost * Rate * (1-Rate)^(period-1)
-      where:
-      - Rate = 2/Life (twice straight-line rate)
-      - Cost = Initial asset cost
-      - Period = Current period
+      @usage Use to calculate the depreciation expense for a specific period using
+             an accelerated depreciation method that front-loads expenses
       
-      Source: IFRS IAS 16 }
+      @param ACost The initial cost of the asset
+      @param ASalvage The salvage (residual) value (used for validation only)
+      @param ALife The useful life of the asset in years
+      @param APeriod The period for which to calculate depreciation (1-based)
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The depreciation expense for the specified period, rounded to ADecimals places
+      
+      @references IFRS IAS 16
+      
+      @warning Raises EFinanceError if ALife or APeriod is invalid, or if ACost is not greater than ASalvage.
+               APeriod must be within the range 1 to ALife.
+      
+      @example
+        var
+          Depreciation: Double;
+        begin
+          // Calculate year 1 depreciation for a $50,000 machine with $5,000 salvage value over 10 years
+          Depreciation := TFinanceKit.DecliningBalanceDepreciation(50000, 5000, 10, 1);
+          // Returns approximately 10000 for year 1 (rate = 2/10 = 0.2)
+          
+          // Calculate year 2 depreciation for the same machine
+          Depreciation := TFinanceKit.DecliningBalanceDepreciation(50000, 5000, 10, 2);
+          // Returns approximately 8000 for year 2 (less than year 1)
+        end;
+    }
     class function DecliningBalanceDepreciation(const ACost, ASalvage: Double; const ALife: Integer; const APeriod: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Return calculations
+    {
+      @description ROI = (Gain - Cost) / Cost
+                   Measures the profitability of an investment.
       
-      ROI = (Gain - Cost) / Cost
-      Measures the profitability of an investment.
+      @usage Use to evaluate the return on an investment as a percentage of its cost
       
-      Source: Corporate Finance Institute }
+      @param AGain The total return or value received from the investment
+      @param ACost The initial cost of the investment
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The return on investment as a decimal (multiply by 100 for percentage)
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          ROI: Double;
+        begin
+          // Calculate ROI for an investment that cost $10,000 and returned $12,500
+          ROI := TFinanceKit.ReturnOnInvestment(12500, 10000);
+          // Returns 0.25 (25% return)
+        end;
+    }
     class function ReturnOnInvestment(const AGain, ACost: Double; const ADecimals: Integer = 4): Double; static;
     
-    { Return on Equity (ROE)
+    {
+      @description ROE = Net Income / Shareholders' Equity
+                   Measures a company's profitability in relation to shareholders' equity.
       
-      ROE = Net Income / Shareholders' Equity
-      Measures a company's profitability in relation to shareholders' equity.
+      @usage Use to evaluate how efficiently a company uses equity to generate profits
       
-      Source: Corporate Finance Institute }
+      @param ANetIncome The company's net income for the period
+      @param AShareholdersEquity The average shareholders' equity for the period
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The return on equity as a decimal (multiply by 100 for percentage)
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          ROE: Double;
+        begin
+          // Calculate ROE for a company with $2 million net income and $15 million in shareholders' equity
+          ROE := TFinanceKit.ReturnOnEquity(2000000, 15000000);
+          // Returns approximately 0.1333 (13.33% return on equity)
+        end;
+    }
     class function ReturnOnEquity(const ANetIncome, AShareholdersEquity: Double; const ADecimals: Integer = 4): Double; static;
     
-    { Bond Price calculation
+    {
+      @description Calculates the present value of a bond's cash flows.
+                   Formula: Price = C * [1 - (1+r)^-n]/r + F/(1+r)^n
+                   where:
+                   - C = Coupon payment
+                   - r = Yield rate per period
+                   - n = Number of periods
+                   - F = Face value
       
-      Calculates the present value of a bond's cash flows.
-      Formula: Price = C * [1 - (1+r)^-n]/r + F/(1+r)^n
-      where:
-      - C = Coupon payment
-      - r = Yield rate per period
-      - n = Number of periods
-      - F = Face value
+      @usage Use to calculate the fair price of a bond based on its cash flows
       
-      Source: CFA Institute's Fixed Income Analysis }
+      @param AFaceValue The par value or face value of the bond
+      @param ACouponRate The annual coupon rate as a decimal (e.g., 0.05 for 5%)
+      @param AYieldRate The annual yield to maturity as a decimal
+      @param APeriodsPerYear The number of coupon payments per year (e.g., 2 for semi-annual)
+      @param AYearsToMaturity The number of years until the bond matures
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The fair price of the bond, rounded to ADecimals places
+      
+      @references CFA Institute's Fixed Income Analysis
+      
+      @warning Raises EFinanceError if APeriodsPerYear or AYearsToMaturity is invalid.
+               The calculation assumes regular coupon payments at equal intervals.
+      
+      @example
+        var
+          Price: Double;
+        begin
+          // Calculate the price of a $1000 face value bond with 6% annual coupon (paid semi-annually)
+          // with 4.5% yield to maturity and 10 years to maturity
+          Price := TFinanceKit.BondPrice(1000, 0.06, 0.045, 2, 10);
+          // Returns approximately 1123.2526
+        end;
+    }
     class function BondPrice(const AFaceValue, ACouponRate, AYieldRate: Double;
       const APeriodsPerYear, AYearsToMaturity: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Bond Yield to Maturity
+    {
+      @description Calculates the yield that makes present value equal to bond price.
+                   Uses iterative Newton-Raphson method to find the yield.
       
-      Calculates the yield that makes present value equal to bond price.
-      Uses iterative Newton-Raphson method to find the yield.
+      @usage Use to calculate the yield to maturity for a bond with a known market price
       
-      Source: CFA Institute's Fixed Income Analysis }
+      @param ABondPrice The current market price of the bond
+      @param AFaceValue The par value or face value of the bond
+      @param ACouponRate The annual coupon rate as a decimal (e.g., 0.05 for 5%)
+      @param APeriodsPerYear The number of coupon payments per year (e.g., 2 for semi-annual)
+      @param AYearsToMaturity The number of years until the bond matures
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The annual yield to maturity as a decimal, rounded to ADecimals places
+      
+      @references CFA Institute's Fixed Income Analysis
+      
+      @warning Raises EFinanceError if calculation does not converge after maximum iterations.
+               The implementation uses Newton-Raphson method with dampening for better convergence.
+      
+      @example
+        var
+          YTM: Double;
+        begin
+          // Calculate yield to maturity for a bond trading at $950 with $1000 face value,
+          // 5% annual coupon (paid semi-annually), and 5 years to maturity
+          YTM := TFinanceKit.BondYieldToMaturity(950, 1000, 0.05, 2, 5);
+          // Returns the yield that would make the present value of this bond equal to $950
+        end;
+    }
     class function BondYieldToMaturity(const ABondPrice, AFaceValue, ACouponRate: Double;
       const APeriodsPerYear, AYearsToMaturity: Integer; const ADecimals: Integer = 4): Double; static;
     
-    { Loan Amortization Schedule
+    {
+      @description Calculates the principal and interest portions of a loan payment.
+                   Returns array of records containing payment details.
       
-      Calculates the principal and interest portions of a loan payment.
-      Returns array of records containing payment details.
+      @usage Use to create an amortization schedule for a loan or mortgage
       
-      Source: Financial Mathematics for Actuaries }
-    type
-      TAmortizationPayment = record
-        PaymentNumber: Integer;
-        Payment: Double;
-        Principal: Double;
-        Interest: Double;
-        RemainingBalance: Double;
-      end;
-      TAmortizationArray = array of TAmortizationPayment;
+      @param ALoanAmount The initial loan amount
+      @param ARate The interest rate per period (e.g., 0.05 for 5%)
+      @param ANumberOfPayments The total number of payment periods
+      @param ADecimals Number of decimal places to round to (default: 4)
       
+      @returns TAmortizationArray - Array of payment records containing:
+               - PaymentNumber: The payment number (1-based)
+               - Payment: The total payment amount (principal + interest)
+               - Principal: The portion applied to principal
+               - Interest: The portion applied to interest
+               - RemainingBalance: The loan balance after this payment
+      
+      @references Financial Mathematics for Actuaries
+      
+      @warning Raises EFinanceError if ANumberOfPayments is not positive.
+               All amounts are rounded to ADecimals places.
+      
+      @example
+        var
+          Schedule: TFinanceKit.TAmortizationArray;
+          I: Integer;
+        begin
+          // Create amortization schedule for a $200,000 loan at 4.5% annual interest
+          // paid monthly over 30 years (360 payments)
+          Schedule := TFinanceKit.AmortizationSchedule(200000, 0.045/12, 360);
+          
+          // Display first few payments
+          for I := 0 to 2 do
+          begin
+            // Access payment details
+            WriteLn('Payment #', Schedule[I].PaymentNumber);
+            WriteLn('  Total Payment: $', Schedule[I].Payment:0:2);
+            WriteLn('  Principal: $', Schedule[I].Principal:0:2);
+            WriteLn('  Interest: $', Schedule[I].Interest:0:2);
+            WriteLn('  Remaining Balance: $', Schedule[I].RemainingBalance:0:2);
+          end;
+        end;
+    }
     class function AmortizationSchedule(const ALoanAmount, ARate: Double; 
       const ANumberOfPayments: Integer; const ADecimals: Integer = 4): TAmortizationArray; static;
       
-    { Effective Annual Rate (EAR)
+    {
+      @description Converts nominal rates to effective annual rates considering compounding frequency.
+                   Formula: EAR = (1 + r/m)^m - 1
+                   where:
+                   - r = Nominal annual rate
+                   - m = Number of compounding periods per year
       
-      Converts nominal rates to effective annual rates considering compounding frequency.
-      Formula: EAR = (1 + r/m)^m - 1
-      where:
-      - r = Nominal annual rate
-      - m = Number of compounding periods per year
+      @usage Use to compare interest rates with different compounding frequencies
       
-      Source: CFA Institute's Financial Mathematics }
+      @param ANominalRate The nominal annual interest rate as a decimal (e.g., 0.06 for 6%)
+      @param ACompoundingsPerYear The number of compounding periods per year
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The effective annual rate as a decimal, rounded to ADecimals places
+      
+      @references CFA Institute's Financial Mathematics
+      
+      @warning Raises EFinanceError if ACompoundingsPerYear is not positive.
+               For very small nominal rates, returns 0.
+      
+      @example
+        var
+          EAR: Double;
+        begin
+          // Calculate the effective annual rate for a 6% nominal rate compounded monthly
+          EAR := TFinanceKit.EffectiveAnnualRate(0.06, 12);
+          // Returns approximately 0.0617 (6.17%)
+          
+          // Calculate the effective annual rate for a 6% nominal rate compounded quarterly
+          EAR := TFinanceKit.EffectiveAnnualRate(0.06, 4);
+          // Returns approximately 0.0614 (6.14%)
+        end;
+    }
     class function EffectiveAnnualRate(const ANominalRate: Double; const ACompoundingsPerYear: Integer;
       const ADecimals: Integer = 4): Double; static;
       
-    { Modified Duration
+    {
+      @description Measures bond price sensitivity to interest rate changes.
+                   Formula: ModDur = MacDur / (1 + y/n)
+                   where:
+                   - MacDur = Macaulay Duration
+                   - y = Yield to maturity
+                   - n = Number of payments per year
       
-      Measures bond price sensitivity to interest rate changes.
-      Formula: ModDur = MacDur / (1 + y/n)
-      where:
-      - MacDur = Macaulay Duration
-      - y = Yield to maturity
-      - n = Number of payments per year
+      @usage Use to estimate the percentage change in bond price for a given change in yield
+    
+      @param AFaceValue The par value or face value of the bond
+      @param ACouponRate The annual coupon rate as a decimal (e.g., 0.05 for 5%)
+      @param AYieldRate The annual yield to maturity as a decimal
+      @param APeriodsPerYear The number of coupon payments per year (e.g., 2 for semi-annual)
+      @param AYearsToMaturity The number of years until the bond matures
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The modified duration in years, rounded to ADecimals places
+    
+      @references CFA Institute's Fixed Income Analysis
+    
+      @warning Higher duration indicates greater sensitivity to interest rate changes.
+               For a small change in yield (Δy), the percentage price change ≈ -ModDur × Δy
       
-      Source: CFA Institute's Fixed Income Analysis }
+      @example
+        var
+          Duration: Double;
+        begin
+          // Calculate modified duration for a $1000 face value bond with 4% annual coupon (paid semi-annually),
+          // 5% yield to maturity, and 10 years to maturity
+          Duration := TFinanceKit.ModifiedDuration(1000, 0.04, 0.05, 2, 10);
+          // If Duration = 7.5, a 1% increase in yield would cause approximately a 7.5% decrease in price
+        end;
+    }
     class function ModifiedDuration(const AFaceValue, ACouponRate, AYieldRate: Double;
       const APeriodsPerYear, AYearsToMaturity: Integer; const ADecimals: Integer = 4): Double; static;
       
-    { Break-Even Analysis
+    {
+      @description Calculates break-even point in units.
+                   Formula: BE = FC / (P - VC)
+                   where:
+                   - FC = Fixed costs
+                   - P = Price per unit
+                   - VC = Variable cost per unit
       
-      Calculates break-even point in units.
-      Formula: BE = FC / (P - VC)
-      where:
-      - FC = Fixed costs
-      - P = Price per unit
-      - VC = Variable cost per unit
+      @usage Use to determine the number of units a business must sell to cover all costs
       
-      Source: Corporate Finance Institute }
+      @param AFixedCosts The total fixed costs
+      @param APricePerUnit The selling price per unit
+      @param AVariableCostPerUnit The variable cost per unit
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The break-even quantity in units, rounded to ADecimals places
+      
+      @references Corporate Finance Institute
+      
+      @warning Raises EFinanceError if APricePerUnit <= AVariableCostPerUnit,
+               as break-even is impossible in this case (each sale increases losses).
+      
+      @example
+        var
+          BreakEvenUnits: Double;
+        begin
+          // Calculate break-even quantity for a product with:
+          // - Fixed costs: $50,000
+          // - Selling price: $25 per unit
+          // - Variable cost: $15 per unit
+          BreakEvenUnits := TFinanceKit.BreakEvenUnits(50000, 25, 15);
+          // Returns 5000 units (at this quantity, total revenue equals total costs)
+        end;
+    }
     class function BreakEvenUnits(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double; 
       const ADecimals: Integer = 4): Double; static;
-      
-    { Break-Even Analysis in Currency
-      
-      Calculates break-even point in currency.
-      Formula: BE = FC / (1 - VC/P)
-      where:
-      - FC = Fixed costs
-      - VC = Variable cost per unit
-      - P = Price per unit
-      
-      Source: Corporate Finance Institute }
-    class function BreakEvenRevenue(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double; 
-      const ADecimals: Integer = 4): Double; static;
     
-    { Weighted Average Cost of Capital (WACC)
-      
-      Calculates company's weighted cost of capital.
-      Formula: WACC = (E/V * Re) + (D/V * Rd * (1-T))
-      where:
-      - E = Market value of equity
-      - D = Market value of debt
-      - V = Total market value (E + D)
-      - Re = Cost of equity
-      - Rd = Cost of debt
-      - T = Tax rate
-      
-      Source: Corporate Finance Institute }
-    class function WACC(const AEquityValue, ADebtValue, ACostOfEquity, ACostOfDebt, ATaxRate: Double;
-      const ADecimals: Integer = 4): Double; static;
-      
-    { Capital Asset Pricing Model (CAPM)
-      
-      Calculates expected return of an asset.
-      Formula: E(Ri) = Rf + βi(E(Rm) - Rf)
-      where:
-      - Rf = Risk-free rate
-      - βi = Beta of the asset
-      - E(Rm) = Expected market return
-      
-      Source: CFA Institute's Portfolio Management }
-    class function CAPM(const ARiskFreeRate, ABeta, AExpectedMarketReturn: Double; 
-      const ADecimals: Integer = 4): Double; static;
-      
-    { Gordon Growth Model (Dividend Discount Model)
-      
-      Calculates intrinsic value of a stock using constant dividend growth.
-      Formula: P = D0(1+g)/(r-g)
-      where:
-      - D0 = Current dividend
-      - g = Growth rate
-      - r = Required rate of return
-      
-      Source: CFA Institute's Equity Analysis }
-    class function GordonGrowthModel(const ACurrentDividend, AGrowthRate, ARequiredReturn: Double; 
-      const ADecimals: Integer = 4): Double; static;
-    
-    { Working Capital Analysis
+    {
+      @description Working Capital Analysis
       
       Calculates key working capital ratios for liquidity analysis.
       
-      Source: Corporate Finance Institute }
-    class function WorkingCapitalRatios(const ACurrentAssets, ACurrentLiabilities, 
+      @usage Use to analyze a company's liquidity
+      
+      @param ACurrentAssets The total current assets
+      @param ACurrentLiabilities The total current liabilities
+      @param AInventory The total inventory
+      @param ACash The total cash
+      @param ASales The total sales
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TWorkingCapitalRatios - Record containing working capital ratios
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          Ratios: TFinanceKit.TWorkingCapitalRatios;
+        begin
+          // Calculate working capital ratios for a company with:
+          // - Current assets: $1,000,000
+          // - Current liabilities: $500,000
+          // - Inventory: $200,000
+          // - Cash: $100,000
+          // - Sales: $1,000,000
+          Ratios := TFinanceKit.WorkingCapitalRatios(1000000, 500000, 200000, 100000, 1000000);
+          // Ratios.CurrentRatio = 2.00
+          // Ratios.QuickRatio = 1.60
+          // Ratios.CashRatio = 0.20
+          // Ratios.WorkingCapitalTurnover = 2.00
+        end;
+    }
+    class function WorkingCapitalRatios(const ACurrentAssets, ACurrentLiabilities,
       AInventory, ACash, ASales: Double; const ADecimals: Integer = 4): TWorkingCapitalRatios; static;
       
-    { Financial Leverage Analysis
+    {
+      @description Financial Leverage Analysis
       
       Calculates key financial leverage ratios for solvency analysis.
       
-      Source: Corporate Finance Institute }
+      @usage Use to analyze a company's financial leverage
+      
+      @param ATotalDebt The total debt
+      @param ATotalAssets The total assets
+      @param ATotalEquity The total equity
+      @param AEBIT Earnings Before Interest and Taxes
+      @param AInterestExpense Interest Expense
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TLeverageRatios - Record containing financial leverage ratios
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          Ratios: TFinanceKit.TLeverageRatios;
+        begin
+          // Calculate financial leverage ratios for a company with:
+          // - Total debt: $500,000
+          // - Total assets: $1,000,000
+          // - Total equity: $500,000
+          // - Earnings Before Interest and Taxes: $200,000
+          // - Interest Expense: $50,000
+          Ratios := TFinanceKit.LeverageRatios(500000, 1000000, 500000, 200000, 50000);
+          // Ratios.DebtRatio = 0.50
+          // Ratios.DebtToEquityRatio = 1.00
+          // Ratios.EquityMultiplier = 2.00
+          // Ratios.TimesInterestEarned = 4.00
+        end;
+    }
     class function LeverageRatios(const ATotalDebt, ATotalAssets, ATotalEquity,
       AEBIT, AInterestExpense: Double; const ADecimals: Integer = 4): TLeverageRatios; static;
       
-    { Black-Scholes Option Pricing Model
+    {
+      @description Black-Scholes Option Pricing Model
       
       Calculates theoretical price of European call/put options.
       Formula for Call: C = S*N(d1) - K*e^(-rT)*N(d2)
@@ -344,28 +738,121 @@ type
       d1 = (ln(S/K) + (r + σ²/2)T) / (σ√T)
       d2 = d1 - σ√T
       
-      Source: Options, Futures, and Other Derivatives by John C. Hull }
+      @usage Use to calculate the theoretical price of a European call or put option
+      
+      @param ASpotPrice The current stock price
+      @param AStrikePrice The option's strike price
+      @param ARiskFreeRate The risk-free interest rate
+      @param AVolatility The annual volatility of the stock
+      @param ATimeToMaturity The time until the option expires
+      @param AOptionType The type of option (otCall or otPut)
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns The theoretical price of the option, rounded to ADecimals places
+      
+      @references Options, Futures, and Other Derivatives by John C. Hull
+      
+      @warning Raises EFinanceError if ATimeToMaturity is not positive,
+               AVolatility is not positive, or ASpotPrice or AStrikePrice is not positive.
+      
+      @example
+        var
+          Price: Double;
+        begin
+          // Calculate the price of a European call option with:
+          // - Spot price: $50
+          // - Strike price: $50
+          // - Risk-free rate: 5%
+          // - Volatility: 20%
+          // - Time to maturity: 1 year
+          Price := TFinanceKit.BlackScholes(50, 50, 0.05, 0.20, 1, otCall);
+          // Returns approximately 7.94
+        end;
+    }
     class function BlackScholes(const ASpotPrice, AStrikePrice, ARiskFreeRate, AVolatility, ATimeToMaturity: Double;
       const AOptionType: TOptionType; const ADecimals: Integer = 4): Double; static;
       
-    { Risk-Adjusted Performance Metrics
+    {
+      @description Risk-Adjusted Performance Metrics
       
       Calculates various risk-adjusted return measures.
       
-      Source: CFA Institute's Portfolio Management }
+      @usage Use to analyze a portfolio's risk-adjusted performance
+      
+      @param APortfolioReturn The return of the portfolio
+      @param ARiskFreeRate The risk-free interest rate
+      @param AMarketReturn The return of the market
+      @param ABeta The beta of the portfolio
+      @param APortfolioStdDev The standard deviation of the portfolio
+      @param ABenchmarkReturn The return of the benchmark
+      @param ATrackingError The tracking error of the portfolio
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TRiskMetrics - Record containing risk-adjusted return measures
+      
+      @references CFA Institute's Portfolio Management
+      
+      @example
+        var
+          Metrics: TFinanceKit.TRiskMetrics;
+        begin
+          // Calculate risk-adjusted return metrics for a portfolio with:
+          // - Portfolio return: 10%
+          // - Risk-free rate: 2%
+          // - Market return: 8%
+          // - Beta: 1.2
+          // - Portfolio standard deviation: 15%
+          // - Benchmark return: 7%
+          // - Tracking error: 5%
+          Metrics := TFinanceKit.RiskMetrics(0.10, 0.02, 0.08, 1.2, 0.15, 0.07, 0.05);
+          // Metrics.SharpeRatio = 0.53
+          // Metrics.TreynorRatio = 0.05
+          // Metrics.JensenAlpha = 0.01
+          // Metrics.InformationRatio = 0.20
+        end;
+    }
     class function RiskMetrics(const APortfolioReturn, ARiskFreeRate, AMarketReturn, ABeta,
       APortfolioStdDev, ABenchmarkReturn, ATrackingError: Double; const ADecimals: Integer = 4): TRiskMetrics; static;
       
-    { DuPont Analysis
+    {
+      @description DuPont Analysis
       
       Breaks down ROE into its component ratios.
       ROE = (Net Income/Sales) * (Sales/Total Assets) * (Total Assets/Total Equity)
       
-      Source: Corporate Finance Institute }
+      @usage Use to analyze a company's return on equity
+      
+      @param ANetIncome The company's net income for the period
+      @param ASales The company's sales for the period
+      @param ATotalAssets The company's total assets
+      @param ATotalEquity The company's total equity
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TDuPontAnalysis - Record containing DuPont Analysis components
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          Analysis: TFinanceKit.TDuPontAnalysis;
+        begin
+          // Calculate DuPont Analysis for a company with:
+          // - Net income: $100,000
+          // - Sales: $1,000,000
+          // - Total assets: $2,000,000
+          // - Total equity: $1,000,000
+          Analysis := TFinanceKit.DuPontAnalysis(100000, 1000000, 2000000, 1000000);
+          // Analysis.ProfitMargin = 0.10
+          // Analysis.AssetTurnover = 0.50
+          // Analysis.EquityMultiplier = 2.00
+          // Analysis.ROE = 0.10
+        end;
+    }
     class function DuPontAnalysis(const ANetIncome, ASales, ATotalAssets, ATotalEquity: Double;
       const ADecimals: Integer = 4): TDuPontAnalysis; static;
       
-    { Operating Leverage Analysis
+    {
+      @description Operating Leverage Analysis
       
       Measures business risk and operating efficiency.
       DOL = (Q * (P-V)) / (Q * (P-V) - F)
@@ -375,17 +862,521 @@ type
       V = Variable cost per unit
       F = Fixed costs
       
-      Source: Financial Management: Theory and Practice }
+      @usage Use to analyze a company's operating leverage
+      
+      @param AQuantity The total quantity of products sold
+      @param APricePerUnit The selling price per unit
+      @param AVariableCostPerUnit The variable cost per unit
+      @param AFixedCosts The total fixed costs
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TOperatingLeverage - Record containing operating leverage measures
+      
+      @references Financial Management: Theory and Practice
+      
+      @example
+        var
+          Leverage: TFinanceKit.TOperatingLeverage;
+        begin
+          // Calculate operating leverage for a company with:
+          // - Quantity: 10,000 units
+          // - Selling price: $10 per unit
+          // - Variable cost: $5 per unit
+          // - Fixed costs: $20,000
+          Leverage := TFinanceKit.OperatingLeverage(10000, 10, 5, 20000);
+          // Leverage.DOL = 2.00
+          // Leverage.BreakEvenPoint = 4000 units
+          // Leverage.OperatingLeverage = 2.00
+        end;
+    }
     class function OperatingLeverage(const AQuantity, APricePerUnit, AVariableCostPerUnit,
       AFixedCosts: Double; const ADecimals: Integer = 4): TOperatingLeverage; static;
       
-    { Profitability Analysis
+    {
+      @description Profitability Analysis
       
       Calculates comprehensive set of profitability ratios.
       
-      Source: Corporate Finance Institute }
+      @usage Use to analyze a company's profitability
+      
+      @param ARevenue The company's total revenue for the period
+      @param ACOGS The company's cost of goods sold for the period
+      @param AEBIT Earnings Before Interest and Taxes
+      @param ANetIncome The company's net income for the period
+      @param ATotalAssets The company's total assets
+      @param ACurrentLiabilities The company's total current liabilities
+      @param ADecimals Number of decimal places to round to (default: 4)
+      
+      @returns TProfitabilityRatios - Record containing profitability ratios
+      
+      @references Corporate Finance Institute
+      
+      @example
+        var
+          Ratios: TFinanceKit.TProfitabilityRatios;
+        begin
+          // Calculate profitability ratios for a company with:
+          // - Revenue: $1,000,000
+          // - Cost of goods sold: $500,000
+          // - Earnings Before Interest and Taxes: $200,000
+          // - Net income: $100,000
+          // - Total assets: $2,000,000
+          // - Current liabilities: $500,000
+          Ratios := TFinanceKit.ProfitabilityRatios(1000000, 500000, 200000, 100000, 2000000, 500000);
+          // Ratios.GrossMargin = 0.50
+          // Ratios.OperatingMargin = 0.20
+          // Ratios.NetProfitMargin = 0.10
+          // Ratios.ROA = 0.05
+          // Ratios.ROCE = 0.10
+        end;
+    }
     class function ProfitabilityRatios(const ARevenue, ACOGS, AEBIT, ANetIncome,
       ATotalAssets, ACurrentLiabilities: Double; const ADecimals: Integer = 4): TProfitabilityRatios; static;
+
+    {
+      @description Calculates break-even point in currency terms.
+                   Formula: BE = FC / (1 - VC/P)
+                   where:
+                   - FC = Fixed costs
+                   - VC = Variable cost per unit
+                   - P = Price per unit
+    
+      @usage Use to determine the revenue a business must generate to cover all costs
+    
+      @param AFixedCosts The total fixed costs
+      @param APricePerUnit The selling price per unit
+      @param AVariableCostPerUnit The variable cost per unit
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The break-even revenue in currency units, rounded to ADecimals places
+    
+      @references Corporate Finance Institute
+    
+      @warning Raises EFinanceError if APricePerUnit is zero or if APricePerUnit <= AVariableCostPerUnit,
+               as break-even is impossible in these cases.
+    
+      @example
+        var
+          BreakEvenRev: Double;
+        begin
+          // Calculate break-even revenue for a product with:
+          // - Fixed costs: $50,000
+          // - Selling price: $25 per unit
+          // - Variable cost: $15 per unit
+          BreakEvenRev := TFinanceKit.BreakEvenRevenue(50000, 25, 15);
+          // Returns $125,000 (at this revenue, total revenue equals total costs)
+        end;
+    }
+    class function BreakEvenRevenue(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double;
+      const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates company's weighted cost of capital.
+                   Formula: WACC = (E/V * Re) + (D/V * Rd * (1-T))
+                   where:
+                   - E = Market value of equity
+                   - D = Market value of debt
+                   - V = Total market value (E + D)
+                   - Re = Cost of equity
+                   - Rd = Cost of debt
+                   - T = Tax rate
+    
+      @usage Use to determine a company's overall cost of capital based on its capital structure
+    
+      @param AEquityValue The market value of the company's equity
+      @param ADebtValue The market value of the company's debt
+      @param ACostOfEquity The required return on equity (e.g., 0.12 for 12%)
+      @param ACostOfDebt The cost of debt (e.g., 0.05 for 5%)
+      @param ATaxRate The corporate tax rate (e.g., 0.21 for 21%)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The weighted average cost of capital as a decimal, rounded to ADecimals places
+    
+      @references Corporate Finance Institute
+    
+      @warning Raises EFinanceError if tax rate is not between 0 and 1,
+               or if total firm value (equity + debt) is zero.
+    
+      @example
+        var
+          Cost: Double;
+        begin
+          // Calculate WACC for a company with:
+          // - Equity value: $1,000,000
+          // - Debt value: $500,000
+          // - Cost of equity: 12%
+          // - Cost of debt: 5%
+          // - Tax rate: 21%
+          Cost := TFinanceKit.WACC(1000000, 500000, 0.12, 0.05, 0.21);
+          // Returns approximately 0.093 (9.3%)
+        end;
+    }
+    class function WACC(const AEquityValue, ADebtValue, ACostOfEquity, ACostOfDebt, ATaxRate: Double;
+      const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates expected return of an asset using the Capital Asset Pricing Model.
+                   Formula: E(Ri) = Rf + βi(E(Rm) - Rf)
+                   where:
+                   - Rf = Risk-free rate
+                   - βi = Beta of the asset
+                   - E(Rm) = Expected market return
+    
+      @usage Use to determine the expected return of an investment based on its risk
+    
+      @param ARiskFreeRate The risk-free interest rate (e.g., 0.02 for 2%)
+      @param ABeta The beta of the asset (measure of systematic risk)
+      @param AExpectedMarketReturn The expected return of the market (e.g., 0.08 for 8%)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The expected return of the asset as a decimal, rounded to ADecimals places
+    
+      @references CFA Institute's Portfolio Management
+    
+      @warning Raises EFinanceError if beta value is unreasonably high (>10) or low (<-10).
+               A beta of 1 indicates the asset moves with the market.
+               A beta > 1 indicates higher volatility than the market.
+               A beta < 1 indicates lower volatility than the market.
+    
+      @example
+        var
+          ExpectedReturn: Double;
+        begin
+          // Calculate the expected return for an asset with:
+          // - Risk-free rate: 2%
+          // - Beta: 1.2 (more volatile than the market)
+          // - Expected market return: 8%
+          ExpectedReturn := TFinanceKit.CAPM(0.02, 1.2, 0.08);
+          // Returns 0.092 (9.2%) = 2% + 1.2 * (8% - 2%)
+        end;
+    }
+    class function CAPM(const ARiskFreeRate, ABeta, AExpectedMarketReturn: Double;
+      const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates intrinsic value of a stock using constant dividend growth model.
+                   Formula: P = D0(1+g)/(r-g)
+                   where:
+                   - D0 = Current dividend
+                   - g = Growth rate
+                   - r = Required rate of return
+    
+      @usage Use to estimate the fair value of a dividend-paying stock with stable growth
+    
+      @param ACurrentDividend The most recent annual dividend paid
+      @param AGrowthRate The expected annual dividend growth rate (e.g., 0.03 for 3%)
+      @param ARequiredReturn The required rate of return (e.g., 0.09 for 9%)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The theoretical stock price, rounded to ADecimals places
+    
+      @references CFA Institute's Equity Analysis
+    
+      @warning Raises EFinanceError if growth rate is greater than or equal to required return rate,
+               as the model is only valid when r > g. For high-growth companies, a multi-stage
+               dividend discount model would be more appropriate.
+    
+      @example
+        var
+          StockPrice: Double;
+        begin
+          // Calculate the fair value of a stock with:
+          // - Current annual dividend: $2.00
+          // - Expected growth rate: 3%
+          // - Required return: 8%
+          StockPrice := TFinanceKit.GordonGrowthModel(2.00, 0.03, 0.08);
+          // Returns $41.20 = $2.00 * (1 + 0.03) / (0.08 - 0.03)
+        end;
+    }
+    class function GordonGrowthModel(const ACurrentDividend, AGrowthRate, ARequiredReturn: Double;
+      const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates the payback period for an investment.
+                   The payback period is the time required to recover the initial investment.
+    
+      @usage Use to determine how long it takes to recover the initial cost of an investment
+    
+      @param AInitialInvestment The initial cost of the investment
+      @param AAnnualCashFlows An array of annual cash flows in chronological order
+    
+      @returns The payback period in years (may include fractional years if cash flow is not uniform)
+    
+      @references Corporate Finance Institute
+    
+      @warning Ignores the time value of money. For a more accurate analysis, consider using NPV.
+               Returns -1 if the investment never pays back (all cash flows are negative or sum < investment).
+    
+      @example
+        var
+          PaybackTime: Double;
+          CashFlows: array of Double;
+        begin
+          // For an investment with initial cost of $10,000 and the following annual cash flows:
+          SetLength(CashFlows, 5);
+          CashFlows[0] := 2000;  // Year 1
+          CashFlows[1] := 2500;  // Year 2
+          CashFlows[2] := 3000;  // Year 3
+          CashFlows[3] := 4000;  // Year 4
+          CashFlows[4] := 4500;  // Year 5
+          
+          PaybackTime := TFinanceKit.PaybackPeriod(10000, CashFlows);
+          // Returns approximately 3.63 years (3 years and ~7.5 months)
+        end;
+    }
+    class function PaybackPeriod(const AInitialInvestment: Double;
+      const AAnnualCashFlows: array of Double): Double; static;
+
+    {
+      @description Calculates various depreciation methods for asset valuation.
+                   Supported methods include:
+                   - Straight Line (SL)
+                   - Double Declining Balance (DDB)
+                   - Sum of Years' Digits (SYD)
+    
+      @usage Use to estimate the depreciation expense for an asset over time
+    
+      @param AInitialCost The initial cost of the asset
+      @param ASalvageValue The estimated salvage value at the end of useful life
+      @param AUsefulLife The useful life of the asset in years
+      @param AYear The year for which to calculate depreciation (1-based)
+      @param AMethod The depreciation method to use: dmStraightLine, dmDoubleDeclining, or dmSumOfYears
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The depreciation amount for the specified year
+    
+      @references IAS 16 (Property, Plant and Equipment)
+    
+      @warning Raises EFinanceError if parameters are invalid or if AYear is outside the useful life range.
+               For partial years, fractional values of AYear may be used.
+    
+      @example
+        var
+          DepreciationAmount: Double;
+        begin
+          // Calculate depreciation for a machine with:
+          // - Initial cost: $50,000
+          // - Salvage value: $5,000
+          // - Useful life: 5 years
+          // - Year 3
+          // - Straight line method
+          DepreciationAmount := TFinanceKit.Depreciation(50000, 5000, 5, 3, dmStraightLine);
+          // Returns $9,000 per year (($50,000 - $5,000) / 5)
+        end;
+    }
+    class function Depreciation(const AInitialCost, ASalvageValue: Double;
+      const AUsefulLife: Integer; const AYear: Double; 
+      const AMethod: TDepreciationMethod; const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates the number of days between two dates using various day count conventions.
+                   Supports methods including:
+                   - Actual/Actual
+                   - Actual/360
+                   - Actual/365
+                   - 30/360 European
+                   - 30/360 US
+    
+      @usage Use for interest calculations in financial instruments like bonds and loans
+    
+      @param AStartDate The starting date
+      @param AEndDate The ending date
+      @param ADayCountConvention The day count convention to use (default: dc30E360)
+      @param ADecimals Number of decimal places to round to (default: 0)
+    
+      @returns The number of days between dates according to the specified convention, rounded to ADecimals
+    
+      @references International Swaps and Derivatives Association (ISDA)
+    
+      @warning Each day count convention has different implications for interest calculations.
+               Actual/360 and Actual/365 are commonly used for money market instruments,
+               while 30/360 conventions are common for bonds.
+    
+      @example
+        var
+          Days: Double;
+          StartDate, EndDate: TDateTime;
+        begin
+          StartDate := EncodeDate(2023, 1, 15);
+          EndDate := EncodeDate(2023, 7, 15);
+          
+          // Calculate days using Actual/365 convention
+          Days := TFinanceKit.ArbDayCount(StartDate, EndDate, dcActual365);
+          // If actual days = 181, returns 181
+          
+          // Calculate days using 30/360 US convention
+          Days := TFinanceKit.ArbDayCount(StartDate, EndDate, dc30US360);
+          // Returns 180 (6 months × 30 days)
+        end;
+    }
+    class function ArbDayCount(const AStartDate, AEndDate: TDateTime;
+      const ADayCountConvention: TDayCountConvention = dc30E360;
+      const ADecimals: Integer = 0): Double; static;
+
+    {
+      @description Calculates the Convexity of a bond.
+                   Convexity is a measure of the curvature in the relationship between bond 
+                   prices and bond yields, and is a risk management tool.
+    
+      @usage Use to measure the sensitivity of a bond's duration to changes in yield
+    
+      @param AYield The yield to maturity (as a decimal, e.g., 0.05 for 5%)
+      @param ATimeToMaturity The time to maturity in years
+      @param ACouponRate The annual coupon rate (as a decimal, e.g., 0.04 for 4%)
+      @param AFrequency The number of coupon payments per year (default: 2)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The Convexity measure, rounded to ADecimals places
+    
+      @references Fixed Income Securities by Frank J. Fabozzi
+    
+      @warning Higher convexity is generally desirable for investors as it means the bond's 
+               price will increase more for a given decrease in yield than it will fall for the 
+               same increase in yield. This function assumes a par bond ($100 face value).
+               The calculation uses the formula: Convexity = Sum(t(t+1)CF_t/(1+y)^t) / (P*(1+y)^2)
+               where t is time, CF_t is cash flow at time t, y is yield per period, and P is price.
+    
+      @example
+        var
+          BondConvexity: Double;
+        begin
+          // Calculate Convexity for a bond with:
+          // - Yield to maturity: 5%
+          // - Time to maturity: 10 years
+          // - Coupon rate: 4%
+          // - Semi-annual payments
+          BondConvexity := TFinanceKit.Convexity(0.05, 10, 0.04, 2);
+          // Returns the Convexity measure
+        end;
+    }
+    class function Convexity(const AYield, ATimeToMaturity, ACouponRate: Double;
+      const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates Macaulay Duration of a bond.
+                   The Macaulay Duration is the weighted average time until cash flows are received.
+    
+      @usage Use to measure the sensitivity of a bond to interest rate changes
+    
+      @param AYield The yield to maturity (as a decimal, e.g., 0.05 for 5%)
+      @param ACouponRate The annual coupon rate (as a decimal, e.g., 0.04 for 4%)
+      @param ATimeToMaturity The time to maturity in years
+      @param AFrequency The number of coupon payments per year (default: 2)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The Macaulay Duration in years, rounded to ADecimals places
+    
+      @references Fixed Income Securities by Frank J. Fabozzi
+    
+      @warning Zero-coupon bonds have a duration equal to their time to maturity.
+               This function assumes a par bond ($100 face value).
+               The calculation sums weighted cash flows divided by the present value: 
+               Duration = Sum(t*CF_t/(1+y)^t) / Sum(CF_t/(1+y)^t)
+               where t is time, CF_t is cash flow at time t, and y is yield per period.
+    
+      @example
+        var
+          Duration: Double;
+        begin
+          // Calculate Macaulay Duration for a bond with:
+          // - Yield to maturity: 5%
+          // - Coupon rate: 4%
+          // - Time to maturity: 5 years
+          // - Semi-annual payments
+          Duration := TFinanceKit.MacaulayDuration(0.05, 0.04, 5, 2);
+          // Returns the Macaulay Duration in years
+        end;
+    }
+    class function MacaulayDuration(const AYield, ACouponRate, ATimeToMaturity: Double;
+      const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates the Future Value of a series of cash flows.
+                   This is the value that a series of payments will grow to at a future date.
+    
+      @usage Use to calculate the future value of multiple cash flows at different times
+    
+      @param ACashFlows An array of cash flows
+      @param APeriods An array of periods (time units) corresponding to each cash flow
+      @param ARate The interest rate per period (as a decimal, e.g., 0.05 for 5%)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The future value of the cash flows, rounded to ADecimals places
+    
+      @references Financial Mathematics: A Practical Guide for Actuaries
+    
+      @warning Length of ACashFlows must match length of APeriods.
+               Periods should be in consistent time units matching the rate (e.g., years).
+    
+      @example
+        var
+          FV: Double;
+          CashFlows: array of Double;
+          Periods: array of Double;
+        begin
+          // Calculate future value of different investments at different times
+          SetLength(CashFlows, 3);
+          SetLength(Periods, 3);
+          
+          CashFlows[0] := 1000;  // $1,000 invested
+          CashFlows[1] := 2000;  // $2,000 invested
+          CashFlows[2] := 1500;  // $1,500 invested
+          
+          Periods[0] := 5;  // 5 years from now
+          Periods[1] := 3;  // 3 years from now
+          Periods[2] := 1;  // 1 year from now
+          
+          FV := TFinanceKit.FutureValueCashFlows(CashFlows, Periods, 0.07);
+          // Returns the future value with 7% annual interest
+        end;
+    }
+    class function FutureValueCashFlows(const ACashFlows: array of Double;
+      const APeriods: array of Double; const ARate: Double;
+      const ADecimals: Integer = 4): Double; static;
+
+    {
+      @description Calculates the Present Value of a series of cash flows.
+                   This is the current value of a series of future payments.
+    
+      @usage Use to determine the current value of multiple future cash flows at different times
+    
+      @param ACashFlows An array of cash flows
+      @param APeriods An array of periods (time units) corresponding to each cash flow
+      @param ARate The discount rate per period (as a decimal, e.g., 0.05 for 5%)
+      @param ADecimals Number of decimal places to round to (default: 4)
+    
+      @returns The present value of the cash flows, rounded to ADecimals places
+    
+      @references Financial Mathematics: A Practical Guide for Actuaries
+    
+      @warning Length of ACashFlows must match length of APeriods.
+               Periods should be in consistent time units matching the rate (e.g., years).
+    
+      @example
+        var
+          PV: Double;
+          CashFlows: array of Double;
+          Periods: array of Double;
+        begin
+          // Calculate present value of different future payments at different times
+          SetLength(CashFlows, 3);
+          SetLength(Periods, 3);
+          
+          CashFlows[0] := 1000;  // $1,000 received
+          CashFlows[1] := 2000;  // $2,000 received
+          CashFlows[2] := 1500;  // $1,500 received
+          
+          Periods[0] := 5;  // 5 years from now
+          Periods[1] := 3;  // 3 years from now
+          Periods[2] := 1;  // 1 year from now
+          
+          PV := TFinanceKit.PresentValueCashFlows(CashFlows, Periods, 0.07);
+          // Returns the present value with 7% annual discount rate
+        end;
+    }
+    class function PresentValueCashFlows(const ACashFlows: array of Double;
+      const APeriods: array of Double; const ARate: Double;
+      const ADecimals: Integer = 4): Double; static;
   end;
 
 implementation
@@ -775,63 +1766,6 @@ begin
   Result := SimpleRoundTo(AFixedCosts / (APricePerUnit - AVariableCostPerUnit), -ADecimals);
 end;
 
-class function TFinanceKit.BreakEvenRevenue(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double;
-  const ADecimals: Integer = 4): Double;
-begin
-  if Abs(APricePerUnit) < 1E-10 then
-    raise EFinanceError.Create('Price per unit must be non-zero');
-    
-  if APricePerUnit <= AVariableCostPerUnit then
-    raise EFinanceError.Create('Price per unit must be greater than variable cost per unit for break-even to exist');
-    
-  Result := SimpleRoundTo(AFixedCosts / (1 - AVariableCostPerUnit/APricePerUnit), -ADecimals);
-end;
-
-class function TFinanceKit.WACC(const AEquityValue, ADebtValue, ACostOfEquity, ACostOfDebt, ATaxRate: Double;
-  const ADecimals: Integer = 4): Double;
-var
-  TotalValue, EquityWeight: Double;
-begin
-  if (ATaxRate < 0) or (ATaxRate > 1) then
-    raise EFinanceError.Create('Tax rate must be between 0 and 1');
-    
-  TotalValue := AEquityValue + ADebtValue;
-  if Abs(TotalValue) < 1E-10 then
-    raise EFinanceError.Create('Total firm value must be non-zero');
-    
-  // Calculate weights ensuring they sum to exactly 1
-  EquityWeight := AEquityValue / TotalValue;
-  
-  Result := SimpleRoundTo(
-    (EquityWeight * ACostOfEquity) + 
-    ((1 - EquityWeight) * ACostOfDebt * (1 - ATaxRate)), 
-    -ADecimals
-  );
-end;
-
-class function TFinanceKit.CAPM(const ARiskFreeRate, ABeta, AExpectedMarketReturn: Double;
-  const ADecimals: Integer = 4): Double;
-begin
-  if ABeta < -10 then  // Reasonable limit for beta
-    raise EFinanceError.Create('Beta value is unreasonably low');
-  if ABeta > 10 then   // Reasonable limit for beta
-    raise EFinanceError.Create('Beta value is unreasonably high');
-    
-  Result := SimpleRoundTo(ARiskFreeRate + ABeta * (AExpectedMarketReturn - ARiskFreeRate), -ADecimals);
-end;
-
-class function TFinanceKit.GordonGrowthModel(const ACurrentDividend, AGrowthRate, ARequiredReturn: Double;
-  const ADecimals: Integer = 4): Double;
-begin
-  if AGrowthRate >= ARequiredReturn then
-    raise EFinanceError.Create('Growth rate must be less than required return rate');
-    
-  if Abs(ARequiredReturn - AGrowthRate) < 1E-10 then
-    raise EFinanceError.Create('Required return must be significantly different from growth rate');
-    
-  Result := SimpleRoundTo(ACurrentDividend * (1 + AGrowthRate) / (ARequiredReturn - AGrowthRate), -ADecimals);
-end;
-
 class function TFinanceKit.WorkingCapitalRatios(const ACurrentAssets, ACurrentLiabilities,
   AInventory, ACash, ASales: Double; const ADecimals: Integer = 4): TWorkingCapitalRatios;
 var
@@ -1032,4 +1966,236 @@ begin
     Result.ROCE := SimpleRoundTo(AEBIT / (ATotalAssets - ACurrentLiabilities), -ADecimals);
 end;
 
+class function TFinanceKit.BreakEvenRevenue(const AFixedCosts, APricePerUnit, AVariableCostPerUnit: Double;
+  const ADecimals: Integer = 4): Double;
+begin
+  if APricePerUnit <= AVariableCostPerUnit then
+    raise EFinanceError.Create('Price must be greater than variable cost');
+    
+  Result := AFixedCosts / (1 - AVariableCostPerUnit / APricePerUnit);
+end;
+
+class function TFinanceKit.WACC(const AEquityValue, ADebtValue, ACostOfEquity, ACostOfDebt, ATaxRate: Double;
+  const ADecimals: Integer = 4): Double;
+var
+  TotalValue: Double;
+begin
+  if (AEquityValue < 0) or (ADebtValue < 0) or (ACostOfEquity < 0) or (ACostOfDebt < 0) or (ATaxRate < 0) or (ATaxRate > 1) then
+    raise EFinanceError.Create('Invalid input parameters');
+    
+  TotalValue := AEquityValue + ADebtValue;
+  if TotalValue <= 0 then
+    raise EFinanceError.Create('Total value must be positive');
+    
+  Result := (AEquityValue / TotalValue) * ACostOfEquity + (ADebtValue / TotalValue) * ACostOfDebt * (1 - ATaxRate);
+end;
+
+class function TFinanceKit.CAPM(const ARiskFreeRate, ABeta, AExpectedMarketReturn: Double;
+  const ADecimals: Integer = 4): Double;
+begin
+  if (ARiskFreeRate < 0) or (ARiskFreeRate > 1) or (ABeta < -10) or (ABeta > 10) then
+    raise EFinanceError.Create('Invalid input parameters');
+    
+  Result := ARiskFreeRate + ABeta * (AExpectedMarketReturn - ARiskFreeRate);
+end;
+
+class function TFinanceKit.GordonGrowthModel(const ACurrentDividend, AGrowthRate, ARequiredReturn: Double;
+  const ADecimals: Integer = 4): Double;
+begin
+  if (ACurrentDividend < 0) or (AGrowthRate < 0) or (ARequiredReturn < 0) or (AGrowthRate >= ARequiredReturn) then
+    raise EFinanceError.Create('Invalid input parameters');
+    
+  Result := ACurrentDividend * (1 + AGrowthRate) / (ARequiredReturn - AGrowthRate);
+end;
+
+class function TFinanceKit.PaybackPeriod(const AInitialInvestment: Double;
+  const AAnnualCashFlows: array of Double): Double;
+var
+  TotalCashFlow, YearlyCashFlow: Double;
+  I: Integer;
+begin
+  TotalCashFlow := 0;
+  for I := 0 to High(AAnnualCashFlows) do
+    TotalCashFlow := TotalCashFlow + AAnnualCashFlows[I];
+  
+  if TotalCashFlow = 0 then
+  begin
+    Result := -1;
+    Exit;
+  end;
+  
+  YearlyCashFlow := AInitialInvestment / TotalCashFlow;
+  Result := YearlyCashFlow * Length(AAnnualCashFlows);
+end;
+
+class function TFinanceKit.Depreciation(const AInitialCost, ASalvageValue: Double;
+  const AUsefulLife: Integer; const AYear: Double; 
+  const AMethod: TDepreciationMethod; const ADecimals: Integer = 4): Double;
+var
+  DepreciationRate: Double;
+  DepreciableAmount: Double;
+  DepreciationAmount: Double;
+begin
+  if AUsefulLife <= 0 then
+    raise EFinanceError.Create('Useful life must be positive');
+  if AYear <= 0 then
+    raise EFinanceError.Create('Year must be positive');
+  if AYear > AUsefulLife then
+    raise EFinanceError.Create('Year is beyond the useful life');
+  
+  DepreciableAmount := AInitialCost - ASalvageValue;
+  
+  case AMethod of
+    dmStraightLine:
+      DepreciationRate := 1 / AUsefulLife;
+    dmDoubleDeclining:
+      DepreciationRate := 2 / AUsefulLife;
+    dmSumOfYears:
+      DepreciationRate := AYear / (AUsefulLife * (AUsefulLife + 1) / 2);
+    else
+      raise EFinanceError.Create('Invalid depreciation method');
+  end;
+  
+  DepreciationAmount := SimpleRoundTo(DepreciableAmount * DepreciationRate, -ADecimals);
+  Result := SimpleRoundTo(DepreciationAmount, -ADecimals);
+end;
+
+class function TFinanceKit.ArbDayCount(const AStartDate, AEndDate: TDateTime;
+  const ADayCountConvention: TDayCountConvention = dc30E360;
+  const ADecimals: Integer = 0): Double;
+var
+  StartDate, EndDate: TDateTime;
+  Days: Integer;
+begin
+  StartDate := Trunc(AStartDate);
+  EndDate := Trunc(AEndDate);
+  
+  case ADayCountConvention of
+    dcActual360:
+      Days := EndDate - StartDate;
+    dcActual365:
+      Days := Trunc(DateDiff(EndDate, StartDate, ddDays));
+    dc30E360:
+      Days := (EndDate.Day - StartDate.Day) + 30 * (EndDate.Month - StartDate.Month) + 360 * (EndDate.Year - StartDate.Year);
+    dc30US360:
+      Days := (EndDate.Day - StartDate.Day) + 30 * (EndDate.Month - StartDate.Month) + 360 * (EndDate.Year - StartDate.Year);
+    else
+      raise EFinanceError.Create('Invalid day count convention');
+  end;
+  
+  Result := SimpleRoundTo(Days, ADecimals);
+end;
+
+class function TFinanceKit.Convexity(const AYield, ATimeToMaturity, ACouponRate: Double;
+  const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double;
+var
+  N, I: Integer;
+  T, C, YieldPerPeriod, PV, Sum, Denominator: Double;
+  FaceValue: Double;
+begin
+  // Check for valid inputs
+  if AFrequency <= 0 then
+    raise EFinanceError.Create('Frequency must be positive');
+  if ATimeToMaturity <= 0 then
+    raise EFinanceError.Create('Time to maturity must be positive');
+  
+  // Set face value to 100 (standard for bond calculations)
+  FaceValue := 100;
+  
+  // Calculate period-based values
+  YieldPerPeriod := AYield / AFrequency;
+  C := (ACouponRate * FaceValue) / AFrequency;  // Coupon payment per period
+  N := Round(ATimeToMaturity * AFrequency);     // Total number of periods
+  
+  // Initialize summation
+  Sum := 0;
+  Denominator := 0;
+  
+  // Calculate the numerator sum for convexity
+  for I := 1 to N do
+  begin
+    T := I / AFrequency;
+    PV := C / Power(1 + YieldPerPeriod, I);
+    Sum := Sum + (T * (T + 1) * PV);
+    Denominator := Denominator + PV;
+  end;
+  
+  // Add the final payment (principal + last coupon)
+  PV := FaceValue / Power(1 + YieldPerPeriod, N);
+  Sum := Sum + (ATimeToMaturity * (ATimeToMaturity + 1) * PV);
+  Denominator := Denominator + PV;
+  
+  // Calculate convexity
+  Result := Sum / (Denominator * Sqr(1 + YieldPerPeriod));
+  
+  // Convert to years based on frequency
+  Result := Result / Sqr(AFrequency);
+  
+  // Round to specified decimal places
+  Result := SimpleRoundTo(Result, -ADecimals);
+end;
+
+class function TFinanceKit.MacaulayDuration(const AYield, ACouponRate, ATimeToMaturity: Double;
+  const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double;
+var
+  N, I: Integer;
+  T, C, YTM, PV, Sum1, Sum2: Double;
+begin
+  if AFrequency <= 0 then
+    raise EFinanceError.Create('Frequency must be positive');
+  if ATimeToMaturity <= 0 then
+    raise EFinanceError.Create('Time to maturity must be positive');
+  
+  YTM := AYield / AFrequency;
+  C := ACouponRate / AFrequency;
+  N := Round(ATimeToMaturity * AFrequency);
+  
+  Sum1 := 0;
+  Sum2 := 0;
+  
+  for I := 1 to N do
+  begin
+    T := I / AFrequency;
+    PV := Power(1 + YTM, -T);
+    Sum1 := Sum1 + (T * C * PV);
+  end;
+  
+  PV := Power(1 + YTM, -ATimeToMaturity);
+  Sum2 := ATimeToMaturity * PV;
+  
+  Result := (Sum1 + Sum2) / (1 + YTM/AFrequency);
+  Result := SimpleRoundTo(Result, -ADecimals);
+end;
+
+class function TFinanceKit.FutureValueCashFlows(const ACashFlows: array of Double;
+  const APeriods: array of Double; const ARate: Double;
+  const ADecimals: Integer = 4): Double;
+var
+  I: Integer;
+  FV, DiscountFactor: Double;
+begin
+  FV := 0;
+  for I := 0 to High(ACashFlows) do
+  begin
+    DiscountFactor := Power(1 + ARate, APeriods[I]);
+    FV := FV + ACashFlows[I] / DiscountFactor;
+  end;
+  Result := SimpleRoundTo(FV, -ADecimals);
+end;
+
+class function TFinanceKit.PresentValueCashFlows(const ACashFlows: array of Double;
+  const APeriods: array of Double; const ARate: Double;
+  const ADecimals: Integer = 4): Double;
+var
+  I: Integer;
+  PV, DiscountFactor: Double;
+begin
+  PV := 0;
+  for I := 0 to High(ACashFlows) do
+  begin
+    DiscountFactor := Power(1 + ARate, -APeriods[I]);
+    PV := PV + ACashFlows[I] * DiscountFactor;
+  end;
+  Result := SimpleRoundTo(PV, -ADecimals);
+end;
 end. 
