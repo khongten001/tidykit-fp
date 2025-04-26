@@ -155,7 +155,7 @@ type
     
     {
       @description Returns the current system date and time as a TDateTime value.
-                   This includes both the date and time portions.
+      This includes both the date and time portions.
       
       @usage Use when you need the precise current moment according to the system clock.
       
@@ -1564,8 +1564,8 @@ type
         end;
     }
     class function CreatePeriod(const AYears: Integer = 0; const AMonths: Integer = 0;
-      const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
-      const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
+                                const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+                                const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
       
     {
       @description Creates a fixed-length time span (TDateSpan) based on a precise number of
@@ -1595,8 +1595,8 @@ type
         end;
     }
     class function CreateDuration(const AYears: Integer = 0; const AMonths: Integer = 0;
-      const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
-      const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
+                                  const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
+                                  const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
       
     {
       @description Creates a TInterval record representing the time range between a start and end TDateTime.
@@ -1720,7 +1720,7 @@ type
         end;
     }
     class function SpanBetween(const AStart, AEnd: TDateTime; 
-      const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
+                               const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
       
     { Interval Operations 
       These functions operate on TInterval records. }
@@ -1759,7 +1759,7 @@ type
         end;
     }
     class function IsWithinInterval(const AValue: TDateTime; 
-      const AInterval: TInterval): Boolean; static;
+                                    const AInterval: TInterval): Boolean; static;
       
     {
       @description Checks if two time intervals overlap (i.e., share any common point in time).
@@ -1826,7 +1826,7 @@ type
         end;
     }
     class function IntervalLength(const AInterval: TInterval; 
-                                  const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
+      const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
     
     { Parse Date-Times with specific formats }
     {
