@@ -127,12 +127,12 @@ type
   TDateSpan = record
     Kind: TDateSpanKind;    // How to interpret this span
     Years: Integer;         // Number of years
-    Months: Integer;        // Number of months
-    Days: Integer;          // Number of days
-    Hours: Integer;         // Number of hours
-    Minutes: Integer;       // Number of minutes
-    Seconds: Integer;       // Number of seconds
-    Milliseconds: Integer;  // Number of milliseconds
+    Months: Integer;       // Number of months
+    Days: Integer;         // Number of days
+    Hours: Integer;        // Number of hours
+    Minutes: Integer;      // Number of minutes
+    Seconds: Integer;      // Number of seconds
+    Milliseconds: Integer; // Number of milliseconds
   end;
   
   { TInterval represents a specific span of time with start and end points }
@@ -153,39 +153,80 @@ type
   public
     { Basic operations for getting and formatting date/time values }
     
-    { GetNow
-      Returns the current system date and time as a TDateTime value.
-      This includes both the date and time portions.
+    {
+      @description Returns the current system date and time as a TDateTime value.
+                   This includes both the date and time portions.
       
-      Returns:
-        TDateTime - Current date and time from the system clock }
+      @usage Use when you need the precise current moment according to the system clock.
+      
+      @returns TDateTime - Current date and time from the system clock.
+      
+      @warning The result depends on the system's clock settings and may not be UTC.
+      
+      @example
+        var
+          NowTime: TDateTime;
+        begin
+          NowTime := TDateTimeKit.GetNow;
+          // NowTime holds the current system date and time
+        end;
+    }
     class function GetNow: TDateTime; static;
     
-    { GetToday
-      Returns just the current date, with the time set to midnight (00:00:00).
-      Useful when you only need the date portion.
+    {
+      @description Returns just the current date, with the time set to midnight (00:00:00.000).
       
-      Returns:
-        TDateTime - Current date with time set to 00:00:00 }
+      @usage Use when you only need the date portion of the current day, ignoring the time.
+             Useful for comparisons or grouping by day.
+      
+      @returns TDateTime - Current date with time set to 00:00:00.000.
+      
+      @warning The date is based on the system's clock and timezone.
+      
+      @example
+        var
+          TodayDate: TDateTime;
+        begin
+          TodayDate := TDateTimeKit.GetToday;
+          // TodayDate holds today's date at midnight
+        end;
+    }
     class function GetToday: TDateTime; static;
     
-    { GetDateTime
-      Converts or validates a TDateTime value. This is useful for ensuring
-      type safety or making explicit conversions.
+    {
+      @description Converts or validates a TDateTime value. This is useful for ensuring
+                   type safety or making explicit conversions. In practice, it simply
+                   returns the input value unchanged.
       
-      Parameters:
-        AValue - The TDateTime value to convert/validate
+      @usage Primarily used for type casting or ensuring a value is treated as TDateTime
+             in contexts requiring explicit type handling, although it's often redundant.
+      
+      @param AValue The TDateTime value to convert/validate.
         
-      Returns:
-        TDateTime - The same value, but guaranteed to be TDateTime type }
+      @returns TDateTime - The same value, but guaranteed to be TDateTime type.
+      
+      @warning This function does not perform any actual conversion or validation beyond
+               type casting.
+      
+      @example
+        var
+          InputDateTime, OutputDateTime: TDateTime;
+        begin
+          InputDateTime := Now;
+          OutputDateTime := TDateTimeKit.GetDateTime(InputDateTime);
+          // OutputDateTime is identical to InputDateTime
+        end;
+    }
     class function GetDateTime(const AValue: TDateTime): TDateTime; static;
     
-    { GetAsString
-      Converts a TDateTime value to a formatted string representation.
+    {
+      @description Converts a TDateTime value to a formatted string representation.
       
-      Parameters:
-        AValue - The TDateTime value to format
-        AFormat - Optional format string. If empty, uses system default format
+      @usage Use to display date/time values to users or for serialization where a
+             specific string format is required.
+      
+      @param AValue The TDateTime value to format.
+      @param AFormat Optional format string. If empty, uses system default format.
                  Common format specifiers:
                  yyyy = 4-digit year (2024)
                  yy = 2-digit year (24)
@@ -196,689 +237,2423 @@ type
                  ss = seconds (00-59)
                  zzz = milliseconds (000-999)
       
-      Returns:
-        string - The formatted date/time string }
+      @returns string - The formatted date/time string.
+      
+      @warning Relies on the `SysUtils.FormatDateTime` function. The interpretation of
+               format specifiers depends on the system's locale settings if `AFormat` is empty.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          FormattedString: string;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15 10:30:00');
+          FormattedString := TDateTimeKit.GetAsString(MyDateTime, 'yyyy-mm-dd hh:nn');
+          // FormattedString: '2024-07-15 10:30'
+          
+          FormattedString := TDateTimeKit.GetAsString(MyDateTime);
+          // FormattedString depends on system locale, e.g., '15/07/2024 10:30:00'
+        end;
+    }
     class function GetAsString(const AValue: TDateTime; const AFormat: string = ''): string; static;
     
-    { FromString
-      Converts a string representation of a date/time into a TDateTime value.
+    {
+      @description Converts a string representation of a date/time into a TDateTime value.
       
-      Parameters:
-        AValue - The string to parse (e.g., '2024-01-15' or '15/01/2024')
-        AFormat - Optional format string matching the input format
-                 If empty, tries to parse using system default format
+      @usage Use when parsing date/time information from user input, files, or APIs.
       
-      Returns:
-        TDateTime - The parsed date/time value
+      @param AValue The string to parse (e.g., '2024-01-15' or '15/01/2024 10:30').
+      @param AFormat Optional format string matching the input format. If empty, tries
+                 to parse using system default locale settings.
+      
+      @returns TDateTime - The parsed date/time value.
         
-      Raises:
-        EConvertError - If the string cannot be parsed using the given format }
+      @warning Raises EConvertError if the string cannot be parsed using the given format
+               or system defaults. Parsing without an explicit format string is locale-dependent.
+               Relies on `SysUtils.StrToDateTime`.
+      
+      @example
+        var
+          ParsedDateTime: TDateTime;
+        begin
+          try
+            ParsedDateTime := TDateTimeKit.FromString('2024-07-15 14:00', 'yyyy-mm-dd hh:nn');
+            // ParsedDateTime holds the TDateTime for July 15, 2024, 2:00 PM
+          except
+            on E: EConvertError do
+              WriteLn('Failed to parse date: ', E.Message);
+          end;
+          
+          // Example using system default format (might fail depending on locale)
+          try
+            ParsedDateTime := TDateTimeKit.FromString('15/07/2024');
+          except
+            on E: EConvertError do
+              WriteLn('Failed to parse date using system format: ', E.Message);
+          end;
+        end;
+    }
     class function FromString(const AValue: string; const AFormat: string = ''): TDateTime; static;
     
     { Date Component Getters
       These functions extract specific parts of a date/time value.
       All of them accept a TDateTime parameter and return an integer. }
     
-    { GetYear
-      Extracts the year from a date/time value.
+    {
+      @description Extracts the year component from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need only the year part of a date.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The year (e.g., 2024) }
+      @returns Integer - The year (e.g., 2024).
+      
+      @warning Relies on `SysUtils.YearOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          YearPart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.GetToday;
+          YearPart := TDateTimeKit.GetYear(MyDateTime);
+          // YearPart contains the current year
+        end;
+    }
     class function GetYear(const AValue: TDateTime): Integer; static;
     
-    { GetMonth
-      Extracts the month from a date/time value.
+    {
+      @description Extracts the month component (1-12) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the month number of a date.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The month (1-12, where 1=January) }
+      @returns Integer - The month (1=January, ..., 12=December).
+      
+      @warning Relies on `SysUtils.MonthOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          MonthPart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15');
+          MonthPart := TDateTimeKit.GetMonth(MyDateTime);
+          // MonthPart: 7
+        end;
+    }
     class function GetMonth(const AValue: TDateTime): Integer; static;
     
-    { GetDay
-      Extracts the day of the month from a date/time value.
+    {
+      @description Extracts the day of the month (1-31) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the specific day within a month.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The day (1-31) }
+      @returns Integer - The day of the month (1-31).
+      
+      @warning Relies on `SysUtils.DayOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          DayPart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15');
+          DayPart := TDateTimeKit.GetDay(MyDateTime);
+          // DayPart: 15
+        end;
+    }
     class function GetDay(const AValue: TDateTime): Integer; static;
     
-    { GetDayOfWeek
-      Returns which day of the week a date falls on.
+    {
+      @description Returns the day of the week for a given date.
       
-      Parameters:
-        AValue - The date/time to check
+      @usage Use to determine if a date falls on a specific day (e.g., weekend) or for scheduling.
+      
+      @param AValue The date/time value to check.
         
-      Returns:
-        Integer - Day of week (1=Sunday through 7=Saturday) }
+      @returns Integer - Day of the week (1=Sunday, 2=Monday, ..., 7=Saturday).
+      
+      @warning The numbering convention (1=Sunday) follows `SysUtils.DayOfWeek`. Be mindful
+               if comparing with other systems using different conventions (e.g., 0=Monday).
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          DOW: Integer;
+        begin
+          // Assuming July 15, 2024 is a Monday
+          MyDateTime := TDateTimeKit.FromString('2024-07-15'); 
+          DOW := TDateTimeKit.GetDayOfWeek(MyDateTime);
+          // DOW: 2
+        end;
+    }
     class function GetDayOfWeek(const AValue: TDateTime): Integer; static;
     
-    { GetDayOfYear
-      Calculates which day of the year a date falls on.
+    {
+      @description Calculates the day number within the year (1-366).
       
-      Parameters:
-        AValue - The date/time to check
+      @usage Use for yearly progress tracking or comparing dates within the same year regardless of month.
+      
+      @param AValue The date/time value to check.
         
-      Returns:
-        Integer - Day of year (1-366, accounting for leap years) }
+      @returns Integer - Day of the year (1-366, accounts for leap years).
+      
+      @warning Relies on `DateUtils.DayOfTheYear`. Result is 1 for January 1st.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          DOY: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-01-10'); 
+          DOY := TDateTimeKit.GetDayOfYear(MyDateTime);
+          // DOY: 10
+          
+          MyDateTime := TDateTimeKit.FromString('2024-03-01'); // Leap year
+          DOY := TDateTimeKit.GetDayOfYear(MyDateTime);
+          // DOY: 31 (Jan) + 29 (Feb) + 1 (Mar) = 61
+        end;
+    }
     class function GetDayOfYear(const AValue: TDateTime): Integer; static;
     
-    { GetHour
-      Extracts the hour from a date/time value.
+    {
+      @description Extracts the hour component (0-23) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the hour part of a time value.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The hour in 24-hour format (0-23) }
+      @returns Integer - The hour in 24-hour format (0-23).
+      
+      @warning Relies on `SysUtils.HourOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          HourPart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15 14:30:00', 'yyyy-mm-dd hh:nn:ss');
+          HourPart := TDateTimeKit.GetHour(MyDateTime);
+          // HourPart: 14
+        end;
+    }
     class function GetHour(const AValue: TDateTime): Integer; static;
     
-    { GetMinute
-      Extracts the minute from a date/time value.
+    {
+      @description Extracts the minute component (0-59) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the minute part of a time value.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The minute (0-59) }
+      @returns Integer - The minute (0-59).
+      
+      @warning Relies on `SysUtils.MinuteOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          MinutePart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15 14:30:00', 'yyyy-mm-dd hh:nn:ss');
+          MinutePart := TDateTimeKit.GetMinute(MyDateTime);
+          // MinutePart: 30
+        end;
+    }
     class function GetMinute(const AValue: TDateTime): Integer; static;
     
-    { GetSecond
-      Extracts the second from a date/time value.
+    {
+      @description Extracts the second component (0-59) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the second part of a time value.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The second (0-59) }
+      @returns Integer - The second (0-59).
+      
+      @warning Relies on `SysUtils.SecondOf`. Milliseconds are truncated.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          SecondPart: Integer;
+        begin
+          MyDateTime := TDateTimeKit.FromString('2024-07-15 14:30:45', 'yyyy-mm-dd hh:nn:ss');
+          SecondPart := TDateTimeKit.GetSecond(MyDateTime);
+          // SecondPart: 45
+        end;
+    }
     class function GetSecond(const AValue: TDateTime): Integer; static;
     
-    { GetMillisecond
-      Extracts the millisecond from a date/time value.
+    {
+      @description Extracts the millisecond component (0-999) from a TDateTime value.
       
-      Parameters:
-        AValue - The date/time to extract from
+      @usage Use when you need the millisecond precision of a time value.
+      
+      @param AValue The date/time value to extract from.
         
-      Returns:
-        Integer - The millisecond (0-999) }
+      @returns Integer - The millisecond (0-999).
+      
+      @warning Relies on `SysUtils.MilliSecondOf`.
+      
+      @example
+        var
+          MyDateTime: TDateTime;
+          MsPart: Integer;
+        begin
+          // Note: Standard FromString might not capture milliseconds.
+          // Use EncodeDateTime or similar for precise construction.
+          MyDateTime := EncodeDateTime(2024, 7, 15, 14, 30, 45, 123); 
+          MsPart := TDateTimeKit.GetMillisecond(MyDateTime);
+          // MsPart: 123
+        end;
+    }
     class function GetMillisecond(const AValue: TDateTime): Integer; static;
     
     { Date Component Setters
       These functions create a new TDateTime with one component changed.
-      The original value is not modified. }
+      The original value is not modified. Relies on DecodeDate/DecodeTime
+      and EncodeDateTime internally. }
     
-    { SetYear
-      Creates a new date/time with the year changed.
+    {
+      @description Creates a new TDateTime value with the year component replaced.
+                   Other components (month, day, time) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        AYear - New year value (e.g., 2024)
+      @usage Use to shift a date to a different year while keeping the month, day, and time.
+      
+      @param AValue The original TDateTime value.
+      @param AYear The new year value (e.g., 2025).
         
-      Returns:
-        TDateTime - New date/time with updated year }
+      @returns TDateTime - A new date/time value with the specified year.
+      
+      @warning If the original date is February 29th and the new year is not a leap year,
+               the resulting date might be invalid or adjusted (e.g., to Feb 28th),
+               depending on the underlying `EncodeDateTime` behavior.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetYear(OriginalDate, 2025);
+          // NewDate corresponds to 2025-07-15 10:30:00.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2025, M=7, D=15, H=10, N=30, S=0, MS=0
+        end;
+    }
     class function SetYear(const AValue: TDateTime; const AYear: Integer): TDateTime; static;
     
-    { SetMonth
-      Creates a new date/time with the month changed.
+    {
+      @description Creates a new TDateTime value with the month component replaced.
+                   Other components (year, day, time) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        AMonth - New month value (1-12)
+      @usage Use to shift a date to a different month within the same year, keeping the day and time.
+      
+      @param AValue The original TDateTime value.
+      @param AMonth The new month value (1-12).
         
-      Returns:
-        TDateTime - New date/time with updated month }
+      @returns TDateTime - A new date/time value with the specified month.
+      
+      @warning If the original day is invalid for the new month (e.g., setting month to February
+               when the day is 31), the result might be invalid or adjusted (e.g., to the last
+               day of the new month), depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetMonth(OriginalDate, 8); // Change to August
+          // NewDate corresponds to 2024-08-15 10:30:00.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=8, D=15, H=10, N=30, S=0, MS=0
+        end;
+    }
     class function SetMonth(const AValue: TDateTime; const AMonth: Integer): TDateTime; static;
     
-    { SetDay
-      Creates a new date/time with the day changed.
+    {
+      @description Creates a new TDateTime value with the day of the month replaced.
+                   Other components (year, month, time) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        ADay - New day value (1-31)
+      @usage Use to change the day within a month, keeping the year, month, and time.
+      
+      @param AValue The original TDateTime value.
+      @param ADay The new day value (1-31).
         
-      Returns:
-        TDateTime - New date/time with updated day }
+      @returns TDateTime - A new date/time value with the specified day.
+      
+      @warning If the new day value is invalid for the given month and year (e.g., day 31
+               for April), the result might be invalid or adjusted, depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetDay(OriginalDate, 20); // Change to the 20th
+          // NewDate corresponds to 2024-07-20 10:30:00.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=7, D=20, H=10, N=30, S=0, MS=0
+        end;
+    }
     class function SetDay(const AValue: TDateTime; const ADay: Integer): TDateTime; static;
     
-    { SetHour
-      Creates a new date/time with the hour changed.
+    {
+      @description Creates a new TDateTime value with the hour component replaced.
+                   Other components (date, minute, second, millisecond) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        AHour - New hour value (0-23)
+      @usage Use to change the hour of the day, keeping the date and other time parts.
+      
+      @param AValue The original TDateTime value.
+      @param AHour The new hour value (0-23).
         
-      Returns:
-        TDateTime - New date/time with updated hour }
+      @returns TDateTime - A new date/time value with the specified hour.
+      
+      @warning Invalid hour values (outside 0-23) may lead to exceptions or unexpected
+               behavior depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetHour(OriginalDate, 15); // Change to 3 PM
+          // NewDate corresponds to 2024-07-15 15:30:00.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=7, D=15, H=15, N=30, S=0, MS=0
+        end;
+    }
     class function SetHour(const AValue: TDateTime; const AHour: Integer): TDateTime; static;
     
-    { SetMinute
-      Creates a new date/time with the minute changed.
+    {
+      @description Creates a new TDateTime value with the minute component replaced.
+                   Other components (date, hour, second, millisecond) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        AMinute - New minute value (0-59)
+      @usage Use to change the minute of the hour, keeping the date and other time parts.
+      
+      @param AValue The original TDateTime value.
+      @param AMinute The new minute value (0-59).
         
-      Returns:
-        TDateTime - New date/time with updated minute }
+      @returns TDateTime - A new date/time value with the specified minute.
+      
+      @warning Invalid minute values (outside 0-59) may lead to exceptions or unexpected
+               behavior depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetMinute(OriginalDate, 45); // Change to 45 minutes past the hour
+          // NewDate corresponds to 2024-07-15 10:45:00.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=7, D=15, H=10, N=45, S=0, MS=0
+        end;
+    }
     class function SetMinute(const AValue: TDateTime; const AMinute: Integer): TDateTime; static;
     
-    { SetSecond
-      Creates a new date/time with the second changed.
+    {
+      @description Creates a new TDateTime value with the second component replaced.
+                   Other components (date, hour, minute, millisecond) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        ASecond - New second value (0-59)
+      @usage Use to change the second of the minute, keeping the date and other time parts.
+      
+      @param AValue The original TDateTime value.
+      @param ASecond The new second value (0-59).
         
-      Returns:
-        TDateTime - New date/time with updated second }
+      @returns TDateTime - A new date/time value with the specified second.
+      
+      @warning Invalid second values (outside 0-59) may lead to exceptions or unexpected
+               behavior depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetSecond(OriginalDate, 55); // Change to 55 seconds
+          // NewDate corresponds to 2024-07-15 10:30:55.000
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=7, D=15, H=10, N=30, S=55, MS=0
+        end;
+    }
     class function SetSecond(const AValue: TDateTime; const ASecond: Integer): TDateTime; static;
     
-    { SetMilliSecond
-      Creates a new date/time with the millisecond changed.
+    {
+      @description Creates a new TDateTime value with the millisecond component replaced.
+                   Other components (date, hour, minute, second) remain the same.
       
-      Parameters:
-        AValue - Original date/time
-        AMilliSecond - New millisecond value (0-999)
+      @usage Use to change the millisecond of the second, keeping the date and other time parts.
+      
+      @param AValue The original TDateTime value.
+      @param AMilliSecond The new millisecond value (0-999).
         
-      Returns:
-        TDateTime - New date/time with updated millisecond }
+      @returns TDateTime - A new date/time value with the specified millisecond.
+      
+      @warning Invalid millisecond values (outside 0-999) may lead to exceptions or unexpected
+               behavior depending on `EncodeDateTime`.
+      
+      @example
+        var
+          OriginalDate, NewDate: TDateTime;
+          Y, M, D, H, N, S, MS: Word;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          NewDate := TDateTimeKit.SetMilliSecond(OriginalDate, 500); // Change to 500 milliseconds
+          // NewDate corresponds to 2024-07-15 10:30:00.500
+          
+          DecodeDateTime(NewDate, Y, M, D, H, N, S, MS);
+          // Y=2024, M=7, D=15, H=10, N=30, S=0, MS=500
+        end;
+    }
     class function SetMilliSecond(const AValue: TDateTime; const AMilliSecond: Integer): TDateTime; static;
     
     { Date/Time Arithmetic
       These functions add or subtract time periods, returning a new TDateTime.
-      Negative values can be used to subtract time. }
+      Negative values can be used to subtract time. They rely on `DateUtils` functions. }
     
-    { AddYears
-      Adds (or subtracts) a number of years.
+    {
+      @description Adds (or subtracts if negative) a specified number of years to a TDateTime value.
+                   Attempts to preserve the month and day.
       
-      Parameters:
-        AValue - Original date/time
-        AYears - Number of years to add (negative to subtract)
+      @usage Use for date calculations involving whole years, like anniversaries or expiration dates.
+      
+      @param AValue The original TDateTime value.
+      @param AYears The number of years to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with years added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of years.
+      
+      @warning If the original date is February 29th and the target year is not a leap year,
+               the day will be adjusted to February 28th (`IncYear` behavior).
+      
+      @example
+        var
+          OriginalDate, FutureDate, PastDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          FutureDate := TDateTimeKit.AddYears(OriginalDate, 5);
+          // FutureDate corresponds to 2029-07-15 10:00:00.000
+          
+          PastDate := TDateTimeKit.AddYears(OriginalDate, -1);
+          // PastDate corresponds to 2023-07-15 10:00:00.000
+        end;
+    }
     class function AddYears(const AValue: TDateTime; const AYears: Integer): TDateTime; static;
     
-    { AddMonths
-      Adds (or subtracts) a number of months.
+    {
+      @description Adds (or subtracts if negative) a specified number of months to a TDateTime value.
+                   Attempts to preserve the day, adjusting if necessary (e.g., Jan 31 + 1 month -> Feb 28/29).
       
-      Parameters:
-        AValue - Original date/time
-        AMonths - Number of months to add (negative to subtract)
+      @usage Use for calculations involving whole months, like monthly billing cycles or deadlines.
+      
+      @param AValue The original TDateTime value.
+      @param AMonths The number of months to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with months added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of months.
+      
+      @warning Day adjustment occurs if the original day doesn't exist in the target month.
+               Jan 31 + 1 month = Feb 28/29. Mar 31 + 1 month = Apr 30.
+               Relies on `DateUtils.IncMonth`.
+      
+      @example
+        var
+          OriginalDate, FutureDate, AdjustedDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 01, 15, 10, 0, 0, 0);
+          FutureDate := TDateTimeKit.AddMonths(OriginalDate, 3);
+          // FutureDate corresponds to 2024-04-15 10:00:00.000
+          
+          OriginalDate := EncodeDateTime(2024, 01, 31, 10, 0, 0, 0);
+          AdjustedDate := TDateTimeKit.AddMonths(OriginalDate, 1); // Add 1 month to Jan 31
+          // AdjustedDate corresponds to 2024-02-29 10:00:00.000 (Leap year)
+        end;
+    }
     class function AddMonths(const AValue: TDateTime; const AMonths: Integer): TDateTime; static;
     
-    { AddDays
-      Adds (or subtracts) a number of days.
+    {
+      @description Adds (or subtracts if negative) a specified number of days to a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        ADays - Number of days to add (negative to subtract)
+      @usage Use for simple date offsets, like calculating a date 'N' days from now.
+      
+      @param AValue The original TDateTime value.
+      @param ADays The number of days to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with days added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of days.
+      
+      @warning This performs a simple addition to the TDateTime value, which represents days
+               since a base date. It correctly handles month and year rollovers.
+      
+      @example
+        var
+          OriginalDate, FutureDate, PastDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          FutureDate := TDateTimeKit.AddDays(OriginalDate, 10);
+          // FutureDate corresponds to 2024-07-25 10:00:00.000
+          
+          PastDate := TDateTimeKit.AddDays(OriginalDate, -20);
+          // PastDate corresponds to 2024-06-25 10:00:00.000
+        end;
+    }
     class function AddDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
     
-    { AddHours
-      Adds (or subtracts) a number of hours.
+    {
+      @description Adds (or subtracts if negative) a specified number of hours to a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        AHours - Number of hours to add (negative to subtract)
+      @usage Use for time calculations involving whole hours.
+      
+      @param AValue The original TDateTime value.
+      @param AHours The number of hours to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with hours added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of hours.
+      
+      @warning Relies on `DateUtils.IncHour`. Correctly handles day, month, year rollovers.
+      
+      @example
+        var
+          OriginalDate, FutureDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          FutureDate := TDateTimeKit.AddHours(OriginalDate, 5);
+          // FutureDate corresponds to 2024-07-15 15:30:00.000
+          
+          FutureDate := TDateTimeKit.AddHours(OriginalDate, 24);
+          // FutureDate corresponds to 2024-07-16 10:30:00.000
+        end;
+    }
     class function AddHours(const AValue: TDateTime; const AHours: Integer): TDateTime; static;
     
-    { AddMinutes
-      Adds (or subtracts) a number of minutes.
+    {
+      @description Adds (or subtracts if negative) a specified number of minutes to a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        AMinutes - Number of minutes to add (negative to subtract)
+      @usage Use for time calculations involving whole minutes.
+      
+      @param AValue The original TDateTime value.
+      @param AMinutes The number of minutes to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with minutes added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of minutes.
+      
+      @warning Relies on `DateUtils.IncMinute`. Correctly handles hour, day, etc. rollovers.
+      
+      @example
+        var
+          OriginalDate, FutureDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          FutureDate := TDateTimeKit.AddMinutes(OriginalDate, 45);
+          // FutureDate corresponds to 2024-07-15 11:15:00.000
+          
+          FutureDate := TDateTimeKit.AddMinutes(OriginalDate, -90);
+          // FutureDate corresponds to 2024-07-15 09:00:00.000
+        end;
+    }
     class function AddMinutes(const AValue: TDateTime; const AMinutes: Integer): TDateTime; static;
     
-    { AddSeconds
-      Adds (or subtracts) a number of seconds.
+    {
+      @description Adds (or subtracts if negative) a specified number of seconds to a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        ASeconds - Number of seconds to add (negative to subtract)
+      @usage Use for time calculations involving whole seconds.
+      
+      @param AValue The original TDateTime value.
+      @param ASeconds The number of seconds to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date/time with seconds added/subtracted }
+      @returns TDateTime - A new date/time value adjusted by the specified number of seconds.
+      
+      @warning Relies on `DateUtils.IncSecond`. Correctly handles minute, hour, etc. rollovers.
+               Does not affect milliseconds.
+      
+      @example
+        var
+          OriginalDate, FutureDate: TDateTime;
+        begin
+          OriginalDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          FutureDate := TDateTimeKit.AddSeconds(OriginalDate, 90);
+          // FutureDate corresponds to 2024-07-15 10:31:30.000
+          
+          FutureDate := TDateTimeKit.AddSeconds(OriginalDate, -120);
+          // FutureDate corresponds to 2024-07-15 10:28:00.000
+        end;
+    }
     class function AddSeconds(const AValue: TDateTime; const ASeconds: Integer): TDateTime; static;
     
     { Period Start/End Functions
       These functions return a new TDateTime set to the start or end
-      of a specific time period (year, month, week, etc.) }
+      of a specific time period (year, month, week, etc.). They rely on 
+      `DateUtils` functions. }
     
-    { StartOfYear
-      Sets the date to January 1st and time to 00:00:00.000
+    {
+      @description Returns the first moment of the year (January 1st, 00:00:00.000) for the year of the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to normalize dates to the beginning of their year for comparisons or calculations.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - First moment of the year }
+      @returns TDateTime - The first moment (Jan 1st, 00:00:00.000) of the same year as AValue.
+      
+      @warning Relies on `FloorDate(AValue, duYear)`.
+      
+      @example
+        var
+          MyDate, StartDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          StartDate := TDateTimeKit.StartOfYear(MyDate);
+          // StartDate corresponds to 2024-01-01 00:00:00.000
+        end;
+    }
     class function StartOfYear(const AValue: TDateTime): TDateTime; static;
     
-    { StartOfMonth
-      Sets the date to the 1st of the month and time to 00:00:00.000
+    {
+      @description Returns the first moment of the month (1st day, 00:00:00.000) for the month of the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to normalize dates to the beginning of their month.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - First moment of the month }
+      @returns TDateTime - The first moment (1st day, 00:00:00.000) of the same month and year as AValue.
+      
+      @warning Relies on `FloorDate(AValue, duMonth)`.
+      
+      @example
+        var
+          MyDate, StartDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          StartDate := TDateTimeKit.StartOfMonth(MyDate);
+          // StartDate corresponds to 2024-07-01 00:00:00.000
+        end;
+    }
     class function StartOfMonth(const AValue: TDateTime): TDateTime; static;
     
-    { StartOfWeek
-      Sets the date to Sunday and time to 00:00:00.000
+    {
+      @description Returns the first moment of the week (Sunday, 00:00:00.000) for the week containing the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to normalize dates to the beginning of their week (starting Sunday).
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - First moment of the week }
+      @returns TDateTime - The first moment (Sunday, 00:00:00.000) of the week containing AValue.
+      
+      @warning Relies on `FloorDate(AValue, duWeek)`, which assumes Sunday is the first day of the week.
+      
+      @example
+        var
+          MyDate, StartDate: TDateTime;
+        begin
+          // Assuming July 15, 2024 is a Monday
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          StartDate := TDateTimeKit.StartOfWeek(MyDate);
+          // StartDate corresponds to 2024-07-14 00:00:00.000 (the preceding Sunday)
+        end;
+    }
     class function StartOfWeek(const AValue: TDateTime): TDateTime; static;
     
-    { StartOfDay
-      Sets the time to 00:00:00.000, keeping the date unchanged
+    {
+      @description Returns the first moment of the day (00:00:00.000) for the given date.
+                   Effectively removes the time portion.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to compare dates without considering the time, or to get the date part only.
+             Equivalent to `Trunc(AValue)`.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - First moment of the day }
+      @returns TDateTime - The same date as AValue, but with the time set to 00:00:00.000.
+      
+      @warning Relies on `FloorDate(AValue, duDay)`.
+      
+      @example
+        var
+          MyDate, StartDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 45, 500);
+          StartDate := TDateTimeKit.StartOfDay(MyDate);
+          // StartDate corresponds to 2024-07-15 00:00:00.000
+        end;
+    }
     class function StartOfDay(const AValue: TDateTime): TDateTime; static;
     
-    { StartOfHour
-      Sets minutes, seconds and milliseconds to 0, keeping date and hour
+    {
+      @description Returns the first moment of the hour (minute=0, second=0, millisecond=0) for the given date/time.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to normalize times to the beginning of their hour.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - First moment of the hour }
+      @returns TDateTime - The same date and hour as AValue, with minutes, seconds, and milliseconds set to 0.
+      
+      @warning Relies on `FloorDate(AValue, duHour)`.
+      
+      @example
+        var
+          MyDate, StartDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 45, 500);
+          StartDate := TDateTimeKit.StartOfHour(MyDate);
+          // StartDate corresponds to 2024-07-15 10:00:00.000
+        end;
+    }
     class function StartOfHour(const AValue: TDateTime): TDateTime; static;
     
-    { EndOfYear
-      Sets the date to December 31st and time to 23:59:59.999
+    {
+      @description Returns the last moment of the year (December 31st, 23:59:59.999) for the year of the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to find the boundary of a year for range checks or calculations.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - Last moment of the year }
+      @returns TDateTime - The last moment (Dec 31st, 23:59:59.999) of the same year as AValue.
+      
+      @warning Relies on `CeilingDate(AValue, duYear) - OneMillisecond`.
+      
+      @example
+        var
+          MyDate, EndDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          EndDate := TDateTimeKit.EndOfYear(MyDate);
+          // EndDate corresponds to 2024-12-31 23:59:59.999
+        end;
+    }
     class function EndOfYear(const AValue: TDateTime): TDateTime; static;
     
-    { EndOfMonth
-      Sets the date to the last day of the month and time to 23:59:59.999
+    {
+      @description Returns the last moment of the month (last day, 23:59:59.999) for the month of the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to find the boundary of a month for range checks or calculations.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - Last moment of the month }
+      @returns TDateTime - The last moment (last day, 23:59:59.999) of the same month and year as AValue.
+      
+      @warning Relies on `CeilingDate(AValue, duMonth) - OneMillisecond`. Correctly handles leap years for February.
+      
+      @example
+        var
+          MyDate, EndDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          EndDate := TDateTimeKit.EndOfMonth(MyDate);
+          // EndDate corresponds to 2024-07-31 23:59:59.999
+          
+          MyDate := EncodeDateTime(2024, 02, 10, 0, 0, 0, 0); // Leap year
+          EndDate := TDateTimeKit.EndOfMonth(MyDate);
+          // EndDate corresponds to 2024-02-29 23:59:59.999
+        end;
+    }
     class function EndOfMonth(const AValue: TDateTime): TDateTime; static;
     
-    { EndOfWeek
-      Sets the date to Saturday and time to 23:59:59.999
+    {
+      @description Returns the last moment of the week (Saturday, 23:59:59.999) for the week containing the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to find the boundary of a week (ending Saturday) for range checks or calculations.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - Last moment of the week }
+      @returns TDateTime - The last moment (Saturday, 23:59:59.999) of the week containing AValue.
+      
+      @warning Relies on `CeilingDate(AValue, duWeek) - OneMillisecond`. Assumes Sunday is the first day of the week.
+      
+      @example
+        var
+          MyDate, EndDate: TDateTime;
+        begin
+          // Assuming July 15, 2024 is a Monday
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 0, 0);
+          EndDate := TDateTimeKit.EndOfWeek(MyDate);
+          // EndDate corresponds to 2024-07-20 23:59:59.999 (the following Saturday)
+        end;
+    }
     class function EndOfWeek(const AValue: TDateTime): TDateTime; static;
     
-    { EndOfDay
-      Sets the time to 23:59:59.999, keeping the date unchanged
+    {
+      @description Returns the last moment of the day (23:59:59.999) for the given date.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to find the boundary of a day for range checks (e.g., checking if a time falls within today).
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - Last moment of the day }
+      @returns TDateTime - The same date as AValue, but with the time set to 23:59:59.999.
+      
+      @warning Relies on `CeilingDate(AValue, duDay) - OneMillisecond`.
+      
+      @example
+        var
+          MyDate, EndDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 45, 500);
+          EndDate := TDateTimeKit.EndOfDay(MyDate);
+          // EndDate corresponds to 2024-07-15 23:59:59.999
+        end;
+    }
     class function EndOfDay(const AValue: TDateTime): TDateTime; static;
     
-    { EndOfHour
-      Sets minutes to 59, seconds to 59, milliseconds to 999
+    {
+      @description Returns the last moment of the hour (minute=59, second=59, millisecond=999) for the given date/time.
       
-      Parameters:
-        AValue - Original date/time
+      @usage Use to find the boundary of an hour for range checks.
+      
+      @param AValue The original TDateTime value.
         
-      Returns:
-        TDateTime - Last moment of the hour }
+      @returns TDateTime - The same date and hour as AValue, with minutes, seconds, and milliseconds set to their maximum values.
+      
+      @warning Relies on `CeilingDate(AValue, duHour) - OneMillisecond`.
+      
+      @example
+        var
+          MyDate, EndDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 07, 15, 10, 30, 45, 500);
+          EndDate := TDateTimeKit.EndOfHour(MyDate);
+          // EndDate corresponds to 2024-07-15 10:59:59.999
+        end;
+    }
     class function EndOfHour(const AValue: TDateTime): TDateTime; static;
     
     { Date Comparison Functions
-      These functions compare two dates in various ways }
+      These functions compare two dates in various ways. They often rely on
+      standard comparison operators or `DateUtils` functions. }
     
-    { IsBefore
-      Checks if one date/time is before another.
+    {
+      @description Checks if the first TDateTime value occurs chronologically before the second.
       
-      Parameters:
-        AValue - First date/time to compare
-        ADateTime - Second date/time to compare against
+      @usage Use for simple chronological ordering checks.
+      
+      @param AValue The first date/time value to compare.
+      @param ADateTime The second date/time value to compare against.
         
-      Returns:
-        Boolean - True if AValue is before ADateTime }
+      @returns Boolean - True if AValue is strictly earlier than ADateTime, False otherwise.
+      
+      @warning Uses standard `<` operator for TDateTime comparison.
+      
+      @example
+        var
+          Date1, Date2: TDateTime;
+          IsEarlier: Boolean;
+        begin
+          Date1 := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 07, 15, 11, 0, 0, 0);
+          IsEarlier := TDateTimeKit.IsBefore(Date1, Date2); // True
+          IsEarlier := TDateTimeKit.IsBefore(Date2, Date1); // False
+          IsEarlier := TDateTimeKit.IsBefore(Date1, Date1); // False
+        end;
+    }
     class function IsBefore(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { IsAfter
-      Checks if one date/time is after another.
+    {
+      @description Checks if the first TDateTime value occurs chronologically after the second.
       
-      Parameters:
-        AValue - First date/time to compare
-        ADateTime - Second date/time to compare against
+      @usage Use for simple chronological ordering checks.
+      
+      @param AValue The first date/time value to compare.
+      @param ADateTime The second date/time value to compare against.
         
-      Returns:
-        Boolean - True if AValue is after ADateTime }
+      @returns Boolean - True if AValue is strictly later than ADateTime, False otherwise.
+      
+      @warning Uses standard `>` operator for TDateTime comparison.
+      
+      @example
+        var
+          Date1, Date2: TDateTime;
+          IsLater: Boolean;
+        begin
+          Date1 := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 07, 15, 11, 0, 0, 0);
+          IsLater := TDateTimeKit.IsAfter(Date1, Date2); // False
+          IsLater := TDateTimeKit.IsAfter(Date2, Date1); // True
+          IsLater := TDateTimeKit.IsAfter(Date1, Date1); // False
+        end;
+    }
     class function IsAfter(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { IsSameDay
-      Checks if two dates fall on the same calendar day.
-      Time portions are ignored in the comparison.
+    {
+      @description Checks if two TDateTime values fall on the same calendar day, ignoring the time portion.
       
-      Parameters:
-        AValue - First date/time to compare
-        ADateTime - Second date/time to compare against
+      @usage Use when comparing dates regardless of the time of day.
+      
+      @param AValue The first date/time value to compare.
+      @param ADateTime The second date/time value to compare against.
         
-      Returns:
-        Boolean - True if both dates are the same day }
+      @returns Boolean - True if both values represent the same date (year, month, day), False otherwise.
+      
+      @warning Relies on `DateUtils.SameDate`. Compares the integer (date) parts of the TDateTime values.
+      
+      @example
+        var
+          Date1, Date2, Date3: TDateTime;
+          Same: Boolean;
+        begin
+          Date1 := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 07, 15, 18, 30, 0, 0);
+          Date3 := EncodeDateTime(2024, 07, 16, 10, 0, 0, 0);
+          
+          Same := TDateTimeKit.IsSameDay(Date1, Date2); // True
+          Same := TDateTimeKit.IsSameDay(Date1, Date3); // False
+        end;
+    }
     class function IsSameDay(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { IsSameMonth
-      Checks if two dates fall in the same month and year.
+    {
+      @description Checks if two TDateTime values fall within the same calendar month and year.
       
-      Parameters:
-        AValue - First date/time to compare
-        ADateTime - Second date/time to compare against
+      @usage Use when comparing dates to see if they belong to the same month.
+      
+      @param AValue The first date/time value to compare.
+      @param ADateTime The second date/time value to compare against.
         
-      Returns:
-        Boolean - True if both dates are in the same month }
+      @returns Boolean - True if both values are in the same month and year, False otherwise.
+      
+      @warning Relies on `DateUtils.SameMonth`. Ignores the day and time portions.
+      
+      @example
+        var
+          Date1, Date2, Date3: TDateTime;
+          Same: Boolean;
+        begin
+          Date1 := EncodeDateTime(2024, 07, 15, 10, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 07, 25, 18, 0, 0, 0);
+          Date3 := EncodeDateTime(2024, 08, 15, 10, 0, 0, 0);
+          
+          Same := TDateTimeKit.IsSameMonth(Date1, Date2); // True
+          Same := TDateTimeKit.IsSameMonth(Date1, Date3); // False
+        end;
+    }
     class function IsSameMonth(const AValue, ADateTime: TDateTime): Boolean; static;
     
-    { IsSameYear
-      Checks if two dates fall in the same year.
+    {
+      @description Checks if two TDateTime values fall within the same calendar year.
       
-      Parameters:
-        AValue - First date/time to compare
-        ADateTime - Second date/time to compare against
+      @usage Use when comparing dates to see if they belong to the same year.
+      
+      @param AValue The first date/time value to compare.
+      @param ADateTime The second date/time value to compare against.
         
-      Returns:
-        Boolean - True if both dates are in the same year }
+      @returns Boolean - True if both values are in the same year, False otherwise.
+      
+      @warning Relies on comparing the results of `YearOf`. Ignores month, day, and time.
+      
+      @example
+        var
+          Date1, Date2, Date3: TDateTime;
+          Same: Boolean;
+        begin
+          Date1 := EncodeDateTime(2024, 07, 15, 0, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 12, 31, 0, 0, 0, 0);
+          Date3 := EncodeDateTime(2025, 01, 01, 0, 0, 0, 0);
+          
+          Same := TDateTimeKit.IsSameYear(Date1, Date2); // True
+          Same := TDateTimeKit.IsSameYear(Date1, Date3); // False
+        end;
+    }
     class function IsSameYear(const AValue, ADateTime: TDateTime): Boolean; static;
     
     { Business Day Functions
       These functions help with business day calculations,
-      treating Monday-Friday as business days }
+      treating Monday-Friday as business days based on DayOfWeek results. }
     
-    { IsBusinessDay
-      Checks if a date falls on a business day (Monday-Friday).
-      Weekends (Saturday-Sunday) return False.
+    {
+      @description Checks if a given TDateTime value falls on a business day (Monday to Friday).
       
-      Parameters:
-        AValue - Date/time to check
+      @usage Use to determine if a specific date is a weekday or weekend.
+      
+      @param AValue The date/time value to check.
         
-      Returns:
-        Boolean - True if date is a business day }
+      @returns Boolean - True if the day of the week is Monday (2) through Friday (6), False otherwise.
+      
+      @warning Considers only Saturday (7) and Sunday (1) as non-business days. Does not account
+               for public holidays. Uses the 1=Sunday..7=Saturday convention.
+      
+      @example
+        var
+          Monday, Sunday: TDateTime;
+          IsWorkday: Boolean;
+        begin
+          Monday := EncodeDate(2024, 7, 15); // A Monday
+          Sunday := EncodeDate(2024, 7, 14); // A Sunday
+          
+          IsWorkday := TDateTimeKit.IsBusinessDay(Monday); // True
+          IsWorkday := TDateTimeKit.IsBusinessDay(Sunday); // False
+        end;
+    }
     class function IsBusinessDay(const AValue: TDateTime): Boolean; static;
     
-    { NextBusinessDay
-      Finds the next business day after the given date.
-      If given a Friday, returns the following Monday.
+    {
+      @description Finds the next business day (Monday-Friday) following the given date.
+                   If the given date is already a business day, it finds the next one.
       
-      Parameters:
-        AValue - Starting date/time
+      @usage Use to calculate deadlines or follow-up dates that must fall on a workday.
+      
+      @param AValue The starting TDateTime value. Time portion is preserved but usually irrelevant.
         
-      Returns:
-        TDateTime - Next business day }
+      @returns TDateTime - The date of the next business day.
+      
+      @warning If the input is Friday, returns the following Monday. If Saturday or Sunday,
+               returns the following Monday. Does not account for holidays.
+      
+      @example
+        var
+          Friday, Saturday, NextDay: TDateTime;
+        begin
+          Friday := EncodeDate(2024, 7, 12); // A Friday
+          Saturday := EncodeDate(2024, 7, 13); // A Saturday
+          
+          NextDay := TDateTimeKit.NextBusinessDay(Friday);
+          // NextDay is Monday, July 15, 2024
+          
+          NextDay := TDateTimeKit.NextBusinessDay(Saturday);
+          // NextDay is Monday, July 15, 2024
+        end;
+    }
     class function NextBusinessDay(const AValue: TDateTime): TDateTime; static;
     
-    { PreviousBusinessDay
-      Finds the previous business day before the given date.
-      If given a Monday, returns the previous Friday.
+    {
+      @description Finds the previous business day (Monday-Friday) before the given date.
+                   If the given date is already a business day, it finds the previous one.
       
-      Parameters:
-        AValue - Starting date/time
+      @usage Use to find the last workday before a specific date.
+      
+      @param AValue The starting TDateTime value. Time portion is preserved but usually irrelevant.
         
-      Returns:
-        TDateTime - Previous business day }
+      @returns TDateTime - The date of the previous business day.
+      
+      @warning If the input is Monday, returns the preceding Friday. If Sunday or Saturday,
+               returns the preceding Friday. Does not account for holidays.
+      
+      @example
+        var
+          Monday, Sunday, PrevDay: TDateTime;
+        begin
+          Monday := EncodeDate(2024, 7, 15); // A Monday
+          Sunday := EncodeDate(2024, 7, 14); // A Sunday
+          
+          PrevDay := TDateTimeKit.PreviousBusinessDay(Monday);
+          // PrevDay is Friday, July 12, 2024
+          
+          PrevDay := TDateTimeKit.PreviousBusinessDay(Sunday);
+          // PrevDay is Friday, July 12, 2024
+        end;
+    }
     class function PreviousBusinessDay(const AValue: TDateTime): TDateTime; static;
     
-    { AddBusinessDays
-      Adds (or subtracts) a number of business days.
-      Skips weekends when counting days.
+    {
+      @description Adds (or subtracts if negative) a specified number of business days (Mon-Fri)
+                   to a TDateTime value, skipping weekends.
       
-      Parameters:
-        AValue - Starting date/time
-        ADays - Number of business days to add (negative to subtract)
+      @usage Use to calculate work-related deadlines or schedules, like "due in 5 business days".
+      
+      @param AValue The starting TDateTime value. Time portion is preserved but usually irrelevant.
+      @param ADays The number of business days to add (negative value subtracts).
         
-      Returns:
-        TDateTime - New date after adding/subtracting business days }
+      @returns TDateTime - A new date adjusted by the specified number of business days.
+      
+      @warning Skips Saturdays and Sundays when counting. Does not account for public holidays.
+               Adding/subtracting 0 days returns the next/previous business day if the start date
+               is not a business day, otherwise returns the start date.
+      
+      @example
+        var
+          StartDate, DueDate: TDateTime;
+        begin
+          StartDate := EncodeDate(2024, 7, 12); // Friday
+          DueDate := TDateTimeKit.AddBusinessDays(StartDate, 3);
+          // DueDate is Wednesday, July 17, 2024 (Skips Sat, Sun)
+          
+          StartDate := EncodeDate(2024, 7, 15); // Monday
+          DueDate := TDateTimeKit.AddBusinessDays(StartDate, -2);
+          // DueDate is Thursday, July 11, 2024 (Skips Sun, Sat)
+        end;
+    }
     class function AddBusinessDays(const AValue: TDateTime; const ADays: Integer): TDateTime; static;
     
-    { GetQuarter
-      Returns the quarter (1-4) for the given date.
+    {
+      @description Returns the calendar quarter (1-4) for the given date.
       
-      Parameters:
-        AValue - The date/time to check
+      @usage Use for grouping data by quarter or for financial reporting periods.
+      
+      @param AValue The TDateTime value to check.
         
-      Returns:
-        Integer - Quarter number (1-4) }
+      @returns Integer - Quarter number: 1 (Jan-Mar), 2 (Apr-Jun), 3 (Jul-Sep), 4 (Oct-Dec).
+      
+      @warning Calculation is based solely on the month: `(Month - 1) div 3 + 1`.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          Q: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July
+          Q := TDateTimeKit.GetQuarter(MyDate); // Q = 3
+          
+          MyDate := EncodeDate(2024, 1, 1); // January
+          Q := TDateTimeKit.GetQuarter(MyDate); // Q = 1
+        end;
+    }
     class function GetQuarter(const AValue: TDateTime): Integer; static;
     
-    { IsAM
-      Checks if the time is in the AM (before noon).
+    {
+      @description Checks if the time portion of a TDateTime value is in the AM (before 12:00:00 noon).
       
-      Parameters:
-        AValue - The date/time to check
+      @usage Use to determine if a time occurs in the morning.
+      
+      @param AValue The TDateTime value to check.
         
-      Returns:
-        Boolean - True if time is before noon }
+      @returns Boolean - True if the hour is between 0 (midnight) and 11 (inclusive), False otherwise.
+      
+      @warning Comparison is `HourOf(AValue) < 12`. Midnight (00:00) is considered AM.
+      
+      @example
+        var
+          Morning, Afternoon: TDateTime;
+          IsMorning: Boolean;
+        begin
+          Morning := EncodeTime(10, 30, 0, 0);
+          Afternoon := EncodeTime(14, 0, 0, 0);
+          
+          IsMorning := TDateTimeKit.IsAM(Morning);   // True
+          IsMorning := TDateTimeKit.IsAM(Afternoon); // False
+        end;
+    }
     class function IsAM(const AValue: TDateTime): Boolean; static;
     
-    { IsPM
-      Checks if the time is in the PM (after noon).
+    {
+      @description Checks if the time portion of a TDateTime value is in the PM (12:00:00 noon or later).
       
-      Parameters:
-        AValue - The date/time to check
+      @usage Use to determine if a time occurs in the afternoon or evening.
+      
+      @param AValue The TDateTime value to check.
         
-      Returns:
-        Boolean - True if time is after noon }
+      @returns Boolean - True if the hour is 12 (noon) or greater, False otherwise.
+      
+      @warning Comparison is `HourOf(AValue) >= 12`. Noon (12:00) is considered PM.
+      
+      @example
+        var
+          Morning, Afternoon: TDateTime;
+          IsAfternoon: Boolean;
+        begin
+          Morning := EncodeTime(10, 30, 0, 0);
+          Afternoon := EncodeTime(14, 0, 0, 0);
+          
+          IsAfternoon := TDateTimeKit.IsPM(Morning);   // False
+          IsAfternoon := TDateTimeKit.IsPM(Afternoon); // True
+        end;
+    }
     class function IsPM(const AValue: TDateTime): Boolean; static;
     
-    { FloorDate
-      Rounds down to the nearest unit.
+    {
+      @description Rounds a TDateTime value down to the nearest specified time unit.
+                   Essentially sets lower-order time components to their minimum value.
       
-      Parameters:
-        AValue - The date/time to round
-        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+      @usage Use to truncate date/time values to a specific precision level (e.g., floor to the nearest hour).
+             Similar to the 'StartOf...' functions but uses an enum parameter.
+      
+      @param AValue The TDateTime value to round down.
+      @param AUnit The unit to floor to (second, minute, hour, day, month, year). See TDateUnit type.
         
-      Returns:
-        TDateTime - Rounded down date/time }
+      @returns TDateTime - The date/time value rounded down to the specified unit.
+      
+      @warning Uses direct calculation based on `EncodeDate`/`EncodeTime` for each unit.
+               Flooring to 'Day' is equivalent to `StartOfDay` or `Trunc`.
+               Handles duYear, duHalfYear, duQuarter, duBiMonth, duMonth, duWeek, duDay, duHour, duMinute, duSecond.
+      
+      @example
+        var
+          MyDateTime, FlooredDateTime: TDateTime;
+        begin
+          MyDateTime := EncodeDateTime(2024, 7, 15, 10, 30, 45, 500);
+          
+          FlooredDateTime := TDateTimeKit.FloorDate(MyDateTime, duHour);
+          // FlooredDateTime: 2024-07-15 10:00:00.000
+          
+          FlooredDateTime := TDateTimeKit.FloorDate(MyDateTime, duMinute);
+          // FlooredDateTime: 2024-07-15 10:30:00.000
+          
+          FlooredDateTime := TDateTimeKit.FloorDate(MyDateTime, duDay);
+          // FlooredDateTime: 2024-07-15 00:00:00.000
+        end;
+    }
     class function FloorDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
     
-    { CeilingDate
-      Rounds up to the nearest unit.
+    {
+      @description Rounds a TDateTime value up to the beginning of the next specified time unit.
       
-      Parameters:
-        AValue - The date/time to round
-        AUnit - Unit to round to ('second', 'minute', 'hour', 'day', 'month', 'year')
+      @usage Use to find the boundary point after a given time at a specific precision level
+             (e.g., ceiling to the start of the next hour).
+      
+      @param AValue The TDateTime value to round up.
+      @param AUnit The unit to ceil to (second, minute, hour, day, month, year). See TDateUnit type.
         
-      Returns:
-        TDateTime - Rounded up date/time }
+      @returns TDateTime - The date/time value rounded up to the start of the next unit.
+      
+      @warning Uses direct calculation based on `EncodeDate`/`EncodeTime`/`IncMonth` for each unit.
+               If the value is already exactly at the start of a unit, it returns the *next* unit boundary
+               (e.g., Ceil(10:00:00, duHour) -> 11:00:00). This differs from 'EndOf...' functions.
+               Handles duYear, duHalfYear, duQuarter, duBiMonth, duMonth, duWeek, duDay, duHour, duMinute, duSecond.
+      
+      @example
+        var
+          MyDateTime, CeiledDateTime: TDateTime;
+        begin
+          MyDateTime := EncodeDateTime(2024, 7, 15, 10, 30, 45, 500);
+          
+          CeiledDateTime := TDateTimeKit.CeilingDate(MyDateTime, duHour);
+          // CeiledDateTime: 2024-07-15 11:00:00.000
+          
+          CeiledDateTime := TDateTimeKit.CeilingDate(MyDateTime, duMinute);
+          // CeiledDateTime: 2024-07-15 10:31:00.000
+          
+          CeiledDateTime := TDateTimeKit.CeilingDate(MyDateTime, duDay);
+          // CeiledDateTime: 2024-07-16 00:00:00.000
+          
+          MyDateTime := EncodeDateTime(2024, 7, 15, 10, 0, 0, 0); // Exactly 10:00
+          CeiledDateTime := TDateTimeKit.CeilingDate(MyDateTime, duHour);
+          // CeiledDateTime: 2024-07-15 11:00:00.000 (Start of NEXT hour)
+        end;
+    }
     class function CeilingDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
     
-    { Time Span Creation Functions }
+    { Time Span Creation Functions
+      These functions create TDateSpan records representing time periods or durations.
+      They typically rely on `DateUtils` functions for span creation. }
     
-    { CreatePeriod
-      Creates a calendar-based time span (handles months, leap years naturally).
+    {
+      @description Creates a calendar-based time span (TDateSpan) which handles variations
+                   like leap years and differing month lengths naturally when added to a date.
       
-      Parameters:
-        AYears, AMonths, etc. - Components of the period
+      @usage Use when defining spans like "1 month" or "2 years" where the exact number of days
+             or seconds is context-dependent (depends on the start date when added).
+      
+      @param AYears, AMonths, ADays, AHours, AMinutes, ASeconds, AMilliseconds: Components of the period.
         
-      Returns:
-        TDateSpan - A period that can be added to dates }
+      @returns TDateSpan - A span record representing the calendar period.
+      
+      @warning This function likely maps to `DateUtils.CreateTimeSpan` or similar, creating
+               a span where months/years are treated conceptually rather than as fixed durations.
+               Adding this span might yield different absolute time differences depending on the start date.
+               This is usually the intended behavior for calendar arithmetic.
+      
+      @example
+        var
+          OneMonthSpan: TDateSpan;
+          StartDate, EndDate: TDateTime;
+        begin
+          OneMonthSpan := TDateTimeKit.CreatePeriod(AMonths := 1);
+          
+          StartDate := EncodeDate(2024, 1, 31);
+          EndDate := TDateTimeKit.AddSpan(StartDate, OneMonthSpan);
+          // EndDate is likely Feb 29, 2024 (calendar month added)
+          
+          StartDate := EncodeDate(2024, 2, 29);
+          EndDate := TDateTimeKit.AddSpan(StartDate, OneMonthSpan);
+          // EndDate is likely Mar 29, 2024 (calendar month added)
+        end;
+    }
     class function CreatePeriod(const AYears: Integer = 0; const AMonths: Integer = 0;
       const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
       const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
       
-    { CreateDuration
-      Creates a fixed-length time span (in exact seconds).
+    {
+      @description Creates a fixed-length time span (TDateSpan) based on a precise number of
+                   seconds or smaller units. Years/months are converted to approximate fixed lengths.
       
-      Parameters:
-        AYears, AMonths, etc. - Components of the duration
+      @usage Use when defining spans representing an exact duration, like "90 minutes" or
+             "48 hours", where the length is independent of the start date.
+      
+      @param AYears, AMonths, ADays, AHours, AMinutes, ASeconds, AMilliseconds: Components of the duration.
         
-      Returns:
-        TDateSpan - A duration that can be added to dates }
+      @returns TDateSpan - A span record representing the fixed duration.
+      
+      @warning Converts Years and Months to seconds using approximate values (Year=31536000s/365d, Month=2592000s/30d).
+               Prefer using smaller units (days, hours, etc.) for precise durations. Adding this
+               span always results in the same absolute time difference. Kind is set to dskDuration.
+      
+      @example
+        var
+          NinetyMinutes: TDateSpan;
+          StartDate, EndDate: TDateTime;
+        begin
+          NinetyMinutes := TDateTimeKit.CreateDuration(AMinutes := 90);
+          
+          StartDate := EncodeDateTime(2024, 7, 15, 10, 0, 0, 0);
+          EndDate := TDateTimeKit.AddSpan(StartDate, NinetyMinutes);
+          // EndDate is 2024-07-15 11:30:00.000 (exactly 90 mins later)
+        end;
+    }
     class function CreateDuration(const AYears: Integer = 0; const AMonths: Integer = 0;
       const ADays: Integer = 0; const AHours: Integer = 0; const AMinutes: Integer = 0;
       const ASeconds: Integer = 0; const AMilliseconds: Integer = 0): TDateSpan; static;
       
-    { CreateInterval
-      Creates a specific time interval between two dates.
+    {
+      @description Creates a TInterval record representing the time range between a start and end TDateTime.
       
-      Parameters:
-        AStart - Start date/time
-        AEnd - End date/time
+      @usage Use to define specific time intervals for checking overlaps, containment, or calculating length.
+      
+      @param AStart The starting TDateTime of the interval (inclusive).
+      @param AEnd The ending TDateTime of the interval (inclusive).
         
-      Returns:
-        TInterval - An interval representing the span }
+      @returns TInterval - An interval record containing the start and end dates.
+      
+      @warning The function likely stores AStart and AEnd directly. It's usually assumed/required
+               that AStart <= AEnd for meaningful interval operations, but the creation function
+               itself might not enforce this.
+      
+      @example
+        var
+          StartTime, EndTime: TDateTime;
+          WorkShift: TInterval;
+        begin
+          StartTime := EncodeDateTime(2024, 7, 15, 9, 0, 0, 0);
+          EndTime := EncodeDateTime(2024, 7, 15, 17, 0, 0, 0);
+          WorkShift := TDateTimeKit.CreateInterval(StartTime, EndTime);
+          // WorkShift represents the interval from 9 AM to 5 PM on July 15, 2024
+        end;
+    }
     class function CreateInterval(const AStart, AEnd: TDateTime): TInterval; static;
     
-    { Time Span Operations }
+    { Time Span Operations
+      These functions operate on TDateTime values using TDateSpan records. }
     
-    { AddSpan
-      Adds a time span to a date.
+    {
+      @description Adds a time span (period or duration) to a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        ASpan - Time span to add
+      @usage Use to calculate a future date/time by adding a predefined span.
+      
+      @param AValue The original TDateTime value.
+      @param ASpan The TDateSpan (period or duration) to add.
         
-      Returns:
-        TDateTime - New date with span added }
+      @returns TDateTime - The resulting date/time after adding the span.
+      
+      @warning The result depends on whether ASpan is a period (calendar math) or a duration (fixed math).
+               Relies on `DateUtils.IncTimeSpan` or equivalent.
+      
+      @example
+        var
+          StartDate, EndDate: TDateTime;
+          OneMonthPeriod, NinetyMinutesDuration: TDateSpan;
+        begin
+          StartDate := EncodeDateTime(2024, 1, 31, 10, 0, 0, 0);
+          OneMonthPeriod := TDateTimeKit.CreatePeriod(AMonths := 1);
+          EndDate := TDateTimeKit.AddSpan(StartDate, OneMonthPeriod);
+          // EndDate is likely Feb 29, 2024 (calendar month added)
+          
+          StartDate := EncodeDateTime(2024, 7, 15, 10, 0, 0, 0);
+          NinetyMinutesDuration := TDateTimeKit.CreateDuration(AMinutes := 90);
+          EndDate := TDateTimeKit.AddSpan(StartDate, NinetyMinutesDuration);
+          // EndDate is July 15, 2024, 11:30:00.000 (fixed duration added)
+        end;
+    }
     class function AddSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime; static;
     
-    { SubtractSpan
-      Subtracts a time span from a date.
+    {
+      @description Subtracts a time span (period or duration) from a TDateTime value.
       
-      Parameters:
-        AValue - Original date/time
-        ASpan - Time span to subtract
+      @usage Use to calculate a past date/time by subtracting a predefined span.
+      
+      @param AValue The original TDateTime value.
+      @param ASpan The TDateSpan (period or duration) to subtract.
         
-      Returns:
-        TDateTime - New date with span subtracted }
+      @returns TDateTime - The resulting date/time after subtracting the span.
+      
+      @warning The result depends on whether ASpan is a period (calendar math) or a duration (fixed math).
+               Equivalent to adding a span with negated components. Relies on `DateUtils.DecTimeSpan` or equivalent.
+      
+      @example
+        var
+          StartDate, PastDate: TDateTime;
+          OneMonthPeriod: TDateSpan;
+        begin
+          StartDate := EncodeDateTime(2024, 3, 31, 10, 0, 0, 0);
+          OneMonthPeriod := TDateTimeKit.CreatePeriod(AMonths := 1);
+          PastDate := TDateTimeKit.SubtractSpan(StartDate, OneMonthPeriod);
+          // PastDate is likely Feb 29, 2024 (calendar month subtracted)
+        end;
+    }
     class function SubtractSpan(const AValue: TDateTime; const ASpan: TDateSpan): TDateTime; static;
     
-    { SpanBetween
-      Calculates the time span between two dates.
+    {
+      @description Calculates the time span (period or duration) between two TDateTime values.
       
-      Parameters:
-        AStart - Start date/time
-        AEnd - End date/time
-        AKind - Kind of span to calculate (period/duration)
+      @usage Use to determine the difference between two dates, either as a calendar-aware period
+             (years, months, days...) or a fixed duration (total days, seconds...).
+      
+      @param AStart The starting TDateTime.
+      @param AEnd The ending TDateTime.
+      @param AKind Specifies whether to calculate a period (dskPeriod) or a duration (dskDuration). Default is period.
         
-      Returns:
-        TDateSpan - Time span between the dates }
+      @returns TDateSpan - The calculated span between AStart and AEnd.
+      
+      @warning Result depends heavily on AKind.
+               `dskPeriod` uses detailed component-wise calculation and normalization.
+               `dskDuration` uses direct TDateTime subtraction and converts the result to seconds/milliseconds.
+               If AEnd is before AStart, the components of the resulting span will likely be negative.
+      
+      @example
+        var
+          Date1, Date2: TDateTime;
+          PeriodSpan, DurationSpan: TDateSpan;
+        begin
+          Date1 := EncodeDateTime(2023, 01, 15, 10, 0, 0, 0);
+          Date2 := EncodeDateTime(2024, 03, 20, 12, 30, 0, 0);
+          
+          // Calculate as calendar period
+          PeriodSpan := TDateTimeKit.SpanBetween(Date1, Date2, dskPeriod);
+          // PeriodSpan might represent ~1 year, 2 months, 5 days, 2 hours, 30 minutes
+          
+          // Calculate as fixed duration (likely total days and fractional part)
+          DurationSpan := TDateTimeKit.SpanBetween(Date1, Date2, dskDuration); 
+          // DurationSpan might represent ~430.1 days 
+        end;
+    }
     class function SpanBetween(const AStart, AEnd: TDateTime; 
       const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
       
-    { Interval Operations }
+    { Interval Operations 
+      These functions operate on TInterval records. }
     
-    { IsWithinInterval
-      Checks if a date falls within an interval.
+    {
+      @description Checks if a given TDateTime value falls within a specified time interval (inclusive).
       
-      Parameters:
-        AValue - Date to check
-        AInterval - Interval to check against
+      @usage Use for checking if an event time, timestamp, or date occurs within a defined range.
+      
+      @param AValue The TDateTime value to check.
+      @param AInterval The TInterval record (containing Start and End dates) to check against.
         
-      Returns:
-        Boolean - True if date is within interval }
+      @returns Boolean - True if AValue >= AInterval.Start and AValue <= AInterval.End, False otherwise.
+      
+      @warning Assumes AInterval.Start <= AInterval.End for a meaningful check. Relies on
+               `DateUtils.InRange` or direct comparison. Boundary dates (Start and End) are included.
+      
+      @example
+        var
+          TargetTime, StartTime, EndTime: TDateTime;
+          WorkShift: TInterval;
+          IsWorking: Boolean;
+        begin
+          StartTime := EncodeDateTime(2024, 7, 15, 9, 0, 0, 0);
+          EndTime := EncodeDateTime(2024, 7, 15, 17, 0, 0, 0);
+          WorkShift := TDateTimeKit.CreateInterval(StartTime, EndTime);
+          
+          TargetTime := EncodeDateTime(2024, 7, 15, 10, 30, 0, 0);
+          IsWorking := TDateTimeKit.IsWithinInterval(TargetTime, WorkShift); // True
+          
+          TargetTime := EncodeDateTime(2024, 7, 15, 8, 0, 0, 0);
+          IsWorking := TDateTimeKit.IsWithinInterval(TargetTime, WorkShift); // False
+          
+          TargetTime := StartTime; // Boundary check
+          IsWorking := TDateTimeKit.IsWithinInterval(TargetTime, WorkShift); // True
+        end;
+    }
     class function IsWithinInterval(const AValue: TDateTime; 
       const AInterval: TInterval): Boolean; static;
       
-    { IntervalsOverlap
-      Checks if two intervals overlap.
+    {
+      @description Checks if two time intervals overlap (i.e., share any common point in time).
       
-      Parameters:
-        AInterval1, AInterval2 - Intervals to check
+      @usage Use for detecting scheduling conflicts or checking if time ranges intersect.
+      
+      @param AInterval1 The first TInterval.
+      @param AInterval2 The second TInterval.
         
-      Returns:
-        Boolean - True if intervals overlap }
+      @returns Boolean - True if the intervals overlap, False otherwise.
+      
+      @warning Relies on `DateUtils.IntervalsOverlap`. Assumes Start <= End within each interval.
+               Intervals that touch only at the boundary (end of one equals start of other)
+               are typically considered overlapping by such functions.
+      
+      @example
+        var
+          Interval1, Interval2, Interval3: TInterval;
+          Overlap: Boolean;
+        begin
+          Interval1 := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(11,0,0,0)); // 9-11
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,0), EncodeTime(12,0,0,0)); // 10-12
+          Interval3 := TDateTimeKit.CreateInterval(EncodeTime(14,0,0,0), EncodeTime(16,0,0,0)); // 14-16
+          
+          Overlap := TDateTimeKit.IntervalsOverlap(Interval1, Interval2); // True (overlap 10-11)
+          Overlap := TDateTimeKit.IntervalsOverlap(Interval1, Interval3); // False
+          
+          // Boundary check
+          Interval3 := TDateTimeKit.CreateInterval(EncodeTime(11,0,0,0), EncodeTime(13,0,0,0)); // 11-13
+          Overlap := TDateTimeKit.IntervalsOverlap(Interval1, Interval3); // True (touch at 11:00)
+        end;
+    }
     class function IntervalsOverlap(const AInterval1, AInterval2: TInterval): Boolean; static;
       
-    { IntervalLength
-      Gets the length of an interval as a span.
+    {
+      @description Calculates the length of a time interval as a TDateSpan (period or duration).
       
-      Parameters:
-        AInterval - Interval to measure
-        AKind - Kind of span to return (period/duration)
+      @usage Use to find the duration or period covered by a specific interval.
+      
+      @param AInterval The TInterval to measure.
+      @param AKind Specifies whether to calculate the length as a period (dskPeriod) or duration (dskDuration). Default is period.
         
-      Returns:
-        TDateSpan - Length of the interval }
+      @returns TDateSpan - The length of the interval.
+      
+      @warning Equivalent to calling `SpanBetween(AInterval.Start, AInterval.End, AKind)`.
+               Requires AInterval.Start <= AInterval.End for a non-negative result.
+      
+      @example
+        var
+          StartTime, EndTime: TDateTime;
+          MyInterval: TInterval;
+          LengthSpan: TDateSpan;
+        begin
+          StartTime := EncodeDateTime(2024, 7, 15, 9, 0, 0, 0);
+          EndTime := EncodeDateTime(2024, 7, 15, 10, 30, 0, 0);
+          MyInterval := TDateTimeKit.CreateInterval(StartTime, EndTime);
+          
+          LengthSpan := TDateTimeKit.IntervalLength(MyInterval, dskDuration);
+          // LengthSpan should represent 1 hour, 30 minutes (as a fixed duration)
+          
+          LengthSpan := TDateTimeKit.IntervalLength(MyInterval, dskPeriod);
+          // LengthSpan might also represent 1 hour, 30 minutes here, but could
+          // differ from duration for longer intervals spanning month/year boundaries.
+        end;
+    }
     class function IntervalLength(const AInterval: TInterval; 
-      const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
+                                  const AKind: TDateSpanKind = dskPeriod): TDateSpan; static;
     
     { Parse Date-Times with specific formats }
+    {
+      @description Parses a string in the format 'YYYYMMDD' into a TDateTime value.
+      
+      @usage Use to convert date strings in a specific format into TDateTime values.
+      
+      @param AValue The string to parse.
+        
+      @returns TDateTime - The parsed date/time value.
+      
+      @warning Assumes the input string is in the 'YYYYMMDD' format. If the format is incorrect,
+               the result may be unexpected or an exception may be raised.
+      
+      @example
+        var
+          DateString: string;
+          ParsedDate: TDateTime;
+        begin
+          DateString := '20240715';
+          ParsedDate := TDateTimeKit.YMD(DateString);
+          // ParsedDate: 2024-07-15 00:00:00.000
+        end;
+    }
     class function YMD(const AValue: string): TDateTime; static;
+    {
+      @description Parses a string in the format 'MMDDYYYY' into a TDateTime value.
+      
+      @usage Use to convert date strings in a specific format into TDateTime values.
+      
+      @param AValue The string to parse.
+        
+      @returns TDateTime - The parsed date/time value.
+      
+      @warning Assumes the input string is in the 'MMDDYYYY' format. If the format is incorrect,
+               the result may be unexpected or an exception may be raised.
+      
+      @example
+        var
+          DateString: string;
+          ParsedDate: TDateTime;
+        begin
+          DateString := '07152024';
+          ParsedDate := TDateTimeKit.MDY(DateString);
+          // ParsedDate: 2024-07-15 00:00:00.000
+        end;
+    }
     class function MDY(const AValue: string): TDateTime; static;
+    {
+      @description Parses a string in the format 'DDMMYYYY' into a TDateTime value.
+      
+      @usage Use to convert date strings in a specific format into TDateTime values.
+      
+      @param AValue The string to parse.
+        
+      @returns TDateTime - The parsed date/time value.
+      
+      @warning Assumes the input string is in the 'DDMMYYYY' format. If the format is incorrect,
+               the result may be unexpected or an exception may be raised.
+      
+      @example
+        var
+          DateString: string;
+          ParsedDate: TDateTime;
+        begin
+          DateString := '15072024';
+          ParsedDate := TDateTimeKit.DMY(DateString);
+          // ParsedDate: 2024-07-15 00:00:00.000
+        end;
+    }
     class function DMY(const AValue: string): TDateTime; static;
-    class function YQ(const AValue: string): TDateTime; static;  // Parse year and quarter
+    {
+      @description Parses a string in the format 'YYYYQ' into a TDateTime value, where Q is the quarter (1-4).
+      
+      @usage Use to convert year and quarter strings into TDateTime values.
+      
+      @param AValue The string to parse.
+        
+      @returns TDateTime - The parsed date/time value.
+      
+      @warning Assumes the input string is in the 'YYYYQ' format. If the format is incorrect,
+               the result may be unexpected or an exception may be raised.
+      
+      @example
+        var
+          DateString: string;
+          ParsedDate: TDateTime;
+        begin
+          DateString := '20242'; // 2024, Quarter 2
+          ParsedDate := TDateTimeKit.YQ(DateString);
+          // ParsedDate: 2024-04-01 00:00:00.000 (April 1st of the year)
+        end;
+    }
+    class function YQ(const AValue: string): TDateTime; static;
+    {
+      @description Converts a decimal date (e.g., 2024.5) into a TDateTime value.
+      
+      @usage Use to convert decimal dates into TDateTime values.
+      
+      @param AValue The decimal date to convert.
+        
+      @returns TDateTime - The converted date/time value.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          DecimalDate: Double;
+          ConvertedDate: TDateTime;
+        begin
+          DecimalDate := 2024.5; // Halfway through 2024
+          ConvertedDate := TDateTimeKit.DateDecimal(DecimalDate);
+          // ConvertedDate: 2024-07-02 12:00:00.000 (July 2nd, noon)
+        end;
+    }
     class function DateDecimal(const AValue: Double): TDateTime; static;
     
     { Additional component getters }
+    {
+      @description Returns the ISO year (week-based year) for a given TDateTime value.
+      
+      @usage Use to get the ISO year for a specific date.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns Integer - The ISO year.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          ISOYear: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July 15, 2024
+          ISOYear := TDateTimeKit.GetISOYear(MyDate);
+          // ISOYear: 2024 (Usually the same as the calendar year)
+        end;
+    }
     class function GetISOYear(const AValue: TDateTime): Integer; static;
+    {
+      @description Returns the ISO week number (week of the year) for a given TDateTime value.
+      
+      @usage Use to get the ISO week number for a specific date.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns Integer - The ISO week number (1-53).
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          ISOWeek: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July 15, 2024
+          ISOWeek := TDateTimeKit.GetISOWeek(MyDate);
+          // ISOWeek: 29 (Week 29 of the year)
+        end;
+    }
     class function GetISOWeek(const AValue: TDateTime): Integer; static;
+    {
+      @description Returns the epidemiological year (week-based year) for a given TDateTime value.
+      
+      @usage Use to get the epidemiological year for a specific date.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns Integer - The epidemiological year.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          EpiYear: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July 15, 2024
+          EpiYear := TDateTimeKit.GetEpiYear(MyDate);
+          // EpiYear: 2024 (Usually the same as the calendar year)
+        end;
+    }
     class function GetEpiYear(const AValue: TDateTime): Integer; static;
+    {
+      @description Returns the epidemiological week number (week of the year) for a given TDateTime value.
+      
+      @usage Use to get the epidemiological week number for a specific date.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns Integer - The epidemiological week number (1-53).
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          EpiWeek: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July 15, 2024
+          EpiWeek := TDateTimeKit.GetEpiWeek(MyDate);
+          // EpiWeek: 29 (Week 29 of the year)
+        end;
+    }
     class function GetEpiWeek(const AValue: TDateTime): Integer; static;
+    {
+      @description Returns the semester (1 or 2) for a given TDateTime value.
+      
+      @usage Use to determine the semester for a specific date.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns Integer - The semester (1 or 2).
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          Semester: Integer;
+        begin
+          MyDate := EncodeDate(2024, 7, 15); // July 15, 2024
+          Semester := TDateTimeKit.GetSemester(MyDate);
+          // Semester: 2 (July is in the second semester)
+        end;
+    }
     class function GetSemester(const AValue: TDateTime): Integer; static;
     
     { Date rounding functions }
+    {
+      @description Rounds a TDateTime value to the nearest specified time unit.
+      
+      @usage Use to round date/time values to a specific precision level (e.g., round to the nearest hour).
+      
+      @param AValue The TDateTime value to round.
+      @param AUnit The unit to round to (second, minute, hour, day, month, year). See TDateUnit type.
+        
+      @returns TDateTime - The date/time value rounded to the specified unit.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDateTime, RoundedDateTime: TDateTime;
+        begin
+          MyDateTime := EncodeDateTime(2024, 7, 15, 10, 30, 45, 500);
+          
+          RoundedDateTime := TDateTimeKit.RoundDate(MyDateTime, duHour);
+          // RoundedDateTime: 2024-07-15 10:00:00.000 (Rounded to the nearest hour)
+          
+          RoundedDateTime := TDateTimeKit.RoundDate(MyDateTime, duMinute);
+          // RoundedDateTime: 2024-07-15 10:30:00.000 (Rounded to the nearest minute)
+          
+          RoundedDateTime := TDateTimeKit.RoundDate(MyDateTime, duDay);
+          // RoundedDateTime: 2024-07-15 00:00:00.000 (Rounded to the nearest day)
+        end;
+    }
     class function RoundDate(const AValue: TDateTime; const AUnit: TDateUnit): TDateTime; static;
     
     { Timezone functions }
+    {
+      @description Retrieves the time zone information for a given TDateTime value.
+      
+      @usage Use to get the time zone information for a specific date/time.
+      
+      @param AValue The TDateTime value to check.
+        
+      @returns TTimeZoneInfo - The time zone information.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          TimeZoneInfo: TTimeZoneInfo;
+        begin
+          MyDate := EncodeDateTime(2024, 7, 15, 10, 30, 0, 0);
+          TimeZoneInfo := TDateTimeKit.GetTimeZone(MyDate);
+          // TimeZoneInfo contains information about the time zone
+        end;
+    }
     class function GetTimeZone(const AValue: TDateTime): TTimeZoneInfo; static;
+    {
+      @description Retrieves the system's current time zone as a string.
+      
+      @usage Use to get the current system time zone.
+      
+      @returns string - The current system time zone.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          SystemTimeZone: string;
+        begin
+          SystemTimeZone := TDateTimeKit.GetSystemTimeZone;
+          // SystemTimeZone: 'Eastern Standard Time' (Example)
+        end;
+    }
     class function GetSystemTimeZone: string; static;
+    {
+      @description Retrieves an array of all available time zone names.
+      
+      @usage Use to get a list of all available time zones.
+      
+      @returns TStringArray - An array of time zone names.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          TimeZoneNames: TStringArray;
+        begin
+          TimeZoneNames := TDateTimeKit.GetTimeZoneNames;
+          // TimeZoneNames contains an array of time zone names
+        end;
+    }
     class function GetTimeZoneNames: TStringArray; static;
     
     { Additional utility functions }
-    class function RollbackMonth(const AValue: TDateTime): TDateTime; static;  // Roll back to last day of previous month
-    class function RollForwardMonth(const AValue: TDateTime): TDateTime; static;  // Roll forward to first day of next month
-    class function GetDecimalDate(const AValue: TDateTime): Double; static;  // Convert to decimal year
+    {
+      @description Adjusts a TDateTime value to the last day of the previous month,
+                   preserving the time portion. If the original day doesn't exist
+                   in the previous month, it clamps to the last valid day.
+      
+      @usage Use to find the corresponding date in the prior month, especially useful
+             for month-end calculations.
+      
+      @param AValue The original TDateTime value.
+        
+      @returns TDateTime - The date representing the same (or last valid) day in the previous month,
+                         with the original time preserved.
+      
+      @warning If AValue is March 31st, returns February 28th/29th.
+      
+      @example
+        var
+          MyDate, PrevMonthDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 3, 31, 10, 30, 0, 0); // March 31st
+          PrevMonthDate := TDateTimeKit.RollbackMonth(MyDate);
+          // PrevMonthDate: Feb 29, 2024, 10:30:00.000 (Leap year)
+          
+          MyDate := EncodeDateTime(2024, 1, 15, 12, 0, 0, 0); // Jan 15th
+          PrevMonthDate := TDateTimeKit.RollbackMonth(MyDate);
+          // PrevMonthDate: Dec 15, 2023, 12:00:00.000
+        end;
+    }
+    class function RollbackMonth(const AValue: TDateTime): TDateTime; static;
+    {
+      @description Adjusts a TDateTime value to the first day of the next month,
+                   preserving the time portion.
+      
+      @usage Use to find the corresponding date in the next month, especially useful
+             for month-start calculations.
+      
+      @param AValue The original TDateTime value.
+        
+      @returns TDateTime - The date representing the same day in the next month,
+                         with the original time preserved.
+      
+      @warning If AValue is February 29th (leap year), returns March 1st.
+      
+      @example
+        var
+          MyDate, NextMonthDate: TDateTime;
+        begin
+          MyDate := EncodeDateTime(2024, 2, 29, 10, 30, 0, 0); // Feb 29th (Leap year)
+          NextMonthDate := TDateTimeKit.RollForwardMonth(MyDate);
+          // NextMonthDate: Mar 1, 2024, 10:30:00.000
+          
+          MyDate := EncodeDateTime(2024, 1, 15, 12, 0, 0, 0); // Jan 15th
+          NextMonthDate := TDateTimeKit.RollForwardMonth(MyDate);
+          // NextMonthDate: Feb 15, 2024, 12:00:00.000
+        end;
+    }
+    class function RollForwardMonth(const AValue: TDateTime): TDateTime; static;
+    {
+      @description Converts a TDateTime value to a decimal date (e.g., 2024.5 for halfway through 2024).
+      
+      @usage Use to convert TDateTime values into decimal dates.
+      
+      @param AValue The TDateTime value to convert.
+        
+      @returns Double - The decimal date representation.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyDate: TDateTime;
+          DecimalDate: Double;
+        begin
+          MyDate := EncodeDateTime(2024, 7, 15, 10, 30, 0, 0);
+          DecimalDate := TDateTimeKit.GetDecimalDate(MyDate);
+          // DecimalDate: 2024.466 (Approximately)
+        end;
+    }
+    class function GetDecimalDate(const AValue: TDateTime): Double; static;
     
     { Additional period/duration functions }
+    {
+      @description Converts a TDateSpan (period or duration) to a total number of seconds.
+      
+      @usage Use to convert a period or duration into a total number of seconds.
+      
+      @param AValue The TDateSpan to convert.
+        
+      @returns Int64 - The total number of seconds.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyPeriod: TDateSpan;
+          TotalSeconds: Int64;
+        begin
+          MyPeriod := TDateTimeKit.CreatePeriod(AMonths := 1); // One month
+          TotalSeconds := TDateTimeKit.PeriodToSeconds(MyPeriod);
+          // TotalSeconds: Approximately 2629746 (Seconds in a month)
+        end;
+    }
     class function PeriodToSeconds(const APeriod: TDateSpan): Int64; static;
+    {
+      @description Converts a total number of seconds into a TDateSpan (duration).
+      
+      @usage Use to convert a total number of seconds into a duration.
+      
+      @param ASeconds The total number of seconds.
+        
+      @returns TDateSpan - The duration represented by the total seconds.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          TotalSeconds: Int64;
+          MyDuration: TDateSpan;
+        begin
+          TotalSeconds := 90 * 60; // 90 minutes
+          MyDuration := TDateTimeKit.SecondsToPeriod(TotalSeconds);
+          // MyDuration: 0 years, 0 months, 0 days, 1 hour, 30 minutes, 0 seconds, 0 milliseconds
+        end;
+    }
     class function SecondsToPeriod(const ASeconds: Int64): TDateSpan; static;
+    {
+      @description Standardizes a TDateSpan (period or duration) by normalizing its components.
+      
+      @usage Use to normalize the components of a period or duration.
+      
+      @param AValue The TDateSpan to standardize.
+        
+      @returns TDateSpan - The standardized TDateSpan.
+      
+      @warning The implementation details are not clear from the interface definition.
+      
+      @example
+        var
+          MyPeriod: TDateSpan;
+          StandardizedPeriod: TDateSpan;
+        begin
+          MyPeriod := TDateTimeKit.CreatePeriod(AMonths := 1, ADays := 35); // One month and 35 days
+          StandardizedPeriod := TDateTimeKit.StandardizePeriod(MyPeriod);
+          // StandardizedPeriod: 2 months, 5 days, 0 hours, 0 minutes, 0 seconds, 0 milliseconds
+        end;
+    }
     class function StandardizePeriod(const AValue: TDateSpan): TDateSpan; static;
     
     { Additional interval functions }
+    {
+      @description Checks if two intervals are adjacent (i.e., the end of one is exactly the start of the other).
+      
+      @usage Use to see if two time periods meet precisely without overlapping or having a gap.
+      
+      @param AInterval1 The first TInterval.
+      @param AInterval2 The second TInterval.
+        
+      @returns Boolean - True if `AInterval1.EndDate = AInterval2.StartDate` or
+                       `AInterval2.EndDate = AInterval1.StartDate`, False otherwise.
+      
+      @warning Uses `CompareDateTime` for precise comparison.
+      
+      @example
+        var
+          Interval1, Interval2, Interval3: TInterval;
+          Aligns: Boolean;
+        begin
+          Interval1 := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(10,0,0,0)); // 9-10
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,0), EncodeTime(11,0,0,0)); // 10-11
+          Interval3 := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,1), EncodeTime(12,0,0,0)); // 10:00:01-12
+          
+          Aligns := TDateTimeKit.IntervalAlign(Interval1, Interval2); // True
+          Aligns := TDateTimeKit.IntervalAlign(Interval1, Interval3); // False
+        end;
+    }
     class function IntervalAlign(const AInterval1, AInterval2: TInterval): Boolean; static;
+    
+    {
+      @description Calculates the time gap between two non-overlapping intervals as a duration span.
+      
+      @usage Use to measure the time between two separate events or periods.
+      
+      @param AInterval1 The first TInterval.
+      @param AInterval2 The second TInterval.
+        
+      @returns TDateSpan - A duration span representing the gap (in days/seconds). Returns zero duration
+                         if the intervals overlap or align.
+      
+      @warning Returns a duration (`dskDuration`). Assumes intervals do not overlap; if they do,
+               a zero duration is returned. The calculation seems to primarily return days based
+               on `Trunc(EndDate - StartDate)`, potentially losing time precision.
+      
+      @example
+        var
+          Interval1, Interval2: TInterval;
+          Gap: TDateSpan;
+        begin
+          Interval1 := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(10,0,0,0)); // 9-10
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(12,0,0,0), EncodeTime(13,0,0,0)); // 12-13
+          
+          Gap := TDateTimeKit.IntervalGap(Interval1, Interval2);
+          // Gap: Kind=dskDuration, Days=0, Seconds=7200 (2 hours)
+          // Note: Implementation calculates days based on Trunc(difference), which might be 0 for gaps < 1 day.
+        end;
+    }
     class function IntervalGap(const AInterval1, AInterval2: TInterval): TDateSpan; static;
+    
+    {
+      @description Calculates the set difference of Interval1 minus Interval2 (Interval1 \ Interval2).
+                   Returns the portion(s) of Interval1 that do not overlap with Interval2.
+      
+      @usage Use to remove a specific time range (Interval2) from another (Interval1).
+      
+      @param AInterval1 The base interval.
+      @param AInterval2 The interval to subtract.
+        
+      @returns TInterval - The remaining part of Interval1. If Interval2 completely covers Interval1,
+                         returns an empty interval (Start=End=0). If Interval2 splits Interval1,
+                         only the *first* remaining part is returned.
+      
+      @warning If Interval2 splits Interval1 into two parts, this function *only* returns the
+               part before the Interval2 overlap. It does not return multiple intervals.
+               Returns Interval1 unchanged if there is no overlap.
+      
+      @example
+        var
+          BaseInterval, SubtractInterval, ResultInterval: TInterval;
+        begin
+          BaseInterval := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(12,0,0,0)); // 9-12
+          
+          // Case 1: No overlap
+          SubtractInterval := TDateTimeKit.CreateInterval(EncodeTime(13,0,0,0), EncodeTime(14,0,0,0));
+          ResultInterval := TDateTimeKit.IntervalSetdiff(BaseInterval, SubtractInterval);
+          // ResultInterval: 9-12 (BaseInterval unchanged)
+          
+          // Case 2: SubtractInterval covers BaseInterval
+          SubtractInterval := TDateTimeKit.CreateInterval(EncodeTime(8,0,0,0), EncodeTime(13,0,0,0));
+          ResultInterval := TDateTimeKit.IntervalSetdiff(BaseInterval, SubtractInterval);
+          // ResultInterval: 0-0 (Empty)
+          
+          // Case 3: SubtractInterval overlaps start
+          SubtractInterval := TDateTimeKit.CreateInterval(EncodeTime(8,0,0,0), EncodeTime(10,0,0,0));
+          ResultInterval := TDateTimeKit.IntervalSetdiff(BaseInterval, SubtractInterval);
+          // ResultInterval: 10-12
+          
+          // Case 4: SubtractInterval overlaps end
+          SubtractInterval := TDateTimeKit.CreateInterval(EncodeTime(11,0,0,0), EncodeTime(13,0,0,0));
+          ResultInterval := TDateTimeKit.IntervalSetdiff(BaseInterval, SubtractInterval);
+          // ResultInterval: 9-11
+          
+          // Case 5: SubtractInterval splits BaseInterval
+          SubtractInterval := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,0), EncodeTime(11,0,0,0));
+          ResultInterval := TDateTimeKit.IntervalSetdiff(BaseInterval, SubtractInterval);
+          // ResultInterval: 9-10 (Only the first part is returned)
+        end;
+    }
     class function IntervalSetdiff(const AInterval1, AInterval2: TInterval): TInterval; static;
+    
+    {
+      @description Calculates the union of two intervals. If the intervals overlap or align,
+                   returns a single interval covering the total combined range.
+      
+      @usage Use to merge two potentially overlapping time periods into one continuous range.
+      
+      @param AInterval1 The first TInterval.
+      @param AInterval2 The second TInterval.
+        
+      @returns TInterval - The combined interval (earliest start to latest end). Returns an empty
+                         interval (Start=End=0) if the input intervals do not overlap and are not adjacent.
+      
+      @warning Only returns a valid union if the intervals overlap or align. If there's a gap,
+               an empty interval is returned.
+      
+      @example
+        var
+          Interval1, Interval2, UnionInterval: TInterval;
+        begin
+          Interval1 := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(11,0,0,0)); // 9-11
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,0), EncodeTime(12,0,0,0)); // 10-12
+          UnionInterval := TDateTimeKit.IntervalUnion(Interval1, Interval2);
+          // UnionInterval: 9-12
+          
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(11,0,0,0), EncodeTime(13,0,0,0)); // 11-13 (Aligns)
+          UnionInterval := TDateTimeKit.IntervalUnion(Interval1, Interval2);
+          // UnionInterval: 9-13
+          
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(13,0,0,0), EncodeTime(14,0,0,0)); // Gap
+          UnionInterval := TDateTimeKit.IntervalUnion(Interval1, Interval2);
+          // UnionInterval: 0-0 (Empty)
+        end;
+    }
     class function IntervalUnion(const AInterval1, AInterval2: TInterval): TInterval; static;
+    
+    {
+      @description Calculates the intersection of two intervals (the time period they both have in common).
+      
+      @usage Use to find the time range where two events or periods overlap.
+      
+      @param AInterval1 The first TInterval.
+      @param AInterval2 The second TInterval.
+        
+      @returns TInterval - The overlapping interval (latest start to earliest end). Returns an empty
+                         interval (Start=End=0) if the intervals do not overlap.
+      
+      @warning Returns an empty interval if there is no overlap.
+      
+      @example
+        var
+          Interval1, Interval2, IntersectionInterval: TInterval;
+        begin
+          Interval1 := TDateTimeKit.CreateInterval(EncodeTime(9,0,0,0), EncodeTime(11,0,0,0)); // 9-11
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(10,0,0,0), EncodeTime(12,0,0,0)); // 10-12
+          IntersectionInterval := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+          // IntersectionInterval: 10-11
+          
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(11,0,0,0), EncodeTime(13,0,0,0)); // Touches at 11
+          IntersectionInterval := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+          // IntersectionInterval: 11-11 (Single point intersection)
+          
+          Interval2 := TDateTimeKit.CreateInterval(EncodeTime(13,0,0,0), EncodeTime(14,0,0,0)); // No overlap
+          IntersectionInterval := TDateTimeKit.IntervalIntersection(Interval1, Interval2);
+          // IntersectionInterval: 0-0 (Empty)
+        end;
+    }
     class function IntervalIntersection(const AInterval1, AInterval2: TInterval): TInterval; static;
     
     { Private helper functions for timezone validation }
+    {
+      @description Checks if a given string is a valid timezone name known to the system.
+      
+      @usage Internal helper to validate timezone inputs.
+      
+      @param ATimeZone The timezone name string to validate.
+        
+      @returns Boolean - True if the name is considered valid, False otherwise.
+      
+      @warning Relies on `GetTimeZoneNames`. Validity depends on the completeness and accuracy
+               of the list returned by that function (OS-dependent).
+               Considers empty string invalid. Explicitly checks for 'UTC' and Unix '/Etc/UTC'.
+      
+      @example
+        // Internal use example
+        var IsValid: Boolean;
+        begin
+          IsValid := TDateTimeKit.IsValidTimeZoneName('America/New_York'); // True on systems where this is known
+          IsValid := TDateTimeKit.IsValidTimeZoneName('Invalid/Zone');   // False
+          IsValid := TDateTimeKit.IsValidTimeZoneName('UTC');           // True
+        end;
+    }
     class function IsValidTimeZoneName(const ATimeZone: string): Boolean; static;
+    
+    {
+      @description Checks if a given integer represents a valid UTC offset in minutes.
+      
+      @usage Internal helper to validate offset values.
+      
+      @param AOffset The offset in minutes from UTC.
+        
+      @returns Boolean - True if the offset is within the typical range (-12*60 to +14*60), False otherwise.
+      
+      @warning Checks against the common range -720 to +840 minutes.
+      
+      @example
+        // Internal use example
+        var IsValid: Boolean;
+        begin
+          IsValid := TDateTimeKit.IsValidUTCOffset(-300); // True (-5 hours)
+          IsValid := TDateTimeKit.IsValidUTCOffset(900);  // False (> +14 hours)
+        end;
+    }
     class function IsValidUTCOffset(const AOffset: Integer): Boolean; static;
+    
+    {
+      @description Validates a timezone name, raising an exception if invalid.
+      
+      @usage Internal helper to ensure a valid timezone name before use.
+      
+      @param ATimeZone The timezone name to validate.
+        
+      @returns string - The validated timezone name (unchanged if valid).
+      
+      @warning Raises ETimeZoneError if the timezone name is empty or not found by `IsValidTimeZoneName`.
+      
+      @example
+        // Internal use example
+        var ValidatedTZ: string;
+        begin
+          try
+            ValidatedTZ := TDateTimeKit.ValidateTimeZone('UTC');
+          except
+            on E: ETimeZoneError do WriteLn(E.Message);
+          end;
+        end;
+    }
     class function ValidateTimeZone(const ATimeZone: string): string; static;
+    
+    {
+      @description Validates a UTC offset in minutes, raising an exception if invalid.
+      
+      @usage Internal helper to ensure a valid offset before use.
+      
+      @param AOffset The offset in minutes to validate.
+        
+      @returns Integer - The validated offset (unchanged if valid).
+      
+      @warning Raises ETimeZoneError if the offset is outside the range checked by `IsValidUTCOffset`.
+      
+      @example
+        // Internal use example
+        var ValidatedOffset: Integer;
+        begin
+          try
+            ValidatedOffset := TDateTimeKit.ValidateTimeZoneOffset(-300);
+          except
+            on E: ETimeZoneError do WriteLn(E.Message);
+          end;
+        end;
+    }
     class function ValidateTimeZoneOffset(const AOffset: Integer): Integer; static;
+    
+    {
+      @description Converts a TDateTime value from its current local timezone to another specified timezone.
+                   The function preserves the actual moment in time, changing the local representation.
+      
+      @usage Use to display a time recorded in one timezone in the equivalent local time of another timezone.
+      
+      @param AValue The original TDateTime value (assumed to be in the system's local timezone context).
+      @param ATimeZone The target timezone name (e.g., 'UTC', 'America/New_York').
+        
+      @returns TDateTime - The equivalent TDateTime value represented in the target timezone.
+      
+      @warning Relies heavily on `GetTimeZone` to determine offsets for both the source time and the target timezone.
+               Accuracy is dependent on the underlying OS timezone data and `GetTimeZone`'s logic.
+               Raises ETimeZoneError if timezone names or offsets are invalid, or if conversion fails.
+               Converts AValue to UTC using its detected offset, then converts from UTC to the target timezone using its offset.
+      
+      @example
+        var
+          LocalTime, UTCTime, TargetTime: TDateTime;
+          SourceTZ, TargetTZ: TTimeZoneInfo;
+        begin
+          LocalTime := EncodeDateTime(2024, 7, 15, 12, 0, 0, 0); // Assume this is 12:00 PM in local time
+          
+          // Get current local timezone info (example: EST, UTC-5)
+          SourceTZ := TDateTimeKit.GetTimeZone(LocalTime);
+          
+          // Convert to UTC
+          try
+            UTCTime := TDateTimeKit.WithTimeZone(LocalTime, 'UTC');
+            // If SourceTZ was EST (-300 min), UTCTime should be 2024-07-15 17:00:00
+            WriteLn('UTC Time: ', TDateTimeKit.GetAsString(UTCTime));
+          except
+            on E: ETimeZoneError do WriteLn(E.Message);
+          end;
+          
+          // Convert to another timezone (example: Europe/Paris, UTC+1 / UTC+2 DST)
+          try
+            TargetTime := TDateTimeKit.WithTimeZone(LocalTime, 'Europe/Paris');
+            // If Paris is UTC+2 (CEST), TargetTime should be 2024-07-15 19:00:00
+            WriteLn('Paris Time: ', TDateTimeKit.GetAsString(TargetTime));
+          except
+            on E: ETimeZoneError do WriteLn(E.Message);
+          end;
+        end;
+    }
     class function WithTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
+    
+    {
+      @description Interprets a TDateTime value *as if* it were already in the specified target timezone,
+                   and converts it back to the system's local timezone.
+                   This changes the actual moment in time represented, unlike `WithTimeZone`.
+      
+      @usage Use when you have a naive TDateTime (no timezone attached) that you know represents a time
+             in a specific zone, and you want to find the equivalent time on the local system.
+      
+      @param AValue The TDateTime value to be interpreted (e.g., 10:00 AM).
+      @param ATimeZone The timezone AValue *supposedly* represents (e.g., 'America/Los_Angeles').
+        
+      @returns TDateTime - The TDateTime value representing the equivalent time in the system's local timezone.
+      
+      @warning Relies on `GetTimeZone` to determine offsets. Accuracy depends on OS data.
+               Raises ETimeZoneError on failure. The logic effectively treats AValue as being in the target zone,
+               converts it to UTC, and then converts that UTC time to the system's local zone.
+               Implementation includes a check to ensure the result differs from the input,
+               potentially adding an hour if they are the same (this might be unexpected).
+      
+      @example
+        var
+          InputTime, LocalEquivalentTime: TDateTime;
+          TargetTZName: string;
+        begin
+          InputTime := EncodeDateTime(2024, 7, 15, 10, 0, 0, 0); // Naive 10:00 AM
+          TargetTZName := 'America/Los_Angeles'; // Assume InputTime was 10:00 AM Pacific Time (UTC-7)
+          
+          // Assume local system is EST (UTC-4 during DST)
+          try
+            LocalEquivalentTime := TDateTimeKit.ForceTimeZone(InputTime, TargetTZName);
+            // 10:00 AM PDT = 17:00 UTC
+            // 17:00 UTC = 13:00 (1 PM) EDT
+            // LocalEquivalentTime should be 2024-07-15 13:00:00
+            WriteLn('Local equivalent of 10 AM ', TargetTZName, ': ', TDateTimeKit.GetAsString(LocalEquivalentTime));
+          except
+            on E: ETimeZoneError do WriteLn(E.Message);
+          end;
+        end;
+    }
     class function ForceTimeZone(const AValue: TDateTime; const ATimeZone: string): TDateTime; static;
   end;
 
