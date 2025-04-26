@@ -680,7 +680,6 @@ end;
 procedure TMatrixTest.Test24_EdgeCases;
 var
   M: IMatrix;
-  I, J: Integer;
   LargeSize: Integer;
 begin
   WriteLn('Starting Test24_EdgeCases');
@@ -1140,7 +1139,7 @@ end;
 
 procedure TMatrixTest.Test34_ToStringMethods;
 var
-  A, B: IMatrix;
+  A: IMatrix;
   LUDec: TLUDecomposition;
   QRDec: TQRDecomposition;
   EigenDec: TEigenDecomposition;

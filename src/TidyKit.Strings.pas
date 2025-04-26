@@ -135,8 +135,8 @@ type
       @returns The estimated number of syllables based on vowel groups. Returns 1 for empty or non-vowel words.
       
       @warning This is a heuristic and may not be perfectly accurate for all English words,
-                especially complex ones or exceptions. Assumes 'y' is always a vowel in this context.
-                The silent 'e' rule is basic and might miscount in some cases (e.g., "recipe").
+               especially complex ones or exceptions. Assumes 'y' is always a vowel in this context.
+               The silent 'e' rule is basic and might miscount in some cases (e.g., "recipe").
       
       @example
         Result := CountVowelGroups('beautiful'); // Returns: 3 (eau, i, u)
@@ -422,9 +422,9 @@ type
                Other characters are not modified (unlike ToTitleCase which lowercases first).
       
       @warning Uses TStringList with space as a delimiter. May not handle multiple spaces
-                or other whitespace characters as expected between words. Relies on
-                UpperCase for capitalization, locale dependency might apply.
-                Empty strings are returned unchanged.
+               or other whitespace characters as expected between words. Relies on
+               UpperCase for capitalization, locale dependency might apply.
+               Empty strings are returned unchanged.
       
       @example
         Result := CapitalizeText('hello world');     // Returns: 'Hello World'
@@ -450,8 +450,8 @@ type
                no matches are found or if the pattern is invalid.
       
       @warning Regular expressions can be computationally expensive, especially on large texts
-                or with complex patterns. Ensure the pattern is valid; invalid patterns
-                may raise exceptions or return no matches. Uses the TRegExpr engine.
+               or with complex patterns. Ensure the pattern is valid; invalid patterns
+               may raise exceptions or return no matches. Uses the TRegExpr engine.
       
       @example
         // Assuming Result is declared as TMatchesResults
@@ -478,7 +478,7 @@ type
                Returns an empty array if no matches are found.
       
       @warning Relies on ExtractMatches internally. Regular expressions can be computationally
-                expensive. Returns an empty array for invalid patterns or no matches.
+               expensive. Returns an empty array for invalid patterns or no matches.
       
       @example
         // Assuming Result is declared as TMatchStrings
@@ -537,8 +537,8 @@ type
       @returns A new string with all replacements made. If no matches are found, returns the original string.
       
       @warning Regular expressions can be computationally expensive. Invalid patterns may cause
-                exceptions. Special characters in the Replacement string (like '$') might need
-                escaping if intended literally (though TRegExpr handles common cases). Uses TRegExpr.Replace.
+               exceptions. Special characters in the Replacement string (like '$') might need
+               escaping if intended literally (though TRegExpr handles common cases). Uses TRegExpr.Replace.
       
       @example
         // Swap first and last names
@@ -566,7 +566,7 @@ type
                returns the original string unchanged.
       
       @warning Replacement is case-sensitive. If OldText is an empty string, no replacements
-                are made. Uses the standard SysUtils.StringReplace function with rfReplaceAll.
+               are made. Uses the standard SysUtils.StringReplace function with rfReplaceAll.
       
       @example
         Result := ReplaceText('Hello world, hello universe', 'hello', 'Hi'); // Returns: 'Hello world, Hi universe' (Case-sensitive)
@@ -590,8 +590,8 @@ type
                Returns an empty array if the text contains no alphanumeric characters.
       
       @warning Considers only ASCII letters and digits as part of words. Punctuation attached
-                to words (like "don't" or "end.") will break them ("don", "t", "end").
-                Multiple non-alphanumeric characters between words result in a single split.
+               to words (like "don't" or "end.") will break them ("don", "t", "end").
+               Multiple non-alphanumeric characters between words result in a single split.
       
       @example
         // Assuming Result is declared as TMatchStrings
@@ -742,7 +742,7 @@ type
       @returns The number of characters in the string. Returns 0 for an empty string.
       
       @warning For multi-byte character sets (like UTF-8), this returns the number of bytes,
-                not necessarily the number of visible characters (graphemes).
+               not necessarily the number of visible characters (graphemes).
       
       @example
         Result := GetLength('Hello'); // Returns: 5
@@ -766,8 +766,8 @@ type
                Length exceeds the remaining characters, it returns all characters from StartPos to the end.
       
       @warning StartPos is 1-based. Invalid StartPos (<= 0 or > length(Text)) can lead to
-                empty strings or runtime errors depending on the underlying Copy implementation.
-                Length specifies the number of bytes for multi-byte strings.
+               empty strings or runtime errors depending on the underlying Copy implementation.
+               Length specifies the number of bytes for multi-byte strings.
       
       @example
         Result := SubString('Hello World', 7, 5); // Returns: 'World'
@@ -839,7 +839,7 @@ type
       @references https://en.wikipedia.org/wiki/Levenshtein_distance
       
       @warning The calculation complexity is O(m*n), where m and n are the lengths of the strings.
-                Can be computationally expensive for very long strings. Case-sensitive.
+               Can be computationally expensive for very long strings. Case-sensitive.
       
       @example
         Result := LevenshteinDistance('kitten', 'sitting'); // Returns: 3
@@ -876,11 +876,9 @@ type
       @references Based on Levenshtein distance: `1.0 - (Distance / Max(Length(S1), Length(S2)))`
                   See also: https://en.wikipedia.org/wiki/Levenshtein_distance#Relative_distance
       
-      @warning Relies on LevenshteinDistance, so it can be computationally expensive for long strings.
-                Division by zero is avoided as Max(Length(S1), Length(S2)) is only zero if both are empty,
-                in which case LevenshteinDistance is also 0, leading to 1.0 - (0/0) which needs careful handling (the code handles empty strings separately via LevenshteinDistance). The implementation returns 1.0 - (0 / Max(0,0)) which might be problematic, let's check LevenshteinDistance. It returns 0 if both empty. Max(0,0)=0. If S1='a', S2='', dist=1. Max(1,0)=1. Ratio = 1 - (1/1) = 0. If S1='', S2='b', dist=1. Max(0,1)=1. Ratio = 1 - (1/1) = 0. Looks okay, division by zero only if both empty, but LevenshteinDistance returns 0 then. The formula needs Max(1, Length(S1), Length(S2)) in the denominator or handle the 0/0 case. The current code uses `Max(Length(S1), Length(S2))`. If both are empty, Length is 0, Max is 0. FPC's division by zero behavior? It raises EDivByZero. The code needs adjustment.
-                **Correction:** The implementation of `LevenshteinSimilarity` does *not* explicitly handle the case where both strings are empty. `LevenshteinDistance` returns 0. `Max(0, 0)` returns 0. This *will* cause a division by zero error.
-                **Revised Warning:** Relies on LevenshteinDistance. Can be computationally expensive. **Will raise EDivByZero exception if both input strings are empty.** Case-sensitive.
+      @warning @warning Relies on LevenshteinDistance, which can be computationally expensive for long strings.
+                        Will raise EDivByZero exception if both input strings are empty.
+                        Case-sensitive comparison.
 
       @example
         Result := LevenshteinSimilarity('kitten', 'sitting'); // Approx 0.57
@@ -919,8 +917,8 @@ type
     class function HammingDistance(const S1, S2: string): Integer; static;
     
     {
-      @description Calculates the Jaro similarity between two strings. This metric measures
-                   similarity based on matching characters and transpositions, particularly
+      @description Calculates the Jaro similarity between two strings, a metric for measuring string similarity
+                   based on matching characters and transpositions, particularly
                    suited for short strings like names.
       
       @usage Use for comparing short strings, like personal names, where minor variations
@@ -933,20 +931,15 @@ type
       
       @references https://en.wikipedia.org/wiki/Jaro%E2%80%93Winkler_distance#Jaro_similarity
       
-      @warning The current implementation incorrectly requires strings to be of the same length
-                and returns 0.0 if they differ. A standard Jaro implementation allows different lengths.
-                The formula used `(M / Length(S1) + M / Length(S2) + (M - T/2) / M) / 3` also seems
-                incorrect; the standard formula involves matching window and transposition calculation.
-                This implementation appears to calculate a simple character match ratio adjusted for mismatches,
-                divided by 3, *only* if lengths are equal. It does *not* correctly implement Jaro similarity.
-                **Revised Description:** Calculates a custom similarity metric for two strings *of equal length*. It counts matching characters (M) and differing characters (T) at the same positions. Returns `(M/L + M/L + (M-T/2)/M) / 3`, where L is the common length. Returns 0.0 if strings have different lengths or no matching characters. Returns 1.0 if both strings are empty.
-
-      @example // Examples based on the *actual* implementation, not standard Jaro
-        Result := JaroSimilarity('MARTHA', 'MARHTA'); // Returns 0.0 (different lengths, standard Jaro would be ~0.94)
-        Result := JaroSimilarity('DWAYNE', 'DUANE');  // Returns 0.0 (different lengths, standard Jaro would be ~0.82)
+      @warning Uses a matching window of size max(|s1|,|s2|)/2 - 1. Computational complexity
+               increases with string length. Returns 1.0 if both strings are empty.
+               Returns 0.0 if exactly one string is empty.
+      
+      @example
+        Result := JaroSimilarity('MARTHA', 'MARHTA'); // Returns approximately 0.94
+        Result := JaroSimilarity('DWAYNE', 'DUANE');  // Returns approximately 0.82
         Result := JaroSimilarity('TEST', 'TEST');    // Returns 1.0
-        Result := JaroSimilarity('TEST', 'TSET');    // M=2, T=2, L=4. (2/4 + 2/4 + (2-1)/2) / 3 = (0.5 + 0.5 + 0.5) / 3 = 1.5 / 3 = 0.5
-        Result := JaroSimilarity('ABC', 'DEF');     // M=0, T=3, L=3. Returns 0.0
+        Result := JaroSimilarity('ABC', 'DEF');     // Returns 0.0 (no matching characters)
         Result := JaroSimilarity('', '');         // Returns 1.0
         Result := JaroSimilarity('A', '');          // Returns 0.0
     }
@@ -968,17 +961,15 @@ type
                   Formula: `JaroSimilarity + (PrefixLength * ScalingFactor * (1 - JaroSimilarity))`
                   Common ScalingFactor (p) is 0.1, Max PrefixLength (l) is 4.
       
-      @warning This implementation relies on the `JaroSimilarity` function, which is currently
-                implemented incorrectly (see warning for JaroSimilarity). Therefore, this function
-                will also produce incorrect results compared to the standard Jaro-Winkler algorithm,
-                especially for strings of different lengths. It uses a fixed scaling factor of 0.1.
+      @warning Uses a fixed scaling factor of 0.1. Maximum prefix length considered is 4.
+               Returns 1.0 if both strings are empty. Returns 0.0 if exactly one string is empty.
       
-      @example // Examples based on the *actual* implementation
-        Result := JaroWinklerSimilarity('MARTHA', 'MARHTA'); // Returns 0.0 (due to JaroSimilarity returning 0)
-        Result := JaroWinklerSimilarity('DWAYNE', 'DUANE');  // Returns 0.0 (due to JaroSimilarity returning 0)
+      @example
+        Result := JaroWinklerSimilarity('MARTHA', 'MARHTA'); // Higher than Jaro similarity
+        Result := JaroWinklerSimilarity('DWAYNE', 'DUANE');  // Higher than Jaro similarity
         Result := JaroWinklerSimilarity('TEST', 'TEST');    // Returns 1.0
-        Result := JaroWinklerSimilarity('TEST', 'TSET');    // Jaro=0.5, Prefix=1. 0.5 + (1 * 0.1 * (1 - 0.5)) = 0.5 + 0.05 = 0.55
-        Result := JaroWinklerSimilarity('DIXON', 'DICKSONX'); // Returns 0.0 (different lengths)
+        Result := JaroWinklerSimilarity('TEST', 'TSET');    // Returns higher than Jaro due to 'T' prefix
+        Result := JaroWinklerSimilarity('DIXON', 'DICKSON'); // Returns some similarity value
         Result := JaroWinklerSimilarity('', '');         // Returns 1.0
     }
     class function JaroWinklerSimilarity(const S1, S2: string): Double; static;
@@ -1000,7 +991,7 @@ type
       @references https://en.wikipedia.org/wiki/Longest_common_subsequence_problem
       
       @warning The calculation complexity is O(m*n), where m and n are the lengths of the strings.
-                Can be computationally expensive for very long strings. Case-sensitive.
+               Can be computationally expensive for very long strings. Case-sensitive.
       
       @example
         Result := LongestCommonSubsequence('ABCDEFG', 'ABDZEFXG'); // Returns: 'ABDEG' (or potentially 'ABDFG' depending on backtracking) - Let's trace: 'ABDG' seems right.
@@ -1049,8 +1040,8 @@ type
                   See also: https://en.wikipedia.org/wiki/Longest_common_subsequence_problem#Relation_to_other_problems
       
       @warning Relies on LongestCommonSubsequence, so it can be computationally expensive for long strings.
-                The implementation divides by `Max(Length(S1), Length(S2))`. This will cause division by zero if both S1 and S2 are empty.
-                **Revised Warning:** Relies on LongestCommonSubsequence. Can be computationally expensive. **Will raise EDivByZero exception if both input strings are empty.** Case-sensitive.
+               The implementation divides by `Max(Length(S1), Length(S2))`. This will cause division by zero if both S1 and S2 are empty.
+               **Revised Warning:** Relies on LongestCommonSubsequence. Can be computationally expensive. **Will raise EDivByZero exception if both input strings are empty.** Case-sensitive.
 
       @example
         Result := LCSSimilarity('ABCDEFG', 'ABDZEFXG'); // LCS='ABDEG', Length=5. MaxLen=8. Ratio = 5/8 = 0.625
@@ -1083,9 +1074,9 @@ type
                if exactly one string is empty.
       
       @warning Relies on the chosen similarity function (LevenshteinSimilarity, JaroWinklerSimilarity,
-                LCSSimilarity). Be aware of the warnings associated with those functions (potential
-                division by zero for empty strings, incorrect Jaro/Jaro-Winkler implementation).
-                The default Threshold of 0.7 is arbitrary and may need adjustment based on use case.
+               LCSSimilarity). Be aware of the warnings associated with those functions (potential
+               division by zero for empty strings, incorrect Jaro/Jaro-Winkler implementation).
+               The default Threshold of 0.7 is arbitrary and may need adjustment based on use case.
       
       @example
         // Using default Levenshtein (Method=0, Threshold=0.7)
@@ -1116,8 +1107,8 @@ type
       @returns The string converted to title case. Returns an empty string if the input is empty.
       
       @warning First converts the entire string to lowercase, then capitalizes the first letter
-                after any recognized delimiter. Relies on UpCase/LowerCase, locale dependency might apply.
-                Does not handle complex title casing rules (e.g., not capitalizing articles/prepositions).
+               after any recognized delimiter. Relies on UpCase/LowerCase, locale dependency might apply.
+               Does not handle complex title casing rules (e.g., not capitalizing articles/prepositions).
       
       @example
         Result := ToTitleCase('hello world');        // Returns: 'Hello World'
@@ -1142,7 +1133,7 @@ type
       @returns The string in camelCase format. Returns an empty string if the input contains no words.
       
       @warning Relies on GetWords to identify word boundaries (alphanumeric sequences only).
-                Punctuation is treated as a delimiter and removed. Relies on UpperCase/LowerCase.
+               Punctuation is treated as a delimiter and removed. Relies on UpperCase/LowerCase.
       
       @example
         Result := ToCamelCase('hello world');        // Returns: 'helloWorld'
@@ -1170,7 +1161,7 @@ type
       @returns The string in PascalCase format. Returns an empty string if the input contains no words.
       
       @warning Relies on GetWords to identify word boundaries (alphanumeric sequences only).
-                Punctuation is treated as a delimiter and removed. Relies on UpperCase/LowerCase.
+               Punctuation is treated as a delimiter and removed. Relies on UpperCase/LowerCase.
       
       @example
         Result := ToPascalCase('hello world');        // Returns: 'HelloWorld'
@@ -1197,7 +1188,7 @@ type
       @returns The string in snake_case format. Returns an empty string if the input contains no words.
       
       @warning Relies on GetWords to identify word boundaries (alphanumeric sequences only).
-                Punctuation is treated as a delimiter and removed. Relies on LowerCase.
+               Punctuation is treated as a delimiter and removed. Relies on LowerCase.
       
       @example
         Result := ToSnakeCase('hello world');        // Returns: 'hello_world'
@@ -1224,7 +1215,7 @@ type
       @returns The string in kebab-case format. Returns an empty string if the input contains no words.
       
       @warning Relies on GetWords to identify word boundaries (alphanumeric sequences only).
-                Punctuation is treated as a delimiter and removed. Relies on LowerCase.
+               Punctuation is treated as a delimiter and removed. Relies on LowerCase.
       
       @example
         Result := ToKebabCase('hello world');        // Returns: 'hello-world'
@@ -1353,7 +1344,7 @@ type
       @references Uses a comprehensive regex pattern covering various IPv6 notations.
       
       @warning The regex is complex and might have edge cases or performance implications.
-                Relies on MatchesPattern. Case-insensitive matching for hex digits (A-F).
+               Relies on MatchesPattern. Case-insensitive matching for hex digits (A-F).
       
       @example
         Result := IsValidIPv6('2001:0db8:85a3:0000:0000:8a2e:0370:7334'); // Returns: True
@@ -1383,10 +1374,10 @@ type
                calendar date (correct day for month, leap years considered via DaysInAMonth), False otherwise.
       
       @warning This is a basic parser. It assumes separators are non-digit characters and extracts
-                numbers based on the *order* implied by the positions of 'dd', 'mm', 'yyyy' in the
-                Format string. It doesn't strictly enforce the separators themselves. It only supports
-                'dd', 'mm', 'yyyy' components. Years must be between 1 and 9999. Relies on StrToIntDef and DaysInAMonth.
-                Handles only three specific orders: dd-mm-yyyy, yyyy-mm-dd, mm-dd-yyyy. Other format orders default to assuming dd mm yyyy extraction order.
+               numbers based on the *order* implied by the positions of 'dd', 'mm', 'yyyy' in the
+               Format string. It doesn't strictly enforce the separators themselves. It only supports
+               'dd', 'mm', 'yyyy' components. Years must be between 1 and 9999. Relies on StrToIntDef and DaysInAMonth.
+               Handles only three specific orders: dd-mm-yyyy, yyyy-mm-dd, mm-dd-yyyy. Other format orders default to assuming dd mm yyyy extraction order.
       
       @example
         Result := IsValidDate('2023-10-26', 'yyyy-mm-dd'); // Returns: True
@@ -1419,7 +1410,7 @@ type
                than the length of Ellipsis, the behavior might be unexpected (potentially returning only Ellipsis or part of it).
       
       @warning Ensure MaxLength is reasonably larger than the length of Ellipsis. If MaxLength is very small,
-                the result might be just the Ellipsis or an empty string depending on calculation.
+               the result might be just the Ellipsis or an empty string depending on calculation.
       
       @example
         Result := Truncate('This is a long string', 10);        // Returns: 'This is...'
@@ -1443,7 +1434,7 @@ type
                KB and larger units to two decimal places.
       
       @warning Uses binary prefixes (KiB, MiB, etc., based on 1024), but labels them KB, MB.
-                Formatting uses the default locale's decimal separator. Negative sizes are not handled specifically.
+               Formatting uses the default locale's decimal separator. Negative sizes are not handled specifically.
       
       @example
         Result := FormatFileSize(512);       // Returns: '512 B'
@@ -1494,8 +1485,8 @@ type
       @returns The formatted number as a string. Handles negative numbers and rounding.
       
       @warning Relies on the custom FormatNumber for thousand separation (which only works for non-negatives,
-                but this function handles the sign separately). Rounding is performed using standard Round function.
-                Does not use system locale for formatting.
+               but this function handles the sign separately). Rounding is performed using standard Round function.
+               Does not use system locale for formatting.
       
       @example
         Result := FormatFloat(12345.6789);          // Returns: '12,345.68' (default 2 decimals)
@@ -1555,9 +1546,9 @@ type
       @returns A dynamic array of strings (TMatchStrings) containing the substrings.
       
       @warning The delimiter itself is not included in the results. If Text is empty, returns an array
-                containing a single empty string unless RemoveEmptyEntries is True. If Delimiter is empty,
-                the behavior might be unexpected (likely infinite loop or incorrect split, depending on Pos behavior).
-                The current implementation seems to handle empty delimiter by finding it at Pos 1, potentially leading to issues. Let's assume Delimiter is non-empty.
+               containing a single empty string unless RemoveEmptyEntries is True. If Delimiter is empty,
+               the behavior might be unexpected (likely infinite loop or incorrect split, depending on Pos behavior).
+               The current implementation seems to handle empty delimiter by finding it at Pos 1, potentially leading to issues. Let's assume Delimiter is non-empty.
       
       @example
         // Assuming Result is TMatchStrings
@@ -1594,7 +1585,7 @@ type
                   Original algorithm by Robert C. Russell and Margaret K. Odell.
       
       @warning Primarily designed for English names. May not work well for names from other languages.
-                Different implementations might have slight variations in handling specific letter combinations or initial letters. Only considers ASCII letters A-Z.
+               Different implementations might have slight variations in handling specific letter combinations or initial letters. Only considers ASCII letters A-Z.
       
       @example
         Result := Soundex('Robert');  // Returns: 'R163'
@@ -1625,8 +1616,8 @@ type
                   Algorithm by Lawrence Philips.
       
       @warning Designed for English pronunciation. The implementation follows a specific set of rules
-                and might differ slightly from other Metaphone implementations. It includes a
-                non-standard normalization step removing trailing 'S'. Only considers ASCII letters A-Z.
+               and might differ slightly from other Metaphone implementations. It includes a
+               non-standard normalization step removing trailing 'S'. Only considers ASCII letters A-Z.
       
       @example
         Result := Metaphone('metaphone'); // Returns: 'MTFN'
@@ -1753,8 +1744,8 @@ type
       @returns The HTML-encoded string.
       
       @warning Only encodes the five essential HTML characters: < (&lt;), > (&gt;), & (&amp;),
-                " (&quot;), ' (&#39;). Does not encode other characters that might have special
-                meaning in specific HTML contexts (e.g., within JavaScript).
+               " (&quot;), ' (&#39;). Does not encode other characters that might have special
+               meaning in specific HTML contexts (e.g., within JavaScript).
       
       @example
         Result := HTMLEncode('<p class="bold">Text</p>'); // Returns: '&lt;p class=&quot;bold&quot;&gt;Text&lt;/p&gt;'
@@ -2416,9 +2407,10 @@ end;
 
 class function TStringKit.JaroSimilarity(const S1, S2: string): Double;
 var
-  M, T, MatchCount: Integer;
-  MatchDistance: array of Boolean;
-  I: Integer;
+  M, T: Integer;
+  Matches1, Matches2: array of Boolean;
+  MatchWindow: Integer;
+  I, J: Integer;
 begin
   // Handle empty strings
   if (Length(S1) = 0) and (Length(S2) = 0) then
@@ -2426,36 +2418,67 @@ begin
   if (Length(S1) = 0) or (Length(S2) = 0) then
     Exit(0.0);
 
-  // For Jaro similarity, strings should be of the same length
-  // If they are different, we'll consider them completely dissimilar
-  if Length(S1) <> Length(S2) then
-    Exit(0.0);
+  // Calculate match window size - standard Jaro algorithm
+  MatchWindow := Max2(Length(S1), Length(S2)) div 2 - 1;
+  if MatchWindow < 0 then 
+    MatchWindow := 0;
 
+  // Initialize matching arrays
+  SetLength(Matches1, Length(S1));
+  SetLength(Matches2, Length(S2));
+  for I := 0 to Length(S1) - 1 do
+    Matches1[I] := False;
+  for I := 0 to Length(S2) - 1 do
+    Matches2[I] := False;
+
+  // Find matching characters within the window
   M := 0;
-  T := 0;
-  SetLength(MatchDistance, Length(S1));
-
   for I := 0 to Length(S1) - 1 do
   begin
-    if S1[I+1] = S2[I+1] then
+    // Define the window range for this character
+    J := Max2(0, I - MatchWindow);
+    while (J < Length(S2)) and (J <= I + MatchWindow) do
     begin
-      MatchDistance[I] := True;
-      Inc(M);
-    end
-    else
-    begin
-      MatchDistance[I] := False;
-      Inc(T);
+      // If we find a match that hasn't been counted yet
+      if (not Matches2[J]) and (S1[I+1] = S2[J+1]) then
+      begin
+        Matches1[I] := True;
+        Matches2[J] := True;
+        Inc(M);
+        Break;
+      end;
+      Inc(J);
     end;
   end;
 
+  // If no matches found, return 0
   if M = 0 then
-    Result := 0.0
-  else
+    Exit(0.0);
+
+  // Count transpositions (half the number of matching characters that are in a different sequence)
+  T := 0;
+  J := 0;
+  for I := 0 to Length(S1) - 1 do
   begin
-    // Calculate Jaro similarity
-    Result := (M / Length(S1) + M / Length(S2) + (M - T/2) / M) / 3;
+    if Matches1[I] then
+    begin
+      // Find the next match in S2
+      while not Matches2[J] do
+        Inc(J);
+      
+      // If the characters don't match, we have a transposition
+      if S1[I+1] <> S2[J+1] then
+        Inc(T);
+        
+      Inc(J);
+    end;
   end;
+
+  // Divide by 2 as per the algorithm
+  T := T div 2;
+
+  // Calculate Jaro similarity using the standard formula
+  Result := (1/3) * (M / Length(S1) + M / Length(S2) + (M - T) / M);
 end;
 
 class function TStringKit.JaroWinklerSimilarity(const S1, S2: string): Double;

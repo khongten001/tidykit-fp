@@ -426,6 +426,28 @@ begin
   // Identical strings should have similarity 1.0
   AssertEquals('Identical strings should have Jaro similarity 1.0',
     1.0, TStringKit.JaroSimilarity('test', 'test'));
+    
+  // Test with strings of different lengths (now supported in standard implementation)
+  AssertTrue('MARTHA/MARHTA should have high similarity (~0.94)',
+    Abs(TStringKit.JaroSimilarity('MARTHA', 'MARHTA') - 0.944) < 0.01);
+    
+  AssertTrue('DWAYNE/DUANE should have good similarity (~0.82)',
+    Abs(TStringKit.JaroSimilarity('DWAYNE', 'DUANE') - 0.822) < 0.01);
+    
+  // No matching characters should return 0.0
+  AssertEquals('No matching characters should return 0.0',
+    0.0, TStringKit.JaroSimilarity('ABC', 'DEF'));
+    
+  // Special cases
+  AssertEquals('Both empty strings should return 1.0',
+    1.0, TStringKit.JaroSimilarity('', ''));
+    
+  AssertEquals('One empty string should return 0.0',
+    0.0, TStringKit.JaroSimilarity('A', ''));
+    
+  // Test transpositions
+  AssertTrue('DIXON/DICKSON should return reasonable similarity',
+    TStringKit.JaroSimilarity('DIXON', 'DICKSON') > 0.6);
 end;
 
 procedure TStringTests.Test35_JaroWinklerSimilarity;
@@ -438,6 +460,27 @@ begin
   AssertTrue('Strings with matching prefix should have higher similarity in Jaro-Winkler',
     TStringKit.JaroWinklerSimilarity('prefix123', 'prefix456') > 
     TStringKit.JaroSimilarity('prefix123', 'prefix456'));
+    
+  // Test with strings from examples
+  AssertTrue('MARTHA/MARHTA should have higher Jaro-Winkler than Jaro similarity',
+    TStringKit.JaroWinklerSimilarity('MARTHA', 'MARHTA') > 
+    TStringKit.JaroSimilarity('MARTHA', 'MARHTA'));
+    
+  AssertTrue('DWAYNE/DUANE should have higher Jaro-Winkler than Jaro similarity',
+    TStringKit.JaroWinklerSimilarity('DWAYNE', 'DUANE') > 
+    TStringKit.JaroSimilarity('DWAYNE', 'DUANE'));
+    
+  // Test with strings that have common prefix but different lengths
+  AssertTrue('DIXON/DICKSON should have higher Jaro-Winkler than Jaro similarity',
+    TStringKit.JaroWinklerSimilarity('DIXON', 'DICKSON') > 
+    TStringKit.JaroSimilarity('DIXON', 'DICKSON'));
+    
+  // Empty strings
+  AssertEquals('Both empty strings should return 1.0',
+    1.0, TStringKit.JaroWinklerSimilarity('', ''));
+    
+  AssertEquals('One empty string should return 0.0',
+    0.0, TStringKit.JaroWinklerSimilarity('A', ''));
 end;
 
 procedure TStringTests.Test36_LongestCommonSubsequence;

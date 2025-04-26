@@ -15,9 +15,6 @@ uses
   {$ENDIF}
   Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils, Math;
 
-//
-// Platform-specific constants
-//
 const
   DEBUG_MODE = False; // Enable debugging output
   
@@ -40,19 +37,7 @@ const
   S_IFDIR  = $4000;  // Directory
   {$ENDIF}
 
-//
-// Platform-specific external function declarations
-//
-{$IFDEF WINDOWS}
-// Windows API function declarations for symbolic link operations
-function CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName: LPCSTR; dwFlags: DWORD): BOOL; 
-  stdcall; external 'kernel32.dll' name 'CreateSymbolicLinkA';
-function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePath: DWORD; dwFlags: DWORD): DWORD; 
-  stdcall; external 'kernel32.dll' name 'GetFinalPathNameByHandleA';
-{$ENDIF}
-
 type
-
   { 
     TFileAttributes 
     ----------------
@@ -72,6 +57,13 @@ type
     Permissions: string;  // Contains Unix-style permissions (e.g., 'rwxr-xr--') indicating access rights
   end;
 
+  { 
+    TDirectoryInfo
+    --------------
+    Contains summary information about a directory's contents, including
+    count of files and directories, total size, and information about
+    oldest, newest, and largest files.
+  }
   TDirectoryInfo = record
     FileCount: Integer;
     DirectoryCount: Integer;
@@ -87,6 +79,8 @@ type
     -------------
     A dynamic array of strings used to store lists of filenames or directory names.
     This type is commonly used for returning results from file listing operations.
+    
+    @warning None
   }
   TFilePathArray = array of string;
 
@@ -95,6 +89,9 @@ type
     ---------------
     Enumerates the different ways files and directories can be sorted when listed.
     This allows developers to specify the desired sorting criteria for better organization.
+    
+    @warning For directories, size sorting options (fsSize and fsSizeDesc) have no effect and 
+             are equivalent to using fsNone
   }
   TFileSortOrder = (
     fsNone,           // No specific sorting; the default order as retrieved
@@ -111,6 +108,8 @@ type
     -------------
     Holds comprehensive information about a single file or directory. This record is 
     used to return detailed search results, providing insights into each item's properties.
+    
+    @warning None
   }
   TSearchResult = record
     FileName: string;        // The name of the file or directory without the path
@@ -137,12 +136,80 @@ type
   }
   EFileSystemError = class(Exception);
 
-{$IFDEF UNIX}
-// Helper functions for Unix file system operations
-function S_ISDIR(Mode: mode_t): Boolean;
-function S_ISLNK(Mode: mode_t): Boolean;
+
+// Platform-specific external function declarations
+{$IFDEF WINDOWS}
+// Windows API function declarations for symbolic link operations
+
+{ @description Helper function | Creates a symbolic link file that points to another file or directory
+  
+  @usage Used internally by TFileKit.CreateSymLink to implement Windows symbolic link creation
+  
+  @param lpSymlinkFileName Path where the symbolic link should be created
+  @param lpTargetFileName Path to the target file or directory that the link points to
+  @param dwFlags Options (SYMBOLIC_LINK_FLAG_DIRECTORY for directory targets, 
+                SYMBOLIC_LINK_FLAG_ALLOW_UNPRIVILEGED_CREATE for non-admin users in Developer Mode)
+  
+  @returns TRUE if the function succeeds, FALSE otherwise (use GetLastError for error details)
+  
+  @warning By default requires Administrator privileges on Windows
+           Windows 10 with Developer Mode enabled allows non-admin symlink creation
+           Returns FALSE and sets the appropriate Windows error code on failure
+  
+  @example
+    Success := CreateSymbolicLink('C:\LinkToFile.txt', 'C:\TargetFile.txt', 0);
+}
+function CreateSymbolicLink(lpSymlinkFileName, lpTargetFileName: LPCSTR; dwFlags: DWORD): BOOL; 
+  stdcall; external 'kernel32.dll' name 'CreateSymbolicLinkA';
+
+{ @description Helper function | Gets the final path of a file, resolving any symbolic links in the path
+  
+  @usage Used internally by TFileKit.ResolveSymLink to get the target of a symbolic link
+  
+  @param hFile Handle to an open file (must have appropriate access rights)
+  @param lpszFilePath Buffer to receive the file path
+  @param cchFilePath Size of the buffer in characters
+  @param dwFlags Format options (FILE_NAME_NORMALIZED to get a normalized path)
+  
+  @returns The length of the file path if successful, 0 otherwise (use GetLastError for error details)
+  
+  @warning Requires an open file handle with appropriate access rights
+           Path may be returned with "\\?\" prefix on Windows
+           Buffer must be large enough to hold the complete path
+  
+  @example
+    PathLength := GetFinalPathNameByHandle(FileHandle, PathBuffer, BufferSize, FILE_NAME_NORMALIZED);
+}
+function GetFinalPathNameByHandle(hFile: THandle; lpszFilePath: LPSTR; cchFilePath: DWORD; dwFlags: DWORD): DWORD; 
+  stdcall; external 'kernel32.dll' name 'GetFinalPathNameByHandleA';
 {$ENDIF}
 
+{$IFDEF UNIX}
+// Helper functions for Unix file system operations
+{ @description Helper function | Checks if a file mode represents a directory
+
+  @usage Used internally to determine directory status from Unix file stats
+
+  @param Mode Unix file mode value
+
+  @returns True if the mode is for a directory
+
+  @warning None
+}
+function S_ISDIR(Mode: mode_t): Boolean;
+
+{ @description Helper function | Checks if a file mode represents a symbolic link
+
+  @usage Used internally to determine symbolic link status from Unix file stats
+
+  @param Mode Unix file mode value
+
+  @returns True if the mode is for a symbolic link
+
+  @warning None
+}
+function S_ISLNK(Mode: mode_t): Boolean;
+{$ENDIF}
 
 
 type 
@@ -157,7 +224,7 @@ type
       
       @returns A populated TSearchResult record with details like path, size, timestamps, and attributes
       
-      @pitfalls Only retrieves basic file information; some advanced attributes may not be available
+      @warning Only retrieves basic file information; some advanced attributes may not be available
                 Path is normalized which could resolve symbolic links
                 Returns zero values for size/dates if file information cannot be retrieved
       
@@ -176,7 +243,7 @@ type
       @returns The converted value as a TDateTime value, normalized for the local time zone
                Returns 0 if the conversion fails
       
-      @pitfalls On Windows, performs multiple conversions that may lose precision
+      @warning On Windows, performs multiple conversions that may lose precision
                 Windows FILETIME and Delphi TDateTime have different base dates and resolutions
                 On Unix systems, simply passes through the existing TDateTime value
       
@@ -195,7 +262,7 @@ type
       
       @returns True if the filename matches the pattern, False otherwise
       
-      @pitfalls Uses case-insensitive comparison
+      @warning Uses case-insensitive comparison
                 Limited wildcard support: only handles '*' (not '?')
                 Only supports patterns with a single '*' at start, end, or both ends
                 Complex patterns will not work as expected
@@ -215,7 +282,7 @@ type
       @returns The complete text content of the file as a string
                Returns an empty string if the file doesn't exist or cannot be read
       
-      @pitfalls No exception handling for read errors
+      @warning No exception handling for read errors
                 Loads the entire file content into memory, which may be problematic for very large files
                 No text encoding detection or conversion
       
@@ -232,7 +299,7 @@ type
       @param APath The path where the file should be created or overwritten
       @param AContent The string content to write to the file
       
-      @pitfalls Always creates parent directories if they don't exist
+      @warning Always creates parent directories if they don't exist
                 Always overwrites existing file without confirmation
                 No exception handling for write errors
                 No text encoding specification
@@ -251,7 +318,7 @@ type
       
       @returns The entire content of the file as a string
       
-      @pitfalls May cause memory issues with extremely large files
+      @warning May cause memory issues with extremely large files
                 Returns empty string if file doesn't exist instead of raising an exception
       
       @example
@@ -267,7 +334,7 @@ type
       @param APath The path to the file to write
       @param AContent The string content to write to the file
       
-      @pitfalls Will overwrite existing files without confirmation
+      @warning Will overwrite existing files without confirmation
                 Creates parent directories if they don't exist
       
       @example
@@ -282,7 +349,7 @@ type
       
       @param APath The path to the file to delete
       
-      @pitfalls Does not raise exceptions if file doesn't exist
+      @warning Does not raise exceptions if file doesn't exist
                 No confirmation or recovery mechanism
                 Operation cannot be undone
       
@@ -299,7 +366,7 @@ type
       @param ASourcePath The path to the source file
       @param ADestPath The destination path where the file should be copied
       
-      @pitfalls Will create destination directory structure if it doesn't exist
+      @warning Will create destination directory structure if it doesn't exist
                 Will overwrite destination without confirmation if it exists
                 May fail if destination is read-only or in use
       
@@ -316,7 +383,7 @@ type
       @param ASourcePath The path to the source file
       @param ADestPath The destination path where the file should be moved
       
-      @pitfalls Will create destination directory structure if it doesn't exist
+      @warning Will create destination directory structure if it doesn't exist
                 Will overwrite destination without confirmation if it exists
                 Falls back to copy+delete if simple rename fails
                 Verifies sizes match before deleting source in copy+delete scenario
@@ -335,7 +402,7 @@ type
       @param APath The path to the file to append to
       @param AText The text to append to the file
       
-      @pitfalls Creates new file if it doesn't exist
+      @warning Creates new file if it doesn't exist
                 May cause issues with newlines if not handled properly in AText
                 Requires careful handling for non-ASCII text encodings
       
@@ -352,7 +419,7 @@ type
       @param APath The path to the file to prepend to
       @param AText The text to prepend to the file
       
-      @pitfalls Creates new file if it doesn't exist
+      @warning Creates new file if it doesn't exist
                 Requires loading entire file into memory, potentially inefficient for large files
                 May cause issues with newlines if not handled properly in AText
       
@@ -370,7 +437,7 @@ type
       @param OldText The text to find and replace
       @param NewText The text to replace with
       
-      @pitfalls Requires loading entire file into memory, potentially inefficient for large files
+      @warning Requires loading entire file into memory, potentially inefficient for large files
                 Case-sensitive by default (uses StringReplace)
                 Does nothing if file doesn't exist
       
@@ -386,7 +453,7 @@ type
       
       @param APath The path where the directory should be created
       
-      @pitfalls May fail due to permissions or invalid path characters
+      @warning May fail due to permissions or invalid path characters
                 No error is raised if the directory already exists
       
       @example
@@ -402,7 +469,7 @@ type
       @param APath The path to the directory to delete
       @param Recursive If True (default), deletes all subdirectories and files within the directory
       
-      @pitfalls No confirmation or recovery mechanism; operation is irreversible
+      @warning No confirmation or recovery mechanism; operation is irreversible
                 Without Recursive=True, will fail if directory is not empty
                 With Recursive=True, performs dangerous recursive deletion; use with extreme caution
                 May fail due to permissions or if files/directories are in use
@@ -419,7 +486,7 @@ type
       
       @param APath The full path to the directory to ensure exists (including potential parent directories)
       
-      @pitfalls Creates the full directory tree if needed
+      @warning Creates the full directory tree if needed
                 No specific permissions checking before attempting creation
                 Relies on underlying ForceDirectories behavior
       
@@ -440,7 +507,7 @@ type
       
       @returns A dynamic array (TFilePathArray) of full directory paths matching the criteria
       
-      @pitfalls May be slow on large directory trees, especially when Recursive=True
+      @warning May be slow on large directory trees, especially when Recursive=True
                 Avoids following symbolic links to prevent infinite loops
                 Returns an empty array if the base path doesn't exist or no directories match
       
@@ -464,7 +531,7 @@ type
       
       @returns A dynamic array (TFilePathArray) of full file paths matching the criteria
       
-      @pitfalls May be slow on large directory trees, especially when Recursive=True
+      @warning May be slow on large directory trees, especially when Recursive=True
                 Returns an empty array if the base path doesn't exist or no files match
                 Pattern matching is basic wildcard matching
       
@@ -486,7 +553,7 @@ type
       
       @returns The path string with the new extension applied
       
-      @pitfalls Only changes the path string in memory; does not rename the actual file on disk
+      @warning Only changes the path string in memory; does not rename the actual file on disk
                 Automatically adds a dot if NewExt doesn't start with one
                 If APath has no extension, NewExt is simply appended
       
@@ -506,7 +573,7 @@ type
       
       @returns The filename with its extension
       
-      @pitfalls Returns an empty string if APath is empty or represents a root directory
+      @warning Returns an empty string if APath is empty or represents a root directory
       
       @example
         Name := TFileKit.GetFileName('C:\Users\docs\report.docx');
@@ -522,10 +589,9 @@ type
       
       @returns The filename without its extension
       
-      @pitfalls Returns an empty string if APath is empty or represents a root directory
+      @warning Returns an empty string if APath is empty or represents a root directory
       
       @example
-        BaseName := TFileKit.GetFileNameWithoutExt('C:\images\photo.jpeg');
         BaseName := TFileKit.GetFileNameWithoutExt('C:\images\photo.jpeg');
         // Returns: 'photo'
     }
@@ -539,14 +605,14 @@ type
       
       @returns The path of the containing directory
       
-      @pitfalls Behavior might differ slightly based on whether APath is a file or directory and if it has a trailing delimiter
+      @warning Behavior might differ slightly based on whether APath is a file or directory and if it has a trailing delimiter
                 Uses ExpandFileName internally, so relative paths are resolved
       
       @example
         Dir := TFileKit.GetDirectory('C:\Users\docs\report.docx');
-        // Returns: 'docs' (or similar, depending on implementation details)
+        // Returns: 'docs'
         ParentDir := TFileKit.GetDirectory('C:\Users\docs\');
-        // Returns: 'Users' (or similar)
+        // Returns: 'Users'
     }
     class function GetDirectory(const APath: string): string;
 
@@ -559,7 +625,7 @@ type
       @returns The file extension, including the leading dot (e.g., '.txt', '.docx')
                Returns an empty string if the path has no extension
       
-      @pitfalls Case-sensitive based on the input path string
+      @warning Case-sensitive based on the input path string
       
       @example
         Ext := TFileKit.GetExtension('C:\archive\backup.zip');
@@ -575,7 +641,7 @@ type
       
       @returns True if a file or directory exists at the path, False otherwise
       
-      @pitfalls Does not distinguish between files and directories (use DirectoryExists for that)
+      @warning Does not distinguish between files and directories (use DirectoryExists for that)
                 May return False due to permission issues even if the path exists
       
       @example
@@ -592,7 +658,7 @@ type
       
       @returns True if a directory exists at the path, False otherwise (including if it's a file)
       
-      @pitfalls May return False due to permission issues even if the directory exists
+      @warning May return False due to permission issues even if the directory exists
       
       @example
         if TFileKit.DirectoryExists('C:\Users\Public\Documents') then
@@ -608,7 +674,7 @@ type
       
       @returns The size of the file in bytes (Int64). Returns 0 if the file does not exist or is empty.
       
-      @pitfalls Returns 0 for non-existent files instead of raising an error
+      @warning Returns 0 for non-existent files instead of raising an error
                 May return 0 if there are permission issues accessing the file
       
       @example
@@ -625,7 +691,7 @@ type
       
       @returns The creation timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
       
-      @pitfalls Timestamp resolution and availability depend on the operating system and file system
+      @warning Timestamp resolution and availability depend on the operating system and file system
                 On Unix, often returns the last status change time (ctime) instead of true creation time
       
       @example
@@ -642,7 +708,7 @@ type
       
       @returns The last access timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
       
-      @pitfalls Last access time updates might be disabled on some systems (especially Windows) for performance reasons
+      @warning Last access time updates might be disabled on some systems (especially Windows) for performance reasons
                 Timestamp resolution depends on the OS and file system
       
       @example
@@ -659,7 +725,7 @@ type
       
       @returns The last modification timestamp as a TDateTime value. Returns 0 if the path doesn't exist or the timestamp cannot be retrieved.
       
-      @pitfalls Timestamp resolution depends on the OS and file system
+      @warning Timestamp resolution depends on the OS and file system
       
       @example
         Modified := TFileKit.GetLastWriteTime('C:\config.ini');
@@ -675,7 +741,7 @@ type
       
       @returns A TFileAttributes record populated with the attributes. Fields are initialized to default values (False, empty strings) if attributes cannot be retrieved.
       
-      @pitfalls The specific attributes available (Owner, Group, Permissions) vary between Windows and Unix
+      @warning The specific attributes available (Owner, Group, Permissions) vary between Windows and Unix
                 Retrieval might fail due to permission issues
       
       @example
@@ -693,7 +759,7 @@ type
       
       @returns True if the file appears to be text (based on checking a sample for control characters), False otherwise or if the file doesn't exist/can't be read.
       
-      @pitfalls This is a heuristic and not foolproof; it might misclassify some binary files as text or vice-versa
+      @warning This is a heuristic and not foolproof; it might misclassify some binary files as text or vice-versa
                 Only checks a small initial portion of the file (MaxBytesToCheck)
                 Empty files are considered text
       
@@ -711,7 +777,7 @@ type
       
       @returns A string representing the detected encoding ('UTF-8', 'UTF-16LE', 'UTF-16BE', 'UTF-32LE', 'UTF-32BE'). Returns 'ASCII' as the default if no BOM is found or the file cannot be read.
       
-      @pitfalls Only detects encodings based on the presence of a BOM at the very beginning of the file
+      @warning Only detects encodings based on the presence of a BOM at the very beginning of the file
                 Files saved without a BOM (like many UTF-8 files) will be reported as 'ASCII'
                 Only checks the first few bytes (MaxBytesToCheck)
       
@@ -731,7 +797,7 @@ type
       
       @returns A dynamic array (TSearchResults) containing detailed TSearchResult records for each matching file
       
-      @pitfalls Can be slow on large directory structures, especially with recursion
+      @warning Can be slow on large directory structures, especially with recursion
                 Pattern matching is basic wildcard matching
                 Returns an empty array if the path doesn't exist or no files match
       
@@ -752,7 +818,7 @@ type
       
       @returns A dynamic array (TSearchResults) of matching files
       
-      @pitfalls Assumes ADirectory exists; behavior is undefined if it doesn't
+      @warning Assumes ADirectory exists; behavior is undefined if it doesn't
                 Avoids following symbolic links during recursion to prevent cycles
       
       @example
@@ -771,7 +837,7 @@ type
       
       @returns The full path to the most recently modified file matching the criteria. Returns an empty string if no matching files are found.
       
-      @pitfalls If multiple files have the exact same latest timestamp, the one found first (OS-dependent order) is returned
+      @warning If multiple files have the exact same latest timestamp, the one found first (OS-dependent order) is returned
                 Can be slow on large directories, especially with recursion
       
       @example
@@ -790,7 +856,7 @@ type
       
       @returns The full path to the oldest modified file matching the criteria. Returns an empty string if no matching files are found.
       
-      @pitfalls If multiple files have the exact same oldest timestamp, the one found first (OS-dependent order) is returned
+      @warning If multiple files have the exact same oldest timestamp, the one found first (OS-dependent order) is returned
                 Can be slow on large directories, especially with recursion
       
       @example
@@ -809,7 +875,7 @@ type
       
       @returns The full path to the largest file matching the criteria. Returns an empty string if no matching files are found.
       
-      @pitfalls If multiple files have the exact same largest size, the one found first (OS-dependent order) is returned
+      @warning If multiple files have the exact same largest size, the one found first (OS-dependent order) is returned
                 Can be slow on large directories, especially with recursion
       
       @example
@@ -828,7 +894,7 @@ type
       
       @returns The full path to the smallest file matching the criteria. Returns an empty string if no matching files are found.
       
-      @pitfalls If multiple files have the exact same smallest size, the one found first alphabetically is returned
+      @warning If multiple files have the exact same smallest size, the one found first alphabetically is returned
                 Can be slow on large directories, especially with recursion
       
       @example
@@ -843,7 +909,7 @@ type
       
       @returns The full path to the user's home directory (e.g., 'C:\Users\username' on Windows, '/home/username' on Linux). Falls back to GetCurrentDir if the home directory cannot be determined.
       
-      @pitfalls Relies on environment variables ('USERPROFILE' on Windows, 'HOME' on Unix), which might not be set in all environments
+      @warning Relies on environment variables ('USERPROFILE' on Windows, 'HOME' on Unix), which might not be set in all environments
       
       @example
         UserConfigPath := TFileKit.CombinePaths(TFileKit.GetUserDir, '.myapp\config.json');
@@ -857,7 +923,7 @@ type
       
       @returns The full path to the current working directory
       
-      @pitfalls The current directory can be changed during runtime (e.g., using ChDir), so it might not always be the application's startup directory
+      @warning The current directory can be changed during runtime (e.g., using ChDir), so it might not always be the application's startup directory
       
       @example
         CurrentPath := TFileKit.GetCurrentDir;
@@ -871,7 +937,7 @@ type
       
       @returns The full path to the system's temporary directory (e.g., 'C:\Users\user\AppData\Local\Temp' on Windows, '/tmp' on Linux)
       
-      @pitfalls Relies on system settings or environment variables (TEMP, TMP) which might vary
+      @warning Relies on system settings or environment variables (TEMP, TMP) which might vary
                 Ensure you have write permissions to this directory
       
       @example
@@ -888,14 +954,14 @@ type
       
       @returns The full path of the parent directory. Returns the root or drive if APath is already a root/drive.
       
-      @pitfalls Behavior with root paths ('C:\', '/') might vary slightly
+      @warning Behavior with root paths ('C:\', '/') might vary slightly
                 Uses ExpandFileName and ExcludeTrailingPathDelimiter internally
       
       @example
         Parent := TFileKit.GetParentDir('C:\Users\docs\report.docx');
-        // Returns: 'C:\Users\docs' (or similar)
+        // Returns: 'C:\Users\docs' 
         GrandParent := TFileKit.GetParentDir(Parent);
-        // Returns: 'C:\Users' (or similar)
+        // Returns: 'C:\Users'
     }
     class function GetParentDir(const APath: string): string;
     
@@ -908,7 +974,7 @@ type
       
       @returns The combined path string, normalized with correct path delimiters. Returns APath2 if APath1 is empty, APath1 if APath2 is empty.
       
-      @pitfalls Normalizes the path, which might resolve '..' components or change slashes depending on the OS
+      @warning Normalizes the path, which might resolve '..' components or change slashes depending on the OS
       
       @example
         FullPath := TFileKit.CombinePaths('C:\Data', 'Subdir\file.txt');
@@ -924,7 +990,7 @@ type
       
       @returns True if the path starts with a drive letter and colon (Windows) or a forward slash (Unix), False otherwise
       
-      @pitfalls Does not validate the existence or correctness of the path, only checks the format
+      @warning Does not validate the existence or correctness of the path, only checks the format
       
       @example
         IsAbs := TFileKit.IsAbsolutePath('C:\Windows\System32'); // True on Windows
@@ -940,7 +1006,7 @@ type
       
       @returns The expanded, normalized path string with OS-specific delimiters (e.g., '\' on Windows, '/' on Unix)
       
-      @pitfalls Resolves symbolic links as part of ExpandFileName
+      @warning Resolves symbolic links as part of ExpandFileName
                 Final path might look different if '..' components navigate above the root
       
       @example
@@ -957,7 +1023,7 @@ type
       
       @returns The full path to the newly created empty temporary file
       
-      @pitfalls The created file is *not* automatically deleted; requires manual cleanup (e.g., using DeleteFile)
+      @warning The created file is *not* automatically deleted; requires manual cleanup (e.g., using DeleteFile)
                 Relies on GUID creation, which could theoretically fail
                 Requires write permissions to the temporary directory
       
@@ -977,7 +1043,7 @@ type
       
       @returns The full path to the newly created empty temporary directory
       
-      @pitfalls The created directory and its contents are *not* automatically deleted; requires manual cleanup (e.g., using DeleteDirectory)
+      @warning The created directory and its contents are *not* automatically deleted; requires manual cleanup (e.g., using DeleteDirectory)
                 Relies on GUID creation, which could theoretically fail
                 Requires write permissions to the temporary directory
       
@@ -1027,7 +1093,7 @@ type
       @param ALinkPath The path where the new symbolic link file should be created
       @param IsDirectory Set to True if the ATargetPath is a directory (especially important on Windows)
       
-      @pitfalls Requires specific privileges on Windows (Admin or Developer Mode)
+      @warning Requires specific privileges on Windows (Admin or Developer Mode)
                 Requires write permissions in the directory where ALinkPath is created
                 Behavior and requirements differ significantly between Windows and Unix
                 Raises EFileSystemError on failure with OS-specific error details
@@ -1046,7 +1112,7 @@ type
       
       @param ALinkPath The path to the symbolic link file to delete
       
-      @pitfalls Only deletes the link; the original target file or directory remains untouched
+      @warning Only deletes the link; the original target file or directory remains untouched
                 Raises EFileSystemError if deletion fails (e.g., due to permissions)
                 Does nothing if the path doesn't exist
       
@@ -1064,7 +1130,7 @@ type
       
       @returns The full, normalized path of the target file or directory
       
-      @pitfalls Raises EFileSystemError if ALinkPath is not a symbolic link or if resolution fails
+      @warning Raises EFileSystemError if ALinkPath is not a symbolic link or if resolution fails
                 The returned path is normalized
                 Implementation details differ between Windows and Unix
       
@@ -1082,7 +1148,7 @@ type
       
       @returns True if the path exists and is a symbolic link, False otherwise
       
-      @pitfalls Uses different system calls on Windows (GetFileAttributes with FILE_ATTRIBUTE_REPARSE_POINT) and Unix (lstat)
+      @warning Uses different system calls on Windows (GetFileAttributes with FILE_ATTRIBUTE_REPARSE_POINT) and Unix (lstat)
                 Returns False if the path doesn't exist
       
       @example
@@ -1099,7 +1165,7 @@ type
       @param ADestDir The destination directory where files should be copied
       @param APattern The file pattern to match (e.g., '*.txt')
       
-      @pitfalls Only copies files directly within ASourceDir; does not recurse into subdirectories
+      @warning Only copies files directly within ASourceDir; does not recurse into subdirectories
                 Will overwrite existing files in ADestDir without confirmation
                 Creates ADestDir if it doesn't exist
       
@@ -1117,7 +1183,7 @@ type
       @param ADestDir The destination directory where files should be moved
       @param APattern The file pattern to match (e.g., '*.tmp')
       
-      @pitfalls Only moves files directly within ASourceDir; does not recurse into subdirectories
+      @warning Only moves files directly within ASourceDir; does not recurse into subdirectories
                 Will overwrite existing files in ADestDir without confirmation
                 Creates ADestDir if it doesn't exist
                 Uses MoveFile internally, which may fall back to copy+delete
@@ -1135,7 +1201,7 @@ type
       @param ASourceDir The directory containing the files to delete
       @param APattern The file pattern to match (e.g., '*.log', 'temp_*')
       
-      @pitfalls Only deletes files directly within ASourceDir; does not recurse into subdirectories
+      @warning Only deletes files directly within ASourceDir; does not recurse into subdirectories
                 No confirmation or recovery; deletion is permanent
                 Does nothing if ASourceDir doesn't exist
       
@@ -1153,7 +1219,7 @@ type
       
       @returns True if the directory exists and contains no files or subdirectories (other than '.' and '..'), False otherwise
       
-      @pitfalls Raises EFileSystemError if the directory does not exist
+      @warning Raises EFileSystemError if the directory does not exist
                 Considers hidden files/directories when checking for emptiness
       
       @example
@@ -1171,13 +1237,13 @@ type
       
       @returns The longest common path prefix shared by both Path1 and Path2. Returns an empty string if there's no common prefix (e.g., different drives on Windows).
       
-      @pitfalls Normalizes paths before comparison
+      @warning Normalizes paths before comparison
                 Comparison is case-insensitive (due to NormalizePath and splitting)
                 Handles drive letters on Windows and leading slashes on Unix
       
       @example
         Common := TFileKit.GetCommonPath('C:\Projects\App1\Source', 'C:\Projects\App2\Data');
-        // Returns: 'C:\Projects' (or similar normalized path)
+        // Returns: 'C:\Projects'
     }
     class function GetCommonPath(const Path1, Path2: string): string;
 
@@ -1190,9 +1256,9 @@ type
       
       @returns A string representing the relative path from BasePath to TargetPath (e.g., '..\Data\file.txt', 'Subdir/image.png'). Uses '..' to navigate up directories. Returns '.' if paths are identical. Uses '/' as separator.
       
-      @pitfalls Normalizes paths before calculation
-                Assumes both paths exist and are valid for calculation logic
-                Handles drive letters on Windows and leading slashes on Unix
+      @warning Normalizes paths before calculation
+               Assumes both paths exist and are valid for calculation logic
+               Handles drive letters on Windows and leading slashes on Unix
       
       @example
         Relative := TFileKit.GetRelativePath('C:\Projects\App\Source', 'C:\Projects\App\Data\config.ini');
@@ -1209,8 +1275,8 @@ type
       
       @returns True if ChildPath starts with the normalized ParentPath (including trailing delimiter), False otherwise
       
-      @pitfalls Normalizes both paths before comparison
-                Comparison is case-insensitive (due to NormalizePath)
+      @warning Normalizes both paths before comparison
+               Comparison is case-insensitive (due to NormalizePath)
       
       @example
         IsInside := TFileKit.IsSubPath('C:\Users\Public', 'C:\Users\Public\Documents\report.txt');
@@ -1226,7 +1292,7 @@ type
       
       @returns The number of lines based on counting Line Feed (LF, #10) characters. Adds 1 if the file is non-empty and doesn't end with LF.
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
                 Reads the file in chunks; performance depends on file size
                 Assumes LF as the primary line ending; might miscount files with only CR endings
       
@@ -1244,7 +1310,7 @@ type
       
       @returns The content of the first line, up to the first CR or LF character. Returns an empty string if the file is empty or doesn't exist.
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
                 Only reads a small initial chunk (4KB) of the file
       
       @example
@@ -1261,7 +1327,7 @@ type
       
       @returns The content of the last line. Returns an empty string if the file is empty or doesn't exist.
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
                 Loads the entire file into a TStringList, which can be inefficient for very large files
       
       @example
@@ -1278,7 +1344,7 @@ type
       
       @returns True if the file exists and its size is 0, False otherwise
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
       
       @example
         if TFileKit.IsFileEmpty('C:\output.txt') then
@@ -1296,7 +1362,7 @@ type
       
       @returns True if the SearchText is found within the file content, False otherwise
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
                 Loads the entire file content into memory, inefficient for large files
                 Uses simple Pos search, not optimized for large-scale text searching
       
@@ -1314,7 +1380,7 @@ type
       
       @returns True if the file appears to be binary (based on checking a sample for a high percentage of control characters), False otherwise (considered text or empty).
       
-      @pitfalls Raises EFileSystemError if the file does not exist
+      @warning Raises EFileSystemError if the file does not exist
                 This is a heuristic and not foolproof; might misclassify some files
                 Only checks a small initial portion (512 bytes)
                 Empty files are considered non-binary (text)
@@ -1333,7 +1399,7 @@ type
       
       @returns A string representing the guessed MIME type (e.g., 'text/plain', 'image/jpeg', 'application/pdf'). Returns 'application/octet-stream' if the extension is unknown.
       
-      @pitfalls Relies solely on the file extension; does not inspect file content
+      @warning Relies solely on the file extension; does not inspect file content
                 Only knows a limited set of common extensions defined internally
                 Comparison is case-insensitive
       
@@ -1351,7 +1417,7 @@ type
       
       @returns True if the file has an executable extension (.exe, .com, .bat, .cmd on Windows) or has execute permissions (Unix), False otherwise.
       
-      @pitfalls On Windows, relies only on common executable extensions
+      @warning On Windows, relies only on common executable extensions
                 On Unix, requires file system access to check permissions (fpStat)
                 Does not guarantee the file is actually a valid executable program
       
@@ -1369,7 +1435,7 @@ type
       
       @returns True if the file/directory has the hidden attribute (Windows) or its name starts with a dot (Unix), False otherwise.
       
-      @pitfalls Definition of "hidden" differs between Windows and Unix
+      @warning Definition of "hidden" differs between Windows and Unix
                 On Windows, requires checking file attributes
                 On Unix, relies purely on the naming convention
       
@@ -1387,7 +1453,7 @@ type
       
       @returns The number of free bytes available to the current user on the drive (Int64). Returns -1 on error (e.g., path doesn't exist, permission error).
       
-      @pitfalls Requires access to the specified path to determine the drive
+      @warning Requires access to the specified path to determine the drive
                 Uses platform-specific API calls (GetDiskFreeSpaceEx on Windows, statfs on Unix)
       
       @example
@@ -1405,7 +1471,7 @@ type
       
       @returns The total size of the drive in bytes (Int64). Returns -1 on error.
       
-      @pitfalls Requires access to the specified path to determine the drive
+      @warning Requires access to the specified path to determine the drive
                 Uses platform-specific API calls
       
       @example
@@ -1423,7 +1489,7 @@ type
       
       @returns True if the drive has at least RequiredBytes of free space available, False otherwise or on error.
       
-      @pitfalls Returns False if GetDriveFreeSpace returns -1 (error)
+      @warning Returns False if GetDriveFreeSpace returns -1 (error)
       
       @example
         if TFileKit.HasEnoughSpace('C:\InstallDir', 500 * 1024 * 1024) then // Need 500MB
@@ -1440,7 +1506,7 @@ type
       
       @returns True if both files exist and contain the exact same sequence of bytes, False otherwise (including if sizes differ or content mismatches).
       
-      @pitfalls Returns False if either file does not exist
+      @warning Returns False if either file does not exist
                 Reads files in chunks (4KB); performance depends on file size
       
       @example
@@ -1458,7 +1524,7 @@ type
       
       @returns The path of the file with the later modification timestamp. If timestamps are equal, returns File2. If only one file exists, returns that file's path.
       
-      @pitfalls Raises EFileSystemError if neither file exists
+      @warning Raises EFileSystemError if neither file exists
                 Relies on FileAge, which might have limited resolution depending on the file system
       
       @example
@@ -1476,7 +1542,7 @@ type
       
       @returns A TStringArray containing descriptions of the differences found (e.g., differing bytes at specific positions, size mismatches). Returns an empty array if files are identical or if either file doesn't exist.
       
-      @pitfalls Reads files in chunks (4KB)
+      @warning Reads files in chunks (4KB)
                 Only reports the first differing byte within each chunk comparison
                 Can generate a large array if files differ significantly
                 Not a sophisticated diff algorithm
@@ -1496,7 +1562,7 @@ type
       
       @returns True if the lock was successfully acquired, False otherwise (e.g., file doesn't exist, already locked by this mechanism).
       
-      @pitfalls This is a very basic, advisory locking mechanism using a global list (Windows) or a '.lock' file (Unix). It's not a robust OS-level lock.
+      @warning This is a very basic, advisory locking mechanism using a global list (Windows) or a '.lock' file (Unix). It's not a robust OS-level lock.
                 Does not prevent other applications unaware of this mechanism from accessing the file.
                 Requires calling UnlockFile to release the lock.
                 The global list `LockedFiles` is not thread-safe.
@@ -1519,7 +1585,7 @@ type
       
       @returns True if the lock was found and released, False otherwise (e.g., file wasn't locked by this mechanism).
       
-      @pitfalls Only releases locks managed by this specific LockFile/UnlockFile implementation.
+      @warning Only releases locks managed by this specific LockFile/UnlockFile implementation.
                 The global list `LockedFiles` is not thread-safe.
       
       @example
@@ -1536,7 +1602,7 @@ type
       
       @returns True if the file path is present in the internal list of locked files, False otherwise.
       
-      @pitfalls Only checks the internal advisory lock status; does not check for OS-level locks or locks held by other applications.
+      @warning Only checks the internal advisory lock status; does not check for OS-level locks or locks held by other applications.
                 The global list `LockedFiles` is not thread-safe.
       
       @example
@@ -1553,7 +1619,7 @@ type
       
       @returns True if the filename is considered valid (non-empty, within length limits, no forbidden characters), False otherwise.
       
-      @pitfalls Checks against a common set of invalid characters ('<', '>', ':', '"', '/', '\', '|', '?', '*'); OS might have additional restrictions.
+      @warning Checks against a common set of invalid characters ('<', '>', ':', '"', '/', '\', '|', '?', '*'); OS might have additional restrictions.
                 Checks for basic length limit (255); actual filesystem limits might vary.
                 Does not check for reserved filenames (CON, PRN, AUX, etc. on Windows).
       
@@ -1571,7 +1637,7 @@ type
       
       @returns A sanitized version of the filename with invalid characters replaced by '_'. Also trims trailing spaces/dots and ensures the result is not empty.
       
-      @pitfalls Replaces invalid characters with '_'; might lead to collisions if multiple invalid names sanitize to the same result.
+      @warning Replaces invalid characters with '_'; might lead to collisions if multiple invalid names sanitize to the same result.
                 Does not handle reserved filenames (CON, PRN, etc.).
                 Resulting filename might still exceed path length limits when combined with a directory.
       
@@ -1589,7 +1655,7 @@ type
       
       @returns A normalized path string with invalid filename components sanitized and relative parts ('.', '..') resolved.
       
-      @pitfalls Combines normalization (like NormalizePath) with filename sanitization (SanitizeFileName) for each component.
+      @warning Combines normalization (like NormalizePath) with filename sanitization (SanitizeFileName) for each component.
                 Resolution of '..' might lead to unexpected results if the input path is unusual.
       
       @example
@@ -1606,7 +1672,7 @@ type
       
       @returns True if the path length exceeds a predefined limit (260 for Windows, 1024 for Unix), False otherwise.
       
-      @pitfalls The actual path length limits can be complex and depend on the OS version, filesystem, and API used. This is a simplified check.
+      @warning The actual path length limits can be complex and depend on the OS version, filesystem, and API used. This is a simplified check.
                 Windows has mechanisms (like '\\?\') to handle longer paths, which this check doesn't account for.
       
       @example
@@ -1624,7 +1690,7 @@ type
       
       @returns A TDirectoryInfo record populated with the summary. Fields are zero/empty if the directory doesn't exist or is empty.
       
-      @pitfalls Only scans the immediate contents of the directory; does not recurse.
+      @warning Only scans the immediate contents of the directory; does not recurse.
                 Performance depends on the number of items in the directory.
                 File times/sizes are retrieved during the scan.
       
@@ -1644,7 +1710,8 @@ type
       
       @returns True if the FileName matches the Pattern, False otherwise. Case-insensitive.
       
-      @pitfalls Very basic wildcard support: '*' anywhere, '*text', 'text*', '*text*'. Does not support '?'.
+      @warning Very basic wildcard support: '*' anywhere, '*text', 'text*', '*text*'. Does not support '?'.
+               Uses the same implementation as the private MatchPattern method.
       
       @example
         if TFileKit.MatchesPattern('document.txt', '*.txt') then // True
@@ -1661,8 +1728,9 @@ type
       
       @returns The name (not full path) of the first matching item found. Returns an empty string if no match is found or the directory doesn't exist.
       
-      @pitfalls The order of items returned by FindFirst is OS-dependent.
-                Only searches the immediate contents of the directory.
+      @warning The order of items returned by FindFirst is OS-dependent.
+               Returns any file or directory (including special entries, except '.' and '..').
+               Does not filter by file attributes - will return both files and directories.
       
       @example
         FirstLog := TFileKit.FindFirstMatch('C:\Logs', '*.log');
@@ -1679,7 +1747,9 @@ type
       
       @returns The number of items (excluding '.' and '..') matching the pattern in the directory.
       
-      @pitfalls Only counts items directly within the specified directory.
+      @warning Only counts items directly within the specified directory.
+               Counts both files and directories matching the pattern.
+               Returns 0 if the directory doesn't exist.
       
       @example
         TmpFileCount := TFileKit.CountMatches('C:\Temp', '*.tmp');
@@ -1697,8 +1767,9 @@ type
       
       @returns A TBytes dynamic array containing the bytes read. The array length might be less than Size if EOF is reached or Offset is invalid. Returns an empty array on error or if Offset is out of bounds.
       
-      @pitfalls Returns empty array if FilePath doesn't exist or Offset is invalid
-                Actual bytes read might be less than requested Size if near EOF
+      @warning Returns empty array if FilePath doesn't exist or Offset is invalid (negative or beyond file size)
+               Actual bytes read might be less than requested Size if near EOF
+               Does not raise exceptions on invalid parameters
       
       @example
         // Read 1024 bytes starting from position 4096
@@ -3452,15 +3523,56 @@ var
 begin
   if not DirectoryExists(ASourceDir) then
     Exit;
-    
+
   // Create destination directory if it doesn't exist
   ForceDirectories(ADestDir);
-  
+
   // Get list of files matching pattern
   Files := ListFiles(ASourceDir, APattern, False);
-  
+
   // Move each file
   for I := 0 to High(Files) do
+  begin
+    // Get relative path from source directory
+    RelativePath := ExtractRelativePath(
+      IncludeTrailingPathDelimiter(ASourceDir),
+      Files[I]
+    );
+
+    // Construct destination path
+    DestPath := CombinePaths(ADestDir, RelativePath);
+
+    // Create destination directory if needed
+    ForceDirectories(ExtractFilePath(DestPath));
+
+    // Move the file
+    MoveFile(Files[I], DestPath);
+  end;
+end;
+
+class procedure TFileKit.DeleteFiles(const ASourceDir, APattern: string);
+var
+  Files: TFilePathArray;
+  I: Integer;
+begin
+  if not DirectoryExists(ASourceDir) then
+    Exit;
+
+  // Get list of files matching pattern
+  Files := ListFiles(ASourceDir, APattern, False);
+
+  // Delete each file
+  for I := 0 to High(Files) do
+    DeleteFile(Files[I]);
+end;
+
+function MatchPattern(const FileName, Pattern: string): Boolean;
+begin
+  Result := False;
+  if Pattern = '*' then
+    Exit(True);
+
+  // Simple wildcard matching for now
   if (Pattern[1] = '*') and (Pattern[Length(Pattern)] = '*') then
     Result := Pos(Copy(Pattern, 2, Length(Pattern)-2), FileName) > 0
   else if Pattern[1] = '*' then
