@@ -1,5 +1,24 @@
 unit TidyKit.Math;
 
+{-----------------------------------------------------------------------------
+ TidyKit.Math
+
+ Foundational mathematical types and functions for the TidyKit.Math.* libraries
+ 
+ This unit provides:
+ - Common numeric array types (TIntegerArray, TDoubleArray, etc.)
+ - Helper records (TDoublePair)
+ - Core mathematical functions used by other TidyKit math units:
+   - Statistical distributions (StudentT, NormalCDF)
+   - Special functions (Beta, GammaLn, Erf)
+   - Array type conversion helpers (ToDoubleArray)
+ 
+ Design principles:
+ - Provide base types for consistency across TidyKit.Math.* units
+ - Encapsulate complex mathematical approximations (e.g., CDFs)
+ - Support other TidyKit modules with necessary mathematical tools
+-----------------------------------------------------------------------------}
+
 {$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 

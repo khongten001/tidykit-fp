@@ -1,5 +1,30 @@
 unit TidyKit.Math.Stats;
 
+{-----------------------------------------------------------------------------
+ TidyKit.Math.Stats
+
+ A library for statistical analysis in Free Pascal
+ 
+ This unit provides:
+ - Descriptive statistics (mean, median, variance, stddev, skewness, kurtosis, etc.)
+ - Percentiles, quartiles, and interquartile range
+ - Correlation and covariance (Pearson, Spearman)
+ - Z-scores and data standardization
+ - Robust statistics (MAD, Huber M-estimator)
+ - Non-parametric tests (Sign Test, Wilcoxon Signed-Rank, Mann-Whitney U, Kendall Tau)
+ - Hypothesis testing (t-test)
+ - Normality tests (Kolmogorov-Smirnov, Shapiro-Wilk)
+ - Effect size measures (Cohen's d, Hedges' g)
+ - Bootstrap methods (mean estimation, confidence intervals)
+ 
+ Design principles:
+ - Static class methods for easy access to functions
+ - Uses TDoubleArray from TidyKit.Math for data input
+ - Provides TDescriptiveStats record for comprehensive summary output
+ - Includes basic error handling for invalid inputs (e.g., empty arrays)
+ - StdDev calculates sample standard deviation (using n-1 denominator), not population standard deviation
+-----------------------------------------------------------------------------}
+
 {$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 
@@ -12,118 +37,1405 @@ type
   { Exception class for statistical operations }
   EStatsError = class(Exception);
 
-  { Descriptive statistics record }
+  { Record to hold common descriptive statistics calculated from a dataset. }
   TDescriptiveStats = record
-    N: Integer;
-    Mean: Double;
-    Median: Double;
-    Mode: Double;
-    Q1: Double;
-    Q3: Double;
-    Min: Double;
-    Max: Double;
-    Range: Double;
-    IQR: Double;
-    Variance: Double;
-    StdDev: Double;
-    Skewness: Double;
-    Kurtosis: Double;
-    SEM: Double;  // Standard Error of Mean
-    CV: Double;   // Coefficient of Variation
-    
-    function ToString: string;
-    function ToStringWide: string;  // Horizontal format
+    N: Integer;       // Number of observations in the dataset.
+    Mean: Double;     // Arithmetic mean (average) of the dataset.
+    Median: Double;   // Median (middle value) of the sorted dataset.
+    Mode: Double;     // Mode (most frequent value) of the dataset. Returns the first mode found if multimodal.
+    Q1: Double;       // First quartile (25th percentile) of the dataset.
+    Q3: Double;       // Third quartile (75th percentile) of the dataset.
+    Min: Double;      // Minimum value in the dataset.
+    Max: Double;      // Maximum value in the dataset.
+    Range: Double;    // Difference between the maximum and minimum values.
+    IQR: Double;      // Interquartile Range (Q3 - Q1).
+    Variance: Double; // Sample variance (using n-1 denominator) of the dataset.
+    StdDev: Double;   // Population standard deviation (using n denominator) of the dataset.
+    Skewness: Double; // Skewness measure of the dataset's distribution asymmetry.
+    Kurtosis: Double; // Sample excess kurtosis (peakedness) of the dataset's distribution.
+    SEM: Double;      // Standard Error of the Mean (SEM), estimating the standard deviation of the sample mean.
+    CV: Double;       // Coefficient of Variation (CV), the ratio of standard deviation to the mean, expressed as a percentage.
+    function ToString: string;     // Formats and returns a human-readable, vertical summary of the statistics
+    function ToStringWide: string; // Formats and returns a human-readable, table-like summary of the statistics
   end;
 
-  { Statistics calculations class }
+  { Provides a collection of static methods for statistical calculations. }
   TStatsKit = class
   private
+    {
+      @description Swaps the values of two Double variables. Internal helper.
+
+      @usage Used internally by sorting and ranking algorithms.
+
+      @param A The first Double variable.
+      @param B The second Double variable.
+
+      @warning None
+
+      @example (Internal Use)
+      var
+        Val1, Val2: Double;
+      begin
+        Val1 := 1.0;
+        Val2 := 2.0;
+        TStatsKit.Exchange(Val1, Val2);
+        // Val1 is now 2.0, Val2 is now 1.0
+      end;
+    }
     class procedure Exchange(var A, B: Double); static;
+
+    {
+      @description Swaps the values of two Integer variables. Internal helper.
+
+      @usage Used internally by ranking algorithms.
+
+      @param A The first Integer variable.
+      @param B The second Integer variable.
+
+      @warning None
+
+      @example (Internal Use)
+      var
+        Idx1, Idx2: Integer;
+      begin
+        Idx1 := 1;
+        Idx2 := 2;
+        TStatsKit.ExchangeInt(Idx1, Idx2);
+        // Idx1 is now 2, Idx2 is now 1
+      end;
+    }
     class procedure ExchangeInt(var A, B: Integer); static;
+
+    {
+      @description Creates a random sample with replacement from the given data array.
+
+      @usage Useful for bootstrap methods where resampling is needed.
+
+      @param Data The source array to sample from.
+
+      @returns A new array of the same size as Data, containing elements randomly drawn from Data with replacement.
+
+      @warning Requires the random number generator to be seeded (e.g., using Randomize).
+
+      @example
+      var
+        OriginalData: TDoubleArray;
+        Sample: TDoubleArray;
+      begin
+        Randomize; // Seed the random number generator
+        SetLength(OriginalData, 5);
+        OriginalData[0] := 1.1; OriginalData[1] := 2.2; OriginalData[2] := 3.3;
+        OriginalData[3] := 4.4; OriginalData[4] := 5.5;
+        Sample := TStatsKit.RandomSample(OriginalData);
+        // Sample will contain 5 elements randomly chosen from OriginalData
+      end;
+    }
     class function RandomSample(const Data: TDoubleArray): TDoubleArray; static;
   public
     { Basic statistics }
+
+    {
+      @description Calculates the arithmetic mean (average) of the values in the array.
+
+      @usage Use to find the central tendency of a dataset.
+
+      @param Data An array of Double values.
+
+      @returns The arithmetic mean of the data.
+
+      @references https://en.wikipedia.org/wiki/Arithmetic_mean
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Avg: Double;
+      begin
+        SetLength(MyData, 3);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0;
+        Avg := TStatsKit.Mean(MyData);
+        // Avg will be 2.0
+      end;
+    }
     class function Mean(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the median (middle value) of the values in the array.
+
+      @usage Use to find the central value of a dataset, robust to outliers.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+
+      @returns The median value. If the array has an even number of elements, it's the average of the two middle values.
+
+      @references https://en.wikipedia.org/wiki/Median
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData1, MyData2: TDoubleArray;
+        Med1, Med2: Double;
+      begin
+        SetLength(MyData1, 3); // Odd number of elements
+        MyData1[0] := 3.0; MyData1[1] := 1.0; MyData1[2] := 2.0;
+        Med1 := TStatsKit.Median(MyData1);
+        // Med1 will be 2.0
+
+        SetLength(MyData2, 4); // Even number of elements
+        MyData2[0] := 4.0; MyData2[1] := 1.0; MyData2[2] := 3.0; MyData2[3] := 2.0;
+        Med2 := TStatsKit.Median(MyData2);
+        // Med2 will be 2.5 (average of 2.0 and 3.0)
+      end;
+    }
     class function Median(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the mode (most frequent value) of the values in the array.
+
+      @usage Use to find the most common value in a dataset.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+
+      @returns The mode value. If multiple modes exist (multimodal), returns the first one encountered after sorting.
+
+      @references https://en.wikipedia.org/wiki/Mode_(statistics)
+
+      @warning Raises EStatsError if the input array is empty. If the dataset is multimodal, only one mode is returned.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        ModeVal: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 2.0; MyData[3] := 3.0; MyData[4] := 2.0;
+        ModeVal := TStatsKit.Mode(MyData);
+        // ModeVal will be 2.0
+      end;
+    }
     class function Mode(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the range (difference between maximum and minimum values) of the array.
+
+      @usage Use to get a simple measure of the spread of the data.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+
+      @returns The difference between the maximum and minimum values.
+
+      @references https://en.wikipedia.org/wiki/Range_(statistics)
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Rng: Double;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 5.0; MyData[1] := 1.0; MyData[2] := 10.0; MyData[3] := 3.0;
+        Rng := TStatsKit.Range(MyData);
+        // Rng will be 9.0 (10.0 - 1.0)
+      end;
+    }
     class function Range(const Data: TDoubleArray): Double; static;
-    
+
     { Variance and standard deviation }
+
+    {
+      @description Calculates the sample variance of the values in the array.
+
+      @usage Use to measure the dispersion of data points around the mean (uses n-1 denominator).
+
+      @param Data An array of Double values.
+
+      @returns The sample variance.
+
+      @references https://en.wikipedia.org/wiki/Variance#Sample_variance
+
+      @warning Raises EStatsError if the array has less than 2 values.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        VarVal: Double;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0;
+        VarVal := TStatsKit.Variance(MyData);
+        // VarVal will be approximately 1.6667
+      end;
+    }
     class function Variance(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the population standard deviation of the values in the array.
+
+      @usage Use to measure the amount of variation or dispersion of a set of values for the entire population (uses n denominator).
+
+      @param Data An array of Double values.
+
+      @returns The population standard deviation (square root of population variance).
+
+      @references https://en.wikipedia.org/wiki/Standard_deviation#Population_standard_deviation_of_finite_population
+
+      @warning Raises EStatsError if the array has less than 2 values. Note this calculates *population* StdDev. Use SampleStandardDeviation for sample StdDev.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        StdDevVal: Double;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0;
+        StdDevVal := TStatsKit.StandardDeviation(MyData);
+        // StdDevVal will be approximately 1.1180 (sqrt(1.25))
+      end;
+    }
     class function StandardDeviation(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the sample variance of the values in the array.
+
+      @usage Use to estimate the variance of a population based on a sample (uses n-1 denominator). Identical to Variance function.
+
+      @param Data An array of Double values.
+
+      @returns The sample variance.
+
+      @references https://en.wikipedia.org/wiki/Variance#Sample_variance
+
+      @warning Raises EStatsError if the array has less than 2 values.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        SampleVarVal: Double;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0;
+        SampleVarVal := TStatsKit.SampleVariance(MyData);
+        // SampleVarVal will be approximately 1.6667
+      end;
+    }
     class function SampleVariance(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the sample standard deviation of the values in the array.
+
+      @usage Use to estimate the standard deviation of a population based on a sample (uses n-1 denominator for variance calculation).
+
+      @param Data An array of Double values.
+
+      @returns The sample standard deviation (square root of sample variance).
+
+      @references https://en.wikipedia.org/wiki/Standard_deviation#Sample_standard_deviation
+
+      @warning Raises EStatsError if the array has less than 2 values.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        SampleStdDevVal: Double;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0;
+        SampleStdDevVal := TStatsKit.SampleStandardDeviation(MyData);
+        // SampleStdDevVal will be approximately 1.2910 (sqrt(1.6667))
+      end;
+    }
     class function SampleStandardDeviation(const Data: TDoubleArray): Double; static;
-    
+
     { Distribution measures }
+
+    {
+      @description Calculates the sample skewness of the dataset.
+
+      @usage Use to measure the asymmetry of the probability distribution of a real-valued random variable about its mean.
+
+      @param Data An array of Double values. Uses population standard deviation in calculation.
+
+      @returns The sample skewness value. Positive indicates tail on the right, negative indicates tail on the left. 0 indicates symmetry.
+
+      @references https://en.wikipedia.org/wiki/Skewness
+
+      @warning Raises EStatsError if the array has less than 3 values. Uses population standard deviation (n denominator).
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Skew: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0; MyData[4] := 10.0; // Skewed right
+        Skew := TStatsKit.Skewness(MyData);
+        // Skew will be a positive value (approximately 1.05)
+      end;
+    }
     class function Skewness(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the sample excess kurtosis of the dataset.
+
+      @usage Use to measure the "tailedness" or "peakedness" of the probability distribution relative to a normal distribution (excess kurtosis = kurtosis - 3).
+
+      @param Data An array of Double values. Uses sample standard deviation (n-1) in calculation.
+
+      @returns The sample excess kurtosis value. Positive indicates a more peaked distribution (leptokurtic), negative indicates a flatter distribution (platykurtic).
+
+      @references https://en.wikipedia.org/wiki/Kurtosis#Sample_kurtosis
+
+      @warning Raises EStatsError if the array has less than 4 values. Uses sample standard deviation.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Kurt: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0; MyData[4] := 5.0;
+        Kurt := TStatsKit.Kurtosis(MyData);
+        // Kurt will be a value indicating the distribution's peakedness relative to normal
+      end;
+    }
     class function Kurtosis(const Data: TDoubleArray): Double; static;
-    
+
     { Percentiles and quartiles }
+
+    {
+      @description Calculates the P-th percentile of the dataset using linear interpolation between closest ranks.
+
+      @usage Use to find the value below which a given percentage P of observations fall.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+      @param P The percentile to calculate (0 <= P <= 100).
+
+      @returns The value corresponding to the P-th percentile.
+
+      @references Method R-7 (Excel, R default) - https://en.wikipedia.org/wiki/Percentile#Calculation_methods
+
+      @warning Raises EStatsError if P is outside the [0, 100] range or if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        P90: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 10;
+        P90 := TStatsKit.Percentile(MyData, 90);
+        // P90 will be 9.1
+      end;
+    }
     class function Percentile(const Data: TDoubleArray; const P: Double): Double; static;
+
+    {
+      @description Calculates the first quartile (25th percentile) of the dataset.
+
+      @usage A convenience function equivalent to Percentile(Data, 25).
+
+      @param Data An array of Double values.
+
+      @returns The first quartile (Q1) value.
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Q1Val: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 10;
+        Q1Val := TStatsKit.Quartile1(MyData);
+        // Q1Val will be 3.25
+      end;
+    }
     class function Quartile1(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the third quartile (75th percentile) of the dataset.
+
+      @usage A convenience function equivalent to Percentile(Data, 75).
+
+      @param Data An array of Double values.
+
+      @returns The third quartile (Q3) value.
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Q3Val: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 10;
+        Q3Val := TStatsKit.Quartile3(MyData);
+        // Q3Val will be 7.75
+      end;
+    }
     class function Quartile3(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the interquartile range (IQR), the difference between the third and first quartiles.
+
+      @usage Use to measure statistical dispersion, being the range of the middle 50% of the data. Robust to outliers.
+
+      @param Data An array of Double values.
+
+      @returns The interquartile range (Q3 - Q1).
+
+      @references https://en.wikipedia.org/wiki/Interquartile_range
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        IQRVal: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 10;
+        IQRVal := TStatsKit.InterquartileRange(MyData);
+        // IQRVal will be 4.5 (7.75 - 3.25)
+      end;
+    }
     class function InterquartileRange(const Data: TDoubleArray): Double; static;
-    
+
     { Correlation and covariance }
+
+    {
+      @description Calculates the Pearson product-moment correlation coefficient between two arrays.
+
+      @usage Use to measure the linear correlation between two continuous variables. Assumes data is normally distributed.
+
+      @param X The first array of Double values.
+      @param Y The second array of Double values. Must have the same length as X.
+
+      @returns The Pearson correlation coefficient, ranging from -1 (perfect negative correlation) to +1 (perfect positive correlation). 0 indicates no linear correlation.
+
+      @references https://en.wikipedia.org/wiki/Pearson_correlation_coefficient
+
+      @warning Raises EStatsError if arrays have different lengths or less than 2 values. Returns 0 if variance of either X or Y is zero.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        PearsonR: Double;
+      begin
+        SetLength(DataX, 5); SetLength(DataY, 5);
+        DataX[0] := 1; DataX[1] := 2; DataX[2] := 3; DataX[3] := 4; DataX[4] := 5;
+        DataY[0] := 2; DataY[1] := 4; DataY[2] := 5; DataY[3] := 4; DataY[4] := 5;
+        PearsonR := TStatsKit.PearsonCorrelation(DataX, DataY);
+        // PearsonR will be approximately 0.82
+      end;
+    }
     class function PearsonCorrelation(const X, Y: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the Spearman rank correlation coefficient between two arrays.
+
+      @usage Use to measure the strength and direction of association between two ranked variables (non-parametric). Assesses how well the relationship between two variables can be described using a monotonic function.
+
+      @param X The first array of Double values.
+      @param Y The second array of Double values. Must have the same length as X.
+
+      @returns The Spearman correlation coefficient, ranging from -1 to +1.
+
+      @references https://en.wikipedia.org/wiki/Spearman%27s_rank_correlation_coefficient
+
+      @warning Raises EStatsError if arrays have different lengths or less than 2 values. Handles ties by assigning average ranks.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        SpearmanRho: Double;
+      begin
+        SetLength(DataX, 5); SetLength(DataY, 5);
+        DataX[0] := 1; DataX[1] := 2; DataX[2] := 3; DataX[3] := 4; DataX[4] := 5;
+        DataY[0] := 5; DataY[1] := 6; DataY[2] := 7; DataY[3] := 8; DataY[4] := 7; // Non-linear relationship
+        SpearmanRho := TStatsKit.SpearmanCorrelation(DataX, DataY);
+        // SpearmanRho will be approximately 0.82 (measures monotonic relationship)
+      end;
+    }
     class function SpearmanCorrelation(const X, Y: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the sample covariance between two arrays.
+
+      @usage Use to measure the joint variability of two random variables. Positive covariance indicates variables tend to move in the same direction, negative indicates opposite directions.
+
+      @param X The first array of Double values.
+      @param Y The second array of Double values. Must have the same length as X.
+
+      @returns The sample covariance (uses n-1 denominator).
+
+      @references https://en.wikipedia.org/wiki/Covariance#Sample_covariance
+
+      @warning Raises EStatsError if arrays have different lengths or less than 2 elements.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        Cov: Double;
+      begin
+        SetLength(DataX, 5); SetLength(DataY, 5);
+        DataX[0] := 1; DataX[1] := 2; DataX[2] := 3; DataX[3] := 4; DataX[4] := 5;
+        DataY[0] := 2; DataY[1] := 4; DataY[2] := 5; DataY[3] := 4; DataY[4] := 5;
+        Cov := TStatsKit.Covariance(DataX, DataY);
+        // Cov will be 1.25
+      end;
+    }
     class function Covariance(const X, Y: TDoubleArray): Double; static;
-    
+
     { Z-score and normalization }
+
+    {
+      @description Calculates the Z-score (standard score) of a value given the mean and standard deviation of its distribution.
+
+      @usage Use to determine how many standard deviations a value is from the mean. Useful for comparing values from different distributions or identifying outliers.
+
+      @param Value The value for which to calculate the Z-score.
+      @param AMean The mean of the distribution.
+      @param StdDev The standard deviation of the distribution.
+
+      @returns The Z-score of the value.
+
+      @references https://en.wikipedia.org/wiki/Standard_score
+
+      @warning Raises EStatsError if StdDev is zero.
+
+      @example
+      var
+        MyValue, MeanVal, StdDevVal, Z: Double;
+      begin
+        MyValue := 75.0;
+        MeanVal := 60.0;
+        StdDevVal := 10.0;
+        Z := TStatsKit.ZScore(MyValue, MeanVal, StdDevVal);
+        // Z will be 1.5
+      end;
+    }
     class function ZScore(const Value, AMean, StdDev: Double): Double; static;
+
+    {
+      @description Standardizes the values in an array by converting them to Z-scores (in-place).
+
+      @usage Use to transform data to have a mean of 0 and a standard deviation of 1.
+
+      @param Data The array of Double values to standardize. The array is modified directly. Uses population standard deviation for the transformation.
+
+      @warning Raises EStatsError if the standard deviation of the data is zero. Modifies the input array Data.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        I: Integer;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0;
+        TStatsKit.Standardize(MyData);
+        // MyData now contains Z-scores: approx [-1.34, -0.45, 0.45, 1.34]
+        for I := 0 to High(MyData) do WriteLn(MyData[I]:0:2);
+      end;
+    }
     class procedure Standardize(var Data: TDoubleArray); static;
-    
+
     { Helper functions }
+
+    {
+      @description Calculates the sum of all values in the array.
+
+      @usage A basic building block for many other statistical calculations.
+
+      @param Data An array of Double values.
+
+      @returns The sum of the elements. Returns 0 for an empty array.
+
+      @warning None
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Total: Double;
+      begin
+        SetLength(MyData, 3);
+        MyData[0] := 1.5; MyData[1] := 2.5; MyData[2] := 3.0;
+        Total := TStatsKit.Sum(MyData);
+        // Total will be 7.0
+      end;
+    }
     class function Sum(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the sum of the squares of all values in the array.
+
+      @usage Used in calculations like variance and standard deviation.
+
+      @param Data An array of Double values.
+
+      @returns The sum of the squares of the elements. Returns 0 for an empty array.
+
+      @warning None
+
+      @example
+      var
+        MyData: TDoubleArray;
+        SumSq: Double;
+      begin
+        SetLength(MyData, 3);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0;
+        SumSq := TStatsKit.SumOfSquares(MyData);
+        // SumSq will be 14.0 (1*1 + 2*2 + 3*3)
+      end;
+    }
     class function SumOfSquares(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Sorts the elements of the array in ascending order (in-place).
+
+      @usage Used internally by median, percentile, and other rank-based calculations. Can also be used externally if a sorted array is needed.
+
+      @param Data The array of Double values to sort. The array is modified directly.
+
+      @warning Modifies the input array Data. Uses a simple bubble sort implementation.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        I: Integer;
+      begin
+        SetLength(MyData, 4);
+        MyData[0] := 3.0; MyData[1] := 1.0; MyData[2] := 4.0; MyData[3] := 2.0;
+        TStatsKit.Sort(MyData);
+        // MyData is now [1.0, 2.0, 3.0, 4.0]
+        for I := 0 to High(MyData) do WriteLn(MyData[I]:0:1);
+      end;
+    }
     class procedure Sort(var Data: TDoubleArray); static;
 
     { Descriptive Statistics }
+
+    {
+      @description Calculates a comprehensive set of descriptive statistics for the dataset.
+
+      @usage Use to get a quick summary of a dataset's central tendency, dispersion, and shape.
+
+      @param Data An array of Double values.
+
+      @returns A TDescriptiveStats record populated with calculated statistics (N, Mean, Median, Mode, Q1, Q3, Min, Max, Range, IQR, Variance, StdDev, Skewness, Kurtosis, SEM, CV).
+
+      @warning Raises EStatsError if the input array is empty. Raises errors from underlying functions if data size requirements are not met (e.g., <2 for Variance, <3 for Skewness, <4 for Kurtosis).
+
+      @example
+      var
+        MyData: TDoubleArray;
+        Stats: TDescriptiveStats;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 10;
+        Stats := TStatsKit.Describe(MyData);
+        WriteLn('Mean: ', Stats.Mean:0:2); // Output: Mean: 4.00
+        WriteLn('Median: ', Stats.Median:0:2); // Output: Median: 3.00
+        WriteLn(Stats.ToString); // Output full summary
+      end;
+    }
     class function Describe(const Data: TDoubleArray): TDescriptiveStats; static;
-    
+
     { Additional Basic Statistics }
+
+    {
+      @description Calculates the geometric mean of the values in the array.
+
+      @usage Use for datasets where values are multiplied together or represent rates of change. Suitable for positive numbers only.
+
+      @param Data An array of Double values.
+
+      @returns The geometric mean.
+
+      @references https://en.wikipedia.org/wiki/Geometric_mean
+
+      @warning Raises EStatsError if the input array is empty or contains non-positive (<= 0) values. Can be susceptible to floating-point underflow/overflow for very small/large numbers or long arrays.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        GeoMean: Double;
+      begin
+        SetLength(MyData, 3);
+        MyData[0] := 2.0; MyData[1] := 4.0; MyData[2] := 8.0;
+        GeoMean := TStatsKit.GeometricMean(MyData);
+        // GeoMean will be 4.0 (cuberoot(2*4*8))
+      end;
+    }
     class function GeometricMean(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the harmonic mean of the values in the array.
+
+      @usage Use for datasets involving rates or ratios, such as speeds. Suitable for positive numbers only.
+
+      @param Data An array of Double values.
+
+      @returns The harmonic mean.
+
+      @references https://en.wikipedia.org/wiki/Harmonic_mean
+
+      @warning Raises EStatsError if the input array is empty, contains non-positive (<= 0) values, or if the sum of reciprocals is zero. Sensitive to small values.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        HarmMean: Double;
+      begin
+        SetLength(MyData, 3);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 4.0;
+        HarmMean := TStatsKit.HarmonicMean(MyData);
+        // HarmMean will be approximately 1.714 (3 / (1/1 + 1/2 + 1/4))
+      end;
+    }
     class function HarmonicMean(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the trimmed mean (truncated mean) of the dataset.
+
+      @usage Use as a robust measure of central tendency, less sensitive to outliers than the arithmetic mean. Removes a specified percentage of data from both ends before calculating the mean.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+      @param Percent The percentage of data to remove from *each* end (0 <= Percent < 50). For example, Percent = 10 removes the lowest 10% and highest 10%.
+
+      @returns The mean of the remaining data after trimming.
+
+      @references https://en.wikipedia.org/wiki/Truncated_mean
+
+      @warning Raises EStatsError if Percent is outside [0, 50) or if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        TrimMean: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 100; // Outlier
+        TrimMean := TStatsKit.TrimmedMean(MyData, 10); // Remove 1 lowest (1) and 1 highest (100)
+        // TrimMean will be 5.0 (mean of 2,3,4,5,6,7,8,9)
+      end;
+    }
     class function TrimmedMean(const Data: TDoubleArray; const Percent: Double): Double; static;
+
+    {
+      @description Calculates the Winsorized mean of the dataset.
+
+      @usage Use as a robust measure of central tendency. Instead of removing outliers, it replaces the specified percentage of lowest values with the lowest remaining value, and the highest values with the highest remaining value.
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+      @param Percent The percentage of data to Winsorize from *each* end (0 <= Percent < 50).
+
+      @returns The mean of the Winsorized data.
+
+      @references https://en.wikipedia.org/wiki/Winsorizing#Winsorized_mean
+
+      @warning Raises EStatsError if Percent is outside [0, 50) or if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        WinsorMean: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 100; // Outlier
+        WinsorMean := TStatsKit.WinsorizedMean(MyData, 10); // Replace 1 (with 2) and 100 (with 9)
+        // WinsorMean will be 5.3 (mean of [2,2,3,4,5,6,7,8,9,9])
+      end;
+    }
     class function WinsorizedMean(const Data: TDoubleArray; const Percent: Double): Double; static;
-    
+
     { Non-parametric Statistics }
+
+    {
+      @description Calculates the Median Absolute Deviation (MAD) of the dataset.
+
+      @usage Use as a robust measure of the variability of a univariate sample of quantitative data. It is the median of the absolute deviations from the data's median.
+
+      @param Data An array of Double values.
+
+      @returns The Median Absolute Deviation (MAD).
+
+      @references https://en.wikipedia.org/wiki/Median_absolute_deviation
+
+      @warning Raises EStatsError if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        MADVal: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0; MyData[4] := 100.0; // Outlier
+        MADVal := TStatsKit.MedianAbsoluteDeviation(MyData);
+        // Median is 3. Deviations: |-2, -1, 0, 1, 97|. Absolute Deviations: [2, 1, 0, 1, 97]. Sorted: [0, 1, 1, 2, 97]. Median is 1.
+        // MADVal will be 1.0
+      end;
+    }
     class function MedianAbsoluteDeviation(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Performs a simple Sign Test on paired data.
+
+      @usage Use to test the hypothesis that the difference between paired observations (X[i] - Y[i]) has zero median. Non-parametric alternative to paired t-test when normality is not assumed.
+
+      @param X The first array of paired Double values.
+      @param Y The second array of paired Double values. Must have the same length as X.
+
+      @returns The proportion of positive differences (X[i] > Y[i]) among pairs where X[i] != Y[i]. (Note: This is not a p-value).
+
+      @references https://en.wikipedia.org/wiki/Sign_test
+
+      @warning Raises EStatsError if arrays have different lengths or if there are no pairs with non-zero differences. The return value is the proportion, not a p-value. A full sign test involves comparing this to a binomial distribution.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        SignProp: Double;
+      begin
+        SetLength(DataX, 5); SetLength(DataY, 5);
+        DataX[0] := 10; DataX[1] := 12; DataX[2] := 8; DataX[3] := 15; DataX[4] := 9;
+        DataY[0] := 9;  DataY[1] := 10; DataY[2] := 10; DataY[3] := 12; DataY[4] := 9; // 3 positive, 1 negative, 1 zero difference
+        SignProp := TStatsKit.SignTest(DataX, DataY);
+        // NPos = 3, NNeg = 1. N = 4.
+        // SignProp will be 0.75 (3 / 4)
+      end;
+    }
     class function SignTest(const X, Y: TDoubleArray): Double; static;
+
+    {
+      @description Performs the Wilcoxon Signed-Rank test on paired data.
+
+      @usage Use as a non-parametric alternative to the paired t-test to compare two related samples or repeated measurements on a single sample to assess whether their population mean ranks differ.
+
+      @param X The first array of paired Double values.
+      @param Y The second array of paired Double values. Must have the same length as X.
+
+      @returns The sum of the ranks corresponding to the positive differences (W+ statistic). (Note: This is not a p-value).
+
+      @references https://en.wikipedia.org/wiki/Wilcoxon_signed-rank_test
+
+      @warning Raises EStatsError if arrays have different lengths or if there are no pairs with non-zero differences. Returns the W+ test statistic, not a p-value. A full test involves comparing W+ to critical values or calculating a p-value.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        WStat: Double;
+      begin
+        SetLength(DataX, 6); SetLength(DataY, 6);
+        DataX[0] := 125; DataY[0] := 110; // Diff = 15
+        DataX[1] := 115; DataY[1] := 122; // Diff = -7
+        DataX[2] := 130; DataY[2] := 125; // Diff = 5
+        DataX[3] := 140; DataY[3] := 120; // Diff = 20
+        DataX[4] := 140; DataY[4] := 140; // Diff = 0
+        DataX[5] := 115; DataY[5] := 136; // Diff = -21
+        WStat := TStatsKit.WilcoxonSignedRank(DataX, DataY);
+        // Diffs: [15, -7, 5, 20, -21]. Abs Diffs: [15, 7, 5, 20, 21]. Ranks: [3, 2, 1, 4, 5]
+        // Positive diffs: 15 (Rank 3), 5 (Rank 1), 20 (Rank 4). Sum of ranks = 3 + 1 + 4 = 8.
+        // WStat will be 8.0
+      end;
+    }
     class function WilcoxonSignedRank(const X, Y: TDoubleArray): Double; static;
+
+    {
+      @description Calculates Kendall's rank correlation coefficient (Tau-a).
+
+      @usage Use as a non-parametric measure of the strength and direction of association between two ranked variables. Measures ordinal association. This implementation calculates Tau-a (no correction for ties).
+
+      @param X The first array of Double values.
+      @param Y The second array of Double values. Must have the same length as X.
+
+      @returns Kendall's Tau-a correlation coefficient, ranging from -1 to +1.
+
+      @references https://en.wikipedia.org/wiki/Kendall_rank_correlation_coefficient (Tau-a)
+
+      @warning Raises EStatsError if arrays have different lengths. This implementation is Tau-a, which doesn't adjust for ties. For datasets with many ties, Tau-b or Tau-c might be more appropriate (not implemented here). The formula used assumes no ties for the denominator.
+
+      @example
+      var
+        DataX, DataY: TDoubleArray;
+        KendallTauVal: Double;
+      begin
+        SetLength(DataX, 5); SetLength(DataY, 5);
+        DataX[0] := 1; DataX[1] := 2; DataX[2] := 3; DataX[3] := 4; DataX[4] := 5;
+        DataY[0] := 2; DataY[1] := 1; DataY[2] := 4; DataY[3] := 3; DataY[4] := 5;
+        KendallTauVal := TStatsKit.KendallTau(DataX, DataY);
+        // Concordant Pairs: (1,3), (1,4), (1,5), (2,3), (2,4), (2,5), (3,4), (3,5), (4,5) -> 8 (ignoring (2,1), (4,3))
+        // Discordant Pairs: (2,1), (4,3) -> 2
+        // KendallTauVal will be (8 - 2) / sqrt((8+2)*(8+2)) = 6 / sqrt(100) = 0.6
+      end;
+    }
     class function KendallTau(const X, Y: TDoubleArray): Double; static;
-    
+
     { Hypothesis Testing }
+
+    {
+      @description Performs an independent two-sample Student's t-test assuming equal variances.
+
+      @usage Use to determine if there is a significant difference between the means of two independent groups. Assumes data in both groups are approximately normally distributed and have equal variances.
+
+      @param X The array of Double values for the first group.
+      @param Y The array of Double values for the second group.
+      @param TPValue Output parameter: The calculated two-tailed p-value.
+
+      @returns The calculated t-statistic.
+
+      @references https://en.wikipedia.org/wiki/Student%27s_t-test#Independent_two-sample_t-test
+
+      @warning Raises EStatsError if either group has less than 2 values, if pooled variance is non-positive, or if standard error is zero. Assumes equal variances (use Welch's t-test if variances are unequal - not implemented here). Assumes normality. P-value is calculated using TidyKit.Math.StudentT.
+
+      @example
+      var
+        GroupX, GroupY: TDoubleArray;
+        TStat, PVal: Double;
+      begin
+        SetLength(GroupX, 5); SetLength(GroupY, 6);
+        GroupX[0] := 20; GroupX[1] := 22; GroupX[2] := 19; GroupX[3] := 21; GroupX[4] := 18; // Mean=20
+        GroupY[0] := 24; GroupY[1] := 25; GroupY[2] := 23; GroupY[3] := 26; GroupY[4] := 27; GroupY[5] := 25; // Mean=25
+        TStat := TStatsKit.TTest(GroupX, GroupY, PVal);
+        WriteLn('T-Statistic: ', TStat:0:3);
+        WriteLn('P-Value: ', PVal:0:3);
+        // TStat will be approx -5.145
+        // PVal will be approx 0.001
+      end;
+    }
     class function TTest(const X, Y: TDoubleArray; out TPValue: Double): Double; static;
+
+    {
+      @description Performs the Mann-Whitney U test (also known as Wilcoxon rank-sum test).
+
+      @usage Use as a non-parametric test to determine if there is a difference between two independent groups when the data is not normally distributed. Tests if a randomly selected value from group X is likely to be less than or greater than a randomly selected value from group Y.
+
+      @param X The array of Double values for the first group.
+      @param Y The array of Double values for the second group.
+      @param UPValue Output parameter: The calculated approximate two-tailed p-value using normal approximation (only for large samples).
+
+      @returns The calculated Mann-Whitney U statistic (the minimum of U1 and U2).
+
+      @references https://en.wikipedia.org/wiki/Mann%E2%80%93Whitney_U_test
+
+      @warning Raises EStatsError if either group has less than 2 values. P-value calculation (UPValue) uses normal approximation, which is only accurate for larger sample sizes (e.g., N > 10 in both groups); otherwise, it defaults to 1. Exact p-value calculation for small samples is not implemented. Handles ties by assigning average ranks.
+
+      @example
+      var
+        GroupX, GroupY: TDoubleArray;
+        UStat, PValApprox: Double;
+      begin
+        SetLength(GroupX, 5); SetLength(GroupY, 6);
+        GroupX[0] := 3; GroupX[1] := 5; GroupX[2] := 1; GroupX[3] := 8; GroupX[4] := 7;
+        GroupY[0] := 6; GroupY[1] := 2; GroupY[2] := 4; GroupY[3] := 9; GroupY[4] := 10; GroupY[5] := 11;
+        UStat := TStatsKit.MannWhitneyU(GroupX, GroupY, PValApprox);
+        WriteLn('U Statistic: ', UStat:0:1);
+        WriteLn('Approx P-Value: ', PValApprox:0:3); // Note: Approximation might be poor for small N
+        // UStat will be 8.0
+        // PValApprox will be 1.0 (since N <= 10)
+      end;
+    }
     class function MannWhitneyU(const X, Y: TDoubleArray; out UPValue: Double): Double; static;
+
+    {
+      @description Performs the one-sample Kolmogorov-Smirnov test for normality (Lilliefors modification implied by estimating mean/stddev from data).
+
+      @usage Use to test the null hypothesis that the data comes from a normally distributed population, when the mean and standard deviation are estimated from the sample.
+
+      @param Data An array of Double values.
+      @param KSPValue Output parameter: The calculated Kolmogorov-Smirnov test statistic (maximum absolute difference between empirical and theoretical CDFs). Note: This is the statistic, not the p-value itself.
+
+      @returns The calculated Kolmogorov-Smirnov test statistic (same as KSPValue).
+
+      @references https://en.wikipedia.org/wiki/Kolmogorov%E2%80%93Smirnov_test, https://en.wikipedia.org/wiki/Lilliefors_test
+
+      @warning Raises EStatsError if the array has less than 5 values. The test assumes the mean and standard deviation are estimated from the data (Lilliefors correction). The function returns the test statistic D, not a p-value. KSPValue output parameter also holds the statistic D. Comparing D to critical values is needed for hypothesis testing (e.g., using approximation like 0.886 / Sqrt(N) for alpha=0.05, or more accurate tables/formulas).
+
+      @example
+      var
+        MyData: TDoubleArray;
+        KSStat, KSStatOut: Double;
+      begin
+        SetLength(MyData, 10);
+        // Fill MyData with values, e.g., normally distributed data
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        KSStat := TStatsKit.KolmogorovSmirnovTest(MyData, KSStatOut);
+        WriteLn('K-S Statistic: ', KSStat:0:4);
+        // KSStat and KSStatOut will hold the calculated D statistic.
+        // Further steps needed to compare D to critical value for significance.
+      end;
+    }
     class function KolmogorovSmirnovTest(const Data: TDoubleArray; out KSPValue: Double): Double; static;
-    
+
     { Distribution Tests }
+
+    {
+      @description Tests if data likely comes from a normal distribution using the Kolmogorov-Smirnov test statistic.
+
+      @usage A simplified check for normality based on a fixed critical value approximation for the K-S test.
+
+      @param Data An array of Double values.
+      @param Alpha The significance level (default 0.05). This is used in the comparison logic but the underlying K-S test implementation doesn't directly use it for p-value calculation.
+
+      @returns True if the K-S test statistic is greater than or equal to Alpha (which seems inverted logic - typically K-S statistic < critical value means normality cannot be rejected), False otherwise.
+
+      @warning Raises EStatsError if the array has less than 5 values. The comparison logic `KSPValue >= Alpha` seems incorrect for a standard K-S test interpretation where small statistic values support the null hypothesis (normality). It might be comparing the statistic directly to alpha instead of a critical value derived from alpha. Use with caution and consider the result interpretation carefully.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        IsNorm: Boolean;
+      begin
+        SetLength(MyData, 10);
+        // Fill MyData with values...
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        IsNorm := TStatsKit.IsNormal(MyData); // Uses Alpha = 0.05 default
+        WriteLn('Data likely normal (based on K-S test comparison): ', IsNorm);
+        // Result depends on the K-S statistic and the potentially inverted comparison logic.
+      end;
+    }
     class function IsNormal(const Data: TDoubleArray; const Alpha: Double = 0.05): Boolean; static;
+
+    {
+      @description Performs the Shapiro-Wilk test for normality.
+
+      @usage Use as a powerful test to determine if a sample likely came from a normally distributed population. Generally preferred over K-S test for normality testing, especially for smaller samples.
+
+      @param Data An array of Double values. Sample size must be between 3 and 50.
+      @param WPValue Output parameter: The calculated approximate p-value.
+
+      @returns The calculated Shapiro-Wilk W statistic.
+
+      @references https://en.wikipedia.org/wiki/Shapiro%E2%80%93Wilk_test
+
+      @warning Raises EStatsError if the sample size N is not within the range [3, 50]. Uses an approximation for weights and p-value calculation, which may have limited accuracy. Returns W=0 if variance is zero.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        WStat, PValApprox: Double;
+      begin
+        SetLength(MyData, 10);
+        // Fill MyData with values, e.g., normally distributed data
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        WStat := TStatsKit.ShapiroWilkTest(MyData, PValApprox);
+        WriteLn('Shapiro-Wilk W: ', WStat:0:4);
+        WriteLn('Approx P-Value: ', PValApprox:0:4);
+        // WStat near 1 and PValApprox > alpha (e.g., 0.05) suggest normality.
+      end;
+    }
     class function ShapiroWilkTest(const Data: TDoubleArray; out WPValue: Double): Double; static;
-    
+
     { Effect Size Measures }
+
+    {
+      @description Calculates Cohen's d effect size for two independent groups.
+
+      @usage Use to measure the standardized difference between two means. Indicates the magnitude of the difference, independent of sample size. Uses population standard deviation in calculation.
+
+      @param X The array of Double values for the first group.
+      @param Y The array of Double values for the second group.
+
+      @returns Cohen's d statistic. Common interpretations: 0.2 (small), 0.5 (medium), 0.8 (large effect).
+
+      @references https://en.wikipedia.org/wiki/Effect_size#Cohen's_d
+
+      @warning Raises EStatsError if either group has less than 2 values. Assumes equal variances (uses pooled standard deviation based on population standard deviations). Uses population standard deviation (n denominator) for SDX and SDY.
+
+      @example
+      var
+        GroupX, GroupY: TDoubleArray;
+        DVal: Double;
+      begin
+        SetLength(GroupX, 5); SetLength(GroupY, 6);
+        GroupX[0] := 20; GroupX[1] := 22; GroupX[2] := 19; GroupX[3] := 21; GroupX[4] := 18; // Mean=20, PopSD=1.41
+        GroupY[0] := 24; GroupY[1] := 25; GroupY[2] := 23; GroupY[3] := 26; GroupY[4] := 27; GroupY[5] := 25; // Mean=25, PopSD=1.29
+        DVal := TStatsKit.CohensD(GroupX, GroupY);
+        WriteLn('Cohen''s d: ', DVal:0:3);
+        // DVal will be approximately -3.71
+      end;
+    }
     class function CohensD(const X, Y: TDoubleArray): Double; static;
+
+    {
+      @description Calculates Hedges' g effect size for two independent groups.
+
+      @usage Use as an alternative to Cohen's d, providing a correction for bias, especially in small samples.
+
+      @param X The array of Double values for the first group.
+      @param Y The array of Double values for the second group.
+
+      @returns Hedges' g statistic.
+
+      @references https://en.wikipedia.org/wiki/Effect_size#Hedges'_g
+
+      @warning Raises EStatsError if either group has less than 2 values (via CohensD). Calculation relies on CohensD result.
+
+      @example
+      var
+        GroupX, GroupY: TDoubleArray;
+        GVal: Double;
+      begin
+        SetLength(GroupX, 5); SetLength(GroupY, 6);
+        GroupX[0] := 20; GroupX[1] := 22; GroupX[2] := 19; GroupX[3] := 21; GroupX[4] := 18;
+        GroupY[0] := 24; GroupY[1] := 25; GroupY[2] := 23; GroupY[3] := 26; GroupY[4] := 27; GroupY[5] := 25;
+        GVal := TStatsKit.HedgesG(GroupX, GroupY);
+        WriteLn('Hedges'' g: ', GVal:0:3);
+        // GVal will be Cohen's d multiplied by a correction factor slightly less than 1. Approx -3.57
+      end;
+    }
     class function HedgesG(const X, Y: TDoubleArray): Double; static;
-    
+
     { Additional Measures }
+
+    {
+      @description Calculates the Standard Error of the Mean (SEM).
+
+      @usage Use to estimate the standard deviation of the sample mean based on the sample standard deviation and sample size. Measures the precision of the sample mean as an estimate of the population mean.
+
+      @param Data An array of Double values.
+
+      @returns The Standard Error of the Mean (SEM).
+
+      @references https://en.wikipedia.org/wiki/Standard_error#Standard_error_of_the_mean
+
+      @warning Raises EStatsError if the array has less than 2 values. Uses sample standard deviation (n-1 denominator).
+
+      @example
+      var
+        MyData: TDoubleArray;
+        SEMVal: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        // SampleStdDev approx 0.45
+        SEMVal := TStatsKit.StandardErrorOfMean(MyData);
+        WriteLn('SEM: ', SEMVal:0:4);
+        // SEMVal will be approx 0.142 (0.45 / sqrt(10))
+      end;
+    }
     class function StandardErrorOfMean(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the Coefficient of Variation (CV).
+
+      @usage Use to measure the relative variability of data, expressed as a percentage of the mean. Useful for comparing variability between datasets with different means.
+
+      @param Data An array of Double values. Uses population standard deviation.
+
+      @returns The Coefficient of Variation (CV) as a percentage.
+
+      @references https://en.wikipedia.org/wiki/Coefficient_of_variation
+
+      @warning Raises EStatsError if the input array is empty or if the mean is zero. Uses population standard deviation (n denominator).
+
+      @example
+      var
+        MyData: TDoubleArray;
+        CVVal: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 10; MyData[1] := 11; MyData[2] := 12; MyData[3] := 13; MyData[4] := 14; // Mean=12, PopStdDev=1.414
+        CVVal := TStatsKit.CoefficientOfVariation(MyData);
+        WriteLn('CV: ', CVVal:0:2, '%');
+        // CVVal will be approx 11.79% ( (1.414 / 12) * 100 )
+      end;
+    }
     class function CoefficientOfVariation(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates the Q-th quantile of the dataset using linear interpolation.
+
+      @usage Use to find the value below which a given fraction Q of observations fall. Equivalent to Percentile(Data, Q * 100).
+
+      @param Data An array of Double values. The array is copied and sorted internally.
+      @param Q The quantile to calculate (0 <= Q <= 1).
+
+      @returns The value corresponding to the Q-th quantile.
+
+      @references Method R-7 (Excel, R default) - https://en.wikipedia.org/wiki/Quantile#Estimating_quantiles_from_a_sample
+
+      @warning Raises EStatsError if Q is outside the [0, 1] range or if the input array is empty.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        QVal: Double;
+      begin
+        SetLength(MyData, 10);
+        MyData[0] := 1; MyData[1] := 2; MyData[2] := 3; MyData[3] := 4; MyData[4] := 5;
+        MyData[5] := 6; MyData[6] := 7; MyData[7] := 8; MyData[8] := 9; MyData[9] := 10;
+        QVal := TStatsKit.Quantile(MyData, 0.90); // 90th percentile
+        // QVal will be 9.1
+      end;
+    }
     class function Quantile(const Data: TDoubleArray; const Q: Double): Double; static;
-    
+
     { Robust Statistics }
+
+    {
+      @description Calculates a robust estimate of the standard deviation using the Median Absolute Deviation (MAD).
+
+      @usage Use as a robust alternative to standard deviation when data may contain outliers. Assumes underlying data is approximately normal for the scaling factor to be accurate.
+
+      @param Data An array of Double values.
+
+      @returns The robust standard deviation estimate (MAD * 1.4826).
+
+      @references https://en.wikipedia.org/wiki/Median_absolute_deviation#Relation_to_standard_deviation
+
+      @warning Raises EStatsError if the input array is empty (via MedianAbsoluteDeviation). The scaling factor 1.4826 assumes normality; the estimate may be less accurate for non-normal distributions.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        RobStdDev: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0; MyData[4] := 100.0; // Outlier
+        // MAD is 1.0
+        RobStdDev := TStatsKit.RobustStandardDeviation(MyData);
+        WriteLn('Robust StdDev: ', RobStdDev:0:4);
+        // RobStdDev will be 1.4826 (1.0 * 1.4826)
+      end;
+    }
     class function RobustStandardDeviation(const Data: TDoubleArray): Double; static;
+
+    {
+      @description Calculates Huber's M-estimator for robust location estimation.
+
+      @usage Use as a robust estimate of the central tendency, less sensitive to outliers than the mean. It's a weighted mean where outliers receive lower weights.
+
+      @param Data An array of Double values.
+      @param K Tuning constant (default 1.5). Controls the trade-off between efficiency at the normal distribution and robustness against outliers. Common values are 1.345 or 1.5.
+
+      @returns Huber's M-estimate of location.
+
+      @references https://en.wikipedia.org/wiki/M-estimator#Huber's_M-estimator_of_location
+
+      @warning Raises EStatsError if the input array is empty. Returns the median if MAD is zero. The choice of K affects the result.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        HuberEst: Double;
+      begin
+        SetLength(MyData, 5);
+        MyData[0] := 1.0; MyData[1] := 2.0; MyData[2] := 3.0; MyData[3] := 4.0; MyData[4] := 100.0; // Outlier
+        // Median = 3.0, MAD = 1.0, K = 1.5
+        // Weights: 1, 1, 1, 1, (1.5*1)/|100-3| = 1.5/97 approx 0.015
+        HuberEst := TStatsKit.HuberM(MyData, 1.5);
+        WriteLn('Huber M-Estimate (k=1.5): ', HuberEst:0:4);
+        // HuberEst will be closer to the median than the mean. Approx 2.85
+      end;
+    }
     class function HuberM(const Data: TDoubleArray; const K: Double = 1.5): Double; static;
-    
+
     { Bootstrap Methods }
+
+    {
+      @description Generates bootstrap samples of the mean.
+
+      @usage Use to estimate the sampling distribution of the mean by repeatedly resampling with replacement from the original data and calculating the mean for each sample.
+
+      @param Data The original array of Double values.
+      @param Iterations The number of bootstrap samples to generate.
+
+      @returns An array containing the means calculated from each bootstrap sample.
+
+      @warning Requires the random number generator to be seeded (e.g., using Randomize). The number of iterations should be sufficiently large (e.g., 1000 or more) for stable results.
+
+      @example
+      var
+        MyData, BootMeans: TDoubleArray;
+        I: Integer;
+      begin
+        Randomize;
+        SetLength(MyData, 10);
+        // Fill MyData with values...
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        BootMeans := TStatsKit.BootstrapMean(MyData, 1000);
+        // BootMeans now contains 1000 mean values from bootstrap samples
+        WriteLn('First 5 bootstrap means:');
+        for I := 0 to 4 do WriteLn(BootMeans[I]:0:4);
+        // Calculate stats on BootMeans, e.g., TStatsKit.Mean(BootMeans)
+      end;
+    }
     class function BootstrapMean(const Data: TDoubleArray; const Iterations: Integer): TDoubleArray; static;
-    class function BootstrapConfidenceInterval(const Data: TDoubleArray; 
+
+    {
+      @description Calculates a bootstrap percentile confidence interval for the mean.
+
+      @usage Use to estimate a confidence interval for the population mean using bootstrap resampling, without assuming normality.
+
+      @param Data The original array of Double values.
+      @param Alpha The significance level (e.g., 0.05 for a 95% CI). Default is 0.05.
+      @param Iterations The number of bootstrap samples to generate. Default is 1000.
+
+      @returns A TDoublePair record where Lower is the lower bound and Upper is the upper bound of the confidence interval.
+
+      @references https://en.wikipedia.org/wiki/Bootstrapping_(statistics)#Bootstrap_percentile_interval
+
+      @warning Requires the random number generator to be seeded. Accuracy depends on the number of iterations. Raises errors from underlying functions (BootstrapMean, Percentile) if conditions aren't met.
+
+      @example
+      var
+        MyData: TDoubleArray;
+        CI: TDoublePair;
+      begin
+        Randomize;
+        SetLength(MyData, 20);
+        // Fill MyData with values...
+        MyData[0] := 10.1; MyData[1] := 9.8; MyData[2] := 10.3; MyData[3] := 11.0; MyData[4] := 9.5;
+        MyData[5] := 10.0; MyData[6] := 10.2; MyData[7] := 9.9; MyData[8] := 10.5; MyData[9] := 9.7;
+        MyData[10] := 10.1; MyData[11] := 9.8; MyData[12] := 10.3; MyData[13] := 11.0; MyData[14] := 9.5;
+        MyData[15] := 10.0; MyData[16] := 10.2; MyData[17] := 9.9; MyData[18] := 10.5; MyData[19] := 9.7;
+
+        CI := TStatsKit.BootstrapConfidenceInterval(MyData, 0.05, 2000); // 95% CI, 2000 iterations
+        WriteLn('95% Bootstrap CI for Mean: [', CI.Lower:0:4, ', ', CI.Upper:0:4, ']');
+      end;
+    }
+    class function BootstrapConfidenceInterval(const Data: TDoubleArray;
       const Alpha: Double = 0.05; const Iterations: Integer = 1000): TDoublePair; static;
   end;
 
 implementation
 
 { TStatsKit }
+
+class procedure TStatsKit.Exchange(var A, B: Double);
+var
+  Temp: Double;
+begin
+  Temp := A;
+  A := B;
+  B := Temp;
+end;
+
+class procedure TStatsKit.ExchangeInt(var A, B: Integer);
+var
+  Temp: Integer;
+begin
+  Temp := A;
+  A := B;
+  B := Temp;
+end;
 
 class function TStatsKit.Mean(const Data: TDoubleArray): Double;
 begin
@@ -379,26 +1691,29 @@ class function TStatsKit.SpearmanCorrelation(const X, Y: TDoubleArray): Double;
 var
   N, I: Integer;
   RankX, RankY: TDoubleArray;
-  
+  TempValue: Double;  // Temp variable for GetRanks swap
+  TempGroup: Integer; // Temp variable for GetRanks swap
+
   function GetRanks(const Data: TDoubleArray): TDoubleArray;
   var
     I, J, TieCount: Integer;
     SortedIndices: array of Integer;
     SortedData: TDoubleArray;
     TieRankSum: Double;
+    AverageRank: Double; // Added for clarity in tie handling
   begin
     SetLength(SortedIndices, Length(Data));
     SetLength(SortedData, Length(Data));
     SetLength(Result, Length(Data));
-    
+
     // Initialize indices and copy data
     for I := 0 to High(Data) do
     begin
       SortedIndices[I] := I;
       SortedData[I] := Data[I];
     end;
-    
-    // Sort indices based on data values
+
+    // Sort indices based on data values using original Exchange helpers
     for I := 0 to High(Data) - 1 do
       for J := I + 1 to High(Data) do
         if SortedData[J] < SortedData[I] then
@@ -406,46 +1721,47 @@ var
           Exchange(SortedData[I], SortedData[J]);
           ExchangeInt(SortedIndices[I], SortedIndices[J]);
         end;
-    
-    // Assign ranks, handling ties
+
+    // Assign ranks, handling ties (restored original logic)
     I := 0;
     while I <= High(Data) do
     begin
       TieCount := 1;
       TieRankSum := I + 1;
-      
-      // Count ties
+
+      // Count ties (original condition)
       while (I < High(Data)) and (SortedData[I] = SortedData[I + 1]) do
       begin
         Inc(I);
         Inc(TieCount);
         TieRankSum := TieRankSum + I + 1;
       end;
-      
-      // Assign average rank for ties
+
+      // Assign average rank for ties (restored original logic)
       if TieCount > 1 then
       begin
+        AverageRank := TieRankSum / TieCount; // Calculate average rank
         for J := I - TieCount + 1 to I do
-          Result[SortedIndices[J]] := TieRankSum / TieCount;
+          Result[SortedIndices[J]] := AverageRank;
       end
       else
-        Result[SortedIndices[I]] := I + 1;
-      
+        Result[SortedIndices[I]] := I + 1; // Assign rank if no tie
+
       Inc(I);
     end;
   end;
-  
+
 begin
   N := Length(X);
   if N <> Length(Y) then
     raise EStatsError.Create('Arrays must have equal length for Spearman correlation');
   if N < 2 then
     raise EStatsError.Create('Cannot calculate correlation with less than 2 values');
-  
+
   // Get ranks for both arrays
   RankX := GetRanks(X);
   RankY := GetRanks(Y);
-  
+
   // Calculate Pearson correlation of ranks
   Result := PearsonCorrelation(RankX, RankY);
 end;
@@ -524,24 +1840,6 @@ begin
         Data[I] := Data[J];
         Data[J] := Temp;
       end;
-end;
-
-class procedure TStatsKit.Exchange(var A, B: Double);
-var
-  Temp: Double;
-begin
-  Temp := A;
-  A := B;
-  B := Temp;
-end;
-
-class procedure TStatsKit.ExchangeInt(var A, B: Integer);
-var
-  Temp: Integer;
-begin
-  Temp := A;
-  A := B;
-  B := Temp;
 end;
 
 class function TStatsKit.Describe(const Data: TDoubleArray): TDescriptiveStats;
@@ -915,7 +2213,7 @@ begin
     Inc(I);
   end;
   
-  // Calculate U statistics
+  // Calculate rank sum for positive differences
   RankSum := 0;
   for I := 0 to High(AllData) do
     if AllData[I].Group = 1 then
@@ -1037,7 +2335,7 @@ begin
   
   // Pooled standard deviation
   PooledSD := Sqrt(((Length(X) - 1) * Sqr(SDX) + (Length(Y) - 1) * Sqr(SDY)) / 
-                   (Length(X) + Length(Y) - 2));
+               (Length(X) + Length(Y) - 2));
                    
   Result := (MeanX - MeanY) / PooledSD;
 end;

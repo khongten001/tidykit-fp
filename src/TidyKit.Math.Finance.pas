@@ -1,5 +1,33 @@
 unit TidyKit.Math.Finance;
 
+{-----------------------------------------------------------------------------
+ TidyKit.Math.Finance
+
+ A library for financial mathematics and analysis in Free Pascal
+ 
+ This unit provides:
+ - Time Value of Money (PV, FV, Payment, NPV, IRR, Compound Interest, Effective Annual Rate)
+ - Loan Amortization Schedule generation
+ - Depreciation methods (Straight-Line, Declining Balance)
+ - Investment appraisal (ROI, ROE, Break-Even Analysis)
+ - Bond calculations (Price, Yield to Maturity, Modified Duration)
+ - Option pricing (Black-Scholes model for European options)
+ - Financial ratio analysis (Working Capital, Leverage, Profitability, DuPont, Operating Leverage)
+ - Risk-adjusted performance metrics (Sharpe Ratio, Treynor Ratio, Jensen's Alpha, Information Ratio)
+ - Capital budgeting and cost of capital (WACC, CAPM)
+ - Stock valuation (Gordon Growth Model)
+ 
+ Design principles:
+ - Static class methods for calculations
+ - Uses TDoubleArray from TidyKit.Math for cash flows and relevant data inputs
+ - Time is handled via periods/years (Integer/Double), not TDateTime directly
+ - Provides specific record types for structured analysis results (TWorkingCapitalRatios, TLeverageRatios, etc.)
+ - Includes error handling using EFinanceError for common calculation issues
+ - Relies on standard financial formulas and models
+ - Most calculations use discrete period compounding; Black-Scholes uses continuous compounding
+ - Provides comprehensive documentation for each function
+-----------------------------------------------------------------------------}
+
 {$mode objfpc}{$H+}{$J-}
 
 interface
@@ -17,8 +45,8 @@ type
   { Working Capital Ratios }
   TWorkingCapitalRatios = record
     CurrentRatio: Double;           // Current Assets / Current Liabilities
-    QuickRatio: Double;            // (Current Assets - Inventory) / Current Liabilities
-    CashRatio: Double;             // Cash / Current Liabilities
+    QuickRatio: Double;             // (Current Assets - Inventory) / Current Liabilities
+    CashRatio: Double;              // Cash / Current Liabilities
     WorkingCapitalTurnover: Double; // Sales / Working Capital
   end;
 
@@ -43,7 +71,7 @@ type
     ProfitMargin: Double;     // Net Income / Sales
     AssetTurnover: Double;    // Sales / Total Assets
     EquityMultiplier: Double; // Total Assets / Total Equity
-    ROE: Double;             // Final ROE from DuPont Analysis
+    ROE: Double;              // Final ROE from DuPont Analysis
   end;
 
   { Operating Leverage Analysis }
@@ -493,8 +521,20 @@ type
         end;
     }
     class function BondYieldToMaturity(const ABondPrice, AFaceValue, ACouponRate: Double;
-      const APeriodsPerYear, AYearsToMaturity: Integer; const ADecimals: Integer = 4): Double; static;
-    
+                                       const APeriodsPerYear, AYearsToMaturity: Integer;
+                                       const ADecimals: Integer = 4): Double; static;
+
+    { ArmotizationPayment type for calculating amortization schedule}
+    type
+      TAmortizationPayment = record
+        PaymentNumber: Integer;
+        Payment: Double;
+        Principal: Double;
+        Interest: Double;
+        RemainingBalance: Double;
+      end;
+      TAmortizationArray = array of TAmortizationPayment;
+
     {
       @description Calculates the principal and interest portions of a loan payment.
                    Returns array of records containing payment details.
@@ -539,8 +579,9 @@ type
           end;
         end;
     }
-    class function AmortizationSchedule(const ALoanAmount, ARate: Double; 
-      const ANumberOfPayments: Integer; const ADecimals: Integer = 4): TAmortizationArray; static;
+    class function AmortizationSchedule(const ALoanAmount, ARate: Double;
+                                        const ANumberOfPayments: Integer;
+                                        const ADecimals: Integer = 4): TAmortizationArray; static;
       
     {
       @description Converts nominal rates to effective annual rates considering compounding frequency.
@@ -1089,295 +1130,8 @@ type
         end;
     }
     class function GordonGrowthModel(const ACurrentDividend, AGrowthRate, ARequiredReturn: Double;
-      const ADecimals: Integer = 4): Double; static;
-
-    {
-      @description Calculates the payback period for an investment.
-                   The payback period is the time required to recover the initial investment.
-    
-      @usage Use to determine how long it takes to recover the initial cost of an investment
-    
-      @param AInitialInvestment The initial cost of the investment
-      @param AAnnualCashFlows An array of annual cash flows in chronological order
-    
-      @returns The payback period in years (may include fractional years if cash flow is not uniform)
-    
-      @references Corporate Finance Institute
-    
-      @warning Ignores the time value of money. For a more accurate analysis, consider using NPV.
-               Returns -1 if the investment never pays back (all cash flows are negative or sum < investment).
-    
-      @example
-        var
-          PaybackTime: Double;
-          CashFlows: array of Double;
-        begin
-          // For an investment with initial cost of $10,000 and the following annual cash flows:
-          SetLength(CashFlows, 5);
-          CashFlows[0] := 2000;  // Year 1
-          CashFlows[1] := 2500;  // Year 2
-          CashFlows[2] := 3000;  // Year 3
-          CashFlows[3] := 4000;  // Year 4
-          CashFlows[4] := 4500;  // Year 5
-          
-          PaybackTime := TFinanceKit.PaybackPeriod(10000, CashFlows);
-          // Returns approximately 3.63 years (3 years and ~7.5 months)
-        end;
-    }
-    class function PaybackPeriod(const AInitialInvestment: Double;
-      const AAnnualCashFlows: array of Double): Double; static;
-
-    {
-      @description Calculates various depreciation methods for asset valuation.
-                   Supported methods include:
-                   - Straight Line (SL)
-                   - Double Declining Balance (DDB)
-                   - Sum of Years' Digits (SYD)
-    
-      @usage Use to estimate the depreciation expense for an asset over time
-    
-      @param AInitialCost The initial cost of the asset
-      @param ASalvageValue The estimated salvage value at the end of useful life
-      @param AUsefulLife The useful life of the asset in years
-      @param AYear The year for which to calculate depreciation (1-based)
-      @param AMethod The depreciation method to use: dmStraightLine, dmDoubleDeclining, or dmSumOfYears
-      @param ADecimals Number of decimal places to round to (default: 4)
-    
-      @returns The depreciation amount for the specified year
-    
-      @references IAS 16 (Property, Plant and Equipment)
-    
-      @warning Raises EFinanceError if parameters are invalid or if AYear is outside the useful life range.
-               For partial years, fractional values of AYear may be used.
-    
-      @example
-        var
-          DepreciationAmount: Double;
-        begin
-          // Calculate depreciation for a machine with:
-          // - Initial cost: $50,000
-          // - Salvage value: $5,000
-          // - Useful life: 5 years
-          // - Year 3
-          // - Straight line method
-          DepreciationAmount := TFinanceKit.Depreciation(50000, 5000, 5, 3, dmStraightLine);
-          // Returns $9,000 per year (($50,000 - $5,000) / 5)
-        end;
-    }
-    class function Depreciation(const AInitialCost, ASalvageValue: Double;
-      const AUsefulLife: Integer; const AYear: Double; 
-      const AMethod: TDepreciationMethod; const ADecimals: Integer = 4): Double; static;
-
-    {
-      @description Calculates the number of days between two dates using various day count conventions.
-                   Supports methods including:
-                   - Actual/Actual
-                   - Actual/360
-                   - Actual/365
-                   - 30/360 European
-                   - 30/360 US
-    
-      @usage Use for interest calculations in financial instruments like bonds and loans
-    
-      @param AStartDate The starting date
-      @param AEndDate The ending date
-      @param ADayCountConvention The day count convention to use (default: dc30E360)
-      @param ADecimals Number of decimal places to round to (default: 0)
-    
-      @returns The number of days between dates according to the specified convention, rounded to ADecimals
-    
-      @references International Swaps and Derivatives Association (ISDA)
-    
-      @warning Each day count convention has different implications for interest calculations.
-               Actual/360 and Actual/365 are commonly used for money market instruments,
-               while 30/360 conventions are common for bonds.
-    
-      @example
-        var
-          Days: Double;
-          StartDate, EndDate: TDateTime;
-        begin
-          StartDate := EncodeDate(2023, 1, 15);
-          EndDate := EncodeDate(2023, 7, 15);
-          
-          // Calculate days using Actual/365 convention
-          Days := TFinanceKit.ArbDayCount(StartDate, EndDate, dcActual365);
-          // If actual days = 181, returns 181
-          
-          // Calculate days using 30/360 US convention
-          Days := TFinanceKit.ArbDayCount(StartDate, EndDate, dc30US360);
-          // Returns 180 (6 months × 30 days)
-        end;
-    }
-    class function ArbDayCount(const AStartDate, AEndDate: TDateTime;
-      const ADayCountConvention: TDayCountConvention = dc30E360;
-      const ADecimals: Integer = 0): Double; static;
-
-    {
-      @description Calculates the Convexity of a bond.
-                   Convexity is a measure of the curvature in the relationship between bond 
-                   prices and bond yields, and is a risk management tool.
-    
-      @usage Use to measure the sensitivity of a bond's duration to changes in yield
-    
-      @param AYield The yield to maturity (as a decimal, e.g., 0.05 for 5%)
-      @param ATimeToMaturity The time to maturity in years
-      @param ACouponRate The annual coupon rate (as a decimal, e.g., 0.04 for 4%)
-      @param AFrequency The number of coupon payments per year (default: 2)
-      @param ADecimals Number of decimal places to round to (default: 4)
-    
-      @returns The Convexity measure, rounded to ADecimals places
-    
-      @references Fixed Income Securities by Frank J. Fabozzi
-    
-      @warning Higher convexity is generally desirable for investors as it means the bond's 
-               price will increase more for a given decrease in yield than it will fall for the 
-               same increase in yield. This function assumes a par bond ($100 face value).
-               The calculation uses the formula: Convexity = Sum(t(t+1)CF_t/(1+y)^t) / (P*(1+y)^2)
-               where t is time, CF_t is cash flow at time t, y is yield per period, and P is price.
-    
-      @example
-        var
-          BondConvexity: Double;
-        begin
-          // Calculate Convexity for a bond with:
-          // - Yield to maturity: 5%
-          // - Time to maturity: 10 years
-          // - Coupon rate: 4%
-          // - Semi-annual payments
-          BondConvexity := TFinanceKit.Convexity(0.05, 10, 0.04, 2);
-          // Returns the Convexity measure
-        end;
-    }
-    class function Convexity(const AYield, ATimeToMaturity, ACouponRate: Double;
-      const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double; static;
-
-    {
-      @description Calculates Macaulay Duration of a bond.
-                   The Macaulay Duration is the weighted average time until cash flows are received.
-    
-      @usage Use to measure the sensitivity of a bond to interest rate changes
-    
-      @param AYield The yield to maturity (as a decimal, e.g., 0.05 for 5%)
-      @param ACouponRate The annual coupon rate (as a decimal, e.g., 0.04 for 4%)
-      @param ATimeToMaturity The time to maturity in years
-      @param AFrequency The number of coupon payments per year (default: 2)
-      @param ADecimals Number of decimal places to round to (default: 4)
-    
-      @returns The Macaulay Duration in years, rounded to ADecimals places
-    
-      @references Fixed Income Securities by Frank J. Fabozzi
-    
-      @warning Zero-coupon bonds have a duration equal to their time to maturity.
-               This function assumes a par bond ($100 face value).
-               The calculation sums weighted cash flows divided by the present value: 
-               Duration = Sum(t*CF_t/(1+y)^t) / Sum(CF_t/(1+y)^t)
-               where t is time, CF_t is cash flow at time t, and y is yield per period.
-    
-      @example
-        var
-          Duration: Double;
-        begin
-          // Calculate Macaulay Duration for a bond with:
-          // - Yield to maturity: 5%
-          // - Coupon rate: 4%
-          // - Time to maturity: 5 years
-          // - Semi-annual payments
-          Duration := TFinanceKit.MacaulayDuration(0.05, 0.04, 5, 2);
-          // Returns the Macaulay Duration in years
-        end;
-    }
-    class function MacaulayDuration(const AYield, ACouponRate, ATimeToMaturity: Double;
-      const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double; static;
-
-    {
-      @description Calculates the Future Value of a series of cash flows.
-                   This is the value that a series of payments will grow to at a future date.
-    
-      @usage Use to calculate the future value of multiple cash flows at different times
-    
-      @param ACashFlows An array of cash flows
-      @param APeriods An array of periods (time units) corresponding to each cash flow
-      @param ARate The interest rate per period (as a decimal, e.g., 0.05 for 5%)
-      @param ADecimals Number of decimal places to round to (default: 4)
-    
-      @returns The future value of the cash flows, rounded to ADecimals places
-    
-      @references Financial Mathematics: A Practical Guide for Actuaries
-    
-      @warning Length of ACashFlows must match length of APeriods.
-               Periods should be in consistent time units matching the rate (e.g., years).
-    
-      @example
-        var
-          FV: Double;
-          CashFlows: array of Double;
-          Periods: array of Double;
-        begin
-          // Calculate future value of different investments at different times
-          SetLength(CashFlows, 3);
-          SetLength(Periods, 3);
-          
-          CashFlows[0] := 1000;  // $1,000 invested
-          CashFlows[1] := 2000;  // $2,000 invested
-          CashFlows[2] := 1500;  // $1,500 invested
-          
-          Periods[0] := 5;  // 5 years from now
-          Periods[1] := 3;  // 3 years from now
-          Periods[2] := 1;  // 1 year from now
-          
-          FV := TFinanceKit.FutureValueCashFlows(CashFlows, Periods, 0.07);
-          // Returns the future value with 7% annual interest
-        end;
-    }
-    class function FutureValueCashFlows(const ACashFlows: array of Double;
-      const APeriods: array of Double; const ARate: Double;
-      const ADecimals: Integer = 4): Double; static;
-
-    {
-      @description Calculates the Present Value of a series of cash flows.
-                   This is the current value of a series of future payments.
-    
-      @usage Use to determine the current value of multiple future cash flows at different times
-    
-      @param ACashFlows An array of cash flows
-      @param APeriods An array of periods (time units) corresponding to each cash flow
-      @param ARate The discount rate per period (as a decimal, e.g., 0.05 for 5%)
-      @param ADecimals Number of decimal places to round to (default: 4)
-    
-      @returns The present value of the cash flows, rounded to ADecimals places
-    
-      @references Financial Mathematics: A Practical Guide for Actuaries
-    
-      @warning Length of ACashFlows must match length of APeriods.
-               Periods should be in consistent time units matching the rate (e.g., years).
-    
-      @example
-        var
-          PV: Double;
-          CashFlows: array of Double;
-          Periods: array of Double;
-        begin
-          // Calculate present value of different future payments at different times
-          SetLength(CashFlows, 3);
-          SetLength(Periods, 3);
-          
-          CashFlows[0] := 1000;  // $1,000 received
-          CashFlows[1] := 2000;  // $2,000 received
-          CashFlows[2] := 1500;  // $1,500 received
-          
-          Periods[0] := 5;  // 5 years from now
-          Periods[1] := 3;  // 3 years from now
-          Periods[2] := 1;  // 1 year from now
-          
-          PV := TFinanceKit.PresentValueCashFlows(CashFlows, Periods, 0.07);
-          // Returns the present value with 7% annual discount rate
-        end;
-    }
-    class function PresentValueCashFlows(const ACashFlows: array of Double;
-      const APeriods: array of Double; const ARate: Double;
-      const ADecimals: Integer = 4): Double; static;
-  end;
+                                     const ADecimals: Integer = 4): Double; static;
+    end;
 
 implementation
 
@@ -1978,16 +1732,23 @@ end;
 class function TFinanceKit.WACC(const AEquityValue, ADebtValue, ACostOfEquity, ACostOfDebt, ATaxRate: Double;
   const ADecimals: Integer = 4): Double;
 var
-  TotalValue: Double;
+  TotalValue, EquityWeight: Double;
 begin
-  if (AEquityValue < 0) or (ADebtValue < 0) or (ACostOfEquity < 0) or (ACostOfDebt < 0) or (ATaxRate < 0) or (ATaxRate > 1) then
-    raise EFinanceError.Create('Invalid input parameters');
-    
+  if (ATaxRate < 0) or (ATaxRate > 1) then
+    raise EFinanceError.Create('Tax rate must be between 0 and 1');
+
   TotalValue := AEquityValue + ADebtValue;
-  if TotalValue <= 0 then
-    raise EFinanceError.Create('Total value must be positive');
-    
-  Result := (AEquityValue / TotalValue) * ACostOfEquity + (ADebtValue / TotalValue) * ACostOfDebt * (1 - ATaxRate);
+  if Abs(TotalValue) < 1E-10 then
+    raise EFinanceError.Create('Total firm value must be non-zero');
+
+  // Calculate weights ensuring they sum to exactly 1
+  EquityWeight := AEquityValue / TotalValue;
+
+  Result := SimpleRoundTo(
+    (EquityWeight * ACostOfEquity) +
+    ((1 - EquityWeight) * ACostOfDebt * (1 - ATaxRate)),
+    -ADecimals
+  );
 end;
 
 class function TFinanceKit.CAPM(const ARiskFreeRate, ABeta, AExpectedMarketReturn: Double;
@@ -2008,194 +1769,5 @@ begin
   Result := ACurrentDividend * (1 + AGrowthRate) / (ARequiredReturn - AGrowthRate);
 end;
 
-class function TFinanceKit.PaybackPeriod(const AInitialInvestment: Double;
-  const AAnnualCashFlows: array of Double): Double;
-var
-  TotalCashFlow, YearlyCashFlow: Double;
-  I: Integer;
-begin
-  TotalCashFlow := 0;
-  for I := 0 to High(AAnnualCashFlows) do
-    TotalCashFlow := TotalCashFlow + AAnnualCashFlows[I];
-  
-  if TotalCashFlow = 0 then
-  begin
-    Result := -1;
-    Exit;
-  end;
-  
-  YearlyCashFlow := AInitialInvestment / TotalCashFlow;
-  Result := YearlyCashFlow * Length(AAnnualCashFlows);
-end;
 
-class function TFinanceKit.Depreciation(const AInitialCost, ASalvageValue: Double;
-  const AUsefulLife: Integer; const AYear: Double; 
-  const AMethod: TDepreciationMethod; const ADecimals: Integer = 4): Double;
-var
-  DepreciationRate: Double;
-  DepreciableAmount: Double;
-  DepreciationAmount: Double;
-begin
-  if AUsefulLife <= 0 then
-    raise EFinanceError.Create('Useful life must be positive');
-  if AYear <= 0 then
-    raise EFinanceError.Create('Year must be positive');
-  if AYear > AUsefulLife then
-    raise EFinanceError.Create('Year is beyond the useful life');
-  
-  DepreciableAmount := AInitialCost - ASalvageValue;
-  
-  case AMethod of
-    dmStraightLine:
-      DepreciationRate := 1 / AUsefulLife;
-    dmDoubleDeclining:
-      DepreciationRate := 2 / AUsefulLife;
-    dmSumOfYears:
-      DepreciationRate := AYear / (AUsefulLife * (AUsefulLife + 1) / 2);
-    else
-      raise EFinanceError.Create('Invalid depreciation method');
-  end;
-  
-  DepreciationAmount := SimpleRoundTo(DepreciableAmount * DepreciationRate, -ADecimals);
-  Result := SimpleRoundTo(DepreciationAmount, -ADecimals);
-end;
-
-class function TFinanceKit.ArbDayCount(const AStartDate, AEndDate: TDateTime;
-  const ADayCountConvention: TDayCountConvention = dc30E360;
-  const ADecimals: Integer = 0): Double;
-var
-  StartDate, EndDate: TDateTime;
-  Days: Integer;
-begin
-  StartDate := Trunc(AStartDate);
-  EndDate := Trunc(AEndDate);
-  
-  case ADayCountConvention of
-    dcActual360:
-      Days := EndDate - StartDate;
-    dcActual365:
-      Days := Trunc(DateDiff(EndDate, StartDate, ddDays));
-    dc30E360:
-      Days := (EndDate.Day - StartDate.Day) + 30 * (EndDate.Month - StartDate.Month) + 360 * (EndDate.Year - StartDate.Year);
-    dc30US360:
-      Days := (EndDate.Day - StartDate.Day) + 30 * (EndDate.Month - StartDate.Month) + 360 * (EndDate.Year - StartDate.Year);
-    else
-      raise EFinanceError.Create('Invalid day count convention');
-  end;
-  
-  Result := SimpleRoundTo(Days, ADecimals);
-end;
-
-class function TFinanceKit.Convexity(const AYield, ATimeToMaturity, ACouponRate: Double;
-  const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double;
-var
-  N, I: Integer;
-  T, C, YieldPerPeriod, PV, Sum, Denominator: Double;
-  FaceValue: Double;
-begin
-  // Check for valid inputs
-  if AFrequency <= 0 then
-    raise EFinanceError.Create('Frequency must be positive');
-  if ATimeToMaturity <= 0 then
-    raise EFinanceError.Create('Time to maturity must be positive');
-  
-  // Set face value to 100 (standard for bond calculations)
-  FaceValue := 100;
-  
-  // Calculate period-based values
-  YieldPerPeriod := AYield / AFrequency;
-  C := (ACouponRate * FaceValue) / AFrequency;  // Coupon payment per period
-  N := Round(ATimeToMaturity * AFrequency);     // Total number of periods
-  
-  // Initialize summation
-  Sum := 0;
-  Denominator := 0;
-  
-  // Calculate the numerator sum for convexity
-  for I := 1 to N do
-  begin
-    T := I / AFrequency;
-    PV := C / Power(1 + YieldPerPeriod, I);
-    Sum := Sum + (T * (T + 1) * PV);
-    Denominator := Denominator + PV;
-  end;
-  
-  // Add the final payment (principal + last coupon)
-  PV := FaceValue / Power(1 + YieldPerPeriod, N);
-  Sum := Sum + (ATimeToMaturity * (ATimeToMaturity + 1) * PV);
-  Denominator := Denominator + PV;
-  
-  // Calculate convexity
-  Result := Sum / (Denominator * Sqr(1 + YieldPerPeriod));
-  
-  // Convert to years based on frequency
-  Result := Result / Sqr(AFrequency);
-  
-  // Round to specified decimal places
-  Result := SimpleRoundTo(Result, -ADecimals);
-end;
-
-class function TFinanceKit.MacaulayDuration(const AYield, ACouponRate, ATimeToMaturity: Double;
-  const AFrequency: Integer = 2; const ADecimals: Integer = 4): Double;
-var
-  N, I: Integer;
-  T, C, YTM, PV, Sum1, Sum2: Double;
-begin
-  if AFrequency <= 0 then
-    raise EFinanceError.Create('Frequency must be positive');
-  if ATimeToMaturity <= 0 then
-    raise EFinanceError.Create('Time to maturity must be positive');
-  
-  YTM := AYield / AFrequency;
-  C := ACouponRate / AFrequency;
-  N := Round(ATimeToMaturity * AFrequency);
-  
-  Sum1 := 0;
-  Sum2 := 0;
-  
-  for I := 1 to N do
-  begin
-    T := I / AFrequency;
-    PV := Power(1 + YTM, -T);
-    Sum1 := Sum1 + (T * C * PV);
-  end;
-  
-  PV := Power(1 + YTM, -ATimeToMaturity);
-  Sum2 := ATimeToMaturity * PV;
-  
-  Result := (Sum1 + Sum2) / (1 + YTM/AFrequency);
-  Result := SimpleRoundTo(Result, -ADecimals);
-end;
-
-class function TFinanceKit.FutureValueCashFlows(const ACashFlows: array of Double;
-  const APeriods: array of Double; const ARate: Double;
-  const ADecimals: Integer = 4): Double;
-var
-  I: Integer;
-  FV, DiscountFactor: Double;
-begin
-  FV := 0;
-  for I := 0 to High(ACashFlows) do
-  begin
-    DiscountFactor := Power(1 + ARate, APeriods[I]);
-    FV := FV + ACashFlows[I] / DiscountFactor;
-  end;
-  Result := SimpleRoundTo(FV, -ADecimals);
-end;
-
-class function TFinanceKit.PresentValueCashFlows(const ACashFlows: array of Double;
-  const APeriods: array of Double; const ARate: Double;
-  const ADecimals: Integer = 4): Double;
-var
-  I: Integer;
-  PV, DiscountFactor: Double;
-begin
-  PV := 0;
-  for I := 0 to High(ACashFlows) do
-  begin
-    DiscountFactor := Power(1 + ARate, -APeriods[I]);
-    PV := PV + ACashFlows[I] * DiscountFactor;
-  end;
-  Result := SimpleRoundTo(PV, -ADecimals);
-end;
 end. 

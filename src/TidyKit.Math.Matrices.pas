@@ -9,19 +9,21 @@ unit TidyKit.Math.Matrices;
  A comprehensive matrix algebra library for Free Pascal
  
  This unit provides:
- - Complete matrix operations (arithmetic, transformations, properties)
- - Efficient sparse and dense matrix implementations
- - Matrix decompositions (LU, QR, SVD, Cholesky, Eigendecomposition)
- - Iterative methods for solving linear systems
- - Statistical functions
- - Specialized matrices (Hilbert, Toeplitz, Vandermonde)
+ - Basic matrix operations (addition, subtraction, multiplication)
+ - Matrix transformations (transpose, inverse)
+ - Matrix properties (determinant, trace, rank)
+ - Dense matrix implementation
+ - Matrix decompositions (LU, QR)
+ - Direct methods for solving linear systems
+ - Basic statistical functions (mean, variance, covariance)
  
  Design principles:
  - Interface-based architecture for flexibility
  - Value semantics for matrix operations (operations return new matrices)
- - Support for both dense and sparse matrix representations
+ - Focus on dense matrix representations
  - Numerically stable implementations of key algorithms
- - Comprehensive error checking
+ - Comprehensive error checking and exception handling
+ - Cache-aware optimizations for performance (see BLOCK_SIZE constant)
 -----------------------------------------------------------------------------}
 
 interface
