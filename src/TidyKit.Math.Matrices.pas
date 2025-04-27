@@ -128,80 +128,849 @@ type
     All operations return new matrices rather than modifying existing ones }
   IMatrix = interface
     ['{F8A7B320-7A1D-4E85-9B12-E77D2B5C8A9E}']
+    {
+      @description Gets the number of rows in the matrix.
+
+      @usage Use to determine the vertical dimension of the matrix.
+
+      @returns Integer representing the number of rows.
+
+      @warning None.
+
+      @example
+        var NumRows: Integer;
+        NumRows := MyMatrix.GetRows;
+    }
     function GetRows: Integer;
+
+    {
+      @description Gets the number of columns in the matrix.
+
+      @usage Use to determine the horizontal dimension of the matrix.
+
+      @returns Integer representing the number of columns.
+
+      @warning Returns 0 for an empty matrix (0 rows).
+
+      @example
+        var NumCols: Integer;
+        NumCols := MyMatrix.GetCols;
+    }
     function GetCols: Integer;
+
+    {
+      @description Retrieves the value of an element at a specific row and column.
+
+      @usage Use to access individual matrix elements.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+
+      @returns The Double value at the specified position.
+
+      @warning Raises EMatrixError if indices are out of bounds.
+
+      @example
+        var Val: Double;
+        Val := MyMatrix.GetValue(1, 2);
+    }
     function GetValue(Row, Col: Integer): Double;
+
+    {
+      @description Sets the value of an element at a specific row and column.
+
+      @usage Use to modify individual matrix elements.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+      @param Value The new Double value to set.
+
+      @warning Raises EMatrixError if indices are out of bounds.
+
+      @example
+        MyMatrix.SetValue(1, 2, 3.14);
+    }
     procedure SetValue(Row, Col: Integer; const Value: Double);
-    
+
     { Basic operations }
+    {
+      @description Performs element-wise addition of two matrices (A + B).
+
+      @usage To add two matrices of the same dimensions.
+
+      @param Other The matrix to add to the current matrix.
+
+      @returns A new IMatrix containing the result of the addition.
+
+      @warning Raises EMatrixError if matrix dimensions do not match.
+
+      @example
+        var SumMatrix: IMatrix;
+        SumMatrix := MatrixA.Add(MatrixB);
+    }
     function Add(const Other: IMatrix): IMatrix;
+
+    {
+      @description Performs element-wise subtraction of two matrices (A - B).
+
+      @usage To subtract one matrix from another of the same dimensions.
+
+      @param Other The matrix to subtract from the current matrix.
+
+      @returns A new IMatrix containing the result of the subtraction.
+
+      @warning Raises EMatrixError if matrix dimensions do not match.
+
+      @example
+        var DiffMatrix: IMatrix;
+        DiffMatrix := MatrixA.Subtract(MatrixB);
+    }
     function Subtract(const Other: IMatrix): IMatrix;
+
+    {
+      @description Performs matrix multiplication (A * B).
+
+      @usage To multiply two compatible matrices.
+
+      @param Other The right-hand side matrix for multiplication.
+
+      @returns A new IMatrix containing the product.
+
+      @warning Raises EMatrixError if the inner dimensions (Cols of A, Rows of B) do not match. Uses block multiplication for potential performance gains on larger matrices.
+
+      @example
+        var ProductMatrix: IMatrix;
+        ProductMatrix := MatrixA.Multiply(MatrixB);
+    }
     function Multiply(const Other: IMatrix): IMatrix;
+
+    {
+      @description Multiplies every element of the matrix by a scalar value (k * A).
+
+      @usage To scale a matrix.
+
+      @param Scalar The scalar value to multiply by.
+
+      @returns A new IMatrix containing the scaled matrix.
+
+      @warning None.
+
+      @example
+        var ScaledMatrix: IMatrix;
+        ScaledMatrix := MyMatrix.ScalarMultiply(2.5);
+    }
     function ScalarMultiply(const Scalar: Double): IMatrix;
-    
+
     { Matrix transformations }
+    {
+      @description Computes the transpose of the matrix (A^T).
+
+      @usage To swap rows and columns of a matrix.
+
+      @returns A new IMatrix representing the transpose.
+
+      @warning None.
+
+      @example
+        var TransposedMatrix: IMatrix;
+        TransposedMatrix := MyMatrix.Transpose;
+    }
     function Transpose: IMatrix;
+
+    {
+      @description Computes the inverse of a square matrix (A^-1).
+
+      @usage To find the matrix B such that A * B = I (identity matrix).
+
+      @returns A new IMatrix representing the inverse.
+
+      @warning Raises EMatrixError if the matrix is not square or is singular (determinant is close to zero). Uses LU decomposition.
+
+      @example
+        var InverseMatrix: IMatrix;
+        try
+          InverseMatrix := MySquareMatrix.Inverse;
+        except
+          on E: EMatrixError do Writeln('Matrix is not invertible: ', E.Message);
+        end;
+    }
     function Inverse: IMatrix;
+
+    {
+      @description Computes the Moore-Penrose pseudoinverse (A^+).
+
+      @usage To find a generalized inverse for non-square or singular matrices, often used in least-squares solutions.
+
+      @returns A new IMatrix representing the pseudoinverse.
+
+      @references Moore-Penrose pseudoinverse. Uses SVD.
+
+      @warning Computationally more intensive than standard inverse.
+
+      @example
+        var PseudoInvMatrix: IMatrix;
+        PseudoInvMatrix := MyMatrix.PseudoInverse;
+    }
     function PseudoInverse: IMatrix;
-    
+
     { Matrix functions }
+    {
+      @description Computes the matrix exponential (e^A) using a Taylor series expansion.
+
+      @usage In solving systems of linear differential equations.
+
+      @returns A new IMatrix representing the matrix exponential.
+
+      @references Taylor series expansion: e^A = I + A + A^2/2! + A^3/3! + ...
+
+      @warning Requires a square matrix. The series approximation has limited terms (N=20), potentially affecting accuracy for some matrices.
+
+      @example
+        var ExpMatrix: IMatrix;
+        ExpMatrix := MySquareMatrix.Exp;
+    }
     function Exp: IMatrix;  // Matrix exponential
+
+    {
+      @description Computes the matrix power (A^p) for a real exponent p.
+
+      @usage To raise a matrix to a given power.
+
+      @param exponent The power (can be integer or real).
+
+      @returns A new IMatrix representing A raised to the power p.
+
+      @warning Requires a square matrix. For non-integer exponents, uses SVD and computes U * S^p * V^T. For negative integer exponents, computes powers of the inverse. Raises EMatrixError if inversion fails for negative exponents.
+
+      @example
+        var MatrixSquared, MatrixSqrt, MatrixInv: IMatrix;
+        MatrixSquared := MySquareMatrix.Power(2);
+        MatrixSqrt := MySquareMatrix.Power(0.5);
+        MatrixInv := MySquareMatrix.Power(-1); // Equivalent to Inverse
+    }
     function Power(exponent: Double): IMatrix;
-    
+
     { Matrix properties }
+    {
+      @description Computes the determinant of a square matrix.
+
+      @usage To find a scalar value representing properties of a linear transformation, check invertibility.
+
+      @returns The determinant value (Double).
+
+      @warning Raises EMatrixError if the matrix is not square. Uses recursive cofactor expansion for calculation, which can be computationally expensive (O(n!)) for large matrices. LU decomposition is generally preferred for larger matrices.
+
+      @example
+        var Det: Double;
+        Det := MySquareMatrix.Determinant;
+        if Abs(Det) < 1E-12 then Writeln('Matrix might be singular');
+    }
     function Determinant: Double;
+
+    {
+      @description Computes the trace of a square matrix (sum of diagonal elements).
+
+      @usage In various matrix analysis contexts, related to the sum of eigenvalues.
+
+      @returns The trace value (Double).
+
+      @warning Raises EMatrixError if the matrix is not square.
+
+      @example
+        var Tr: Double;
+        Tr := MySquareMatrix.Trace;
+    }
     function Trace: Double;
+
+    {
+      @description Computes the rank of the matrix (number of linearly independent rows or columns).
+
+      @usage To determine the dimensionality of the vector space spanned by the matrix's rows or columns.
+
+      @returns The rank (Integer).
+
+      @references Uses Gaussian elimination to find row echelon form.
+
+      @warning Uses a tolerance (1E-12) for numerical stability when checking for zero rows. Rank might be sensitive to this tolerance.
+
+      @example
+        var Rnk: Integer;
+        Rnk := MyMatrix.Rank;
+    }
     function Rank: Integer;
+
+    {
+      @description Checks if the matrix is square (number of rows equals number of columns).
+
+      @usage To verify if operations requiring square matrices (like determinant, inverse, trace) are applicable.
+
+      @returns True if the matrix is square, False otherwise.
+
+      @warning None.
+
+      @example
+        if MyMatrix.IsSquare then
+          // Proceed with square-matrix operations
+    }
     function IsSquare: Boolean;
+
+    {
+      @description Checks if the matrix is symmetric (A = A^T).
+
+      @usage To verify symmetry, required for certain algorithms like Cholesky decomposition.
+
+      @returns True if the matrix is symmetric, False otherwise.
+
+      @warning Requires a square matrix. Uses direct element comparison (A[i,j] = A[j,i]), floating-point inaccuracies might affect results for near-symmetric matrices. Consider using a tolerance check if needed.
+
+      @example
+        if MyMatrix.IsSymmetric then
+          // Matrix is symmetric
+    }
     function IsSymmetric: Boolean;
+
+    {
+      @description Checks if the matrix is diagonal (non-zero elements only on the main diagonal).
+
+      @usage To identify diagonal matrices, which have simpler properties.
+
+      @returns True if the matrix is diagonal, False otherwise.
+
+      @warning Requires a square matrix. Checks if off-diagonal elements are exactly zero.
+
+      @example
+        if MyMatrix.IsDiagonal then
+          // Matrix is diagonal
+    }
     function IsDiagonal: Boolean;
+
+    {
+      @description Checks if the matrix is triangular (upper or lower).
+
+      @usage To identify triangular matrices, useful in solving linear systems.
+
+      @param Upper If True (default), checks for upper triangular (zeros below diagonal). If False, checks for lower triangular (zeros above diagonal).
+
+      @returns True if the matrix is triangular of the specified type, False otherwise.
+
+      @warning Requires a square matrix. Checks if relevant off-diagonal elements are exactly zero.
+
+      @example
+        if MyMatrix.IsTriangular(True) then Writeln('Upper triangular');
+        if MyMatrix.IsTriangular(False) then Writeln('Lower triangular');
+    }
     function IsTriangular(Upper: Boolean = True): Boolean;
+
+    {
+      @description Checks if the matrix is positive definite.
+
+      @usage Required for Cholesky decomposition. Indicates certain properties related to eigenvalues and quadratic forms (x^T*A*x > 0).
+
+      @returns True if the matrix is symmetric and positive definite, False otherwise.
+
+      @warning Requires a square matrix. Current implementation only checks if determinant > 0 and diagonal elements > 0, which is NOT a sufficient condition for positive definiteness. A more robust check (e.g., via Cholesky decomposition attempt or eigenvalues) is needed for guaranteed accuracy.
+
+      @example
+        // Warning: Current implementation is not fully reliable.
+        if MyMatrix.IsPositiveDefinite then
+           // Matrix might be positive definite (based on limited check)
+    }
     function IsPositiveDefinite: Boolean;
+
+    {
+      @description Checks if the matrix is positive semidefinite.
+
+      @usage In optimization and statistics. Indicates properties related to eigenvalues and quadratic forms (x^T*A*x >= 0).
+
+      @returns True if the matrix is symmetric and positive semidefinite, False otherwise.
+
+      @warning Requires a square matrix. Current implementation only checks if determinant >= 0 and diagonal elements >= 0, which is NOT a sufficient condition for positive semidefiniteness. A more robust check is needed.
+
+      @example
+        // Warning: Current implementation is not fully reliable.
+        if MyMatrix.IsPositiveSemidefinite then
+          // Matrix might be positive semidefinite (based on limited check)
+    }
     function IsPositiveSemidefinite: Boolean;
+
+    {
+      @description Checks if the matrix is orthogonal (A^T * A = I).
+
+      @usage To identify matrices that preserve vector lengths and angles under transformation (rotations, reflections).
+
+      @returns True if the matrix is orthogonal, False otherwise.
+
+      @warning Requires a square matrix. Computes A * A^T and compares it to the identity matrix using a tolerance (1E-12).
+
+      @example
+        if MyMatrix.IsOrthogonal then
+          // Matrix represents an orthogonal transformation
+    }
     function IsOrthogonal: Boolean;
+
+    {
+      @description Computes the condition number of the matrix (using the 1-norm).
+
+      @usage To estimate the sensitivity of the solution of a linear system Ax=b to changes in A or b. High condition numbers indicate ill-conditioning.
+
+      @returns The condition number (||A||₁ * ||A⁻¹||₁). Returns MaxDouble if the matrix is singular.
+
+      @warning Requires a square matrix. Based on the 1-norm. Calculation involves matrix inversion, which can be computationally intensive and potentially unstable for ill-conditioned matrices.
+
+      @example
+        var CondNum: Double;
+        CondNum := MySquareMatrix.Condition;
+        if CondNum > 1000 then Writeln('Warning: Matrix might be ill-conditioned');
+    }
     function Condition: Double;
-    
+
     { Vector operations }
+    {
+      @description Checks if the matrix represents a vector (has only one row or one column).
+
+      @usage To determine if vector-specific operations (like dot product, cross product, normalization) are applicable.
+
+      @returns True if the matrix has 1 row or 1 column, False otherwise.
+
+      @warning None.
+
+      @example
+        if MyMatrix.IsVector then
+          // Treat as a vector
+    }
     function IsVector: Boolean;
+
+    {
+      @description Checks if the matrix represents a column vector (has only one column).
+
+      @usage To identify column vectors specifically.
+
+      @returns True if the matrix has 1 column, False otherwise.
+
+      @warning None.
+
+      @example
+        if MyMatrix.IsColumnVector then
+          // It's a column vector
+    }
     function IsColumnVector: Boolean;
+
+    {
+      @description Checks if the matrix represents a row vector (has only one row).
+
+      @usage To identify row vectors specifically.
+
+      @returns True if the matrix has 1 row, False otherwise.
+
+      @warning None.
+
+      @example
+        if MyMatrix.IsRowVector then
+          // It's a row vector
+    }
     function IsRowVector: Boolean;
+
+    {
+      @description Computes the dot product (scalar product) of two vectors.
+
+      @usage To calculate the projection of one vector onto another, or in various geometric and algebraic formulas.
+
+      @param Other The second vector for the dot product.
+
+      @returns The scalar result of the dot product.
+
+      @warning Raises EMatrixError if either operand is not a vector or if dimensions are incompatible for dot product (e.g., row vector dot column vector requires matching inner dimension).
+
+      @example
+        var DotRes: Double;
+        DotRes := VectorA.DotProduct(VectorB);
+    }
     function DotProduct(const Other: IMatrix): Double;
+
+    {
+      @description Computes the cross product of two 3D column vectors.
+
+      @usage In 3D geometry and physics to find a vector perpendicular to two given vectors.
+
+      @param Other The second 3D column vector.
+
+      @returns A new 3D column vector representing the cross product.
+
+      @warning Raises EMatrixError if either operand is not a 3D column vector.
+
+      @example
+        var CrossVec: IMatrix;
+        CrossVec := Vector3DA.CrossProduct(Vector3DB);
+    }
     function CrossProduct(const Other: IMatrix): IMatrix; // For 3D vectors
+
+    {
+      @description Normalizes a vector to have unit length (Euclidean norm = 1).
+
+      @usage To obtain a unit vector pointing in the same direction as the original vector.
+
+      @returns A new IMatrix representing the normalized vector.
+
+      @warning Raises EMatrixError if the input is not a vector or if it's a zero vector (cannot normalize).
+
+      @example
+        var UnitVec: IMatrix;
+        UnitVec := MyVector.Normalize;
+    }
     function Normalize: IMatrix;
-    
+
     { Statistical operations }
+    {
+      @description Computes the mean of matrix elements along a specified axis.
+
+      @usage To find the average value(s) of the matrix data.
+
+      @param Axis Axis along which to compute the mean: -1 for overall mean (returns 1x1 matrix), 0 for column means (returns 1xCols matrix), 1 for row means (returns Rowsx1 matrix). Default is -1.
+
+      @returns An IMatrix containing the mean(s).
+
+      @warning Raises EMatrixError if Axis value is invalid.
+
+      @example
+        var OverallMean, ColMeans, RowMeans: IMatrix;
+        OverallMean := MyDataMatrix.Mean(-1); // Or MyDataMatrix.Mean
+        ColMeans := MyDataMatrix.Mean(0);
+        RowMeans := MyDataMatrix.Mean(1);
+    }
     function Mean(Axis: Integer = -1): IMatrix; // -1 = overall, 0 = rows, 1 = columns
+
+    {
+      @description Computes the sample covariance matrix of the data.
+
+      @usage To measure how much variables change together. Assumes rows are observations and columns are variables.
+
+      @returns A new square IMatrix (Cols x Cols) representing the covariance matrix.
+
+      @warning Raises EMatrixError if the matrix has fewer than 2 rows or 2 columns. Uses N-1 in the denominator for sample covariance.
+
+      @example
+        var CovMat: IMatrix;
+        CovMat := MyDataMatrix.Covariance;
+    }
     function Covariance: IMatrix;
+
+    {
+      @description Computes the sample correlation matrix of the data.
+
+      @usage To measure the linear correlation between variables, scaled between -1 and 1. Assumes rows are observations and columns are variables.
+
+      @returns A new square IMatrix (Cols x Cols) representing the correlation matrix.
+
+      @warning Raises EMatrixError if the matrix has fewer than 2 rows or 2 columns. Derived from the covariance matrix. Values are 0 if standard deviation of a variable is zero.
+
+      @example
+        var CorrMat: IMatrix;
+        CorrMat := MyDataMatrix.Correlation;
+    }
     function Correlation: IMatrix;
-    
+
     { Matrix norms }
+    {
+      @description Computes the 1-norm (maximum absolute column sum) of the matrix.
+
+      @usage As a measure of matrix magnitude, often used in condition number estimation.
+
+      @returns The 1-norm value (Double).
+
+      @warning None.
+
+      @example
+        var Norm1: Double;
+        Norm1 := MyMatrix.NormOne;
+    }
     function NormOne: Double;     // Column sum norm
+
+    {
+      @description Computes the infinity-norm (maximum absolute row sum) of the matrix.
+
+      @usage As a measure of matrix magnitude.
+
+      @returns The infinity-norm value (Double).
+
+      @warning None.
+
+      @example
+        var NormInfVal: Double;
+        NormInfVal := MyMatrix.NormInf;
+    }
     function NormInf: Double;     // Row sum norm
+
+    {
+      @description Computes the Frobenius norm of the matrix (sqrt of sum of squares of elements).
+
+      @usage As a measure of matrix magnitude, equivalent to Euclidean norm of the matrix treated as a vector.
+
+      @returns The Frobenius norm value (Double).
+
+      @warning None.
+
+      @example
+        var NormFrob: Double;
+        NormFrob := MyMatrix.NormFrobenius;
+    }
     function NormFrobenius: Double; // Frobenius norm
-    
+
     { Matrix decompositions }
+    {
+      @description Computes the LU decomposition of a square matrix with partial pivoting (PA = LU).
+
+      @usage To solve linear systems (Ax=b), compute determinants, and inverses efficiently.
+
+      @returns A TLUDecomposition record containing L (lower triangular), U (upper triangular), and P (permutation indices).
+
+      @references Gaussian elimination with partial pivoting.
+
+      @warning Raises EMatrixError if the matrix is not square or is singular (detected during pivoting).
+
+      @example
+        var LUResult: TLUDecomposition;
+        try
+          LUResult := MySquareMatrix.LU;
+          // Use LUResult.L, LUResult.U, LUResult.P
+        except
+          on E: EMatrixError do Writeln('LU decomposition failed: ', E.Message);
+        end;
+    }
     function LU: TLUDecomposition;
+
+    {
+      @description Computes the QR decomposition of a matrix (A = QR).
+
+      @usage To solve linear systems, least-squares problems, and in eigenvalue algorithms (QR algorithm).
+
+      @returns A TQRDecomposition record containing Q (orthogonal matrix) and R (upper triangular matrix).
+
+      @references Gram-Schmidt orthogonalization process (current implementation). Householder reflections are often preferred for numerical stability.
+
+      @warning Raises EMatrixError if matrix columns are linearly dependent (detected during normalization in Gram-Schmidt). Gram-Schmidt can be sensitive to numerical errors.
+
+      @example
+        var QRResult: TQRDecomposition;
+        try
+          QRResult := MyMatrix.QR;
+          // Use QRResult.Q, QRResult.R
+        except
+          on E: EMatrixError do Writeln('QR decomposition failed: ', E.Message);
+        end;
+    }
     function QR: TQRDecomposition;
+
+    {
+      @description Computes the eigendecomposition of a square matrix (A = VDV⁻¹).
+
+      @usage To find eigenvalues and eigenvectors, used in stability analysis, PCA, etc.
+
+      @returns A TEigenDecomposition record containing EigenValues (array of Double) and EigenVectors (matrix with eigenvectors as columns).
+
+      @references Uses QR algorithm with shifts for general matrices, direct calculation for 2x2.
+
+      @warning Raises EMatrixError if the matrix is not square. QR algorithm is iterative and might not converge within MaxIterations, potentially returning approximate results (a warning is printed). Convergence tolerance (1E-8) affects accuracy. Handles specific 2x2 test case directly. May struggle with complex eigenvalues (returns real part for 2x2). Eigenvector calculation for 2x2 case has specific handling for edge cases.
+
+      @example
+        var EigResult: TEigenDecomposition;
+        try
+          EigResult := MySquareMatrix.EigenDecomposition;
+          // Use EigResult.EigenValues, EigResult.EigenVectors
+        except
+          on E: EMatrixError do Writeln('Eigendecomposition failed: ', E.Message);
+        end;
+    }
     function EigenDecomposition: TEigenDecomposition;
+
+    {
+      @description Computes the Singular Value Decomposition (SVD) of a matrix (A = USV^T).
+
+      @usage For pseudoinverse calculation, rank determination, dimensionality reduction (PCA), least-squares, data analysis.
+
+      @returns A TSVD record containing U (orthogonal), S (diagonal with singular values), and V (orthogonal).
+
+      @references Algorithm based on Householder reduction to bidiagonal form followed by QR-like iteration. (e.g., Numerical Recipes).
+
+      @warning Can be computationally intensive. Iterative part might fail to converge (raises EMatrixError). Uses tolerance (1E-12).
+
+      @example
+        var SVDResult: TSVD;
+        try
+          SVDResult := MyMatrix.SVD;
+          // Use SVDResult.U, SVDResult.S, SVDResult.V
+        except
+          on E: EMatrixError do Writeln('SVD failed: ', E.Message);
+        end;
+    }
     function SVD: TSVD;
+
+    {
+      @description Computes the Cholesky decomposition of a symmetric positive definite matrix (A = LL^T).
+
+      @usage A fast method for solving linear systems (Ax=b) and checking positive definiteness when applicable.
+
+      @returns A TCholeskyDecomposition record containing L (lower triangular matrix).
+
+      @references Cholesky–Banachiewicz algorithm.
+
+      @warning Raises EMatrixError if the matrix is not square or not positive definite (check fails during computation, e.g., sqrt of negative). Relies on IsPositiveDefinite check which might be unreliable.
+
+      @example
+        var CholResult: TCholeskyDecomposition;
+        try
+          CholResult := MySymPosDefMatrix.Cholesky;
+          // Use CholResult.L
+        except
+          on E: EMatrixError do Writeln('Cholesky decomposition failed: ', E.Message);
+        end;
+    }
     function Cholesky: TCholeskyDecomposition;
-    
+
     { Iterative methods }
-    function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
+    {
+      @description Solves a linear system Ax = b using iterative methods.
+
+      @usage For large, sparse systems where direct methods (like LU or QR) are too slow or memory-intensive. Suitable for well-conditioned systems.
+
+      @param B The right-hand side column vector (matrix with 1 column).
+      @param Method The iterative method to use (imConjugateGradient, imGaussSeidel, imJacobi). Default is imConjugateGradient.
+      @param MaxIterations Maximum number of iterations allowed. Default is 1000.
+      @param Tolerance Convergence tolerance based on relative residual norm. Default is 1E-10.
+
+      @returns An IMatrix (column vector) representing the approximate solution x.
+
+      @warning Requires a square matrix A. B must be a column vector with matching rows. Convergence is not guaranteed for all matrices or methods (especially Jacobi and Gauss-Seidel). Conjugate Gradient requires A to be symmetric positive definite for guaranteed convergence. Raises EMatrixError if diagonal elements are near zero for Jacobi/Gauss-Seidel. Returns the current approximation if MaxIterations is reached without convergence.
+
+      @example
+        var X, B: IMatrix;
+        // Assume A is a large square matrix, B is a column vector
+        try
+          X := A.SolveIterative(B, imGaussSeidel, 5000, 1e-8);
+          // Use solution X
+        except
+          on E: EMatrixError do Writeln('Iterative solve failed: ', E.Message);
+        end;
+    }
+    function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient;
                             MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
+
+    {
+      @description Finds the dominant eigenvalue (largest magnitude) and corresponding eigenvector using the Power Iteration method.
+
+      @usage To estimate the principal eigenvalue/eigenvector, e.g., in ranking algorithms or stability analysis.
+
+      @param MaxIterations Maximum number of iterations. Default is 100.
+      @param Tolerance Convergence tolerance based on change in eigenvalue estimate. Default is 1E-10.
+
+      @returns A TEigenpair record containing the dominant EigenValue and normalized EigenVector.
+
+      @warning Requires a square matrix. Convergence is guaranteed only if there's a unique dominant eigenvalue and the initial vector has a component in the direction of the corresponding eigenvector. Convergence rate depends on the ratio of the dominant eigenvalue to the next largest. May converge to an eigenvalue with negative sign if it has the largest magnitude. Handles a specific 2x2 test case directly. Raises EMatrixError if normalization fails (vector becomes zero).
+
+      @example
+        var EigPair: TEigenpair;
+        try
+          EigPair := MySquareMatrix.PowerMethod(200, 1e-9);
+          Writeln('Dominant Eigenvalue: ', EigPair.EigenValue);
+          // Use EigPair.EigenVector
+        except
+          on E: EMatrixError do Writeln('Power method failed: ', E.Message);
+        end;
+    }
     function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
-    
+
     { Block operations }
+    {
+      @description Extracts a submatrix (block) from the current matrix.
+
+      @usage To work with parts of a larger matrix.
+
+      @param StartRow 0-based starting row index.
+      @param StartCol 0-based starting column index.
+      @param NumRows Number of rows in the submatrix.
+      @param NumCols Number of columns in the submatrix.
+
+      @returns A new IMatrix containing the extracted submatrix.
+
+      @warning Raises EMatrixError if the specified dimensions are invalid or extend beyond the original matrix boundaries.
+
+      @example
+        var SubMat: IMatrix;
+        SubMat := MyMatrix.GetSubMatrix(1, 1, 2, 2); // Extracts the 2x2 block starting at (1,1)
+    }
     function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+
+    {
+      @description Overwrites a block within the current matrix with the values from another matrix.
+
+      @usage To insert or replace a part of a matrix.
+
+      @param StartRow 0-based starting row index in the destination matrix.
+      @param StartCol 0-based starting column index in the destination matrix.
+      @param SubMatrix The matrix whose values will be copied into the block.
+
+      @warning Raises EMatrixError if the submatrix dimensions plus start indices extend beyond the destination matrix boundaries. Modifies the current matrix in place.
+
+      @example
+        var BlockToInsert: IMatrix;
+        BlockToInsert := TMatrixKit.Ones(2, 2);
+        MyMatrix.SetSubMatrix(0, 0, BlockToInsert); // Overwrites top-left 2x2 block with ones
+    }
     procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
-    
+
     { Element-wise operations }
+    {
+      @description Performs element-wise multiplication (Hadamard product) of two matrices (C[i,j] = A[i,j] * B[i,j]).
+
+      @usage In various algorithms where element-by-element products are needed.
+
+      @param Other The second matrix for element-wise multiplication.
+
+      @returns A new IMatrix containing the element-wise product.
+
+      @warning Raises EMatrixError if matrix dimensions do not match.
+
+      @example
+        var HadamardProduct: IMatrix;
+        HadamardProduct := MatrixA.ElementWiseMultiply(MatrixB);
+    }
     function ElementWiseMultiply(const Other: IMatrix): IMatrix;
+
+    {
+      @description Performs element-wise division of two matrices (C[i,j] = A[i,j] / B[i,j]).
+
+      @usage Where element-by-element division is required.
+
+      @param Other The matrix containing the divisors.
+
+      @returns A new IMatrix containing the element-wise division result.
+
+      @warning Raises EMatrixError if matrix dimensions do not match or if any element in the Other matrix is zero (division by zero). Uses tolerance 1E-12 to check for zero.
+
+      @example
+        var ElementWiseQuotient: IMatrix;
+        try
+          ElementWiseQuotient := MatrixA.ElementWiseDivide(MatrixB);
+        except
+          on E: EMatrixError do Writeln('Element-wise division failed: ', E.Message);
+        end;
+    }
     function ElementWiseDivide(const Other: IMatrix): IMatrix;
-    
+
     { String representation }
+    {
+      @description Creates a string representation of the matrix for display.
+
+      @usage For debugging or printing matrix contents.
+
+      @returns A string with matrix elements formatted and aligned in columns.
+
+      @warning Formatting includes trimming trailing zeros from floating-point numbers. Column widths adjust to the widest number in each column.
+
+      @example
+        Writeln(MyMatrix.ToString);
+    }
     function ToString: string;
-    
+
     property Rows: Integer read GetRows;
     property Cols: Integer read GetCols;
     property Values[Row, Col: Integer]: Double read GetValue write SetValue; default;
@@ -213,372 +982,1068 @@ type
   private
     { Underlying 2D array to store matrix elements in dense format }
     FData: array of array of Double;
-    
+
     { Basic accessor methods }
+    {
+      @description Gets the number of rows in the matrix. Implementation for TMatrixKit.
+
+      @usage Internal use and via IMatrix interface.
+
+      @returns Integer representing the number of rows.
+
+      @warning None.
+
+      @example (Internal) Result := Length(FData);
+    }
     function GetRows: Integer;
+
+    {
+      @description Gets the number of columns in the matrix. Implementation for TMatrixKit.
+
+      @usage Internal use and via IMatrix interface.
+
+      @returns Integer representing the number of columns.
+
+      @warning Returns 0 if the matrix has 0 rows.
+
+      @example (Internal) Result := Length(FData[0]);
+    }
     function GetCols: Integer;
+
+    {
+      @description Retrieves the value of an element at a specific row and column. Implementation for TMatrixKit.
+
+      @usage Internal use and via IMatrix interface. Accesses the FData array directly.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+
+      @returns The Double value at the specified position.
+
+      @warning Raises EMatrixError if indices are out of bounds.
+
+      @example (Internal) Result := FData[Row, Col];
+    }
     function GetValue(Row, Col: Integer): Double; virtual;
+
+    {
+      @description Sets the value of an element at a specific row and column. Implementation for TMatrixKit.
+
+      @usage Internal use and via IMatrix interface. Modifies the FData array directly.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+      @param Value The new Double value to set.
+
+      @warning Raises EMatrixError if indices are out of bounds.
+
+      @example (Internal) FData[Row, Col] := Value;
+    }
     procedure SetValue(Row, Col: Integer; const Value: Double); virtual;
-    
+
     { Helper methods for numerical algorithms }
-    { Swaps two rows in the matrix, used for pivoting operations in LU and Gaussian elimination }
+    {
+      @description Swaps two rows in the matrix data array (FData).
+
+      @usage Internal helper for algorithms requiring row pivoting (e.g., Gaussian elimination, LU decomposition). Modifies the matrix in place.
+
+      @param Row1 Index of the first row to swap.
+      @param Row2 Index of the second row to swap.
+
+      @warning Raises EMatrixError if row indices are invalid. Modifies the internal FData directly.
+
+      @example (Internal) Self.SwapRows(0, 1);
+    }
     procedure SwapRows(Row1, Row2: Integer);
-    
-    { Finds the index of the row with maximum absolute value in a column, starting from StartRow
-      Used for numerical stability in LU decomposition with partial pivoting }
+
+    {
+      @description Finds the index of the row (from StartRow downwards) containing the element with the largest absolute value in a specific column.
+
+      @usage Internal helper for partial pivoting in algorithms like LU decomposition to improve numerical stability.
+
+      @param StartRow The starting row index for the search.
+      @param Col The column index to search within.
+
+      @returns The 0-based index of the pivot row.
+
+      @warning Assumes StartRow and Col are valid indices within the matrix dimensions.
+
+      @example (Internal) PivotIdx := Self.FindPivot(K, K);
+    }
     function FindPivot(StartRow, Col: Integer): Integer;
-    
-    { Solves an upper triangular system Ux = b using back substitution
-      Parameters:
-        Upper: Upper triangular matrix U
-        b: Right-hand side vector
-      Returns: Solution vector x }
+
+    {
+      @description Solves an upper triangular linear system Ux = b using back substitution.
+
+      @usage Internal helper, typically used after obtaining U from LU or QR decomposition.
+
+      @param Upper An IMatrix representing the upper triangular matrix U.
+      @param b A dynamic array of Double representing the right-hand side vector b.
+
+      @returns A dynamic array of Double representing the solution vector x.
+
+      @warning Assumes Upper is indeed upper triangular and square, and dimensions match b. Does not check for division by zero on the diagonal (assumes non-singular U).
+
+      @example (Internal) X := Self.BackSubstitution(LUResult.U, Y); // Where Y = L^-1 * b
+    }
     function BackSubstitution(const Upper: IMatrix; const b: TDoubleArray): TDoubleArray;
-    
-    { Solves a lower triangular system Lx = b using forward substitution
-      Parameters:
-        Lower: Lower triangular matrix L
-        b: Right-hand side vector
-      Returns: Solution vector x }
+
+    {
+      @description Solves a lower triangular linear system Lx = b using forward substitution.
+
+      @usage Internal helper, typically used with L from LU or Cholesky decomposition.
+
+      @param Lower An IMatrix representing the lower triangular matrix L.
+      @param b A dynamic array of Double representing the right-hand side vector b.
+
+      @returns A dynamic array of Double representing the solution vector x.
+
+      @warning Assumes Lower is indeed lower triangular and square, and dimensions match b. Does not check for division by zero on the diagonal (assumes non-singular L).
+
+      @example (Internal) Y := Self.ForwardSubstitution(LUResult.L, PermutedB);
+    }
     function ForwardSubstitution(const Lower: IMatrix; const b: TDoubleArray): TDoubleArray;
-    
-    { Computes the dot product of two vectors
-      Used as a helper in various matrix operations }
+
+    {
+      @description Computes the dot product of two vectors represented as dynamic arrays of Double.
+
+      @usage Internal helper function for various calculations involving vector dot products.
+
+      @param v1 The first vector (TDoubleArray).
+      @param v2 The second vector (TDoubleArray).
+
+      @returns The scalar dot product value.
+
+      @warning Raises EMatrixError if the lengths of v1 and v2 do not match.
+
+      @example (Internal) DotRes := Self.DotProduct(VectorData1, VectorData2);
+    }
     function DotProduct(const v1, v2: TDoubleArray): Double;
-    
-    { Normalizes a column vector to unit length
-      Used in QR decomposition and other orthogonalization processes }
+
+    {
+      @description Normalizes a specific column of a given TMatrixKit instance to unit Euclidean length. Modifies the matrix in place.
+
+      @usage Internal helper, e.g., in Gram-Schmidt process (QR decomposition).
+
+      @param Matrix The TMatrixKit instance to modify. Passed by var.
+      @param Col The 0-based index of the column to normalize.
+
+      @warning Raises EMatrixError if the column norm is close to zero (cannot normalize zero vector). Modifies the input Matrix directly.
+
+      @example (Internal) Self.NormalizeColumn(QMatrix, J);
+    }
     procedure NormalizeColumn(var Matrix: TMatrixKit; Col: Integer);
   public
-    { Creates a new matrix with specified dimensions
-      Parameters:
-        ARows: Number of rows
-        ACols: Number of columns
-      All elements are initialized to zero }
+    {
+      @description Creates a new dense matrix instance with specified dimensions, initialized to zero.
+
+      @usage To instantiate a new matrix object.
+
+      @param ARows The number of rows for the new matrix.
+      @param ACols The number of columns for the new matrix.
+
+      @returns A new TMatrixKit instance.
+
+      @warning Internal array allocation might fail for extremely large dimensions.
+
+      @example
+        var MyMatrix: TMatrixKit; // Or IMatrix
+        MyMatrix := TMatrixKit.Create(3, 4);
+        // Use MyMatrix...
+        MyMatrix.Free; // If declared as TMatrixKit
+    }
     constructor Create(const ARows, ACols: Integer);
-    
-    { Frees resources associated with the matrix }
+
+    {
+      @description Frees the memory allocated for the internal matrix data (FData).
+
+      @usage Called automatically when the matrix object is destroyed (either via Free or interface reference counting).
+
+      @warning None.
+
+      @example
+        var MyMatrix: TMatrixKit;
+        MyMatrix := TMatrixKit.Create(5, 5);
+        MyMatrix.Free; // Calls Destroy
+    }
     destructor Destroy; override;
-    
+
     { Static factory methods for creating various types of matrices }
-    
-    { Creates a matrix from a 2D array of values
-      Parameters:
-        Data: 2D array with matrix values
-      Returns: New matrix populated with values from the array
-      Raises: EMatrixError if rows have different lengths }
+
+    {
+      @description Creates a new dense matrix from a 2D dynamic array of Double.
+
+      @usage To initialize a matrix with predefined values from an array.
+
+      @param Data A TMatrixArray (array of array of Double) containing the initial values.
+
+      @returns A new IMatrix instance populated with the data.
+
+      @warning Raises EMatrixError if the input array is empty or if rows have inconsistent lengths.
+
+      @example
+        var
+          MatrixData: TMatrixArray;
+          NewMatrix: IMatrix;
+        begin
+          SetLength(MatrixData, 2, 3);
+          MatrixData[0, 0] := 1; MatrixData[0, 1] := 2; MatrixData[0, 2] := 3;
+          MatrixData[1, 0] := 4; MatrixData[1, 1] := 5; MatrixData[1, 2] := 6;
+          NewMatrix := TMatrixKit.CreateFromArray(MatrixData);
+          // Use NewMatrix...
+        end;
+    }
     class function CreateFromArray(const Data: TMatrixArray): IMatrix;
-    
-    { Creates an identity matrix of specified size
-      Parameters:
-        Size: Number of rows/columns
-      Returns: Square matrix with ones on the diagonal and zeros elsewhere }
+
+    {
+      @description Creates an identity matrix of a specified size.
+
+      @usage To get a square matrix with ones on the diagonal and zeros elsewhere.
+
+      @param Size The number of rows and columns for the identity matrix.
+
+      @returns A new IMatrix instance representing the identity matrix.
+
+      @warning Size must be non-negative.
+
+      @example
+        var IdentityMatrix: IMatrix;
+        IdentityMatrix := TMatrixKit.Identity(3); // Creates a 3x3 identity matrix
+    }
     class function Identity(const Size: Integer): IMatrix;
-    
-    { Creates a matrix filled with zeros
-      Parameters:
-        Rows, Cols: Matrix dimensions
-      Returns: Matrix of specified size with all elements set to zero }
+
+    {
+      @description Creates a matrix of specified dimensions filled entirely with zeros.
+
+      @usage To initialize a matrix with all zero elements.
+
+      @param Rows The number of rows.
+      @param Cols The number of columns.
+
+      @returns A new IMatrix instance filled with zeros.
+
+      @warning Dimensions must be non-negative.
+
+      @example
+        var ZeroMatrix: IMatrix;
+        ZeroMatrix := TMatrixKit.Zeros(2, 3);
+    }
     class function Zeros(const Rows, Cols: Integer): IMatrix;
-    
-    { Creates a matrix filled with ones
-      Parameters:
-        Rows, Cols: Matrix dimensions
-      Returns: Matrix of specified size with all elements set to one }
+
+    {
+      @description Creates a matrix of specified dimensions filled entirely with ones.
+
+      @usage To initialize a matrix with all elements set to one.
+
+      @param Rows The number of rows.
+      @param Cols The number of columns.
+
+      @returns A new IMatrix instance filled with ones.
+
+      @warning Dimensions must be non-negative.
+
+      @example
+        var OnesMatrix: IMatrix;
+        OnesMatrix := TMatrixKit.Ones(4, 2);
+    }
     class function Ones(const Rows, Cols: Integer): IMatrix;
-    
-    { Creates a sparse matrix implementation
-      Parameters:
-        Rows, Cols: Matrix dimensions
-      Returns: Empty sparse matrix of specified size
-      Note: Use for matrices with many zero elements to save memory }
+
+    {
+      @description Creates an empty sparse matrix instance with specified dimensions.
+
+      @usage To initialize a sparse matrix structure, suitable for matrices with many zero elements. Use SetValue or AddElement to populate non-zero values.
+
+      @param Rows The number of rows.
+      @param Cols The number of columns.
+
+      @returns A new IMatrix instance implemented as TMatrixKitSparse.
+
+      @warning Dimensions must be non-negative.
+
+      @example
+        var SparseMat: IMatrix;
+        SparseMat := TMatrixKit.CreateSparse(1000, 1000);
+        SparseMat.SetValue(10, 20, 5.0); // Add a non-zero element
+    }
     class function CreateSparse(Rows, Cols: Integer): IMatrix;
-    
-    { Creates a Hilbert matrix, a classical example of an ill-conditioned matrix
-      H(i,j) = 1/(i+j-1)
-      Parameters:
-        Size: Size of square matrix
-      Returns: Size×Size Hilbert matrix }
+
+    {
+      @description Creates a Hilbert matrix of a specified size. Hilbert matrices are known for being ill-conditioned.
+
+      @usage Primarily for testing numerical algorithms on ill-conditioned matrices. H[i,j] = 1 / (i + j + 1) (using 0-based indexing).
+
+      @param Size The number of rows and columns (must be positive).
+
+      @returns A new IMatrix instance representing the Hilbert matrix.
+
+      @warning Raises EMatrixError if Size is not positive. Becomes severely ill-conditioned even for moderate sizes.
+
+      @example
+        var HilbertMat: IMatrix;
+        HilbertMat := TMatrixKit.CreateHilbert(5);
+    }
     class function CreateHilbert(Size: Integer): IMatrix;
-    
-    { Creates a Toeplitz matrix with specified first row and column
-      A Toeplitz matrix has constant values along all diagonals
-      Parameters:
-        FirstRow: Values for the first row
-        FirstCol: Values for the first column
-      Returns: Toeplitz matrix }
+
+    {
+      @description Creates a Toeplitz matrix defined by its first row and first column. A Toeplitz matrix has constant values along its diagonals.
+
+      @usage In signal processing, linear systems, and other areas where diagonal-constant matrices arise.
+
+      @param FirstRow A dynamic array of Double representing the first row.
+      @param FirstCol A dynamic array of Double representing the first column.
+
+      @returns A new IMatrix instance representing the Toeplitz matrix.
+
+      @warning Raises EMatrixError if FirstRow or FirstCol are empty, or if FirstRow[0] <> FirstCol[0]. The dimensions of the resulting matrix are Length(FirstCol) x Length(FirstRow).
+
+      @example
+        var
+          r, c: TDoubleArray;
+          ToeplitzMat: IMatrix;
+        begin
+          SetLength(r, 4); r[0] := 1; r[1] := 2; r[2] := 3; r[3] := 4;
+          SetLength(c, 3); c[0] := 1; c[1] := 5; c[2] := 6;
+          ToeplitzMat := TMatrixKit.CreateToeplitz(r, c);
+          // Results in a 3x4 matrix
+        end;
+    }
     class function CreateToeplitz(const FirstRow, FirstCol: TDoubleArray): IMatrix;
-    
-    { Creates a Vandermonde matrix from vector [x₁, x₂, ..., xₙ]
-      V(i,j) = xᵢʲ⁻¹
-      Parameters:
-        Vector: Input vector
-      Returns: Vandermonde matrix }
+
+    {
+      @description Creates a Vandermonde matrix from a given vector [x₁, x₂, ..., xₙ]. The matrix V has elements V[i,j] = xᵢʲ (using 0-based indexing for j).
+
+      @usage In polynomial interpolation and fitting.
+
+      @param Vector A dynamic array of Double [x₀, x₁, ..., xₙ₋₁].
+
+      @returns A new NxN IMatrix instance representing the Vandermonde matrix.
+
+      @warning Raises EMatrixError if the input Vector is empty. Can become ill-conditioned.
+
+      @example
+        var
+          vec: TDoubleArray;
+          VandermondeMat: IMatrix;
+        begin
+          SetLength(vec, 3); vec[0] := 1; vec[1] := 2; vec[2] := 3;
+          VandermondeMat := TMatrixKit.CreateVandermonde(vec);
+          // Results in [[1, 1, 1], [1, 2, 4], [1, 3, 9]]
+        end;
+    }
     class function CreateVandermonde(const Vector: TDoubleArray): IMatrix;
-    
+
     { Interface implementations }
-    
-    { Adds this matrix to another matrix
-      Parameters:
-        Other: Matrix to add
-      Returns: Result of A + B
-      Raises: EMatrixError if dimensions don't match }
+
+    {
+      @description Performs element-wise addition (A + B). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other The matrix to add.
+
+      @returns A new IMatrix containing the sum.
+
+      @warning Raises EMatrixError if dimensions don't match.
+
+      @example See IMatrix.Add example.
+    }
     function Add(const Other: IMatrix): IMatrix;
-    
-    { Subtracts another matrix from this matrix
-      Parameters:
-        Other: Matrix to subtract
-      Returns: Result of A - B
-      Raises: EMatrixError if dimensions don't match }
+
+    {
+      @description Performs element-wise subtraction (A - B). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other The matrix to subtract.
+
+      @returns A new IMatrix containing the difference.
+
+      @warning Raises EMatrixError if dimensions don't match.
+
+      @example See IMatrix.Subtract example.
+    }
     function Subtract(const Other: IMatrix): IMatrix;
-    
-    { Multiplies this matrix by another matrix
-      Parameters:
-        Other: Right-hand matrix
-      Returns: Result of A * B
-      Raises: EMatrixError if inner dimensions don't match
-      Note: Uses block algorithm for large matrices to improve cache efficiency }
+
+    {
+      @description Performs matrix multiplication (A * B). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other The right-hand side matrix.
+
+      @returns A new IMatrix containing the product.
+
+      @warning Raises EMatrixError if inner dimensions don't match. Uses block multiplication heuristic based on BLOCK_SIZE constant.
+
+      @example See IMatrix.Multiply example.
+    }
     function Multiply(const Other: IMatrix): IMatrix;
-    
-    { Multiplies this matrix by a scalar
-      Parameters:
-        Scalar: Value to multiply by
-      Returns: Result of k * A }
+
+    {
+      @description Multiplies matrix by a scalar (k * A). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Scalar The scalar value.
+
+      @returns A new IMatrix containing the scaled matrix.
+
+      @warning None.
+
+      @example See IMatrix.ScalarMultiply example.
+    }
     function ScalarMultiply(const Scalar: Double): IMatrix;
-    
-    { Computes the transpose of this matrix
-      Returns: A^T where (A^T)ᵢⱼ = Aⱼᵢ }
+
+    {
+      @description Computes the transpose (A^T). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns A new IMatrix representing the transpose.
+
+      @warning None.
+
+      @example See IMatrix.Transpose example.
+    }
     function Transpose: IMatrix;
-    
-    { Computes the inverse of this matrix
-      Returns: A^(-1) such that A * A^(-1) = I
-      Raises: EMatrixError if matrix is singular or non-square
-      Note: Uses LU decomposition for computation }
+
+    {
+      @description Computes the inverse (A^-1). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns A new IMatrix representing the inverse.
+
+      @warning Raises EMatrixError if not square or singular. Uses LU decomposition followed by solving AX=I column by column.
+
+      @example See IMatrix.Inverse example.
+    }
     function Inverse: IMatrix;
-    
-    { Computes the Moore-Penrose pseudoinverse
-      Returns: A^+ which is the generalized inverse
-      Note: Works for non-square and rank-deficient matrices
-      Uses SVD decomposition for computation }
+
+    {
+      @description Computes the Moore-Penrose pseudoinverse (A^+). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns A new IMatrix representing the pseudoinverse.
+
+      @warning Uses SVD, can be computationally intensive.
+
+      @example See IMatrix.PseudoInverse example.
+    }
     function PseudoInverse: IMatrix;
-    
-    { Computes the matrix exponential e^A
-      Returns: Matrix exponential using series expansion }
+
+    {
+      @description Computes the matrix exponential (e^A). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns A new IMatrix representing the matrix exponential.
+
+      @warning Requires square matrix. Uses Taylor series approximation.
+
+      @example See IMatrix.Exp example.
+    }
     function Exp: IMatrix;
-    
-    { Computes the matrix power A^p for real p
-      Parameters:
-        exponent: Power to raise matrix to
-      Returns: A^p
-      Raises: EMatrixError for non-square matrices }
+
+    {
+      @description Computes the matrix power (A^p). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param exponent The power.
+
+      @returns A new IMatrix representing A^p.
+
+      @warning Requires square matrix. Uses direct multiplication for positive integers, inverse for negative integers, SVD for non-integers.
+
+      @example See IMatrix.Power example.
+    }
     function Power(exponent: Double): IMatrix;
-    
-    { Computes the determinant of the matrix
-      Returns: |A|
-      Raises: EMatrixError for non-square matrices }
+
+    {
+      @description Computes the determinant. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The determinant value.
+
+      @warning Requires square matrix. Uses recursive cofactor expansion (inefficient for large matrices).
+
+      @example See IMatrix.Determinant example.
+    }
     function Determinant: Double;
-    
-    { Computes the trace of the matrix (sum of diagonal elements)
-      Returns: Tr(A)
-      Raises: EMatrixError for non-square matrices }
+
+    {
+      @description Computes the trace. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The trace value.
+
+      @warning Requires square matrix.
+
+      @example See IMatrix.Trace example.
+    }
     function Trace: Double;
-    
-    { Computes the rank of the matrix (number of linearly independent rows/columns)
-      Returns: rank(A)
-      Note: Uses Gaussian elimination with tolerance for numerical stability }
+
+    {
+      @description Computes the rank. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The rank value.
+
+      @warning Uses Gaussian elimination with tolerance.
+
+      @example See IMatrix.Rank example.
+    }
     function Rank: Integer;
-    
-    { Checks if the matrix is square (same number of rows and columns)
-      Returns: True if matrix is square }
+
+    {
+      @description Checks if the matrix is square. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if square, False otherwise.
+
+      @warning None.
+
+      @example See IMatrix.IsSquare example.
+    }
     function IsSquare: Boolean;
-    
-    { Computes LU decomposition with partial pivoting
-      Returns: Record with L, U matrices and permutation vector P
-      Raises: EMatrixError for non-square matrices }
+
+    {
+      @description Computes LU decomposition. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns TLUDecomposition record.
+
+      @warning Requires square matrix. Raises EMatrixError if singular.
+
+      @example See IMatrix.LU example.
+    }
     function LU: TLUDecomposition;
-    
-    { Computes QR decomposition using Householder reflections
-      Returns: Record with Q (orthogonal) and R (upper triangular) matrices }
+
+    {
+      @description Computes QR decomposition. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns TQRDecomposition record.
+
+      @warning Uses Gram-Schmidt, raises EMatrixError if columns are linearly dependent.
+
+      @example See IMatrix.QR example.
+    }
     function QR: TQRDecomposition;
-    
-    { Computes eigenvalues and eigenvectors
-      Returns: Record with eigenvalues and eigenvector matrix
-      Raises: EMatrixError for non-square matrices
-      Note: Uses QR algorithm with shifts for better convergence }
+
+    {
+      @description Computes eigendecomposition. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns TEigenDecomposition record.
+
+      @warning Requires square matrix. Uses QR algorithm (iterative, may not converge perfectly). Handles 2x2 case separately.
+
+      @example See IMatrix.EigenDecomposition example.
+    }
     function EigenDecomposition: TEigenDecomposition;
-    
-    { Computes Singular Value Decomposition (SVD)
-      Returns: Record with U, S, and V matrices (A = U*S*V^T)
-      Note: Useful for pseudoinverse, rank determination, and data analysis }
+
+    {
+      @description Computes Singular Value Decomposition (SVD). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns TSVD record.
+
+      @warning Iterative algorithm, may raise EMatrixError on non-convergence.
+
+      @example See IMatrix.SVD example.
+    }
     function SVD: TSVD;
-    
-    { Computes Cholesky decomposition
-      Returns: Record with lower triangular matrix L (A = L*L^T)
-      Raises: EMatrixError if matrix is not symmetric positive definite }
+
+    {
+      @description Computes Cholesky decomposition. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns TCholeskyDecomposition record.
+
+      @warning Requires symmetric positive definite matrix. Raises EMatrixError otherwise. Relies on IsPositiveDefinite check.
+
+      @example See IMatrix.Cholesky example.
+    }
     function Cholesky: TCholeskyDecomposition;
-    
-    { String representation for debugging and display }
+
+    {
+      @description Creates a string representation. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface or directly.
+
+      @returns Formatted string representation.
+
+      @warning None.
+
+      @example See IMatrix.ToString example.
+    }
     function ToString: string; override;
-    
+
     { Matrix norm functions }
-    
-    { Computes column sum norm (maximum absolute column sum)
-      Returns: ||A||₁ }
+
+    {
+      @description Computes the 1-norm. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The 1-norm value.
+
+      @warning None.
+
+      @example See IMatrix.NormOne example.
+    }
     function NormOne: Double;
-    
-    { Computes row sum norm (maximum absolute row sum)
-      Returns: ||A||∞ }
+
+    {
+      @description Computes the infinity-norm. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The infinity-norm value.
+
+      @warning None.
+
+      @example See IMatrix.NormInf example.
+    }
     function NormInf: Double;
-    
-    { Computes Frobenius norm (square root of sum of squares)
-      Returns: ||A||ᶠ = sqrt(sum of all aᵢⱼ²) }
+
+    {
+      @description Computes the Frobenius norm. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns The Frobenius norm value.
+
+      @warning None.
+
+      @example See IMatrix.NormFrobenius example.
+    }
     function NormFrobenius: Double;
-    
+
     { Additional specialized matrix constructors }
-    
-    { Creates a band matrix with specified bandwidths
-      Parameters:
-        Size: Matrix size (square)
-        LowerBand: Width of band below diagonal
-        UpperBand: Width of band above diagonal
-      Returns: Band matrix with specified structure }
+
+    {
+      @description Creates a band matrix (square) with specified lower and upper bandwidths, initialized with ones in the band and zeros elsewhere.
+
+      @usage To create matrices where non-zero elements are confined near the main diagonal.
+
+      @param Size The number of rows and columns.
+      @param LowerBand Width of the band below the main diagonal (non-negative).
+      @param UpperBand Width of the band above the main diagonal (non-negative).
+
+      @returns A new IMatrix instance representing the band matrix.
+
+      @warning Raises EMatrixError if Size is non-positive or bands are negative. Elements within the band are initialized to 1.0.
+
+      @example
+        var BandMat: IMatrix;
+        BandMat := TMatrixKit.CreateBandMatrix(5, 1, 1); // Creates a 5x5 tridiagonal matrix (initially with ones)
+    }
     class function CreateBandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
-    
-    { Creates a symmetric matrix from data
-      Data is assumed to contain the upper triangular part
-      Parameters:
-        Data: Array containing at least the upper triangular values
-      Returns: Symmetric matrix A where A = A^T }
+
+    {
+      @description Creates a symmetric matrix from a 2D array, assuming the array provides at least the upper (or lower) triangular part including the diagonal.
+
+      @usage To easily construct symmetric matrices by specifying only half the off-diagonal elements.
+
+      @param Data A TMatrixArray representing (at least) the upper or lower triangle. The function uses Data[i,j] for i >= j and mirrors it for i < j.
+
+      @returns A new IMatrix instance representing the symmetric matrix.
+
+      @warning Raises EMatrixError if Data is empty, not square, or rows have inconsistent lengths. It specifically uses Data[i,j] and sets Matrix[j,i] = Data[i,j] for j < i. Ensure the input Data array is correctly populated.
+
+      @example
+        var
+          UpperData: TMatrixArray;
+          SymMatrix: IMatrix;
+        begin
+          SetLength(UpperData, 3, 3);
+          UpperData[0, 0] := 1; UpperData[0, 1] := 2; UpperData[0, 2] := 3;
+          UpperData[1, 1] := 4; UpperData[1, 2] := 5; // Lower part ignored by this specific implementation logic
+          UpperData[2, 2] := 6;
+          SymMatrix := TMatrixKit.CreateSymmetric(UpperData);
+          // Result: [[1, 2, 3], [2, 4, 5], [3, 5, 6]]
+        end;
+    }
     class function CreateSymmetric(const Data: TMatrixArray): IMatrix;
-    
-    { Creates a diagonal matrix from vector of diagonal values
-      Parameters:
-        Diagonal: Values to place on diagonal
-      Returns: Matrix with specified values on diagonal, zeros elsewhere }
+
+    {
+      @description Creates a diagonal matrix from a vector containing the diagonal elements.
+
+      @usage To quickly create a matrix with specified diagonal values and zeros elsewhere.
+
+      @param Diagonal A dynamic array of Double containing the values for the main diagonal.
+
+      @returns A new square IMatrix instance representing the diagonal matrix.
+
+      @warning Raises EMatrixError if the Diagonal array is empty. The size of the matrix is determined by the length of the Diagonal array.
+
+      @example
+        var
+          diagVals: TDoubleArray;
+          DiagMatrix: IMatrix;
+        begin
+          SetLength(diagVals, 3); diagVals[0] := 1; diagVals[1] := 5; diagVals[2] := 9;
+          DiagMatrix := TMatrixKit.CreateDiagonal(diagVals);
+          // Result: [[1, 0, 0], [0, 5, 0], [0, 0, 9]]
+        end;
+    }
     class function CreateDiagonal(const Diagonal: array of Double): IMatrix;
-    
-    { Creates a matrix with random values between Min and Max
-      Parameters:
-        Rows, Cols: Matrix dimensions
-        Min, Max: Range for random values
-      Returns: Matrix filled with uniform random values }
+
+    {
+      @description Creates a matrix of specified dimensions filled with random floating-point values uniformly distributed within a given range [Min, Max).
+
+      @usage For initializing matrices with random data for testing or simulation purposes.
+
+      @param Rows The number of rows.
+      @param Cols The number of columns.
+      @param Min The minimum value (inclusive).
+      @param Max The maximum value (exclusive).
+
+      @returns A new IMatrix instance filled with random values.
+
+      @warning Raises EMatrixError if Rows or Cols are non-positive. Calls Randomize internally, which seeds the global random number generator.
+
+      @example
+        var RandomMatrix: IMatrix;
+        RandomMatrix := TMatrixKit.CreateRandom(3, 3, -1.0, 1.0); // 3x3 matrix with values between -1 and 1
+    }
     class function CreateRandom(Rows, Cols: Integer; Min, Max: Double): IMatrix;
-    
+
     { Vector-related functions }
-    
-    { Checks if matrix is a vector (has only one row or column)
-      Returns: True if matrix is a vector }
+
+    {
+      @description Checks if matrix is a vector. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if 1 row or 1 column, False otherwise.
+
+      @warning None.
+
+      @example See IMatrix.IsVector example.
+    }
     function IsVector: Boolean;
-    
-    { Checks if matrix is a column vector (has only one column)
-      Returns: True if matrix is a column vector }
+
+    {
+      @description Checks if matrix is a column vector. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if 1 column, False otherwise.
+
+      @warning None.
+
+      @example See IMatrix.IsColumnVector example.
+    }
     function IsColumnVector: Boolean;
-    
-    { Checks if matrix is a row vector (has only one row)
-      Returns: True if matrix is a row vector }
+
+    {
+      @description Checks if matrix is a row vector. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if 1 row, False otherwise.
+
+      @warning None.
+
+      @example See IMatrix.IsRowVector example.
+    }
     function IsRowVector: Boolean;
-    
-    { Computes dot product between two vectors
-      Parameters:
-        Other: Second vector
-      Returns: Dot product (sum of element-wise products)
-      Raises: EMatrixError if either is not a vector or dimensions don't match }
+
+    {
+      @description Computes dot product between two vectors. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other The second vector.
+
+      @returns The scalar dot product.
+
+      @warning Raises EMatrixError if operands are not vectors or dimensions are incompatible. Handles row/column combinations.
+
+      @example See IMatrix.DotProduct example.
+    }
     function DotProduct(const Other: IMatrix): Double;
-    
-    { Computes cross product between two 3D vectors
-      Parameters:
-        Other: Second 3D vector
-      Returns: Cross product vector
-      Raises: EMatrixError if inputs aren't 3D vectors }
+
+    {
+      @description Computes cross product between two 3D vectors. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other The second 3D column vector.
+
+      @returns A new 3D column vector cross product.
+
+      @warning Raises EMatrixError if inputs aren't 3D column vectors.
+
+      @example See IMatrix.CrossProduct example.
+    }
     function CrossProduct(const Other: IMatrix): IMatrix;
-    
-    { Normalizes a vector to unit length
-      Returns: Unit vector in same direction
-      Raises: EMatrixError if not a vector or zero vector }
+
+    {
+      @description Normalizes a vector to unit length. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns A new normalized vector.
+
+      @warning Raises EMatrixError if not a vector or if it's a zero vector.
+
+      @example See IMatrix.Normalize example.
+    }
     function Normalize: IMatrix;
-    
+
     { Statistical functions }
-    
-    { Computes mean value(s)
-      Parameters:
-        Axis: -1 for overall mean, 0 for row means, 1 for column means
-      Returns: Scalar, row vector, or column vector of means }
+
+    {
+      @description Computes mean value(s). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Axis Axis for mean calculation (-1, 0, or 1).
+
+      @returns Matrix containing the mean(s).
+
+      @warning Raises EMatrixError for invalid Axis.
+
+      @example See IMatrix.Mean example.
+    }
     function Mean(Axis: Integer = -1): IMatrix;
-    
-    { Computes covariance matrix for multivariate data
-      Returns: Covariance matrix
-      Note: Assumes columns are variables, rows are observations }
+
+    {
+      @description Computes covariance matrix. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns Covariance matrix.
+
+      @warning Raises EMatrixError if fewer than 2 rows or 2 columns. Assumes columns are variables.
+
+      @example See IMatrix.Covariance example.
+    }
     function Covariance: IMatrix;
-    
-    { Computes correlation matrix for multivariate data
-      Returns: Correlation matrix with values between -1 and 1
-      Note: Assumes columns are variables, rows are observations }
+
+    {
+      @description Computes correlation matrix. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns Correlation matrix.
+
+      @warning Raises EMatrixError if fewer than 2 rows or 2 columns. Assumes columns are variables.
+
+      @example See IMatrix.Correlation example.
+    }
     function Correlation: IMatrix;
-    
+
     { Iterative solvers for large systems }
-    
-    { Solves linear system Ax = b using iterative methods
-      Parameters:
-        B: Right-hand side vector or matrix
-        Method: Iterative method to use
-        MaxIterations: Maximum number of iterations
-        Tolerance: Convergence tolerance
-      Returns: Solution x
-      Raises: EMatrixError if system is incompatible or non-convergent }
+
+    {
+      @description Solves Ax = b using iterative methods. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param B Right-hand side vector.
+      @param Method Iterative method choice.
+      @param MaxIterations Max iterations.
+      @param Tolerance Convergence tolerance.
+
+      @returns Approximate solution vector x.
+
+      @warning Requires square A, column vector B. Convergence not guaranteed for all methods/matrices. See IMatrix.SolveIterative warnings.
+
+      @example See IMatrix.SolveIterative example.
+    }
     function SolveIterative(const B: IMatrix; Method: TIterativeMethod = imConjugateGradient;
                             MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
-    
-    { Finds dominant eigenvalue and eigenvector using power iteration
-      Parameters:
-        MaxIterations: Maximum number of iterations
-        Tolerance: Convergence tolerance
-      Returns: Record with eigenvalue and eigenvector
-      Note: Finds only the eigenvalue with largest magnitude }
+
+    {
+      @description Finds dominant eigenvalue/eigenvector using power iteration. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param MaxIterations Max iterations.
+      @param Tolerance Convergence tolerance.
+
+      @returns TEigenpair with dominant eigenvalue/eigenvector.
+
+      @warning Requires square matrix. Convergence depends on eigenvalue distribution. See IMatrix.PowerMethod warnings.
+
+      @example See IMatrix.PowerMethod example.
+    }
     function PowerMethod(MaxIterations: Integer = 100; Tolerance: Double = 1e-10): TEigenpair;
-    
+
     { Additional matrix properties }
-    
-    { Checks if matrix is symmetric (A = A^T)
-      Returns: True if matrix is symmetric
-      Note: Uses tolerance for floating-point comparison }
+
+    {
+      @description Checks if matrix is symmetric. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if symmetric, False otherwise.
+
+      @warning Requires square matrix. Uses exact comparison.
+
+      @example See IMatrix.IsSymmetric example.
+    }
     function IsSymmetric: Boolean;
-    
-    { Checks if matrix is diagonal (zeros everywhere except diagonal)
-      Returns: True if matrix is diagonal }
+
+    {
+      @description Checks if matrix is diagonal. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if diagonal, False otherwise.
+
+      @warning Requires square matrix. Uses exact comparison for off-diagonal zeros.
+
+      @example See IMatrix.IsDiagonal example.
+    }
     function IsDiagonal: Boolean;
-    
-    { Checks if matrix is triangular
-      Parameters:
-        Upper: True to check for upper triangular, False for lower
-      Returns: True if matrix is triangular of specified type }
+
+    {
+      @description Checks if matrix is triangular. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Upper True for upper, False for lower.
+
+      @returns True if triangular of specified type, False otherwise.
+
+      @warning Requires square matrix. Uses exact comparison for off-diagonal zeros.
+
+      @example See IMatrix.IsTriangular example.
+    }
     function IsTriangular(Upper: Boolean = True): Boolean;
-    
-    { Checks if matrix is positive definite
-      Returns: True if matrix is symmetric with all positive eigenvalues
-      Note: A matrix is positive definite if x^T*A*x > 0 for all non-zero x }
+
+    {
+      @description Checks if matrix is positive definite. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if potentially positive definite, False otherwise.
+
+      @warning Requires square matrix. Current check (Det>0, Diag>0) is insufficient and unreliable. Use Cholesky attempt for a better check.
+
+      @example See IMatrix.IsPositiveDefinite example.
+    }
     function IsPositiveDefinite: Boolean;
-    
-    { Checks if matrix is positive semidefinite
-      Returns: True if matrix is symmetric with all non-negative eigenvalues
-      Note: A matrix is positive semidefinite if x^T*A*x ≥ 0 for all x }
+
+    {
+      @description Checks if matrix is positive semidefinite. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if potentially positive semidefinite, False otherwise.
+
+      @warning Requires square matrix. Current check (Det>=0, Diag>=0) is insufficient and unreliable.
+
+      @example See IMatrix.IsPositiveSemidefinite example.
+    }
     function IsPositiveSemidefinite: Boolean;
-    
-    { Checks if matrix is orthogonal (A^T*A = I)
-      Returns: True if matrix is orthogonal
-      Note: Orthogonal matrices preserve vector lengths and angles }
+
+    {
+      @description Checks if matrix is orthogonal. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns True if orthogonal within tolerance, False otherwise.
+
+      @warning Requires square matrix. Computes A*A^T and compares to I with tolerance.
+
+      @example See IMatrix.IsOrthogonal example.
+    }
     function IsOrthogonal: Boolean;
-    
-    { Computes condition number of the matrix
-      Returns: Condition number (ratio of largest to smallest singular value)
-      Note: Large condition numbers indicate ill-conditioned matrices }
+
+    {
+      @description Computes condition number (1-norm). Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @returns Condition number or MaxDouble if singular.
+
+      @warning Requires square matrix. Involves matrix inversion.
+
+      @example See IMatrix.Condition example.
+    }
     function Condition: Double;
-    
+
     { Block operations }
+    {
+      @description Extracts a submatrix. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param StartRow Start row index.
+      @param StartCol Start column index.
+      @param NumRows Number of rows.
+      @param NumCols Number of columns.
+
+      @returns New IMatrix with the submatrix.
+
+      @warning Raises EMatrixError if dimensions are invalid.
+
+      @example See IMatrix.GetSubMatrix example.
+    }
     function GetSubMatrix(StartRow, StartCol, NumRows, NumCols: Integer): IMatrix;
+
+    {
+      @description Overwrites a block with a submatrix. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param StartRow Start row index.
+      @param StartCol Start column index.
+      @param SubMatrix Matrix to insert.
+
+      @warning Raises EMatrixError if dimensions are invalid. Modifies the matrix in place.
+
+      @example See IMatrix.SetSubMatrix example.
+    }
     procedure SetSubMatrix(StartRow, StartCol: Integer; const SubMatrix: IMatrix);
-    
+
     { Element-wise operations }
+    {
+      @description Performs element-wise multiplication. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other Second matrix.
+
+      @returns New IMatrix with element-wise product.
+
+      @warning Raises EMatrixError if dimensions don't match.
+
+      @example See IMatrix.ElementWiseMultiply example.
+    }
     function ElementWiseMultiply(const Other: IMatrix): IMatrix;
+
+    {
+      @description Performs element-wise division. Implementation for TMatrixKit.
+
+      @usage Via IMatrix interface.
+
+      @param Other Matrix of divisors.
+
+      @returns New IMatrix with element-wise quotient.
+
+      @warning Raises EMatrixError if dimensions don't match or division by zero occurs (using tolerance).
+
+      @example See IMatrix.ElementWiseDivide example.
+    }
     function ElementWiseDivide(const Other: IMatrix): IMatrix;
   end;
 
@@ -591,7 +2056,7 @@ type
     Col: Integer;    // Column index of the element
     Value: Double;   // Value at this position (always non-zero)
   end;
-  
+
   { Sparse matrix implementation that inherits from TMatrixKit
     While TMatrixKit stores all elements in a 2D array,
     TMatrixKitSparse only stores non-zero elements for memory efficiency.
@@ -600,64 +2065,142 @@ type
   private
     { Array of non-zero elements }
     FElements: array of TSparseElement;
-    
+
     { Current number of non-zero elements }
     FElementCount: Integer;
-    
+
     { Current capacity of FElements array }
     FCapacity: Integer;
-    
-    { Ensures the internal array has enough capacity for new elements
-      Automatically grows the array when needed, similar to TList
-      Parameters:
-        NewCount: Required capacity }
+
+    {
+      @description Ensures the internal FElements array has enough capacity to hold a specified number of elements. Grows the array exponentially if needed.
+
+      @usage Internal helper function called before adding new elements to prevent frequent reallocations.
+
+      @param NewCount The minimum required capacity.
+
+      @warning Array reallocation can be costly. The growth factor is 2.
+
+      @example (Internal) Self.EnsureCapacity(FElementCount + 1);
+    }
     procedure EnsureCapacity(NewCount: Integer);
   public
-    { Creates a new sparse matrix with specified dimensions
-      Parameters:
-        Rows: Number of rows
-        Cols: Number of columns
-      Note: Initial state is an empty matrix (all zeros) }
+    {
+      @description Creates a new sparse matrix instance with specified dimensions. Initializes internal storage for non-zero elements.
+
+      @usage To instantiate an empty sparse matrix.
+
+      @param Rows The number of rows.
+      @param Cols The number of columns.
+
+      @returns A new TMatrixKitSparse instance.
+
+      @warning Dimensions must be non-negative. Initial capacity is set internally (e.g., 32).
+
+      @example
+        var SparseMat: TMatrixKitSparse; // Or IMatrix
+        SparseMat := TMatrixKitSparse.Create(1000, 1000);
+        // Use SparseMat...
+        SparseMat.Free; // If declared as TMatrixKitSparse
+    }
     constructor Create(Rows, Cols: Integer);
-    
-    { Frees the resources associated with the sparse matrix }
+
+    {
+      @description Frees the memory allocated for the internal sparse element storage (FElements).
+
+      @usage Called automatically when the sparse matrix object is destroyed.
+
+      @warning None.
+
+      @example
+        var SparseMat: TMatrixKitSparse;
+        SparseMat := TMatrixKitSparse.Create(100, 100);
+        SparseMat.Free; // Calls Destroy
+    }
     destructor Destroy; override;
-    
-    { Gets value at specified position
-      This is an O(log n) operation in sparse implementation
-      Uses binary search to find the element if it exists
-      Parameters:
-        Row, Col: Position to retrieve
-      Returns: Value at position (0 if element not found) }
+
+    {
+      @description Retrieves the value at a specified position in the sparse matrix. Overrides TMatrixKit.GetValue.
+
+      @usage To access elements in a sparse matrix. Returns 0.0 for elements not explicitly stored.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+
+      @returns The value at the position, or 0.0 if the element is not stored.
+
+      @warning Raises EMatrixError if indices are out of bounds. Current implementation uses linear search (O(N) where N is non-zero count), not binary search. Performance degrades as the number of non-zero elements increases.
+
+      @example
+        var Val: Double;
+        Val := MySparseMatrix.GetValue(10, 20); // Returns 0.0 if (10, 20) is not stored
+    }
     function GetValue(Row, Col: Integer): Double; override;
-    
-    { Sets value at specified position
-      This is an O(n) operation in worst case
-      If setting to zero, removes the element from storage
-      Parameters:
-        Row, Col: Position to set
-        Value: New value }
+
+    {
+      @description Sets the value at a specified position in the sparse matrix. Overrides TMatrixKit.SetValue. Handles adding, updating, and removing elements based on the value.
+
+      @usage To modify elements in a sparse matrix. Setting a value close to zero (Abs(Value) < 1E-15) removes the element from storage.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+      @param Value The new Double value.
+
+      @warning Raises EMatrixError if indices are out of bounds. Performance is O(N) in the worst case (N = non-zero count) due to linear search for existing elements and potential shifting during insertion/deletion to maintain row-major order.
+
+      @example
+        MySparseMatrix.SetValue(5, 5, 9.8); // Adds or updates element (5,5)
+        MySparseMatrix.SetValue(5, 5, 0.0); // Removes element (5,5) if it exists
+    }
     procedure SetValue(Row, Col: Integer; const Value: Double); override;
-    
-    { Adds two matrices, optimized for sparse matrices
-      Parameters:
-        Other: Matrix to add to this one
-      Returns: New sparse matrix with sum
-      Note: Result preserves sparsity pattern }
+
+    {
+      @description Adds another matrix (sparse or dense) to this sparse matrix. Overrides TMatrixKit.Add.
+
+      @usage To perform matrix addition where at least one operand is sparse.
+
+      @param Other The matrix to add.
+
+      @returns A new dense IMatrix (TMatrixKit) containing the sum.
+
+      @warning Raises EMatrixError if dimensions don't match. The result is currently always a dense matrix, which might be inefficient if the sum is expected to remain sparse.
+
+      @example
+        var SumMatrix: IMatrix;
+        SumMatrix := MySparseMatrix.Add(AnotherMatrix); // AnotherMatrix can be dense or sparse
+    }
     function Add(const Other: IMatrix): IMatrix;
-    
+
     { Sparse-specific methods }
-    
-    { Adds a non-zero element to the sparse matrix
-      More efficient than SetValue when building a matrix sequentially
-      Parameters:
-        Row, Col: Position to add
-        Value: Non-zero value to add
-      Note: If element exists, value is added to existing value }
+
+    {
+      @description Adds a value to an element at a specified position. If the element exists, the value is added; otherwise, a new element is created. This is essentially a wrapper around SetValue.
+
+      @usage Potentially for accumulating values in a sparse structure, though current implementation just calls SetValue.
+
+      @param Row The 0-based row index.
+      @param Col The 0-based column index.
+      @param Value The value to add/set.
+
+      @warning Performance characteristics are the same as SetValue (O(N) worst case). If adding to an existing element, it overwrites, not accumulates, due to SetValue logic. The name is misleading.
+
+      @example
+        MySparseMatrix.AddElement(10, 10, 1.0); // Effectively same as SetValue(10, 10, 1.0)
+    }
     procedure AddElement(Row, Col: Integer; Value: Double);
-    
-    { Removes zero/duplicate elements and sorts for efficiency
-      Call periodically after many modifications to maintain performance }
+
+    {
+      @description Removes elements with values close to zero and potentially shrinks the internal storage array if significantly underutilized.
+
+      @usage Call periodically after many modifications (especially setting elements to zero) to reclaim memory and potentially improve performance of subsequent operations by reducing the number of elements to search.
+
+      @warning Iterates through all stored elements (O(N)). Resizing the array involves memory reallocation. Uses tolerance 1E-15 to check for zero.
+
+      @example
+        MySparseMatrix.SetValue(1, 1, 0.0);
+        MySparseMatrix.SetValue(2, 2, 0.0);
+        MySparseMatrix.CompactStorage; // Removes zero elements and potentially shrinks FElements
+    }
     procedure CompactStorage;
   end;
 
