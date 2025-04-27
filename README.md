@@ -1,4 +1,4 @@
-# 🧰 TidyKit
+# 🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development & Scientific Computing
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
 [![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
@@ -8,8 +8,7 @@
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.7-blueviolet.svg)]()
 
-A comprehensive toolkit providing essential utilities for development in Free Pascal.  
-**Streamlining your Pascal programming experience with reliable tools.**
+**Providing utilities, mathematical functions, and scientific computing tools without external dependencies.**
 
 > [!WARNING]
 > ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
@@ -26,7 +25,7 @@ A comprehensive toolkit providing essential utilities for development in Free Pa
 
 ## 📑 Table of Contents 
 
-- [🧰 TidyKit](#-tidykit)
+- [🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development \& Scientific Computing](#-tidykit-comprehensive-free-pascal-toolkit-for-development--scientific-computing)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
