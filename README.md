@@ -595,11 +595,10 @@ TidyKit can be used to build a wide variety of applications quickly:
 | Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
 
 
-
 ## 💬 Community & Support
 
-- **Questions?** [Open a discussion](https://github.com/ikelaiah/TidyKit/discussions)
-- **Found a bug?** [Report an issue](https://github.com/ikelaiah/TidyKit/issues)
+- **Questions?** [Open a discussion](https://github.com/ikelaiah/tidykit-fp/discussions)
+- **Found a bug?** [Report an issue](https://github.com/ikelaiah/tidykit-fp/issues)
 
 ## ⚠️ Known Limitations
 
