@@ -5,7 +5,7 @@ unit TidyKit.DateTime;
 interface
 
 uses
-  Classes, SysUtils, DateUtils, StrUtils, Types, streamex,
+  Classes, SysUtils, DateUtils, StrUtils, Types,
   {$IFDEF WINDOWS}
   Windows,
   {$ENDIF}
@@ -13,7 +13,7 @@ uses
   Process, // For RunCommand
   Unix,    // For Unix-specific functions
   {$ENDIF}
-  TidyKit.Core;
+  streamex;
 
 const
   MillisecondsPerSecond = 1000;
