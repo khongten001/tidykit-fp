@@ -1,4 +1,5 @@
-unit TestCaseCrypto;
+unit TidyKit.Crypto.Test;
+
 
 {$mode objfpc}{$H+}{$J-}
 

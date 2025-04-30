@@ -1,4 +1,4 @@
-unit TestCaseRequest;
+unit TidyKit.Request.Test;
 
 {$mode objfpc}{$H+}{$J-}
 {$ModeSwitch advancedrecords}

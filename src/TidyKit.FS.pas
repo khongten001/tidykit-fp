@@ -38,6 +38,10 @@ const
   {$ENDIF}
 
 type
+
+  { Exception class for File Systems operations }
+  EFSError = class(Exception);
+
   { 
     TFileAttributes 
     ----------------

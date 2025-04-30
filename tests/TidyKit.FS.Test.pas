@@ -187,10 +187,10 @@ begin
   
   try
     if not ForceDirectories(FTestDir) then
-      raise ETidyKitException.CreateFmt('Could not create test directory: %s', [FTestDir]);
+      raise EFSError.CreateFmt('Could not create test directory: %s', [FTestDir]);
   except
     on E: Exception do
-      raise ETidyKitException.CreateFmt('Failed to setup test environment: %s', [E.Message]);
+      raise EFSError.CreateFmt('Failed to setup test environment: %s', [E.Message]);
   end;
 end;
 
@@ -1807,7 +1807,7 @@ begin
                  'Test content', 
                  TFileKit.ReadTextFile(LinkFile));
     except
-      on E: ETidyKitException do
+      on E: EFSError do
       begin
         // Skip test if we don't have permissions
         if (Pos('privilege', E.Message) > 0) or 
@@ -1853,7 +1853,7 @@ begin
       else
         Ignore('Skipping symlink deletion test - could not create symlink');
     except
-      on E: ETidyKitException do
+      on E: EFSError do
       begin
         if (Pos('privilege', E.Message) > 0) or 
            (Pos('permission', E.Message) > 0) then
@@ -1899,7 +1899,7 @@ begin
       else
         Ignore('Skipping symlink resolution test - could not create symlink');
     except
-      on E: ETidyKitException do
+      on E: EFSError do
       begin
         if (Pos('privilege', E.Message) > 0) or 
            (Pos('permission', E.Message) > 0) then
@@ -1943,7 +1943,7 @@ begin
       else
         Ignore('Skipping symlink detection test - could not create symlink');
     except
-      on E: ETidyKitException do
+      on E: EFSError do
       begin
         if (Pos('privilege', E.Message) > 0) or 
            (Pos('permission', E.Message) > 0) then

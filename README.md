@@ -1,4 +1,4 @@
-# 🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development & Scientific Computing
+# 🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
 [![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
@@ -8,7 +8,7 @@
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
 [![Version](https://img.shields.io/badge/Version-0.1.7-blueviolet.svg)]()
 
-**Providing utilities, mathematical functions, and scientific computing tools without external dependencies.**
+**Providing utilities and development tools without external dependencies.**
 
 > [!WARNING]
 > ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
@@ -25,7 +25,7 @@
 
 ## 📑 Table of Contents 
 
-- [🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development \& Scientific Computing](#-tidykit-comprehensive-free-pascal-toolkit-for-development--scientific-computing)
+- [🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development](#-tidykit-comprehensive-free-pascal-toolkit-for-development)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
@@ -42,10 +42,6 @@
     - [🌐 HTTP Request Operations](#-http-request-operations)
     - [🔐 Crypto Operations](#-crypto-operations)
     - [📦 Archive Operations](#-archive-operations)
-    - [📈 Statistical Operations](#-statistical-operations)
-    - [🔢 Matrix Operations](#-matrix-operations)
-    - [📐 Trigonometric Operations](#-trigonometric-operations)
-    - [💰 Financial Operations](#-financial-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
     - [Dependencies](#dependencies)
@@ -71,8 +67,7 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 |---------|-------------------------|-----------------|-------------------|
 | **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger` | <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
 | **Advanced Records** | `TidyKit.Request` | <ul><li>Record-based design</li><li>Fluent API</li><li>Value semantics</li></ul> | No manual management needed |
-| **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*`, `TidyKit.Math.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
-| **Class/Interface** | `TidyKit.Math.Matrices` | <ul><li>Object-oriented design</li></ul> | No manual management needed |
+| **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
 
 > [!IMPORTANT]
 > The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
@@ -115,55 +110,6 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - HTTP client
   - Request handling
   - Response parsing
-
-- 📊 **Math Operations**
-  - 📈 Statistical Analysis
-    - Basic statistics (mean, median, mode, range)
-    - Variance and standard deviation (population and sample)
-    - Distribution measures (skewness, kurtosis)
-    - Correlation (Pearson, Spearman)
-    - Advanced means (geometric, harmonic, trimmed)
-    - Robust statistics (MAD, Huber M-estimator)
-    - Hypothesis testing (t-test, Mann-Whitney U)
-    - Effect size measures (Cohen's d, Hedges' g)
-    - Bootstrap confidence intervals
-  - 💰 Financial Mathematics
-    - Time value of money (PV, FV)
-    - Investment analysis (NPV, IRR)
-    - Depreciation calculations
-    - Return metrics (ROI, ROE)
-  - 🔢 Matrix Operations
-    - Basic operations (add, subtract, multiply)
-    - Matrix creation (zeros, ones, identity)
-    - Matrix transpose and inverse
-    - Determinant and trace calculation
-    - Matrix decompositions (LU, QR, Eigen, SVD, Cholesky)
-    - Matrix properties (rank, condition number)
-    - Matrix norms (one, infinity, Frobenius)
-    - Special matrices (diagonal, symmetric, random, Hilbert, Toeplitz, Vandermonde)
-    - Element-wise operations
-    - Submatrix operations
-    - Linear system solving (direct and iterative methods)
-    - Matrix functions (exponential, power with support for fractional powers)
-    - Pseudoinverse for non-square matrices
-    - Vector operations (dot product, cross product, normalization)
-    - Statistical operations (mean, covariance, correlation)
-    - Advanced eigenvalue computation with PowerMethod
-    - Memory-efficient sparse matrix implementation
-    - Comprehensive error handling
-    - Memory-safe interface design with automatic reference counting
-    - String representations of matrices and decompositions
-  - 📐 Trigonometry
-    - Basic functions (sin, cos, tan, sec, csc, cot)
-    - Inverse functions (arcsin, arccos, arctan, arctan2)
-    - Hyperbolic functions (sinh, cosh, tanh)
-    - Inverse hyperbolic functions (arcsinh, arccosh, arctanh)
-    - Angle conversions (degrees, radians, grads)
-    - Angle normalization
-    - Triangle calculations (area, perimeter, radii)
-    - Circle sector and segment calculations
-    - Vector operations
-  - ✅ All calculations use Double precision (64-bit) for accuracy
 
 - 🔄 **JSON Operations**
   - Interface-based JSON manipulation with automatic memory management
@@ -209,7 +155,6 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Environment and file-based configuration
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
-
 
 ## 💻 Installation (Lazarus IDE)
 
@@ -278,14 +223,7 @@ uses
   TidyKit.Crypto.AES256,     // AES-256 implementation
   
   // Archive operations
-  TidyKit.Archive,           // Archive operations
-  
-  // Math-related units
-  TidyKit.Math,              // Base math types and operations
-  TidyKit.Math.Stats,        // Statistical calculations
-  TidyKit.Math.Matrices,     // Matrix operations
-  TidyKit.Math.Trigonometry, // Trigonometric functions
-  TidyKit.Math.Finance;      // Financial mathematics
+  TidyKit.Archive;           // Archive operations
 ```
 
 Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
@@ -596,153 +534,6 @@ begin
 end;
 ```
 
-### 📈 Statistical Operations
-
-```pascal
-var
-  Data: TDoubleArray;
-  Stats: TDescriptiveStats;
-  CI: TDoublePair;
-  CorrelationCoef: Double;
-  X, Y: TDoubleArray;
-begin
-  // Basic descriptive statistics
-  Data := TDoubleArray.Create(4.5, 3.0, 5.0, 4.0, 4.8, 3.2, 4.5, 4.9);
-  Stats := TStatsKit.Describe(Data);
-  
-  // Print formatted statistics
-  WriteLn(Stats.ToString);
-  // Or use individual properties
-  WriteLn(Format('Average rating: %.2f', [Stats.Mean]));
-  WriteLn(Format('Rating spread: %.2f', [Stats.StdDev]));
-  WriteLn(Format('Most common: %.1f', [Stats.Mode]));
-  WriteLn(Format('Median: %.1f', [Stats.Median]));
-  WriteLn(Format('Range: %.1f', [Stats.Range]));
-  
-  // Advanced statistics
-  WriteLn(Format('Distribution skewness: %.2f', [Stats.Skewness]));
-  WriteLn(Format('Kurtosis: %.2f', [Stats.Kurtosis]));
-  
-  // Robust statistics
-  WriteLn(Format('Median Absolute Deviation: %.2f', 
-                [TStatsKit.MedianAbsoluteDeviation(Data)]));
-  WriteLn(Format('Trimmed Mean (10%%): %.2f', 
-                [TStatsKit.TrimmedMean(Data, 10)]));
-  
-  // Bootstrapping for confidence intervals
-  CI := TStatsKit.BootstrapConfidenceInterval(Data);
-  WriteLn(Format('95%% CI: [%.2f, %.2f]', [CI.Lower, CI.Upper]));
-  
-  // Correlation analysis
-  X := TDoubleArray.Create(1.0, 2.0, 3.0, 4.0, 5.0);
-  Y := TDoubleArray.Create(2.0, 3.5, 4.8, 6.1, 8.0);
-  
-  CorrelationCoef := TStatsKit.PearsonCorrelation(X, Y);
-  WriteLn(Format('Pearson correlation: %.2f', [CorrelationCoef]));
-  
-  CorrelationCoef := TStatsKit.SpearmanCorrelation(X, Y);
-  WriteLn(Format('Spearman correlation: %.2f', [CorrelationCoef]));
-end;
-```
-
-### 🔢 Matrix Operations
-
-```pascal
-var
-  A, B, C: IMatrix;
-  begin
-  // Create and initialize matrices
-  A := TMatrixKit.CreateFromArray([
-    [1.0, 2.0],
-    [3.0, 4.0]
-  ]);
-  
-  // Create identity matrix
-  B := TMatrixKit.Identity(2);
-  
-  // Matrix multiplication
-  C := A.Multiply(B);
-  
-  // Calculate properties
-  WriteLn(Format('Determinant: %.2f', [A.Determinant]));
-  WriteLn(Format('Trace: %.2f', [A.Trace]));
-  
-  // Matrix transpose and inverse
-  C := A.Transpose;
-  C := A.Inverse;
-  
-  // Matrix decompositions
-  LU := A.LU;
-  QR := A.QR;
-  Eigen := A.EigenDecomposition;
-  SVD := A.SVD;
-  Chol := A.Cholesky;
-  
-  // Advanced matrix creation
-  H := TMatrixKit.CreateHilbert(3);
-  T := TMatrixKit.CreateToeplitz(FirstRow, FirstCol);
-  V := TMatrixKit.CreateVandermonde(Vector);
-  
-  // Matrix functions
-  E := A.Exp;                // Matrix exponential
-  P := A.Power(0.5);         // Matrix square root
-  
-  // Vector operations
-  V1 := TMatrixKit.CreateFromArray([[1.0], [2.0], [3.0]]);
-  V2 := TMatrixKit.CreateFromArray([[4.0], [5.0], [6.0]]);
-  DotProd := V1.DotProduct(V2);     // Dot/inner product
-  Cross := V1.CrossProduct(V2);     // Cross product (3D vectors only)
-  Norm := V1.Normalize;             // Normalize to unit length
-  
-  // Statistical operations
-  Mean := A.Mean;                   // Overall mean
-  ColMeans := A.Mean(0);            // Column means
-  RowMeans := A.Mean(1);            // Row means
-  Cov := A.Covariance;              // Covariance matrix
-  Corr := A.Correlation;            // Correlation matrix
-  
-  // Solving linear systems
-  X := A.Inverse.Multiply(B);                    // Direct solution
-  X := A.PseudoInverse.Multiply(B);              // For non-square systems
-  X := A.SolveIterative(B, imConjugateGradient); // Iterative solution
-end;
-```
-
-### 📐 Trigonometric Operations
-
-```pascal
-var
-  Angle, Height, Distance: Double;
-begin
-  // Calculate building height using angle
-  Angle := TTrigKit.DegToRad(30);  // 30 degrees elevation
-  Distance := 100;  // Distance from building
-  Height := Distance * TTrigKit.Tan(Angle);
-  
-  // Calculate area of irregular field
-  WriteLn(Format('Field area: %.2f',
-    [TTrigKit.TriangleAreaSAS(100, TTrigKit.DegToRad(60), 120)]));
-end;
-```
-
-### 💰 Financial Operations
-
-```pascal
-var
-  CashFlows: TDoubleArray;
-  NPV, IRR: Double;
-begin
-  // Investment analysis
-  CashFlows := TDoubleArray.Create(-1000, 200, 300, 400, 500);
-  
-  NPV := TFinanceKit.NetPresentValue(0, CashFlows, 0.1);
-  IRR := TFinanceKit.InternalRateOfReturn(0, CashFlows);
-  
-  WriteLn(Format('NPV: $%.2f', [NPV]));
-  WriteLn(Format('IRR: %.2f%%', [IRR * 100]));
-end;
-```
-
 ## 📖 System Requirements
 
 ### Tested Environments
@@ -757,13 +548,9 @@ end;
 | TidyKit.Request       | ✅         | ✅            |
 | TidyKit.Crypto        | ✅         | ✅            |
 | TidyKit.Archive       | ✅         | ✅            |
-| TidyKit.Math.Stats    | ✅         | ✅            |
-| TidyKit.Math.Matrices | ✅         | ✅            |
-| TidyKit.Math.Trig     | ✅         | ✅            |
-| TidyKit.Math.Finance  | ✅         | ✅            |
-
 
 ### Dependencies
+
 - Windows
   - No external dependencies required
 - Linux
@@ -772,6 +559,7 @@ end;
 - Uses only standard Free Pascal RTL units
 
 ### Build Requirements
+
 - Free Pascal Compiler (FPC) 3.2.2+
 - Lazarus 3.6+
 - Basic development tools (git, terminal, etc)
@@ -779,6 +567,7 @@ end;
 ## 📚 Documentation
 
 For detailed documentation, see:
+
 - 📋 [Cheat Sheet](docs/cheat-sheet.md)
 - ❓ [FAQ](docs/FAQ.md) - Common questions about design decisions and patterns
 - 📝 [Strings](docs/TidyKit.Strings.md)
@@ -789,11 +578,6 @@ For detailed documentation, see:
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 📦 [Archive](docs/TidyKit.Archive.md)
-- 📊 [Math](docs/TidyKit.Math.md)
-  - 📈 [Statistics](docs/TidyKit.Math.Stats.md)
-  - 🔢 [Matrices](docs/TidyKit.Math.Matrices.md)
-  - 📐 [Trigonometry](docs/TidyKit.Math.Trigonometry.md)
-  - 💰 [Finance](docs/TidyKit.Math.Finance.md)
 
 ## 📊 Real-World Examples
 
@@ -861,18 +645,22 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE.md) f
 TidyKit is under active development. Here's what's planned:
 
 ### Planned for v0.2.0 (Q3 2025) - Simplify API
+
 - Provide a simpler API.
 
 ### Planned for v0.3.0 (Q4 2025) - Examples & Refinements
+
 - Add **more real-world examples** and tutorials demonstrating common use cases.
 - Performance optimizations based on profiling.
 - Expand unit test coverage, especially for edge cases identified during API simplification.
 
 ### Future Goals
-- More advanced math/statistics modules.
-- DataFrame-like structures for data manipulation.
-- Support for more file formats (e.g., XML, CSV).
+
+- Command line argument parser module.
+- Thread-safe collections and data structures module.
+- Concurrency module.
+- Integration with package managers.
 
 ---
 
-*Feedback and suggestions are welcome! See the [issues](https://github.com/ikelaiah/TidyKit/issues) page to contribute ideas or track progress.*
+*Feedback and suggestions are welcome! See the [issues](https://github.com/ikelaiah/tidykit-fp/issues) page to contribute ideas or track progress.*
