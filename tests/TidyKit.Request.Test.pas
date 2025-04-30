@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry,
-  TidyKit.Core, TidyKit.Request, TidyKit.JSON;
+  TidyKit.Request, TidyKit.JSON;
 
 type
   { TRequestSimpleTests }

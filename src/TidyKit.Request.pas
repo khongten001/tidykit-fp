@@ -7,7 +7,7 @@ interface
 
 uses
   Classes, SysUtils, fphttpclient, opensslsockets, openssl, base64,
-  URIParser, HTTPDefs, sockets, TidyKit.Core, TidyKit.JSON
+  URIParser, HTTPDefs, sockets, TidyKit.JSON
   {$IFDEF UNIX}, BaseUnix{$ENDIF};
 
 type

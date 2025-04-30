@@ -13,7 +13,7 @@ uses
   {$IFDEF WINDOWS}
   Windows,   // Windows API units
   {$ENDIF}
-  Classes, SysUtils, DateUtils, TidyKit.Core, zipper, libtar, StrUtils, Math;
+  Classes, SysUtils, DateUtils, zipper, libtar, StrUtils, Math;
 
 const
   DEBUG_MODE = False; // Enable debugging output

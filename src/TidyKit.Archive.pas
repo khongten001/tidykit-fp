@@ -5,7 +5,7 @@ unit TidyKit.Archive;
 interface
 
 uses
-  Classes, SysUtils, zipper, libtar, TidyKit.FS, TidyKit.Core, StrUtils;
+  Classes, SysUtils, zipper, libtar, TidyKit.FS, StrUtils;
 
 type
   { Exception class for archive operations }
