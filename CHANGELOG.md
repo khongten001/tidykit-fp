@@ -15,6 +15,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Moved all TidyKit.Math.* modules (Statistics, Matrices, Trigonometry, Finance) to a separate library to keep TidyKit-fp lean for application development work.
 - Updated documentation to reflect the restructuring of modules.
+- Removed TidyKit.Core.pas unit as it was no longer needed after the restructuring.
+
 
 ### Added
 
@@ -24,7 +26,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixes
 
 - Various minor bugfixes and performance improvements.
-
 
 ## Release [0.1.6] - 2025-04-24
 
