@@ -6,7 +6,6 @@ interface
 
 uses
   Classes, SysUtils,
-  TidyKit.Core,
   TidyKit.FS,
   TidyKit.Strings,
   TidyKit.DateTime,
@@ -14,20 +13,12 @@ uses
   TidyKit.Crypto.AES256,
   TidyKit.JSON,
   TidyKit.Request,
-  TidyKit.Math,
-  TidyKit.Math.Matrices,
-  TidyKit.Math.Finance,
-  TidyKit.Math.Trigonometry,
-  TidyKit.Math.Stats,
   TidyKit.Archive,
   TidyKit.Logger;
 
 type
-  { Re-export the core types }
-  ETidyKitException = TidyKit.Core.ETidyKitException;
-  TKitBase = TidyKit.Core.TKitBase;
-
   { Re-export the filesystem types }
+  EFSError = TidyKit.FS.EFSError;
   TFileKit = TidyKit.FS.TFileKit;
   TSearchResults = TidyKit.FS.TSearchResults;
   TFileSortOrder = TidyKit.FS.TFileSortOrder;
@@ -57,39 +48,6 @@ type
   TRequestResult = TidyKit.Request.TRequestResult;
   THttp = TidyKit.Request.THttp;
   ERequestError = TidyKit.Request.ERequestError;
-
-  { Re-export math types }
-  TDoubleArray = TidyKit.Math.TDoubleArray;
-  TIntegerArray = TidyKit.Math.TIntegerArray;
-  TSingleArray = TidyKit.Math.TSingleArray;
-  TExtendedArray = TidyKit.Math.TExtendedArray;
-  TDoublePair = TidyKit.Math.TDoublePair;
-
-  { Re-export the Matrix types }
-  IMatrix = TidyKit.Math.Matrices.IMatrix;
-  TMatrixKit = TidyKit.Math.Matrices.TMatrixKit;
-  TMatrixArray = TidyKit.Math.Matrices.TMatrixArray;
-  TLUDecomposition = TidyKit.Math.Matrices.TLUDecomposition;
-  TQRDecomposition = TidyKit.Math.Matrices.TQRDecomposition;
-  TEigenDecomposition = TidyKit.Math.Matrices.TEigenDecomposition;
-  TCholeskyDecomposition = TidyKit.Math.Matrices.TCholeskyDecomposition;
-  TEigenpair = TidyKit.Math.Matrices.TEigenpair;
-  TSVD = TidyKit.Math.Matrices.TSVD;
-  TSparseElement = TidyKit.Math.Matrices.TSparseElement;
-  TMatrixKitSparse = TidyKit.Math.Matrices.TMatrixKitSparse;
-  EMatrixError = TidyKit.Math.Matrices.EMatrixError;
-  TIterativeMethod = TidyKit.Math.Matrices.TIterativeMethod;
-
-  { Re-export the finance types }
-  TFinanceKit = TidyKit.Math.Finance.TFinanceKit;
-  EFinanceError = TidyKit.Math.Finance.EFinanceError;
-
-  { Re-export the trigonometry types }
-  TTrigKit = TidyKit.Math.Trigonometry.TTrigKit;
-
-  { Re-export the statistics types }
-  TStatsKit = TidyKit.Math.Stats.TStatsKit;
-  EStatsError = TidyKit.Math.Stats.EStatsError;
 
   { Re-export archive types }
   TArchiveKit = TidyKit.Archive.TArchiveKit;
@@ -147,11 +105,6 @@ const
   llError = TidyKit.Logger.llError;
   llFatal = TidyKit.Logger.llFatal;
 
-  { Re-export matrix constants }
-  imConjugateGradient = TidyKit.Math.Matrices.imConjugateGradient;
-  imJacobi = TidyKit.Math.Matrices.imJacobi;
-  imGaussSeidel = TidyKit.Math.Matrices.imGaussSeidel;
-
 type
   { Re-export the string types }
   TStringKit = TidyKit.Strings.TStringKit;
@@ -179,26 +132,6 @@ function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 // Logger singleton accessor
 function Logger: TLogger;
 
-// Convenience functions for matrix operations
-function CreateMatrix(Rows, Cols: Integer): IMatrix;
-function CreateMatrixFromArray(const Data: TMatrixArray): IMatrix;
-function IdentityMatrix(Size: Integer): IMatrix;
-function ZerosMatrix(Rows, Cols: Integer): IMatrix;
-function OnesMatrix(Rows, Cols: Integer): IMatrix;
-function DiagonalMatrix(const Diagonal: array of Double): IMatrix;
-function SolveLinearSystem(const A, B: IMatrix): IMatrix;
-function HilbertMatrix(Size: Integer): IMatrix;
-function ToeplitzMatrix(const FirstRow, FirstCol: TDoubleArray): IMatrix;
-function VandermondeMatrix(const Vector: TDoubleArray): IMatrix;
-function BandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
-function SymmetricMatrix(const Data: TMatrixArray): IMatrix;
-function RandomMatrix(Rows, Cols: Integer; Min, Max: Double): IMatrix;
-function SolveIterative(const A, B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
-                        MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
-
-// Convenience function for sparse matrices
-function CreateSparseMatrix(Rows, Cols: Integer): IMatrix;
-
 implementation
 
 function Logger: TLogger;
@@ -225,84 +158,6 @@ function NameValuePair(const AName: string; AValue: Double): TNameValuePair;
 begin
   Result := TidyKit.Logger.NameValuePair(AName, AValue);
 end;
-
-// Convenience functions for matrix operations
-function CreateMatrix(Rows, Cols: Integer): IMatrix;
-begin
-  Result := TMatrixKit.Create(Rows, Cols);
-end;
-
-function CreateMatrixFromArray(const Data: TMatrixArray): IMatrix;
-begin
-  Result := TMatrixKit.CreateFromArray(Data);
-end;
-
-function IdentityMatrix(Size: Integer): IMatrix;
-begin
-  Result := TMatrixKit.Identity(Size);
-end;
-
-function ZerosMatrix(Rows, Cols: Integer): IMatrix;
-begin
-  Result := TMatrixKit.Zeros(Rows, Cols);
-end;
-
-function OnesMatrix(Rows, Cols: Integer): IMatrix;
-begin
-  Result := TMatrixKit.Ones(Rows, Cols);
-end;
-
-function DiagonalMatrix(const Diagonal: array of Double): IMatrix;
-begin
-  Result := TMatrixKit.CreateDiagonal(Diagonal);
-end;
-
-function SolveLinearSystem(const A, B: IMatrix): IMatrix;
-begin
-  Result := A.Inverse.Multiply(B);
-end;
-
-function HilbertMatrix(Size: Integer): IMatrix;
-begin
-  Result := TMatrixKit.CreateHilbert(Size);
-end;
-
-function ToeplitzMatrix(const FirstRow, FirstCol: TDoubleArray): IMatrix;
-begin
-  Result := TMatrixKit.CreateToeplitz(FirstRow, FirstCol);
-end;
-
-function VandermondeMatrix(const Vector: TDoubleArray): IMatrix;
-begin
-  Result := TMatrixKit.CreateVandermonde(Vector);
-end;
-
-function BandMatrix(Size, LowerBand, UpperBand: Integer): IMatrix;
-begin
-  Result := TMatrixKit.CreateBandMatrix(Size, LowerBand, UpperBand);
-end;
-
-function SymmetricMatrix(const Data: TMatrixArray): IMatrix;
-begin
-  Result := TMatrixKit.CreateSymmetric(Data);
-end;
-
-function RandomMatrix(Rows, Cols: Integer; Min, Max: Double): IMatrix;
-begin
-  Result := TMatrixKit.CreateRandom(Rows, Cols, Min, Max);
-end;
-
-function SolveIterative(const A, B: IMatrix; Method: TIterativeMethod = imConjugateGradient; 
-                        MaxIterations: Integer = 1000; Tolerance: Double = 1e-10): IMatrix;
-begin
-  Result := A.SolveIterative(B, Method, MaxIterations, Tolerance);
-end;
-
-function CreateSparseMatrix(Rows, Cols: Integer): IMatrix;
-begin
-  Result := TMatrixKit.CreateSparse(Rows, Cols);
-end;
-
 
 initialization
   Http := Default(THttp);

@@ -1948,7 +1948,7 @@ end;
 procedure TLoggerTest.Test49_FactoryMethods;
 var
   ConsoleLogger, FileLogger, BothLogger, DebugLogger, AuditLogger: TLogger;
-  ConsoleTest, FileTest, BothTest, DebugTest, AuditTest: string;
+  FileTest, BothTest, DebugTest, AuditTest: string;
   FileContent: TStringList;
 begin
   Logger.SetLogDestinations([ldConsole]);

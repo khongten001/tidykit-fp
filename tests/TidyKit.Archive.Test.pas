@@ -1,6 +1,7 @@
-unit TestCaseArchive;
+unit TidyKit.Archive.Test;
 
 {$mode objfpc}{$H+}{$J-}
+{$ModeSwitch advancedrecords}
 
 interface
 
@@ -76,10 +77,10 @@ begin
   
   try
     if not ForceDirectories(FTestDir) then
-      raise ETidyKitException.CreateFmt('Could not create test directory: %s', [FTestDir]);
+      raise EFSError.CreateFmt('Could not create test directory: %s', [FTestDir]);
   except
     on E: Exception do
-      raise ETidyKitException.CreateFmt('Failed to setup test environment: %s', [E.Message]);
+      raise EFSError.CreateFmt('Failed to setup test environment: %s', [E.Message]);
   end;
 end;
 

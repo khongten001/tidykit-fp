@@ -1,4 +1,4 @@
-unit TestCaseDateTime;
+unit TidyKit.DateTime.Test;
 
 {$mode objfpc}{$H+}{$J-}
 
