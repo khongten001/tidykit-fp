@@ -1,6 +1,6 @@
 unit TidyKit.ParseArgs;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 {$ModeSwitch advancedrecords}
 
 interface
@@ -77,16 +77,29 @@ type
     function OptionCount: Integer;
     
     // Convenience overloads to reduce boilerplate
-    procedure AddString(const ShortOpt: Char; const LongOpt, HelpText: string;
-      const Default: string = ''; const Required: Boolean = False);
-    procedure AddInteger(const ShortOpt: Char; const LongOpt, HelpText: string;
-      const Default: Integer = 0; const Required: Boolean = False);
-    procedure AddFloat(const ShortOpt: Char; const LongOpt, HelpText: string;
-      const Default: Double = 0.0; const Required: Boolean = False);
-    procedure AddBoolean(const ShortOpt: Char; const LongOpt, HelpText: string;
-      const Default: Boolean = False; const Required: Boolean = False);
-    procedure AddArray(const ShortOpt: Char; const LongOpt, HelpText: string; const Required: Boolean = False); overload;
-    procedure AddArray(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultArr: array of string; const Required: Boolean = False); overload;
+    procedure AddString(const ShortOpt: Char; 
+                        const LongOpt, HelpText: string;
+                        const Default: string = ''; 
+                        const Required: Boolean = False);
+    procedure AddInteger(const ShortOpt: Char; 
+                         const LongOpt, HelpText: string;
+                         const Default: Integer = 0; 
+                         const Required: Boolean = False);
+    procedure AddFloat(const ShortOpt: Char; 
+                       const LongOpt, HelpText: string;
+                       const Default: Double = 0.0; 
+                       const Required: Boolean = False);
+    procedure AddBoolean(const ShortOpt: Char; 
+                         const LongOpt, HelpText: string;
+                         const Default: Boolean = False; 
+                         const Required: Boolean = False);
+    procedure AddArray(const ShortOpt: Char; 
+                       const LongOpt, HelpText: string; 
+                       const Required: Boolean = False); overload;
+    procedure AddArray(const ShortOpt: Char; 
+                       const LongOpt, HelpText: string; 
+                       const DefaultArr: array of string; 
+                       const Required: Boolean = False); overload;
 
     // Value retrieval (result map)
     function GetString(const LongOpt: string): string;

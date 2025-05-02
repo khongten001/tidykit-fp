@@ -43,6 +43,7 @@ var
   Verbose: Boolean;
   Items: array of string;
 begin
+  // Initialize or reset parser (clears options, errors, and previous results)
   Parser.Init;
   Parser.SetUsage('myapp [options]');
   Parser.AddString('f', 'file', 'Input file path', 'default.txt');
@@ -144,7 +145,69 @@ end.
 
 ---
 
-## 6. API Reference
+## 6. Complex Example
+
+```pascal
+program ComplexApp;
+
+uses
+  SysUtils,
+  TidyKit.ParseArgs;
+
+var
+  Parser: TArgParser;
+  InputFile, OutputDir: string;
+  Threads: Integer;
+  Verbose: Boolean;
+  Tags: TArrayOfString;
+  i: Integer;
+begin
+  Parser.Init;
+  Parser.SetUsage('ComplexApp [options]');
+
+  Parser.AddString('i', 'input', 'Path to input CSV file', '', True);
+  Parser.AddString('o', 'output', 'Directory for output', './out');
+  Parser.AddInteger('t', 'threads', 'Number of worker threads', 4);
+  Parser.AddBoolean('v', 'verbose', 'Verbose logging');
+  Parser.AddArray('T', 'tags', 'Filter tags to process');
+
+  Parser.Parse(ParamStrArray);
+
+  if Parser.HasError then
+  begin
+    Writeln('Error: ', Parser.Error);
+    Parser.ShowUsage;
+    Halt(1);
+  end;
+
+  InputFile := Parser.GetString('input');
+  OutputDir := Parser.GetString('output');
+  Threads   := Parser.GetInteger('threads');
+  Verbose   := Parser.GetBoolean('verbose');
+  Tags      := Parser.GetArray('tags');
+
+  Writeln('Configuration:');
+  Writeln('  Input  : ', InputFile);
+  Writeln('  Output : ', OutputDir);
+  Writeln('  Threads: ', Threads);
+  Writeln('  Verbose: ', BoolToStr(Verbose, True));
+  if Length(Tags) > 0 then
+  begin
+    Write('  Tags   :');
+    for i := 0 to High(Tags) do
+      Write(' ', Tags[i]);
+    Writeln;
+  end
+  else
+    Writeln('  Tags   : (none)');
+
+  // ... perform processing ...
+end.
+```
+
+---
+
+## 7. API Reference
 
 ```pascal
 TArgType = (atString, atInteger, atFloat, atBoolean, atArray);
@@ -162,7 +225,7 @@ TArgCallback      = procedure(const Value: TArgValue);
 TArgCallbackClass = procedure(const Value: TArgValue) of object;
 
 TArgParser = record
-  procedure Init;
+  procedure Init; // Initialize/reset parser state (clears options, errors, usage text, and results)
   procedure SetUsage(const AUsage: string);
   procedure Add(
     ShortOpt: Char;
@@ -195,7 +258,7 @@ end;
 
 ---
 
-## 7. Tips & Best Practices
+## 8. Tips & Best Practices
 
 - Always initialize the `DefaultValue` record before `Add`.
 - For boolean flags, presence ⇒ `True`.
