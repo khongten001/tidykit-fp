@@ -38,12 +38,17 @@ Ideal for small to medium Pascal programs.
 ```pascal
 var
   Parser: TArgParser;
+  FilePath: string;
+  Count: Integer;
+  Verbose: Boolean;
+  Items: array of string;
 begin
   Parser.Init;
   Parser.SetUsage('myapp [options]');
-
-  // Add options here (see Section 4)
-
+  Parser.AddString('f', 'file', 'Input file path', 'default.txt');
+  Parser.AddInteger('c', 'count', 'Number of items', 5);
+  Parser.AddBoolean('v', 'verbose', 'Enable verbose mode');
+  Parser.AddArray('l', 'list', 'Comma-separated list');
   Parser.Parse(ParamStrArray);
   if Parser.HasError then
   begin
@@ -51,8 +56,11 @@ begin
     Parser.ShowUsage;
     Halt(1);
   end;
-
-  // Continue program
+  FilePath := Parser.GetString('file');
+  Count := Parser.GetInteger('count');
+  Verbose := Parser.GetBoolean('verbose');
+  Items := Parser.GetArray('list');
+  // Your program logic...
 end.
 ```
 
@@ -60,28 +68,25 @@ end.
 
 ## 4. Defining Options
 
-Call `Parser.Add` with **eight parameters**:
+With the new overloads you can define options in a single call:
 
 ```pascal
-Parser.Add(
-  'n',               // Short: -n
-  'number',          // Long:  --number
-  atInteger,         // Type
-  'Number of items', // Help text
-  nil,               // Free procedure callback or nil
-  @OnNumber,         // Method callback or nil
-  False,             // Required (True = must appear)
-  DefaultValue       // A TArgValue record with default set
-);
+Parser.AddString('f', 'file', 'Input file path', 'default.txt');
+Parser.AddInteger('c', 'count', 'Number of items', 10, True);
+Parser.AddFloat('p', 'precision', 'Decimal precision', 3.14);
+Parser.AddBoolean('v', 'verbose', 'Verbose mode');
+Parser.AddArray('l', 'list', 'Comma-separated list');
 ```
 
-- Initialize `DefaultValue` before use:
-  ```pascal
-  var V: TArgValue;
-  V.ArgType := atInteger;
-  V.Int := 10;  // default value
-  ```
-- Use `nil` if you skip a callback.
+These methods implicitly create the default `TArgValue` record. After parsing, retrieve values with:
+
+```pascal
+FilePath := Parser.GetString('file');
+Count    := Parser.GetInteger('count');
+Precision:= Parser.GetFloat('precision');
+Verbose  := Parser.GetBoolean('verbose');
+Items    := Parser.GetArray('list');
+```
 
 ---
 
@@ -169,12 +174,22 @@ TArgParser = record
     Required: Boolean;
     DefaultValue: TArgValue
   );
+  procedure AddString(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultValue: string);
+  procedure AddInteger(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultValue: Integer; const Required: Boolean = False);
+  procedure AddFloat(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultValue: Double = 0.0; const Required: Boolean = False);
+  procedure AddBoolean(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultValue: Boolean = False; const Required: Boolean = False);
+  procedure AddArray(const ShortOpt: Char; const LongOpt, HelpText: string; const Required: Boolean = False);
   procedure Parse(const Args: array of string);
   function HasError: Boolean;
   property Error: string read GetError;
   procedure ShowUsage;
   procedure ShowHelp;
   function OptionCount: Integer;
+  function GetString(const LongOpt: string): string;
+  function GetInteger(const LongOpt: string): Integer;
+  function GetFloat(const LongOpt: string): Double;
+  function GetBoolean(const LongOpt: string): Boolean;
+  function GetArray(const LongOpt: string): array of string;
 end;
 ```
 
