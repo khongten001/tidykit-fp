@@ -258,11 +258,95 @@ end;
 
 ---
 
-## 8. Tips & Best Practices
+## 8. Class/Record Diagram
+
+```mermaid
+classDiagram
+    class TArgType {
+        <<enumeration>>
+        atString
+        atInteger
+        atFloat
+        atBoolean
+        atArray
+    }
+    class TArrayOfString {
+        <<type>>
+        array of string
+    }
+    class TArgValue {
+        <<record>>
+        ArgType: TArgType
+        Str: string
+        Int: Integer
+        Flt: Double
+        Bool: Boolean
+        Arr: TArrayOfString
+    }
+    class TArgCallback {
+        <<procedure>>
+        +Invoke(Value: TArgValue)
+    }
+    class TArgCallbackClass {
+        <<procedure of object>>
+        +Invoke(Value: TArgValue)
+    }
+    class TArgOption {
+        <<record>>
+        ShortOpt: Char
+        LongOpt: string
+        ArgType: TArgType
+        HelpText: string
+        DefaultValue: TArgValue
+        Callback: TArgCallback
+        CallbackClass: TArgCallbackClass
+        Required: Boolean
+        WasSpecified: Boolean
+    }
+    class TParseResult {
+        <<record>>
+        Name: string
+        Value: TArgValue
+    }
+    class TArgParser {
+        <<record>>
+        -FOptions: array of TArgOption
+        -FResults: array of TParseResult
+        -FUsage: string
+        -FErrorMsg: string
+        +Init()
+        +SetUsage(AUsage: string)
+        +Add(ShortOpt, LongOpt, ArgType, HelpText, Callback, CallbackClass, Required, DefaultValue)
+        +Parse(Args: array of string)
+        +HasError(): Boolean
+        +GetError(): string
+        +ShowUsage()
+        +ShowHelp()
+        +OptionCount(): Integer
+        +GetString(LongOpt: string): string
+        +GetInteger(LongOpt: string): Integer
+        +GetFloat(LongOpt: string): Double
+        +GetBoolean(LongOpt: string): Boolean
+        +GetArray(LongOpt: string): TArrayOfString
+        +AddString(ShortOpt, LongOpt, HelpText, DefaultValue, Required)
+        +AddInteger(ShortOpt, LongOpt, HelpText, DefaultValue, Required)
+        +AddFloat(ShortOpt, LongOpt, HelpText, DefaultValue, Required)
+        +AddBoolean(ShortOpt, LongOpt, HelpText, DefaultValue, Required)
+        +AddArray(ShortOpt, LongOpt, HelpText, Required)
+    }
+    TArgParser o-- "*" TArgOption : contains
+    TArgParser o-- "*" TParseResult : stores
+    TArgOption o-- "1" TArgValue : has
+    TParseResult o-- "1" TArgValue : has
+```
+
+---
+
+## 9. Tips & Best Practices
 
 - Always initialize the `DefaultValue` record before `Add`.
 - For boolean flags, presence ⇒ `True`.
 - Set `Required := True` to enforce mandatory options.
 - Choose method callbacks (`CallbackClass`) when updating object state.
 
-Happy Free Pascal coding!  
+Happy Free Pascal coding!
