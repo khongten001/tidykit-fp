@@ -1,3 +1,10 @@
+//-------------------------------------------------------------------------------
+// Unit: TidyKit.ParseArgs
+//
+// A lightweight, record-based command-line argument parser for Free Pascal.
+// Supports string, integer, float, boolean, and array types.
+// Provides methods to define options, parse command-line arguments, and retrieve parsed values.
+//-------------------------------------------------------------------------------
 unit TidyKit.ParseArgs;
 
 {$mode objfpc}{$H+}{$J-}
@@ -8,100 +15,97 @@ interface
 uses
   Classes, SysUtils;
 
+{ TArgType: Enumeration of supported argument types. }
 type
   TArgType = (atString, atInteger, atFloat, atBoolean, atArray);
   
+  { TArrayOfString: Dynamic array of strings. }
   TArrayOfString = array of string;
 
+  { TArgValue: Container for storing a parsed argument value. }
   TArgValue = record
-    ArgType: TArgType;
-    Str: string;
-    Int: Integer;
-    Flt: Double;
-    Bool: Boolean;
-    Arr: TArrayOfString;
+    ArgType: TArgType;   { The type of this value }
+    Str: string;         { Value when ArgType = atString }
+    Int: Integer;        { Value when ArgType = atInteger }
+    Flt: Double;         { Value when ArgType = atFloat }
+    Bool: Boolean;       { Value when ArgType = atBoolean }
+    Arr: TArrayOfString; { Value when ArgType = atArray }
   end;
 
+  { TArgCallback: Procedure type for callbacks on parsed values. }
   TArgCallback = procedure(const Value: TArgValue);
+  { TArgCallbackClass: Class procedure type for callbacks on parsed values. }
   TArgCallbackClass = procedure(const Value: TArgValue) of object;
 
+  { TArgOption: Record for defining a command-line option. }
   TArgOption = record
-    ShortOpt: Char;
-    LongOpt: string;
-    ArgType: TArgType;
-    HelpText: string;
-    DefaultValue: TArgValue;
-    Callback: TArgCallback;
-    CallbackClass: TArgCallbackClass;
-    Required: Boolean;
+    ShortOpt: Char;      { Short option switch (e.g., '-x') }
+    LongOpt: string;     { Long option switch (e.g., '--example') }
+    ArgType: TArgType;   { Type of value expected for this option }
+    HelpText: string;    { Brief description of the option }
+    DefaultValue: TArgValue; { Default value if not provided }
+    Callback: TArgCallback; { Callback procedure for this option }
+    CallbackClass: TArgCallbackClass; { Class callback procedure for this option }
+    Required: Boolean;   { Flag indicating if this option is required }
   end;
 
+  { TOptionsArray: Dynamic array of TArgOption records. }
   TOptionsArray = array of TArgOption;
 
+  { TParseResult: Record for storing a parsed result. }
   TParseResult = record
-    Name: string;
-    Value: TArgValue;
+    Name: string;        { Name of the option }
+    Value: TArgValue;    { Parsed value }
   end;
+  { TParseResults: Dynamic array of TParseResult records. }
   TParseResults = array of TParseResult;
 
+  { TArgParser: Main record to define options, parse arguments, and access results. }
   TArgParser = record
   private
-    FOptions: TOptionsArray;
-    FUsage: string;
-    FError: string;
-    FHasError: Boolean;
-    FResults: TParseResults;
-    
+    FOptions: TOptionsArray;  { Defined command-line options }
+    FUsage: string;           { Custom usage banner text }
+    FError: string;           { Error message if parsing fails }
+    FHasError: Boolean;       { Flag indicating parsing error }
+    FResults: TParseResults;  { Parsed results }
+
+    { Locate option by input switch. }
     function FindOption(const Opt: string): Integer;
+    { Convert string to TArgValue based on ArgType. }
     function ParseValue(const ValueStr: string; const ArgType: TArgType; out Value: TArgValue): Boolean;
+    { Internal helper to add an option record. }
     procedure AddOption(const Option: TArgOption);
+    { Record a parsing error. }
     procedure SetError(const AError: string);
+    { Retrieve the current error message. }
     function GetError: string;
   public
+    { Initialize parser state. Call before adding any options. }
     procedure Init;
-    
-    procedure Add(const ShortOpt: Char; const LongOpt: string;
-      const ArgType: TArgType; const HelpText: string;
-      const Callback: TArgCallback;
-      const CallbackClass: TArgCallbackClass;
-      const Required: Boolean;
-      const DefaultValue: TArgValue);
-    
+    { Add a new option with all parameters including callbacks. }
+    procedure Add(const ShortOpt: Char; const LongOpt: string; const ArgType: TArgType; const HelpText: string; const Callback: TArgCallback; const CallbackClass: TArgCallbackClass; const Required: Boolean; const DefaultValue: TArgValue);
+    { Parse the provided command-line arguments array. }
     procedure Parse(const Args: array of string);
+    { Returns True if an error occurred during parsing. }
     function HasError: Boolean;
+    { Read-only property to get error message. }
     property Error: string read GetError;
-    
+    { Print formatted help information based on defined options. }
     procedure ShowHelp;
+    { Print usage banner and options. }
     procedure ShowUsage;
+    { Set custom usage banner (e.g., program name and synopsis). }
     procedure SetUsage(const AUsage: string);
+    { Get count of options defined. }
     function OptionCount: Integer;
-    
-    // Convenience overloads to reduce boilerplate
-    procedure AddString(const ShortOpt: Char; 
-                        const LongOpt, HelpText: string;
-                        const Default: string = ''; 
-                        const Required: Boolean = False);
-    procedure AddInteger(const ShortOpt: Char; 
-                         const LongOpt, HelpText: string;
-                         const Default: Integer = 0; 
-                         const Required: Boolean = False);
-    procedure AddFloat(const ShortOpt: Char; 
-                       const LongOpt, HelpText: string;
-                       const Default: Double = 0.0; 
-                       const Required: Boolean = False);
-    procedure AddBoolean(const ShortOpt: Char; 
-                         const LongOpt, HelpText: string;
-                         const Default: Boolean = False; 
-                         const Required: Boolean = False);
-    procedure AddArray(const ShortOpt: Char; 
-                       const LongOpt, HelpText: string; 
-                       const Required: Boolean = False); overload;
-    procedure AddArray(const ShortOpt: Char; 
-                       const LongOpt, HelpText: string; 
-                       const DefaultArr: array of string; 
-                       const Required: Boolean = False); overload;
-
-    // Value retrieval (result map)
+    { Convenience overloads to add typed options more easily. }
+    procedure AddString(const ShortOpt: Char; const LongOpt, HelpText: string; const Default: string = ''; const Required: Boolean = False);
+    procedure AddInteger(const ShortOpt: Char; const LongOpt, HelpText: string; const Default: Integer = 0; const Required: Boolean = False);
+    procedure AddFloat(const ShortOpt: Char; const LongOpt, HelpText: string; const Default: Double = 0.0; const Required: Boolean = False);
+    procedure AddBoolean(const ShortOpt: Char; const LongOpt, HelpText: string; const Default: Boolean = False; const Required: Boolean = False);
+    procedure AddArray(const ShortOpt: Char; const LongOpt, HelpText: string; const Required: Boolean = False); overload;
+    procedure AddArray(const ShortOpt: Char; const LongOpt, HelpText: string; const DefaultArr: array of string; const Required: Boolean = False); overload;
+    { Accessors for parsed values by long option name. }
     function GetString(const LongOpt: string): string;
     function GetInteger(const LongOpt: string): Integer;
     function GetFloat(const LongOpt: string): Double;
@@ -235,7 +239,7 @@ var
   Value: TArgValue;
   HasValue: Boolean;
 begin
-  // Auto --help
+  { Auto --help }
   for i := Low(Args) to High(Args) do
     if (Args[i] = '-h') or (Args[i] = '--help') then
     begin
@@ -264,7 +268,7 @@ begin
       Exit;
     end;
     
-    // Initialize with default value for this option (sets ArgType)
+    { Initialize with default value for this option (sets ArgType) }
     Value := FOptions[OptionIdx].DefaultValue;
     HasValue := False;
     if (i < High(Args)) and (Args[i+1][1] <> '-') then
@@ -275,7 +279,7 @@ begin
         SetError('Invalid value for option ' + CurrentOpt);
         Exit;
       end;
-      Inc(i); // Skip the value
+      Inc(i); { Skip the value }
     end
     else if FOptions[OptionIdx].ArgType <> atBoolean then
     begin
@@ -292,7 +296,7 @@ begin
     end
     else
     begin
-      // For boolean flags without value, interpret presence as True
+      { For boolean flags without value, interpret presence as True }
       if FOptions[OptionIdx].ArgType = atBoolean then
         Value.Bool := True;
       if Assigned(FOptions[OptionIdx].Callback) then
@@ -300,14 +304,14 @@ begin
       if Assigned(FOptions[OptionIdx].CallbackClass) then
         FOptions[OptionIdx].CallbackClass(Value);
     end;
-    // Store parsed value
+    { Store parsed value }
     SetLength(FResults, Length(FResults) + 1);
     FResults[High(FResults)].Name := FOptions[OptionIdx].LongOpt;
     FResults[High(FResults)].Value := Value;
     Inc(i);
   end;
   
-  // Check for required options
+  { Check for required options }
   for j := Low(FOptions) to High(FOptions) do
   begin
     if FOptions[j].Required and (FOptions[j].ArgType <> atBoolean) then
@@ -323,7 +327,7 @@ var
   i: Integer;
   MaxShort, MaxLong: Integer;
 begin
-  // Calculate max widths for formatting
+  { Calculate max widths for formatting }
   MaxShort := 0;
   MaxLong := 0;
   for i := Low(FOptions) to High(FOptions) do
