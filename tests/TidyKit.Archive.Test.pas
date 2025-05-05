@@ -14,7 +14,7 @@ uses
   BaseUnix,  // Already used for Unix-specific types
   Unix,
   {$ENDIF}
-  TidyKit;
+  TidyKit.FS, TidyKit.Archive;
 
 type
   { TArchiveTests }

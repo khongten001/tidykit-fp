@@ -3,7 +3,7 @@ program CryptoKitExample;
 {$mode objfpc}{$H+}{$J-}
 
 uses
-  Classes, SysUtils, TidyKit;
+  Classes, SysUtils, TidyKit.Crypto;
 
 var
   PlainText, Key: string;

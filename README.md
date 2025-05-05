@@ -6,7 +6,7 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.7-blueviolet.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.8-blueviolet.svg)]()
 
 **Providing utilities and development tools without external dependencies.**
 
@@ -189,53 +189,38 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 ## 📝 Library Usage
 
-Add either the all-inclusive TidyKit unit or choose specific units you need:
-
 ```pascal
-// Option 1: All-inclusive unit (includes all functionality)
-uses
-  TidyKit;
-
-// Option 2: Choose specific units based on your needs
 uses
   // String manipulation unit
   TidyKit.Strings,           // String operations
-  
+
   // File system operations
   TidyKit.FS,                // File system operations
-  
+
   // Date Time manipulation unit
   TidyKit.DateTime,          // Date Time operations
-  
+
   // JSON functionality
   TidyKit.JSON,              // All JSON functionality
-  
+
   // Logging functionality
   TidyKit.Logger,            // Easy to use logging system
-  
+
   // Network units
   TidyKit.Request,           // HTTP client with simple and advanced features
-  
+
   // Cryptography units
   TidyKit.Crypto,            // Base crypto operations
   TidyKit.Crypto.SHA2,       // SHA2 implementation
   TidyKit.Crypto.SHA3,       // SHA3 implementation
   TidyKit.Crypto.AES256,     // AES-256 implementation
-  
+
   // Archive operations
   TidyKit.Archive;           // Archive operations
+
+  // Command-line argument parsing
+  TidyKit.ParseArgs;         // Simple argument parser
 ```
-
-Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
-
-Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
-
-- ⚡ Reduces compilation time
-- 📦 Minimizes executable size
-- 🔍 Makes dependencies more explicit
-- 🔧 Improves code maintainability
-
-Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
 ## 🚀 Quick Start
 

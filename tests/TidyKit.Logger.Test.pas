@@ -9,7 +9,6 @@ uses
  ,SysUtils
  ,fpcunit
  ,testregistry
- //, Tidykit  // Alternative
  ,TidyKit.Logger;
 
 

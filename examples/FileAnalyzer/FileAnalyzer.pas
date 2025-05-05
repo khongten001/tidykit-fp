@@ -13,7 +13,7 @@ uses
   cthreads,
   {$ENDIF}
   Classes, SysUtils, Math,
-  TidyKit.Core, TidyKit.FS;
+  TidyKit.FS;
 
 const
   LINE_SEPARATOR = '-----------------------------------------------';

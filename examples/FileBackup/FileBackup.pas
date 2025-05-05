@@ -7,7 +7,7 @@ uses
   cthreads,
   {$ENDIF}
   Classes, SysUtils, DateUtils,
-  TidyKit.Core, TidyKit.FS;
+  TidyKit.FS;
 
 const
   VERSION = '1.0.0';

@@ -6,7 +6,7 @@ unit TidyKit.Crypto.Test;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, TidyKit, TidyKit.Crypto.AES256, DateUtils;
+  Classes, SysUtils, fpcunit, testregistry, TidyKit.Crypto, TidyKit.Crypto.AES256, DateUtils;
 
 type
   { TTestCaseCrypto }
