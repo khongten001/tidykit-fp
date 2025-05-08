@@ -16,6 +16,8 @@ A comprehensive reference of TidyKit's features and usage examples.
   - [📁File System Operations](#file-system-operations)
   - [🌐 HTTP Request Operations](#-http-request-operations)
   - [🧵String operations](#string-operations)
+  - [📚 Collection Operations](#-collection-operations)
+    - [List Operations](#list-operations)
   - [🕙 DateTime Operations](#-datetime-operations)
     - [Basic Operations](#basic-operations)
     - [Component Access](#component-access)
@@ -484,6 +486,46 @@ HexStr := TStringKit.HexEncode('abc');                   // Hex encoding (616263
 Original := TStringKit.HexDecode('616263');              // Hex decoding
 ```
 
+## 📚 Collection Operations
+
+### List Operations
+
+```pascal
+// TList<T> - Generic List Operations
+List := TList<Integer>.Create;              // Create a new list
+List := TList<Integer>.New;                 // Create list with interface (auto-cleanup)
+IList := CreateList<Integer>;               // Alternative interface creation helper
+
+// Basic Methods
+List.Add(Item)                              // Add item to list, returns index
+List.AddRange([Item1, Item2, Item3])        // Add multiple items
+List.Insert(Index, Item)                    // Insert at specific position
+List.Delete(Index)                          // Delete by index
+List.Remove(Item, @EqualityFunc)            // Remove by value using equality function
+List.Clear                                  // Remove all items
+
+// Search & Access
+Value := List[Index]                        // Get item by index
+List[Index] := Value                        // Set item by index
+Count := List.Count                         // Get number of items
+List.Capacity := Value                      // Set/get allocated capacity
+Index := List.IndexOf(Item, @EqualityFunc)  // Find item index
+Found := List.Contains(Item, @EqualityFunc) // Check if item exists
+Success := List.Find(@Predicate, FoundValue) // Find by predicate
+Results := List.FindAll(@Predicate)         // Get all matching items
+
+// Transformations
+List.Sort(@CompareFunc)                     // Sort using comparison function
+List.Reverse                                // Reverse list order
+Slice := List.Slice(StartIdx, Count)        // Get subrange as array
+Array := List.ToArray                       // Convert to array
+
+// Function Types
+// TEqualityFunc<T> = function(const A, B: T): Boolean
+// TCompareFunc<T> = function(const A, B: T): Integer
+// TPredicateFunc<T> = function(const Item: T): Boolean of object
+```
+
 ## 🕙 DateTime Operations
 
 ### Basic Operations
@@ -760,7 +802,6 @@ begin
   CipherText := TCryptoKit.AES256EncryptCBC('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
   
-  // CTR Mode (no padding needed)
   CipherText := TCryptoKit.AES256EncryptCTR('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCTR(CipherText, Key, IV);
 end;

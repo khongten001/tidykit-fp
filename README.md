@@ -42,6 +42,7 @@
     - [🌐 HTTP Request Operations](#-http-request-operations)
     - [🔐 Crypto Operations](#-crypto-operations)
     - [📦 Archive Operations](#-archive-operations)
+    - [📚 Collections Operations](#-collections-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
     - [Dependencies](#dependencies)
@@ -156,6 +157,25 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
+- 📚 **Collections**
+  - Generic List<T> implementation with dynamic array backing
+  - Strong typing with generics
+  - Automatic memory management through interfaces
+  - Common collection operations:
+    - Add, Insert, Remove, and Clear methods
+    - Item access by index
+    - Search and filter capabilities
+    - Sorting with custom comparers
+    - ForEach iteration
+    - ToArray conversion
+  - Specialized list types:
+    - StringList for string collections
+    - ObjectList for TObject descendants
+  - Value semantics for primitive types
+  - Object lifecycle management for complex types
+  - Interface compatibility with standard Pascal enumerators
+  - Thoroughly tested with comprehensive test cases
+
 ## 💻 Installation (Lazarus IDE)
 
 1. Clone the repository:
@@ -216,10 +236,13 @@ uses
   TidyKit.Crypto.AES256,     // AES-256 implementation
 
   // Archive operations
-  TidyKit.Archive;           // Archive operations
+  TidyKit.Archive,           // Archive operations
 
   // Command-line argument parsing
-  TidyKit.ParseArgs;         // Simple argument parser
+  TidyKit.ParseArgs,         // Simple argument parser
+
+  // Collections
+  TidyKit.Collections.List;  // Generic List implementation
 ```
 
 ## 🚀 Quick Start
@@ -519,6 +542,100 @@ begin
 end;
 ```
 
+### 📚 Collections Operations
+
+```pascal
+uses
+  TidyKit.Collections.List;
+
+var
+  Numbers: IList<Integer>;
+  FilteredNumbers: IList<Integer>;
+  Strings: IStringList;
+  I: Integer;
+  Person: TPerson;
+  People: IObjectList<TPerson>;
+begin
+  // Create a generic list of integers
+  Numbers := TList<Integer>.Create;
+  
+  // Add items
+  Numbers.Add(1);
+  Numbers.Add(2);
+  Numbers.Add(3);
+  Numbers.Add(4);
+  Numbers.Add(5);
+  
+  // Access items by index
+  WriteLn('Third number: ', Numbers[2]); // Zero-based index
+  
+  // Modify items
+  Numbers[1] := 20; // Change 2 to 20
+  
+  // Iterate over all items
+  Numbers.ForEach(
+    procedure(const Item: Integer)
+    begin
+      Write(Item, ' ');
+    end
+  );
+  WriteLn; // Output: 1 20 3 4 5
+  
+  // Find items
+  if Numbers.Contains(20) then
+    WriteLn('Found 20 in the list');
+  
+  // Filter items
+  FilteredNumbers := Numbers.Where(
+    function(const Item: Integer): Boolean
+    begin
+      Result := Item > 3;
+    end
+  );
+  
+  // Convert to array
+  for I in FilteredNumbers.ToArray do
+    Write(I, ' ');
+  WriteLn; // Output: 4 5
+  
+  // Specialized string list
+  Strings := TStringList.Create;
+  Strings.Add('Apple');
+  Strings.Add('Banana');
+  Strings.Add('Cherry');
+  
+  // Case-insensitive search
+  if Strings.ContainsText('apple') then
+    WriteLn('Found apple in the list');
+    
+  // Working with objects (with automatic memory management)
+  People := TObjectList<TPerson>.Create(True); // True = own objects
+  
+  Person := TPerson.Create;
+  Person.Name := 'John';
+  Person.Age := 30;
+  People.Add(Person); // List takes ownership
+  
+  Person := TPerson.Create;
+  Person.Name := 'Jane';
+  Person.Age := 25;
+  People.Add(Person);
+  
+  // Find object by criteria
+  Person := People.FirstOrDefault(
+    function(const Item: TPerson): Boolean
+    begin
+      Result := Item.Age < 30;
+    end
+  );
+  
+  if Assigned(Person) then
+    WriteLn('Found person under 30: ', Person.Name);
+    
+  // No need to free objects - handled automatically when list goes out of scope
+end;
+```
+
 ## 📖 System Requirements
 
 ### Tested Environments
@@ -533,6 +650,7 @@ end;
 | TidyKit.Request       | ✅         | ✅            |
 | TidyKit.Crypto        | ✅         | ✅            |
 | TidyKit.Archive       | ✅         | ✅            |
+| TidyKit.Collections   | ✅         | ✅            |
 
 ### Dependencies
 
@@ -563,6 +681,7 @@ For detailed documentation, see:
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 📦 [Archive](docs/TidyKit.Archive.md)
+- 📚 [Collections](docs/TidyKit.Collections.md)
 
 ## 📊 Real-World Examples
 
