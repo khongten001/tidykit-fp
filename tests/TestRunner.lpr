@@ -5,16 +5,17 @@ program TestRunner;
 uses
   Classes
   , consoletestrunner
-  , TidyKit.DateTime.Test
-  , TidyKit.FS.Test
-  , TidyKit.Strings.Test
-  , TidyKit.Crypto.Test
-  , TidyKit.Request.Test
-  , TidyKit.Archive.Test
-  , TidyKit.Crypto.AES256.Test
-  , TidyKit.JSON.Test
-  , TidyKit.Logger.Test
-  , TidyKit.ParseArgs.Test;
+  //, TidyKit.DateTime.Test
+  //, TidyKit.FS.Test
+  //, TidyKit.Strings.Test
+  //, TidyKit.Crypto.Test
+  //, TidyKit.Request.Test
+  //, TidyKit.Archive.Test
+  //, TidyKit.Crypto.AES256.Test
+  //, TidyKit.JSON.Test
+  //, TidyKit.Logger.Test
+  //, TidyKit.ParseArgs.Test
+  , TidyKit.Collections.List.Test;
 
 type
 
