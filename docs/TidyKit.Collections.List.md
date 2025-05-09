@@ -106,7 +106,7 @@ end;
 ```pascal
 generic TCompareFunc<T> = function(const A, B: T): Integer;
 generic TEqualityFunc<T> = function(const A, B: T): Boolean;
-generic TPredicateFunc<T> = function(const Item: T): Boolean of object;
+generic TPredicateFunc<T> = function(const Item: T): Boolean;
 
 generic IList<T> = interface
   // Interface definition for automatic memory management
@@ -123,9 +123,9 @@ end;
 
 | Property | Description |
 |----------|-------------|
-| `Count: Integer` | Gets the number of elements in the list |
-| `Capacity: Integer` | Gets or sets the capacity (allocated size) of the list |
-| `Items[Index: Integer]: T` | Default indexed property for accessing elements |
+| `Count: Integer` | Gets the number of elements in the list. |
+| `Capacity: Integer` | Gets or sets the capacity (allocated size) of the list. When setting, if the new capacity is less than the current count, the list will be truncated. |
+| `Items[Index: Integer]: T` | Default indexed property for accessing elements. |
 
 ### Construction and Destruction
 
@@ -163,27 +163,45 @@ end;
 
 | Method | Description |
 |--------|-------------|
-| `Sort(CompareFunc: TCompareFunc<T>)` | Sorts the elements using the provided comparison function |
-| `Reverse` | Reverses the order of elements in the list |
+| `Sort(CompareFunc: TCompareFunc<T>)` | Sorts the elements using the provided comparison function (QuickSort algorithm). |
+| `Reverse` | Reverses the order of elements in the list. |
 | `Slice(StartIndex: Integer; Count: Integer): TArray<T>` | Extracts a portion of the list |
 | `ToArray: TArray<T>` | Creates a copy of the list as a standard array |
 
 ## Performance
 
-The TidyKit.Collections.List implementation offers excellent performance characteristics:
+The TidyKit.Collections.List implementation offers excellent performance characteristics, especially after optimizations to its growth strategy:
 
-| Operation | 10,000 elements | 100,000 elements | 1,000,000 elements |
-|-----------|-----------------|------------------|-------------------|
-| Add | ~0.013s | ~0.129s | ~1.355s |
-| Search (beginning) | <0.001s | <0.001s | <0.001s |
-| Search (middle) | <0.001s | <0.001s | ~0.001s |
-| Search (end) | <0.001s | <0.001s | ~0.003s |
-| Sort | ~0.001s | ~0.014s | ~0.163s |
-| Reverse | <0.001s | ~0.001s | ~0.005s |
+| Operation          | 10,000 elements | 100,000 elements | 1,000,000 elements | Complexity |
+|--------------------|-----------------|------------------|--------------------|------------|
+| Add (amortized)    | <0.001s         | <0.001s          | ~0.023s            | O(1)*      |
+| Search (beginning) | <0.001s         | <0.001s          | <0.001s            | O(1)       |
+| Search (middle)    | <0.001s         | <0.001s          | ~0.003s            | O(n)       |
+| Search (end)       | <0.001s         | <0.001s          | ~0.005s            | O(n)       |
+| Sort               | <0.001s         | ~0.031s          | ~0.336s            | O(n log n) |
+| Reverse            | <0.001s         | <0.001s          | ~0.016s            | O(n)       |
+
+*\* Amortized complexity. Timings are illustrative and may vary based on system and conditions. The "Add" operation's performance reflects a growth strategy that doubles capacity when needed.*
+
+## Implementation Details
+
+The list is implemented using a dynamic array.
+
+Key aspects of the capacity management and implementation:
+- **Initial Capacity:** The list starts with a capacity of 0.
+- **Growth Strategy:** When an `Add` operation causes the count to reach the current capacity:
+    - If the capacity was 0, it grows to 4.
+    - Otherwise, the capacity is doubled.
+  This ensures amortized O(1) time complexity for `Add` operations.
+- **`AddRange` Capacity:** The `AddRange` method calculates the exact required capacity and resizes once if necessary.
+- **`Insert` Capacity:** The `Insert` method increases capacity by 1 if `FCount + 1` exceeds current capacity. This is typically O(n) due to element shifting, and the single capacity increment is minor in comparison.
+- **`SetCapacity` Behavior:**
+    - If the new capacity is less than the current `FCount`, `FCount` is truncated to the new capacity.
+    - Setting capacity to 0 effectively clears the list and releases its internal array.
+- **`Clear` Operation:** Resets `FCount` to 0 and sets the internal array length to 0, releasing its memory.
+- **Sorting:** Uses a QuickSort algorithm.
 
 ## Capacity Management
-
-The list automatically manages its internal capacity, but you can also control it manually:
 
 ```pascal
 var

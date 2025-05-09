@@ -178,8 +178,8 @@ end;
 | Property | Description | Get Complexity | Set Complexity |
 |----------|-------------|----------------|----------------|
 | `Count: Integer` | Number of elements in the deque. | O(1) | - |
-| `Capacity: Integer` | Current capacity of the deque. | O(1) | O(n) |
-| `Items[Index: Integer]: T` | Gets or sets the element at the specified index. | O(1) | O(1) |
+| `Capacity: Integer` | Current capacity of the deque. When setting, if the new value is less than the current count, the capacity will be adjusted to at least match the count. | O(1) | O(n) |
+| `Items[Index: Integer]: T` | Gets or sets the element at the specified logical index. | O(1) | O(1) |
 
 ### Function Types
 

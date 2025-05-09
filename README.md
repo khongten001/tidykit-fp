@@ -157,24 +157,14 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
-- 📚 **Collections**
-  - Generic List<T> implementation with dynamic array backing
-  - Strong typing with generics
-  - Automatic memory management through interfaces
-  - Common collection operations:
-    - Add, Insert, Remove, and Clear methods
-    - Item access by index
-    - Search and filter capabilities
-    - Sorting with custom comparers
-    - ForEach iteration
-    - ToArray conversion
-  - Specialized list types:
-    - StringList for string collections
-    - ObjectList for TObject descendants
-  - Value semantics for primitive types
-  - Object lifecycle management for complex types
-  - Interface compatibility with standard Pascal enumerators
-  - Thoroughly tested with comprehensive test cases
+- 📚 **Collections (`TList<T>`, `TDeque<T>`)**
+  - **`TList<T>`**: Generic list with dynamic array backing, offering operations like `Add`, `Insert`, `Delete`, `Sort`, `Find`, etc.
+  - **`TDeque<T>`**: Generic double-ended queue with circular buffer backing, providing efficient `PushFront`, `PushBack`, `PopFront`, `PopBack` operations.
+  - **Strongly Typed**: Utilizes Free Pascal generics for type safety with any data type.
+  - **Automatic Memory Management**: Collections are `TInterfacedObject` descendants; using them via their interfaces (e.g., `IList<T>`, `IDeque<T>`) enables automatic reference counting and memory management.
+  - **Comprehensive API**: Includes methods for adding, removing, accessing, searching, and transforming elements (e.g., `ToArray`, `IndexOf`, `Contains`, `Reverse`).
+  - **Efficient Performance**: Designed for good performance with appropriate underlying data structures and growth strategies (e.g., amortized O(1) for `TList.Add` and Deque push/pop operations). Detailed benchmarks are available in individual documentation.
+  - **Thoroughly Tested**: Each collection has a comprehensive FPCUnit test suite.
 
 ## 💻 Installation (Lazarus IDE)
 
@@ -242,7 +232,8 @@ uses
   TidyKit.ParseArgs,         // Simple argument parser
 
   // Collections
-  TidyKit.Collections.List;  // Generic List implementation
+  TidyKit.Collections.List,  // Generic List implementation
+  TidyKit.Collections.Deque; // Generic Deque implementation
 ```
 
 ## 🚀 Quick Start
@@ -546,93 +537,40 @@ end;
 
 ```pascal
 uses
-  TidyKit.Collections.List;
+  TidyKit.Collections.List, TidyKit.Collections.Deque;
 
 var
-  Numbers: IList<Integer>;
-  FilteredNumbers: IList<Integer>;
-  Strings: IStringList;
+  // Example for TList<T>
+  MyIntList: IList<Integer>;
   I: Integer;
-  Person: TPerson;
-  People: IObjectList<TPerson>;
+
+  // Example for TDeque<T>
+  MyStringDeque: IDeque<string>;
 begin
-  // Create a generic list of integers
-  Numbers := TList<Integer>.Create;
-  
-  // Add items
-  Numbers.Add(1);
-  Numbers.Add(2);
-  Numbers.Add(3);
-  Numbers.Add(4);
-  Numbers.Add(5);
-  
-  // Access items by index
-  WriteLn('Third number: ', Numbers[2]); // Zero-based index
-  
-  // Modify items
-  Numbers[1] := 20; // Change 2 to 20
-  
-  // Iterate over all items
-  Numbers.ForEach(
-    procedure(const Item: Integer)
-    begin
-      Write(Item, ' ');
-    end
-  );
-  WriteLn; // Output: 1 20 3 4 5
-  
-  // Find items
-  if Numbers.Contains(20) then
-    WriteLn('Found 20 in the list');
-  
-  // Filter items
-  FilteredNumbers := Numbers.Where(
-    function(const Item: Integer): Boolean
-    begin
-      Result := Item > 3;
-    end
-  );
-  
-  // Convert to array
-  for I in FilteredNumbers.ToArray do
-    Write(I, ' ');
-  WriteLn; // Output: 4 5
-  
-  // Specialized string list
-  Strings := TStringList.Create;
-  Strings.Add('Apple');
-  Strings.Add('Banana');
-  Strings.Add('Cherry');
-  
-  // Case-insensitive search
-  if Strings.ContainsText('apple') then
-    WriteLn('Found apple in the list');
-    
-  // Working with objects (with automatic memory management)
-  People := TObjectList<TPerson>.Create(True); // True = own objects
-  
-  Person := TPerson.Create;
-  Person.Name := 'John';
-  Person.Age := 30;
-  People.Add(Person); // List takes ownership
-  
-  Person := TPerson.Create;
-  Person.Name := 'Jane';
-  Person.Age := 25;
-  People.Add(Person);
-  
-  // Find object by criteria
-  Person := People.FirstOrDefault(
-    function(const Item: TPerson): Boolean
-    begin
-      Result := Item.Age < 30;
-    end
-  );
-  
-  if Assigned(Person) then
-    WriteLn('Found person under 30: ', Person.Name);
-    
-  // No need to free objects - handled automatically when list goes out of scope
+  // --- TList<T> Example ---
+  MyIntList := TList<Integer>.New; // Using factory for interface-based management
+  MyIntList.Add(10);
+  MyIntList.Add(20);
+  MyIntList.Insert(1, 15); // List is now: 10, 15, 20
+
+  Write('List items: ');
+  for I := 0 to MyIntList.Count - 1 do
+    Write(MyIntList[I], ' ');
+  WriteLn; // Output: 10 15 20
+
+  // --- TDeque<T> Example ---
+  MyStringDeque := TDeque<string>.New; // Using factory for interface-based management
+  MyStringDeque.PushBack('apples');
+  MyStringDeque.PushFront('bananas'); // Deque is now: 'bananas', 'apples'
+  MyStringDeque.PushBack('cherries'); // Deque is now: 'bananas', 'apples', 'cherries'
+
+  Write('Deque items (popping from front): ');
+  while MyStringDeque.Count > 0 do
+    Write(MyStringDeque.PopFront, ' ');
+  WriteLn; // Output: bananas apples cherries
+
+  // No explicit Free needed for MyIntList or MyStringDeque
+  // as they are interface variables and will be automatically managed.
 end;
 ```
 
@@ -681,7 +619,9 @@ For detailed documentation, see:
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 📦 [Archive](docs/TidyKit.Archive.md)
-- 📚 [Collections](docs/TidyKit.Collections.md)
+- 📚 Collections:
+  - [List Collection (TList<T>)](docs/TidyKit.Collections.List.md)
+  - [Deque Collection (TDeque<T>)](docs/TidyKit.Collections.Deque.md)
 
 ## 📊 Real-World Examples
 
@@ -697,7 +637,6 @@ TidyKit can be used to build a wide variety of applications quickly:
 | Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
 | Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
 | Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
-
 
 ## 💬 Community & Support
 

@@ -151,12 +151,16 @@ end;
 
 function TList.Add(const Value: T): Integer;
 begin
-  Result := FCount;
+  if FCount = Length(FArray) then // Check if FCount has reached current capacity
+  begin
+    if Length(FArray) = 0 then
+      SetCapacity(4) // Default initial capacity, e.g., 4
+    else
+      SetCapacity(Length(FArray) * 2); // Double the capacity
+  end;
   
-  if FCount >= Length(FArray) then
-    SetLength(FArray, FCount + 1);
-    
   FArray[FCount] := Value;
+  Result := FCount; // Index of the new item
   Inc(FCount);
 end;
 
