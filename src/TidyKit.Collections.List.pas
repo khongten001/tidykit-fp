@@ -13,8 +13,8 @@ type
   { Function pointer types for comparison and predicate operations }
   generic TCompareFunc<T> = function(const A, B: T): Integer;
   generic TEqualityFunc<T> = function(const A, B: T): Boolean;
-  generic TPredicateFunc<T> = function(const Item: T): Boolean of object;
-  
+  generic TPredicateFunc<T> = function(const Item: T): Boolean;
+
   { Interface for automatic memory management }
   generic IList<T> = interface
     ['{EDCB14B2-D9F7-4AAB-B5D8-FB311E643233}']
@@ -261,24 +261,23 @@ end;
 
 function TList.FindAll(Predicate: specialize TPredicateFunc<T>): specialize TArray<T>;
 var
+  I, ResultIndex: Integer;
   TempArray: array of T;
-  MatchCount, I: Integer;
 begin
-  SetLength(Result, 0);
-  SetLength(TempArray, FCount);
+  SetLength(TempArray, Count);
+  ResultIndex := 0;
   
-  MatchCount := 0;
-  for I := 0 to FCount - 1 do
+  for I := 0 to Count - 1 do
   begin
     if Predicate(FArray[I]) then
     begin
-      TempArray[MatchCount] := FArray[I];
-      Inc(MatchCount);
+      TempArray[ResultIndex] := FArray[I];
+      Inc(ResultIndex);
     end;
   end;
   
-  SetLength(Result, MatchCount);
-  for I := 0 to MatchCount - 1 do
+  SetLength(Result, ResultIndex);
+  for I := 0 to ResultIndex - 1 do
     Result[I] := TempArray[I];
 end;
 

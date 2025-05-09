@@ -15,7 +15,8 @@ uses
   //, TidyKit.JSON.Test
   //, TidyKit.Logger.Test
   //, TidyKit.ParseArgs.Test
-  , TidyKit.Collections.List.Test;
+  , TidyKit.Collections.List.Test
+  , TidyKit.Collections.Deque.Test;
 
 type
 

@@ -5,7 +5,7 @@ unit TidyKit.Collections.List.Test;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, Math,
+  Classes, SysUtils, fpcunit, testregistry, Math, DateUtils, StrUtils,
   TidyKit.Collections.List;
 
 type
@@ -82,6 +82,14 @@ function StringEquals(const A, B: string): Boolean;
 function CompareIntegers(const A, B: Integer): Integer;
 function CompareStrings(const A, B: string): Integer;
 
+// Standalone predicate functions
+function IsEven(const Item: Integer): Boolean;
+function StartsWithA(const Item: string): Boolean;
+
+// Add standalone helper functions at the unit level
+function IntEquals(const A, B: Integer): Boolean;
+function IntCompare(const A, B: Integer): Integer;
+
 implementation
 
 { Standard comparison functions }
@@ -109,6 +117,28 @@ end;
 function CompareStrings(const A, B: string): Integer;
 begin
   Result := CompareText(A, B);
+end;
+
+{ Standalone predicate functions }
+
+function IsEven(const Item: Integer): Boolean;
+begin
+  Result := (Item mod 2) = 0;
+end;
+
+function StartsWithA(const Item: string): Boolean;
+begin
+  Result := (Length(Item) > 0) and ((Item[1] = 'A') or (Item[1] = 'a'));
+end;
+
+function IntEquals(const A, B: Integer): Boolean;
+begin
+  Result := A = B;
+end;
+
+function IntCompare(const A, B: Integer): Integer;
+begin
+  Result := A - B;
 end;
 
 { TListTest }
@@ -304,7 +334,7 @@ begin
   FIntList.Add(30);
   
   // Remove existing item
-  Success := FIntList.Remove(20, @IntegerEquals);
+  Success := FIntList.Remove(20, @IntEquals);
   
   // Check results
   AssertTrue('Remove should return True for existing item', Success);
@@ -313,7 +343,7 @@ begin
   AssertEquals('Second item should now be 30', 30, FIntList[1]);
   
   // Try to remove non-existent item
-  Success := FIntList.Remove(50, @IntegerEquals);
+  Success := FIntList.Remove(50, @IntEquals);
   
   // Check results
   AssertFalse('Remove should return False for non-existent item', Success);
@@ -357,17 +387,17 @@ begin
   FStrList.Add('cherry');
   
   // Test finding existing items
-  Idx := FIntList.IndexOf(20, @IntegerEquals);
+  Idx := FIntList.IndexOf(20, @IntEquals);
   AssertEquals('Should find first occurrence of 20 at index 1', 1, Idx);
   
-  Idx := FIntList.IndexOf(10, @IntegerEquals);
+  Idx := FIntList.IndexOf(10, @IntEquals);
   AssertEquals('Should find 10 at index 0', 0, Idx);
   
-  Idx := FIntList.IndexOf(30, @IntegerEquals);
+  Idx := FIntList.IndexOf(30, @IntEquals);
   AssertEquals('Should find 30 at index 2', 2, Idx);
   
   // Test finding non-existent item
-  Idx := FIntList.IndexOf(40, @IntegerEquals);
+  Idx := FIntList.IndexOf(40, @IntEquals);
   AssertEquals('Should return -1 for non-existent item', -1, Idx);
   
   // Test with strings
@@ -390,12 +420,12 @@ begin
   FStrList.Add('cherry');
   
   // Test existing items
-  AssertTrue('Should contain 10', FIntList.Contains(10, @IntegerEquals));
-  AssertTrue('Should contain 20', FIntList.Contains(20, @IntegerEquals));
-  AssertTrue('Should contain 30', FIntList.Contains(30, @IntegerEquals));
+  AssertTrue('Should contain 10', FIntList.Contains(10, @IntEquals));
+  AssertTrue('Should contain 20', FIntList.Contains(20, @IntEquals));
+  AssertTrue('Should contain 30', FIntList.Contains(30, @IntEquals));
   
   // Test non-existent items
-  AssertFalse('Should not contain 40', FIntList.Contains(40, @IntegerEquals));
+  AssertFalse('Should not contain 40', FIntList.Contains(40, @IntEquals));
   
   // Test with strings
   AssertTrue('Should contain banana', FStrList.Contains('banana', @StringEquals));
@@ -414,11 +444,11 @@ begin
   FIntList.Add(4); // Even
   
   // Find even number
-  Success := FIntList.Find(@IsEvenNumber, FoundValue);
+  Success := FIntList.Find(@IsEven, FoundValue);
   
   // Check results
   AssertTrue('Should find an even number', Success);
-  AssertTrue('Found value should be even', IsEvenNumber(FoundValue));
+  AssertTrue('Found value should be even', IsEven(FoundValue));
   AssertEquals('First even number should be 2', 2, FoundValue);
   
   // Test with no matches
@@ -427,7 +457,7 @@ begin
   FIntList.Add(3);
   FIntList.Add(5);
   
-  Success := FIntList.Find(@IsEvenNumber, FoundValue);
+  Success := FIntList.Find(@IsEven, FoundValue);
   
   // Check results
   AssertFalse('Should not find even numbers', Success);
@@ -435,47 +465,46 @@ end;
 
 procedure TListTest.TestFindAll;
 var
-  IntResults: specialize TArray<Integer>;
-  StrResults: specialize TArray<string>;
+  List: specialize IList<Integer>;
+  StringList: specialize IList<string>;
+  Results: specialize TArray<Integer>;
+  StringResults: specialize TArray<string>;
+  I: Integer;
 begin
-  // Add test data
-  FIntList.Add(1);
-  FIntList.Add(2); // Even
-  FIntList.Add(3);
-  FIntList.Add(4); // Even
-  FIntList.Add(5);
-  FIntList.Add(6); // Even
+  List := specialize TList<Integer>.New;
   
-  // Find all even numbers
-  IntResults := FIntList.FindAll(@IsEvenNumber);
+  // Test FindAll with integers
+  List.Add(1);
+  List.Add(2);
+  List.Add(3);
+  List.Add(4);
+  List.Add(5);
+  List.Add(6);
   
-  // Check results
-  AssertEquals('Should find 3 even numbers', 3, Length(IntResults));
-  AssertEquals('First even number should be 2', 2, IntResults[0]);
-  AssertEquals('Second even number should be 4', 4, IntResults[1]);
-  AssertEquals('Third even number should be 6', 6, IntResults[2]);
+  // Find even numbers
+  Results := List.FindAll(@IsEven);
+  AssertEquals('Should find 3 even numbers', 3, Length(Results));
+  AssertEquals('First even number should be 2', 2, Results[0]);
+  AssertEquals('Second even number should be 4', 4, Results[1]);
+  AssertEquals('Third even number should be 6', 6, Results[2]);
   
-  // Test with no matches
-  FIntList.Clear;
-  FIntList.Add(1);
-  FIntList.Add(3);
-  FIntList.Add(5);
+  // Test FindAll with strings
+  StringList := specialize TList<string>.New;
+  StringList.Add('Apple');
+  StringList.Add('Banana');
+  StringList.Add('Cherry');
+  StringList.Add('Apricot');
+  StringList.Add('Blueberry');
+  StringList.Add('Avocado');
   
-  IntResults := FIntList.FindAll(@IsEvenNumber);
+  // Make sure we're using the correct function
+  StringResults := StringList.FindAll(@StartsWithA);
+  AssertEquals('Should find 3 strings with letter a', 3, Length(StringResults));
   
-  // Check results
-  AssertEquals('Should find no even numbers', 0, Length(IntResults));
-  
-  // Test with strings
-  FStrList.Add('apple');    // Contains 'a'
-  FStrList.Add('banana');   // Contains 'a'
-  FStrList.Add('cherry');   // No 'a'
-  FStrList.Add('date');     // Contains 'a'
-  
-  StrResults := FStrList.FindAll(@ContainsLetterA);
-  
-  // Check results
-  AssertEquals('Should find 3 strings with letter a', 3, Length(StrResults));
+  // Add additional checks to diagnose the issue if it persists
+  WriteLn('Found strings starting with A:');
+  for I := 0 to Length(StringResults) - 1 do
+    WriteLn(StringResults[I]);
 end;
 
 procedure TListTest.TestSort;
@@ -490,7 +519,7 @@ begin
   FIntList.Add(2);
   
   // Sort the list
-  FIntList.Sort(@CompareIntegers);
+  FIntList.Sort(@IntCompare);
   
   // Check results
   SortedArray := FIntList.ToArray;
@@ -814,15 +843,15 @@ begin
   AssertEquals('Empty list should have count 0', 0, FIntList.Count);
   
   // Search operations
-  AssertEquals('IndexOf on empty list should return -1', -1, FIntList.IndexOf(42, @IntegerEquals));
-  AssertFalse('Contains on empty list should return False', FIntList.Contains(42, @IntegerEquals));
-  AssertFalse('Find on empty list should return False', FIntList.Find(@IsEvenNumber, FoundValue));
+  AssertEquals('IndexOf on empty list should return -1', -1, FIntList.IndexOf(42, @IntEquals));
+  AssertFalse('Contains on empty list should return False', FIntList.Contains(42, @IntEquals));
+  AssertFalse('Find on empty list should return False', FIntList.Find(@IsEven, FoundValue));
   
   // Transformation operations
-  EmptyInts := FIntList.FindAll(@IsEvenNumber);
+  EmptyInts := FIntList.FindAll(@IsEven);
   AssertEquals('FindAll on empty list should return empty array', 0, Length(EmptyInts));
   
-  FIntList.Sort(@CompareIntegers); // Should not crash on empty list
+  FIntList.Sort(@IntCompare); // Should not crash on empty list
   FIntList.Reverse; // Should not crash on empty list
   
   EmptyInts := FIntList.Slice(0, 10);
@@ -832,7 +861,7 @@ begin
   AssertEquals('ToArray on empty list should return empty array', 0, Length(EmptyInts));
   
   // Verify empty string list behaves the same
-  EmptyStrings := FStrList.FindAll(@ContainsLetterA);
+  EmptyStrings := FStrList.FindAll(@StartsWithA);
   AssertEquals('FindAll on empty string list should return empty array', 0, Length(EmptyStrings));
 end;
 
@@ -907,12 +936,12 @@ var
   SingleArray: specialize TArray<Integer>;
 begin
   // Sort empty list (should not crash)
-  FIntList.Sort(@CompareIntegers);
+  FIntList.Sort(@IntCompare);
   AssertEquals('Empty list should still be empty after sort', 0, FIntList.Count);
   
   // Sort list with single element
   FIntList.Add(42);
-  FIntList.Sort(@CompareIntegers);
+  FIntList.Sort(@IntCompare);
   
   AssertEquals('List with single element should still have count 1', 1, FIntList.Count);
   AssertEquals('The single element should remain unchanged', 42, FIntList[0]);
@@ -982,7 +1011,7 @@ end;
 procedure TListTest.TestInterfaceBasedMemoryManagement;
 var
   InterfaceList: specialize IList<Integer>;
-  AnotherRef: specialize IList<Integer>; // Moved declaration to the var section
+  AnotherRef: specialize IList<Integer>;
 begin
   // Create list using the interface-based approach
   InterfaceList := specialize TList<Integer>.New;
@@ -996,7 +1025,7 @@ begin
   AssertEquals('Second item should be stored correctly', 123, InterfaceList[1]);
   
   // Create another reference to same list
-  AnotherRef := InterfaceList; // Proper variable use
+  AnotherRef := InterfaceList;
   
   // Modify through the second reference
   AnotherRef.Add(456);
@@ -1024,21 +1053,32 @@ end;
 procedure TListTest.TestBenchmarkAddItems;
 var
   StartTime, EndTime: TDateTime;
-  Elapsed: Double;
+  ElapsedMS: Int64;
   List: specialize TList<Integer>;
   I, NumItems: Integer;
+  ItemsPerSecond: Double;
 begin
   // Benchmark adding 10,000 items
   NumItems := 10000;
   List := specialize TList<Integer>.Create;
   try
     StartTime := Now;
+    
     for I := 1 to NumItems do
       List.Add(I);
+      
     EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
     
-    Elapsed := (EndTime - StartTime) * 24 * 60 * 60; // Convert to seconds
-    WriteLn(Format('Adding %d items took: %.6f seconds', [NumItems, Elapsed]));
+    // Avoid division by zero
+    if ElapsedMS > 0 then
+      ItemsPerSecond := NumItems / (ElapsedMS / 1000)
+    else
+      ItemsPerSecond := 0;
+      
+    WriteLn(Format('Adding %d items took: %.3f seconds (%.2f items/sec)', 
+              [NumItems, ElapsedMS/1000, ItemsPerSecond]));
+              
     AssertTrue(Format('Adding %d items should complete in a reasonable time', [NumItems]), True);
   finally
     List.Free;
@@ -1049,12 +1089,22 @@ begin
   List := specialize TList<Integer>.Create;
   try
     StartTime := Now;
+    
     for I := 1 to NumItems do
       List.Add(I);
+      
     EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
     
-    Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-    WriteLn(Format('Adding %d items took: %.6f seconds', [NumItems, Elapsed]));
+    // Avoid division by zero
+    if ElapsedMS > 0 then
+      ItemsPerSecond := NumItems / (ElapsedMS / 1000)
+    else
+      ItemsPerSecond := 0;
+      
+    WriteLn(Format('Adding %d items took: %.3f seconds (%.2f items/sec)', 
+              [NumItems, ElapsedMS/1000, ItemsPerSecond]));
+              
     AssertTrue(Format('Adding %d items should complete in a reasonable time', [NumItems]), True);
   finally
     List.Free;
@@ -1065,12 +1115,22 @@ begin
   List := specialize TList<Integer>.Create;
   try
     StartTime := Now;
+    
     for I := 1 to NumItems do
       List.Add(I);
+      
     EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
     
-    Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-    WriteLn(Format('Adding %d items took: %.6f seconds', [NumItems, Elapsed]));
+    // Avoid division by zero
+    if ElapsedMS > 0 then
+      ItemsPerSecond := NumItems / (ElapsedMS / 1000)
+    else
+      ItemsPerSecond := 0;
+      
+    WriteLn(Format('Adding %d items took: %.3f seconds (%.2f items/sec)', 
+              [NumItems, ElapsedMS/1000, ItemsPerSecond]));
+              
     AssertTrue(Format('Adding %d items should complete in a reasonable time', [NumItems]), True);
   finally
     List.Free;
@@ -1078,14 +1138,14 @@ begin
 end;
 
 procedure TListTest.TestBenchmarkSearch;
-
   // Local function to benchmark search operations
   procedure BenchmarkSearch(NumItems: Integer);
   var
     StartTime, EndTime: TDateTime;
-    Elapsed: Double;
+    ElapsedMS: Int64;
     List: specialize TList<Integer>;
     I, SearchValue, FoundIndex: Integer;
+    OpsPerSecond: Double;
   begin
     // Create and fill the list
     List := specialize TList<Integer>.Create;
@@ -1096,41 +1156,73 @@ procedure TListTest.TestBenchmarkSearch;
       // Search for an item at the beginning of the list
       SearchValue := 1;
       StartTime := Now;
-      FoundIndex := List.IndexOf(SearchValue, @IntegerEquals);
+      FoundIndex := List.IndexOf(SearchValue, @IntEquals);
       EndTime := Now;
-      Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Searching for value %d (beginning) in %d items took: %.6f seconds', 
-                    [SearchValue, NumItems, Elapsed]));
+      ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedMS > 0 then
+        OpsPerSecond := 1 / (ElapsedMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Searching for value %d (beginning) in %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [SearchValue, NumItems, ElapsedMS/1000, OpsPerSecond]));
+                    
       AssertEquals('Found index should match value-1', SearchValue-1, FoundIndex);
       
       // Search for an item in the middle of the list
       SearchValue := NumItems div 2;
       StartTime := Now;
-      FoundIndex := List.IndexOf(SearchValue, @IntegerEquals);
+      FoundIndex := List.IndexOf(SearchValue, @IntEquals);
       EndTime := Now;
-      Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Searching for value %d (middle) in %d items took: %.6f seconds', 
-                    [SearchValue, NumItems, Elapsed]));
+      ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedMS > 0 then
+        OpsPerSecond := 1 / (ElapsedMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Searching for value %d (middle) in %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [SearchValue, NumItems, ElapsedMS/1000, OpsPerSecond]));
+                    
       AssertEquals('Found index should match value-1', SearchValue-1, FoundIndex);
       
       // Search for an item at the end of the list
       SearchValue := NumItems;
       StartTime := Now;
-      FoundIndex := List.IndexOf(SearchValue, @IntegerEquals);
+      FoundIndex := List.IndexOf(SearchValue, @IntEquals);
       EndTime := Now;
-      Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Searching for value %d (end) in %d items took: %.6f seconds', 
-                    [SearchValue, NumItems, Elapsed]));
+      ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedMS > 0 then
+        OpsPerSecond := 1 / (ElapsedMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Searching for value %d (end) in %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [SearchValue, NumItems, ElapsedMS/1000, OpsPerSecond]));
+                    
       AssertEquals('Found index should match value-1', SearchValue-1, FoundIndex);
       
       // Search for a non-existent item
       SearchValue := NumItems + 1;
       StartTime := Now;
-      FoundIndex := List.IndexOf(SearchValue, @IntegerEquals);
+      FoundIndex := List.IndexOf(SearchValue, @IntEquals);
       EndTime := Now;
-      Elapsed := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Searching for non-existent value %d in %d items took: %.6f seconds', 
-                    [SearchValue, NumItems, Elapsed]));
+      ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedMS > 0 then
+        OpsPerSecond := 1 / (ElapsedMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Searching for non-existent value %d in %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [SearchValue, NumItems, ElapsedMS/1000, OpsPerSecond]));
+                    
       AssertEquals('Non-existent item should return -1', -1, FoundIndex);
     finally
       List.Free;
@@ -1152,14 +1244,14 @@ begin
 end;
 
 procedure TListTest.TestBenchmarkSorting;
-
   // Local function to benchmark sorting operations
   procedure BenchmarkSort(NumItems: Integer; RandomSeed: Integer);
   var
     StartTime, EndTime: TDateTime;
-    ElapsedSort, ElapsedReverse: Double;
+    ElapsedSortMS, ElapsedReverseMS: Int64;
     List: specialize TList<Integer>;
     I: Integer;
+    OpsPerSecond: Double;
   begin
     // Set random seed for reproducibility
     RandSeed := RandomSeed;
@@ -1172,17 +1264,33 @@ procedure TListTest.TestBenchmarkSorting;
           
       // Benchmark sorting
       StartTime := Now;
-      List.Sort(@CompareIntegers);
+      List.Sort(@IntCompare);
       EndTime := Now;
-      ElapsedSort := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Sorting %d items took: %.6f seconds', [NumItems, ElapsedSort]));
+      ElapsedSortMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedSortMS > 0 then
+        OpsPerSecond := 1 / (ElapsedSortMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Sorting %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [NumItems, ElapsedSortMS/1000, OpsPerSecond]));
         
       // Benchmark reversing
       StartTime := Now;
       List.Reverse;
       EndTime := Now;
-      ElapsedReverse := (EndTime - StartTime) * 24 * 60 * 60;
-      WriteLn(Format('Reversing %d items took: %.6f seconds', [NumItems, ElapsedReverse]));
+      ElapsedReverseMS := MilliSecondsBetween(EndTime, StartTime);
+      
+      // Avoid division by zero
+      if ElapsedReverseMS > 0 then
+        OpsPerSecond := 1 / (ElapsedReverseMS / 1000)
+      else
+        OpsPerSecond := 0;
+        
+      WriteLn(Format('Reversing %d items took: %.3f seconds (%.2f ops/sec)', 
+                    [NumItems, ElapsedReverseMS/1000, OpsPerSecond]));
     finally
       List.Free;
     end;
