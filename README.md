@@ -157,11 +157,12 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
-- 📚 **Collections (`TList<T>`, `TDeque<T>`)**
+- 📚 **Collections (`TList<T>`, `TDeque<T>`, `THashSet<T>`)**
   - **`TList<T>`**: Generic list with dynamic array backing, offering operations like `Add`, `Insert`, `Delete`, `Sort`, `Find`, etc.
   - **`TDeque<T>`**: Generic double-ended queue with circular buffer backing, providing efficient `PushFront`, `PushBack`, `PopFront`, `PopBack` operations.
+  - **`THashSet<T>`**: A generic hash set for storing unique elements with high-performance add, remove, and contains operations. Supports custom hashing and equality functions. See [TidyKit.Collections.HashSet Documentation](./docs/TidyKit.Collections.HashSet.md) for more details.
   - **Strongly Typed**: Utilizes Free Pascal generics for type safety with any data type.
-  - **Automatic Memory Management**: Collections are `TInterfacedObject` descendants; using them via their interfaces (e.g., `IList<T>`, `IDeque<T>`) enables automatic reference counting and memory management.
+  - **Automatic Memory Management**: Collections are `TInterfacedObject` descendants; using them via their interfaces (e.g., `IList<T>`, `IDeque<T>`, `IHashSet<T>`) enables automatic reference counting and memory management.
   - **Comprehensive API**: Includes methods for adding, removing, accessing, searching, and transforming elements (e.g., `ToArray`, `IndexOf`, `Contains`, `Reverse`).
   - **Efficient Performance**: Designed for good performance with appropriate underlying data structures and growth strategies (e.g., amortized O(1) for `TList.Add` and Deque push/pop operations). Detailed benchmarks are available in individual documentation.
   - **Thoroughly Tested**: Each collection has a comprehensive FPCUnit test suite.
@@ -233,7 +234,8 @@ uses
 
   // Collections
   TidyKit.Collections.List,  // Generic List implementation
-  TidyKit.Collections.Deque; // Generic Deque implementation
+  TidyKit.Collections.Deque, // Generic Deque implementation
+  TidyKit.Collections.HashSet; // Generic HashSet implementation
 ```
 
 ## 🚀 Quick Start
@@ -537,7 +539,7 @@ end;
 
 ```pascal
 uses
-  TidyKit.Collections.List, TidyKit.Collections.Deque;
+  TidyKit.Collections.List, TidyKit.Collections.Deque, TidyKit.Collections.HashSet;
 
 var
   // Example for TList<T>
@@ -546,6 +548,9 @@ var
 
   // Example for TDeque<T>
   MyStringDeque: IDeque<string>;
+
+  // Example for THashSet<T>
+  MyHashSet: IHashSet<string>;
 begin
   // --- TList<T> Example ---
   MyIntList := TList<Integer>.New; // Using factory for interface-based management
@@ -569,7 +574,19 @@ begin
     Write(MyStringDeque.PopFront, ' ');
   WriteLn; // Output: bananas apples cherries
 
-  // No explicit Free needed for MyIntList or MyStringDeque
+  // --- THashSet<T> Example ---
+  MyHashSet := THashSet<string>.New; // Using factory for interface-based management
+  MyHashSet.Add('apple');
+  MyHashSet.Add('banana');
+  MyHashSet.Add('cherry');
+  MyHashSet.Add('apple'); // Duplicate, won't be added
+
+  Write('HashSet items: ');
+  for I := 0 to MyHashSet.Count - 1 do
+    Write(MyHashSet.ToArray[I], ' ');
+  WriteLn; // Output: apple banana cherry
+
+  // No explicit Free needed for MyIntList, MyStringDeque, or MyHashSet
   // as they are interface variables and will be automatically managed.
 end;
 ```
@@ -622,6 +639,7 @@ For detailed documentation, see:
 - 📚 Collections:
   - [List Collection (TList<T>)](docs/TidyKit.Collections.List.md)
   - [Deque Collection (TDeque<T>)](docs/TidyKit.Collections.Deque.md)
+  - [HashSet Collection (THashSet<T>)](docs/TidyKit.Collections.HashSet.md)
 
 ## 📊 Real-World Examples
 

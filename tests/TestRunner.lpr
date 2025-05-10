@@ -16,7 +16,8 @@ uses
   //, TidyKit.Logger.Test
   //, TidyKit.ParseArgs.Test
   , TidyKit.Collections.List.Test
-  , TidyKit.Collections.Deque.Test;
+  , TidyKit.Collections.Deque.Test
+  , TidyKit.Collections.HashSet.Test;
 
 type
 
