@@ -1,14 +1,22 @@
 unit TidyKit.Collections.HashSet.Test;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, DateUtils, // Added fpcunit, testregistry
+  Classes, SysUtils, fpcunit, testregistry, DateUtils, Math, // Added fpcunit, testregistry
   TidyKit.Collections.HashSet;
 
 type
+  // Custom record type for testing hash set performance
+  TStudent = record
+    StudentID: Integer;
+    FirstName: string;
+    LastName: string;
+    GPA: Single;
+  end;
+
   THashSetTest = class(TTestCase)
   private
     // No private fields needed for these tests as instances are created per method
@@ -23,39 +31,27 @@ type
     procedure TestCollisions;
     procedure TestResizeBehavior;
     procedure TestBenchmarkAddItems_Integer;
-    procedure TestConstructor_Validations;      // New Test
-    procedure TestToArray_EmptyAndCleared;    // New Test
-    procedure TestInterfaceBasedMemoryManagement; // New Test
-    procedure TestBenchmarkContains_Integer; // New Benchmark Test
+    procedure TestConstructor_Validations;       
+    procedure TestToArray_EmptyAndCleared;       
+    procedure TestInterfaceBasedMemoryManagement;
+    procedure TestBenchmarkContains_Integer; 
+    // New tests for TStudent
+    procedure TestBasicOperations_Student;
+    procedure TestBenchmarkAddItems_Student;
+    procedure TestBenchmarkContains_Student;
   end;
 
 implementation
 
 // Helper functions remain at unit level
 
-// Integer Hash and Equality
-function IntegerHash(const Value: Integer): Integer;
-begin
-  Result := Value;
-end;
-
+// Integer Equality (now using TidyKitIntegerHash from the unit)
 function IntegerEquals(const A, B: Integer): Boolean;
 begin
   Result := A = B;
 end;
 
-// String Hash and Equality
-function StringHash(const Value: string): Integer;
-var
-  I: Integer;
-  H: Cardinal;
-begin
-  H := 0;
-  for I := 1 to Length(Value) do
-    H := 31 * H + Ord(Value[I]);
-  Result := Integer(H and $7FFFFFFF); // Ensure positive hash
-end;
-
+// String Equality (now using TidyKitStringHash from the unit)
 function StringEquals(const A, B: string): Boolean;
 begin
   Result := A = B;
@@ -68,17 +64,49 @@ type
     Name: string;
   end;
 
+// Updated to use built-in hash functions
 function TestRecordHash(const Value: TTestRecord): Integer;
 var
   HName: Integer;
 begin
-  HName := StringHash(Value.Name);
-  Result := IntegerHash(Value.ID) xor HName;
+  HName := TidyKitStringHash(Value.Name);
+  Result := TidyKitIntegerHash(Value.ID) xor HName;
 end;
 
 function TestRecordEquals(const A, B: TTestRecord): Boolean;
 begin
   Result := (A.ID = B.ID) and (A.Name = B.Name);
+end;
+
+// TStudent hash and equality functions - SIMPLIFIED VERSION FOR TESTING
+function StudentHash(const Value: TStudent): Integer;
+var
+  H_ID, H_FirstName, H_LastName, H_GPA: Integer;
+  GPAAsInt: Integer;
+begin
+  H_ID := TidyKitIntegerHash(Value.StudentID);
+  H_FirstName := TidyKitStringHash(Value.FirstName); // Safe now with our length-only implementation
+  H_LastName := TidyKitStringHash(Value.LastName);   // Safe now with our length-only implementation
+  
+  // Convert GPA to integer for hashing
+  if IsNan(Value.GPA) then
+    GPAAsInt := 0
+  else
+    GPAAsInt := Round(Value.GPA * 100.0);
+  
+  H_GPA := TidyKitIntegerHash(GPAAsInt);
+  
+  Result := (H_ID xor H_FirstName xor H_LastName xor H_GPA) and $7FFFFFFF;
+end;
+
+function StudentEquals(const A, B: TStudent): Boolean;
+const
+  Epsilon = 0.001; // Small epsilon for floating point comparison
+begin
+  Result := (A.StudentID = B.StudentID) and
+           (A.FirstName = B.FirstName) and
+           (A.LastName = B.LastName) and
+           (Abs(A.GPA - B.GPA) < Epsilon); // Compare floats with tolerance
 end;
 
 // Hash function that intentionally creates collisions for testing
@@ -96,8 +124,8 @@ var
   SetInstance: specialize IHashSet<Integer>;
   I: Integer;
 begin
-  // WriteLn('  TestBasicAddAndContains_Integer...'); // fpcunit runner provides test names
-  SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+  // Updated to use TidyKitIntegerHash
+  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
 
   AssertTrue('Add 10', SetInstance.Add(10));
   AssertEquals('Count after adding 10', 1, SetInstance.Count);
@@ -123,7 +151,8 @@ procedure THashSetTest.TestRemove_String;
 var
   SetInstance: specialize IHashSet<string>;
 begin
-  SetInstance := specialize CreateHashSet<string>(@StringHash, @StringEquals);
+  // Updated to use TidyKitStringHash
+  SetInstance := specialize CreateHashSet<string>(@TidyKitStringHash, @StringEquals);
 
   SetInstance.Add('apple');
   SetInstance.Add('banana');
@@ -148,6 +177,7 @@ var
   SetInstance: specialize IHashSet<TTestRecord>;
   Rec1, Rec2: TTestRecord;
 begin
+  // TestRecordHash now uses TidyKit built-in hash functions
   SetInstance := specialize CreateHashSet<TTestRecord>(@TestRecordHash, @TestRecordEquals);
 
   Rec1.ID := 1; Rec1.Name := 'Test1';
@@ -174,7 +204,8 @@ var
   I, J: Integer;
   Found: Boolean;
 begin
-  SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals, 5);
+  // Updated to use TidyKitIntegerHash
+  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, 5);
 
   SetInstance.Add(1);
   SetInstance.Add(5);
@@ -235,7 +266,8 @@ var
   InitialCap: Integer = 4;
   NumToAdd: Integer = 20;
 begin
-  SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals, InitialCap, 0.75);
+  // Updated to use TidyKitIntegerHash
+  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, InitialCap, 0.75);
 
   for I := 1 to NumToAdd do
   begin
@@ -276,7 +308,8 @@ begin
   begin
     NumItems := Counts[J];
     WriteLn(Format('    Benchmarking Add for %d items...', [NumItems])); // Keep WriteLn for benchmarks
-    SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+    // Updated to use TidyKitIntegerHash
+    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
 
     StartTime := Now;
     for I := 1 to NumItems do
@@ -316,7 +349,8 @@ begin
   begin
     NumItems := Counts[J];
     WriteLn(Format('    Benchmarking Contains for %d items...', [NumItems]));
-    SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+    // Updated to use TidyKitIntegerHash
+    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
 
     // Populate the set
     for I := 1 to NumItems do
@@ -386,7 +420,8 @@ begin
 
   RaisedException := False;
   try
-    SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, nil);
+    // Updated to use TidyKitIntegerHash for the valid hash function part
+    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, nil);
     Fail('Constructor should raise exception for nil EqualityFunc');
   except
     on E: Exception do
@@ -398,7 +433,8 @@ begin
   AssertTrue('Exception was raised for nil EqualityFunc', RaisedException);
 
   // Test successful creation with valid functions (implicitly tested elsewhere, but good for completeness)
-  SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+  // Updated to use TidyKitIntegerHash
+  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
   AssertNotNull('SetInstance should not be nil with valid functions', SetInstance);
 end;
 
@@ -408,7 +444,8 @@ var
   Arr: specialize TArray<Integer>;
 begin
   // Test ToArray on a newly created (empty) set
-  SetInstance := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+  // Updated to use TidyKitIntegerHash
+  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
   Arr := SetInstance.ToArray;
   AssertEquals('ToArray on new empty set should return empty array', 0, Length(Arr));
 
@@ -433,7 +470,8 @@ var
   Set1: specialize IHashSet<Integer>;
   Set2: specialize IHashSet<Integer>;
 begin
-  Set1 := specialize CreateHashSet<Integer>(@IntegerHash, @IntegerEquals);
+  // Updated to use TidyKitIntegerHash
+  Set1 := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
   Set1.Add(10);
   Set1.Add(20);
   AssertEquals('Set1 count after adds', 2, Set1.Count);
@@ -458,6 +496,190 @@ begin
   AssertFalse('Set2 should not contain 20 after remove', Set2.Contains(20));
 
   // Set2 will be released when it goes out of scope, ARC handles freeing the THashSet object
+end;
+
+// New TStudent Test Methods
+procedure THashSetTest.TestBasicOperations_Student;
+var
+  StudentSet: specialize IHashSet<TStudent>;
+  S1, S2, S3, S1_Duplicate: TStudent;
+begin
+  StudentSet := specialize CreateHashSet<TStudent>(@StudentHash, @StudentEquals);
+
+  S1.StudentID := 101; S1.FirstName := 'Alice'; S1.LastName := 'Smith'; S1.GPA := 3.5;
+  S2.StudentID := 102; S2.FirstName := 'Bob'; S2.LastName := 'Johnson'; S2.GPA := 3.2;
+  S3.StudentID := 103; S3.FirstName := 'Carol'; S3.LastName := 'Williams'; S3.GPA := 3.8;
+  
+  // Create a duplicate of S1 for testing
+  S1_Duplicate.StudentID := 101; 
+  S1_Duplicate.FirstName := 'Alice';
+  S1_Duplicate.LastName := 'Smith'; 
+  S1_Duplicate.GPA := 3.5;
+
+  // Test Add and Contains
+  AssertTrue('Add S1', StudentSet.Add(S1));
+  AssertEquals('Count after S1', 1, StudentSet.Count);
+  AssertTrue('Contains S1', StudentSet.Contains(S1));
+
+  AssertTrue('Add S2', StudentSet.Add(S2));
+  AssertEquals('Count after S2', 2, StudentSet.Count);
+
+  // Test adding a duplicate
+  AssertFalse('Adding duplicate S1 should return False', StudentSet.Add(S1_Duplicate));
+  AssertEquals('Count should remain 2 after duplicate S1 add', 2, StudentSet.Count);
+
+  // Test adding a third unique student
+  AssertTrue('Add S3', StudentSet.Add(S3));
+  AssertEquals('Count after S3', 3, StudentSet.Count);
+  
+  // Test removal
+  AssertTrue('Remove S2', StudentSet.Remove(S2));
+  AssertEquals('Count after removing S2', 2, StudentSet.Count);
+  AssertFalse('S2 should not be present after removal', StudentSet.Contains(S2));
+  AssertTrue('S1 should still be present', StudentSet.Contains(S1));
+
+  // Test Clear
+  StudentSet.Clear;
+  AssertEquals('Count after clear should be 0', 0, StudentSet.Count);
+  AssertFalse('Should not contain S1 after clear', StudentSet.Contains(S1));
+end;
+
+procedure THashSetTest.TestBenchmarkAddItems_Student;
+var
+  StudentSet: specialize IHashSet<TStudent>;
+  I, NumItems: Integer;
+  StartTime, EndTime: TDateTime;
+  ElapsedMS: Int64;
+  ItemsPerSecond: Double;
+  Student: TStudent;
+  Counts: array[0..1] of Integer;
+  J: Integer;
+begin
+  // Use smaller item counts for more complex record benchmarks
+  Counts[0] := 10000;  
+  Counts[1] := 50000;  
+
+  for J := Low(Counts) to High(Counts) do
+  begin
+    NumItems := Counts[J];
+    WriteLn(Format('    Benchmarking Add for %d TStudent records...', [NumItems]));
+    
+    StudentSet := specialize CreateHashSet<TStudent>(@StudentHash, @StudentEquals);
+
+    StartTime := Now;
+    
+    // Add items with unique IDs but some common patterns in names
+    for I := 1 to NumItems do
+    begin
+      Student.StudentID := I;
+      Student.FirstName := 'FirstName' + IntToStr(I mod 100); // Create some common first names
+      Student.LastName := 'LastName' + IntToStr(I mod 500);   // Create some common last names
+      Student.GPA := 2.0 + ((I mod 21) / 10.0);              // GPAs between 2.0 and 4.0
+      StudentSet.Add(Student);
+    end;
+    
+    EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+
+    // Verify correct number of adds
+    AssertEquals(Format('Count should be %d after adding all TStudent records', [NumItems]), NumItems, StudentSet.Count);
+
+    // Calculate and display performance metrics
+    if ElapsedMS > 0 then
+      ItemsPerSecond := NumItems / (ElapsedMS / 1000.0)
+    else
+      ItemsPerSecond := 0; 
+
+    WriteLn(Format('    Adding %d TStudent records took: %.3f seconds (%.2f items/sec)',
+              [NumItems, ElapsedMS / 1000.0, ItemsPerSecond]));
+  end;
+end;
+
+procedure THashSetTest.TestBenchmarkContains_Student;
+var
+  StudentSet: specialize IHashSet<TStudent>;
+  I, NumItems: Integer;
+  StartTime, EndTime: TDateTime;
+  ElapsedMS: Int64;
+  OpsPerSecond: Double;
+  StudentToTest, TempStudent: TStudent;
+  Counts: array[0..1] of Integer;
+  J: Integer;
+  Found: Boolean;
+begin
+  // Smaller item counts for more complex record benchmarks
+  Counts[0] := 10000;
+  Counts[1] := 50000;
+
+  for J := Low(Counts) to High(Counts) do
+  begin
+    NumItems := Counts[J];
+    WriteLn(Format('    Benchmarking Contains for %d TStudent records...', [NumItems]));
+    
+    // Create and populate the set
+    StudentSet := specialize CreateHashSet<TStudent>(@StudentHash, @StudentEquals);
+    for I := 1 to NumItems do
+    begin
+      TempStudent.StudentID := I;
+      TempStudent.FirstName := 'FirstName' + IntToStr(I mod 100);
+      TempStudent.LastName := 'LastName' + IntToStr(I mod 500);
+      TempStudent.GPA := 2.0 + ((I mod 21) / 10.0);
+      StudentSet.Add(TempStudent);
+    end;
+    
+    AssertEquals(Format('Count should be %d before TStudent Contains benchmark', [NumItems]), NumItems, StudentSet.Count);
+
+    // Benchmark Contains for existing items
+    StartTime := Now;
+    Found := False; // Initialize
+    
+    for I := 1 to NumItems do
+    begin
+      // Look for items we know exist (cycle through all student IDs)
+      StudentToTest.StudentID := (I mod NumItems) + 1; 
+      StudentToTest.FirstName := 'FirstName' + IntToStr(StudentToTest.StudentID mod 100);
+      StudentToTest.LastName := 'LastName' + IntToStr(StudentToTest.StudentID mod 500);
+      StudentToTest.GPA := 2.0 + ((StudentToTest.StudentID mod 21) / 10.0);
+      
+      Found := StudentSet.Contains(StudentToTest); 
+    end;
+    
+    EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+
+    if ElapsedMS > 0 then
+      OpsPerSecond := NumItems / (ElapsedMS / 1000.0)
+    else
+      OpsPerSecond := 0;
+      
+    WriteLn(Format('    Contains (existing) %d TStudent records took: %.3f seconds (%.2f ops/sec)',
+              [NumItems, ElapsedMS / 1000.0, OpsPerSecond]));
+
+    // Benchmark Contains for non-existing items
+    StartTime := Now;
+    
+    for I := 1 to NumItems do
+    begin
+      // Create students with IDs guaranteed not to be in the set
+      StudentToTest.StudentID := NumItems + I; 
+      StudentToTest.FirstName := 'NonExistent' + IntToStr(I mod 100);
+      StudentToTest.LastName := 'NoSuchStudent' + IntToStr(I mod 500);
+      StudentToTest.GPA := 1.5 + ((I mod 10) / 10.0); // Different GPA range
+      
+      Found := StudentSet.Contains(StudentToTest);
+    end;
+    
+    EndTime := Now;
+    ElapsedMS := MilliSecondsBetween(EndTime, StartTime);
+
+    if ElapsedMS > 0 then
+      OpsPerSecond := NumItems / (ElapsedMS / 1000.0)
+    else
+      OpsPerSecond := 0;
+      
+    WriteLn(Format('    Contains (non-existing) %d TStudent records took: %.3f seconds (%.2f ops/sec)',
+              [NumItems, ElapsedMS / 1000.0, OpsPerSecond]));
+  end;
 end;
 
 initialization

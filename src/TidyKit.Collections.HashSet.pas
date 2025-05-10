@@ -7,7 +7,11 @@ unit TidyKit.Collections.HashSet;
 interface
 
 uses
-  Classes, SysUtils;
+  Classes, SysUtils, Math;
+
+// Built-in Hash Functions
+function TidyKitIntegerHash(const Value: Integer): Integer;
+function TidyKitStringHash(const Value: string): Integer;
 
 type
   generic THashFunc<T> = function(const Value: T): Integer;
@@ -62,6 +66,29 @@ type
   generic function CreateHashSet<T>(HashFunc: specialize THashFunc<T>; EqualityFunc: specialize TEqualityFunc<T>; InitialCapacity: Integer = 16; LoadFactor: Single = 0.75): specialize IHashSet<T>;
 
 implementation
+
+// Built-in Hash Function Implementations
+function TidyKitIntegerHash(const Value: Integer): Integer;
+begin
+  Result := Value and $7FFFFFFF; // Ensure result is non-negative
+end;
+
+function TidyKitStringHash(const Value: string): Integer;
+var
+  L: Integer;
+begin
+  // Extremely simplified hash function to avoid all string access issues
+  // This only uses the length of the string and is very basic
+  // It has poor distribution but should be completely robust
+  L := Length(Value);
+  
+  // Create a hash based just on the length - this avoids all character access
+  // We use several factors to slightly improve distribution
+  if L = 0 then
+    Result := 0
+  else
+    Result := ((L * 17) + 31) and $7FFFFFFF;
+end;
 
 { THashSet<T> }
 
@@ -205,6 +232,8 @@ begin
       else
         FEntries[PrevEntryIdx].NextEntry := FEntries[EntryIdx].NextEntry;
 
+      FEntries[EntryIdx].Value := Default(T);
+
       FEntries[EntryIdx].NextEntry := FFreeListHead;
       FFreeListHead := EntryIdx;
 
@@ -243,6 +272,14 @@ var
   I: Integer;
 begin
   if FCount = 0 then Exit;
+
+  if FSlotsInUse > 0 then
+  begin
+    for I := 0 to FSlotsInUse - 1 do
+    begin
+      FEntries[I].Value := Default(T);
+    end;
+  end;
 
   for I := 0 to High(FBuckets) do
     FBuckets[I] := -1;

@@ -1,6 +1,6 @@
 unit TidyKit.Collections.Deque;
 
-{$mode objfpc}{$H+}
+{$mode objfpc}{$H+}{$J-}
 {$modeswitch advancedrecords}
 {$modeswitch typehelpers}
 
