@@ -8,6 +8,8 @@ The implementation supports automatic memory management through interfaces, whil
 
 ## Key Features
 
+> **Note:** Enumeration with `for..in..do` is NOT supported. Use indexed access or methods like `ForEach` (if available) to traverse the list.
+
 - Dynamic resizing with efficient capacity management
 - Generic implementation supporting any type
 - Rich set of operations (add, insert, delete, search, sort, etc.)

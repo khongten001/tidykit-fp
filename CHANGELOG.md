@@ -9,6 +9,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ...
 
+## Release [0.1.8] - 2025-05-14
+
+### Added
+- Major improvements to documentation, including cheat sheet and dedicated user manuals for all collections.
+- Enhanced documentation for `TidyKit.Collections.List`, `TidyKit.Collections.Deque`, and `TidyKit.Collections.HashSet`.
+- Clarified that `for..in..do` enumeration is not supported in collections; recommend indexed access or `ToArray` for traversal.
+- Improved usability and documentation for `TidyKit.ParseArgs` to help new developers.
+- Expanded test coverage for all collections.
+
+### Changed
+- Refined README to better explain collection features and limitations.
+- Updated documentation for all modules to reflect the latest API and usage patterns.
+
+### Fixed
+- Minor documentation corrections and typo fixes.
+
 ## Release [0.1.7] - 2025-04-30
 
 ### Changed

@@ -13,11 +13,14 @@ The implementation uses a circular buffer with automatic resizing to efficiently
 - O(1) amortized time complexity for operations at both ends
 - Dynamic resizing
 - Random access to elements via index
+- Capacity property for pre-allocating or querying storage
 - Search operations
 - Transformation methods
 - Comprehensive test suite
 
 ## Usage
+
+> **Note:** Enumeration with `for..in..do` is NOT supported. Use indexed access or standard loops to traverse the deque.
 
 ### Creating a Deque
 

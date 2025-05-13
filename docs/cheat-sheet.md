@@ -514,6 +514,91 @@ Found := List.Contains(Item, @EqualityFunc) // Check if item exists
 Success := List.Find(@Predicate, FoundValue) // Find by predicate
 Results := List.FindAll(@Predicate)         // Get all matching items
 
+### HashSet<T> Operations
+```pascal
+// Creation
+THashSet<T>.New(HashFunc: THashFunc<T>; EqualityFunc: TEqualityFunc<T>; 
+  InitialCapacity: Integer = 16; LoadFactor: Single = 0.75): IHashSet<T>;
+
+// Basic Operations
+function Add(const Value: T): Boolean;
+function Remove(const Value: T): Boolean;
+function Contains(const Value: T): Boolean;
+procedure Clear;
+function ToArray: TArray<T>;
+property Count: Integer read GetCount;
+
+// Enumeration
+for Item in HashSet do ...
+```
+
+### Deque<T> Operations
+```pascal
+// Creation
+TDeque<T>.New: IDeque<T>;
+
+// Basic Operations
+procedure PushFront(const Value: T);
+procedure PushBack(const Value: T);
+function PopFront: T;
+function PopBack: T;
+function PeekFront: T;
+function PeekBack: T;
+procedure Clear;
+function ToArray: TArray<T>;
+
+// Search Operations
+function Contains(const Value: T; EqualityFunc: TEqualityFunc<T>): Boolean;
+function IndexOf(const Value: T; EqualityFunc: TEqualityFunc<T>): Integer;
+
+// Transformation
+procedure Reverse;
+
+// Properties
+property Count: Integer read GetCount;
+property Capacity: Integer read GetCapacity write SetCapacity;
+property Items[Index: Integer]: T read GetItem write SetItem; default;
+
+// Enumeration
+for Item in Deque do ...
+```
+
+### Hash Functions (TidyKit.Collections.HashFunction)
+```pascal
+// String Hashing
+function XXHash32(const Key: string): Integer;     // Best for strings > 64 bytes
+function FNV1aHash(const Key: string): Integer;    // Good for short strings
+
+// Numeric Hashing
+function MultiplicativeHash(const Key: Integer): Integer;
+function FloatHash(const Value: Extended): Integer;
+function Int64Hash(const Value: Int64): Integer;
+
+// Other Types
+function BooleanHash(const Value: Boolean): Integer;
+function DateTimeHash(const Value: TDateTime): Integer;
+function CharHash(const Value: Char): Integer;
+
+// Generic Fallback
+function DefaultHash(const Key; Size: Integer): Integer;
+```
+
+### Equality Functions (TidyKit.Collections.EqualityFunction)
+```pascal
+// Basic Types
+function TidyKitStringEquals(const A, B: string): Boolean;
+function TidyKitIntegerEquals(const A, B: Integer): Boolean;
+function TidyKitFloatEquals(const A, B: Extended): Boolean;
+function TidyKitBooleanEquals(const A, B: Boolean): Boolean;
+function TidyKitDateTimeEquals(const A, B: TDateTime): Boolean;
+function TidyKitCharEquals(const A, B: Char): Boolean;
+function TidyKitInt64Equals(const A, B: Int64): Boolean;
+
+// Complex Types
+function TidyKitPointEquals(const A, B: TPoint): Boolean;
+function TidyKitRectEquals(const A, B: TRect): Boolean;
+```
+
 // Transformations
 List.Sort(@CompareFunc)                     // Sort using comparison function
 List.Reverse                                // Reverse list order

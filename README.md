@@ -160,11 +160,14 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
 - 📚 **Collections (`TList<T>`, `TDeque<T>`, `THashSet<T>`)**
   - **`TList<T>`**: Generic list with dynamic array backing, offering operations like `Add`, `Insert`, `Delete`, `Sort`, `Find`, etc.
   - **`TDeque<T>`**: Generic double-ended queue with circular buffer backing, providing efficient `PushFront`, `PushBack`, `PopFront`, `PopBack` operations.
-  - **`THashSet<T>`**: A generic hash set for storing unique elements with high-performance add, remove, and contains operations. Supports custom hashing and equality functions. See [TidyKit.Collections.HashSet Documentation](./docs/TidyKit.Collections.HashSet.md) for more details.
+  - **`THashSet<T>`**: Generic hash set for storing unique elements with high-performance add, remove, and contains operations. Supports custom hashing and equality functions. See [TidyKit.Collections.HashSet Documentation](./docs/TidyKit.Collections.HashSet.md) for more details.
+    - **Robust Hash Functions**: Specialized implementations for common data types in `TidyKit.Collections.HashFunction` (XXHash32, FNV1a, etc.)
+    - **Equality Functions**: Type-specific equality comparisons in `TidyKit.Collections.EqualityFunction`
   - **Strongly Typed**: Utilizes Free Pascal generics for type safety with any data type.
   - **Automatic Memory Management**: Collections are `TInterfacedObject` descendants; using them via their interfaces (e.g., `IList<T>`, `IDeque<T>`, `IHashSet<T>`) enables automatic reference counting and memory management.
   - **Comprehensive API**: Includes methods for adding, removing, accessing, searching, and transforming elements (e.g., `ToArray`, `IndexOf`, `Contains`, `Reverse`).
-  - **Efficient Performance**: Designed for good performance with appropriate underlying data structures and growth strategies (e.g., amortized O(1) for `TList.Add` and Deque push/pop operations). Detailed benchmarks are available in individual documentation.
+  - **Efficient Performance**: Designed for good performance with appropriate underlying data structures and growth strategies.
+  - **Enumeration Note**: `for..in..do` enumeration is **not supported**; use indexed access or `ToArray` for traversal.
   - **Thoroughly Tested**: Each collection has a comprehensive FPCUnit test suite.
 
 ## 💻 Installation (Lazarus IDE)
@@ -539,7 +542,9 @@ end;
 
 ```pascal
 uses
-  TidyKit.Collections.List, TidyKit.Collections.Deque, TidyKit.Collections.HashSet;
+  TidyKit.Collections.List, TidyKit.Collections.Deque, 
+  TidyKit.Collections.HashSet, TidyKit.Collections.HashFunction, 
+  TidyKit.Collections.EqualityFunction;
 
 var
   // Example for TList<T>
@@ -553,7 +558,7 @@ var
   MyHashSet: IHashSet<string>;
 begin
   // --- TList<T> Example ---
-  MyIntList := TList<Integer>.New; // Using factory for interface-based management
+  MyIntList := CreateList<Integer>; // Using helper for interface-based management
   MyIntList.Add(10);
   MyIntList.Add(20);
   MyIntList.Insert(1, 15); // List is now: 10, 15, 20
@@ -564,7 +569,7 @@ begin
   WriteLn; // Output: 10 15 20
 
   // --- TDeque<T> Example ---
-  MyStringDeque := TDeque<string>.New; // Using factory for interface-based management
+  MyStringDeque := CreateDeque<string>; // Using helper for interface-based management
   MyStringDeque.PushBack('apples');
   MyStringDeque.PushFront('bananas'); // Deque is now: 'bananas', 'apples'
   MyStringDeque.PushBack('cherries'); // Deque is now: 'bananas', 'apples', 'cherries'
@@ -574,20 +579,20 @@ begin
     Write(MyStringDeque.PopFront, ' ');
   WriteLn; // Output: bananas apples cherries
 
-  // --- THashSet<T> Example ---
-  MyHashSet := THashSet<string>.New; // Using factory for interface-based management
+  // --- THashSet<T> Example with specialized hash functions ---
+  MyHashSet := CreateHashSet<string>(@XXHash32, @TidyKitStringEquals);
   MyHashSet.Add('apple');
   MyHashSet.Add('banana');
   MyHashSet.Add('cherry');
   MyHashSet.Add('apple'); // Duplicate, won't be added
 
   Write('HashSet items: ');
-  for I := 0 to MyHashSet.Count - 1 do
+  for I := 0 to MyHashSet.ToArray.Count - 1 do
     Write(MyHashSet.ToArray[I], ' ');
   WriteLn; // Output: apple banana cherry
 
-  // No explicit Free needed for MyIntList, MyStringDeque, or MyHashSet
-  // as they are interface variables and will be automatically managed.
+  // No explicit Free needed as these are interface variables
+  // and will be automatically managed.
 end;
 ```
 
@@ -640,6 +645,8 @@ For detailed documentation, see:
   - [List Collection (TList<T>)](docs/TidyKit.Collections.List.md)
   - [Deque Collection (TDeque<T>)](docs/TidyKit.Collections.Deque.md)
   - [HashSet Collection (THashSet<T>)](docs/TidyKit.Collections.HashSet.md)
+  - [Hash Functions](docs/TidyKit.Collections.HashFunction.md)
+  - [Equality Functions](docs/TidyKit.Collections.EqualityFunction.md)
 
 ## 📊 Real-World Examples
 

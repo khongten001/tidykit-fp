@@ -11,6 +11,33 @@ The `TidyKit.Collections.HashSet` unit provides a generic hash set collection, `
 *   **Interface-Based**: Implements `IHashSet<T>`, enabling usage with interfaces for automatic memory management (ARC) and polymorphism.
 *   **Dynamic Resizing**: Automatically resizes its internal storage to maintain performance as the number of elements grows, based on a configurable load factor.
 
+## Supporting Units
+
+The HashSet implementation relies on two important supporting units:
+
+### TidyKit.Collections.HashFunction
+
+The `TidyKit.Collections.HashFunction.pas` unit provides ready-to-use hash functions for common data types, including:
+
+* `XXHash32` - An optimized hash function for strings and byte sequences
+* `FNV1aHash` - An alternative string hash function with good distribution
+* `MultiplicativeHash` - Fast integer hash function
+* `FloatHash` - Specialized hash function for floating point values with proper handling of NaN, infinity, and zero values
+* `Int64Hash`, `BooleanHash`, `DateTimeHash`, `CharHash` - Type-specific hash functions
+
+### TidyKit.Collections.EqualityFunction
+
+The `TidyKit.Collections.EqualityFunction.pas` unit provides ready-to-use equality comparison functions:
+
+* `TidyKitIntegerEquals`, `TidyKitStringEquals`
+* `TidyKitFloatEquals` - With special handling for NaN, infinity, and negative zero values
+* `TidyKitBooleanEquals`, `TidyKitDateTimeEquals`, `TidyKitCharEquals`, `TidyKitInt64Equals`
+* Additional functions for comparing complex types like `TidyKitPointEquals` and `TidyKitRectEquals`
+
+These units eliminate the need to write your own hash and equality functions for common data types.
+
+> **Note:** Enumeration with `for..in..do` is NOT supported by HashSet. Use `ToArray` or other methods to traverse elements.
+
 ## Generic Type Parameters
 
 *   `T`: The type of elements stored in the hash set.
@@ -147,21 +174,18 @@ This basic example demonstrates the fundamental operations using a simple intege
 
 ```pascal
 uses
-  SysUtils, TidyKit.Collections.HashSet;
-
-// Simple Integer equality function
-function IntegerEquals(const A, B: Integer): Boolean;
-begin
-  Result := A = B;
-end;
+  SysUtils, 
+  TidyKit.Collections.HashSet,
+  TidyKit.Collections.HashFunction,
+  TidyKit.Collections.EqualityFunction;
 
 var
   IntSet: specialize IHashSet<Integer>;
   NumArray: specialize TArray<Integer>;
   I: Integer;
 begin
-  // Create a hash set for integers using built-in TidyKitIntegerHash
-  IntSet := CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, 8, 0.8);
+  // Create a hash set for integers using built-in hash and equality functions
+  IntSet := CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals, 8, 0.8);
 
   // Add elements
   if IntSet.Add(10) then WriteLn('10 added.');
@@ -197,7 +221,10 @@ This example demonstrates how to use `THashSet` with a custom record type, using
 
 ```pascal
 uses
-  SysUtils, TidyKit.Collections.HashSet;
+  SysUtils, 
+  TidyKit.Collections.HashSet,
+  TidyKit.Collections.HashFunction,
+  TidyKit.Collections.EqualityFunction;
 
 type
   TPerson = record
@@ -209,7 +236,7 @@ type
 function PersonHash(const Value: TPerson): Integer;
 begin
   // Use built-in hash functions from TidyKit
-  Result := TidyKitIntegerHash(Value.ID) xor TidyKitStringHash(Value.Name);
+  Result := MultiplicativeHash(Value.ID) xor XXHash32(Value.Name);
 end;
 
 function PersonEquals(const A, B: TPerson): Boolean;
@@ -246,4 +273,4 @@ begin
 end;
 ```
 
-This manual provides a comprehensive overview of the `TidyKit.Collections.HashSet` unit. The performance and correctness of the hash set depend significantly on the quality and consistency of the user-provided hash (`THashFunc<T>`) and equality (`TEqualityFunc<T>`) functions.
+This manual provides a comprehensive overview of the `TidyKit.Collections.HashSet` unit. The performance and correctness of the hash set depend significantly on the quality and consistency of the user-provided hash (`THashFunc<T>`) and equality (`TEqualityFunc<T>`) functions. Fortunately, TidyKit provides ready-to-use implementations for common data types in the `TidyKit.Collections.HashFunction` and `TidyKit.Collections.EqualityFunction` units.

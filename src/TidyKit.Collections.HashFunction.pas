@@ -1,5 +1,27 @@
 unit TidyKit.Collections.HashFunction;
 
+{
+  XXHash32
+  - Best for strings > 64 bytes
+  - Uses SIMD-friendly operations
+  - Good avalanche effect
+  
+  FNV1aHash
+  - Good for short strings
+  - Simple and fast
+  - Good distribution
+  
+  MultiplicativeHash
+  - Optimal for integers
+  - Uses golden ratio for better distribution
+  - Very fast single multiplication
+  
+  DefaultHash
+  - Fallback for other types
+  - Uses FNV-1a algorithm on raw bytes
+  - Reasonable performance for unknown types
+}
+
 {$mode objfpc}{$H+}{$J-}
 {$R-}
 interface
