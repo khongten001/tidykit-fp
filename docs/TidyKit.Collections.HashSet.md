@@ -139,58 +139,29 @@ generic function CreateHashSet<T>(
 *   Creates and returns a new `THashSet<T>` instance, managed via its `IHashSet<T>` interface. This is often the preferred way to instantiate the hash set.
 *   Parameters are identical to the `THashSet.Create` constructor.
 
-## Usage Example
+## Usage Examples
+
+### Basic Example: Working with Integers
+
+This basic example demonstrates the fundamental operations using a simple integer hash set:
 
 ```pascal
 uses
   SysUtils, TidyKit.Collections.HashSet;
 
-// Define hash and equality functions for Integer
-function MyIntegerHash(const Value: Integer): Integer;
-begin
-  Result := Value; // Simple hash for integers
-end;
-
-function MyIntegerEquals(const A, B: Integer): Boolean;
+// Simple Integer equality function
+function IntegerEquals(const A, B: Integer): Boolean;
 begin
   Result := A = B;
 end;
 
-// Define a record type and its hash/equality functions
-type
-  TPerson = record
-    ID: Integer;
-    Name: string;
-  end;
-
-function PersonHash(const Value: TPerson): Integer;
-var
-  HName: Cardinal;
-  I: Integer;
-begin
-  // Simple string hash for name
-  HName := 0;
-  for I := 1 to Length(Value.Name) do
-    HName := 31 * HName + Ord(Value.Name[I]);
-  // Combine hashes
-  Result := Integer(Cardinal(Value.ID) xor HName);
-end;
-
-function PersonEquals(const A, B: TPerson): Boolean;
-begin
-  Result := (A.ID = B.ID) and (A.Name = B.Name);
-end;
-
 var
   IntSet: specialize IHashSet<Integer>;
-  PersonSet: specialize IHashSet<TPerson>;
   NumArray: specialize TArray<Integer>;
-  P1, P2, P3: TPerson;
   I: Integer;
 begin
-  // --- Integer HashSet Example ---
-  WriteLn('--- Integer HashSet Example ---');
-  IntSet := CreateHashSet<Integer>(@MyIntegerHash, @MyIntegerEquals, 8, 0.8); // Custom capacity and load factor
+  // Create a hash set for integers using built-in TidyKitIntegerHash
+  IntSet := CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, 8, 0.8);
 
   // Add elements
   if IntSet.Add(10) then WriteLn('10 added.');
@@ -198,7 +169,7 @@ begin
   IntSet.Add(30);
 
   // Adding a duplicate
-  if not IntSet.Add(10) then WriteLn('10 was already in the set.'); // This will be true
+  if not IntSet.Add(10) then WriteLn('10 was already in the set.');
 
   WriteLn('Integer Set count: ', IntSet.Count); // Output: 3
 
@@ -208,40 +179,71 @@ begin
   // Remove an element
   if IntSet.Remove(20) then WriteLn('20 removed.');
 
-  WriteLn('Integer Set count after removal: ', IntSet.Count); // Output: 2
-
-  // Convert to array
+  // Convert to array and display
   NumArray := IntSet.ToArray;
   Write('Elements in array: ');
   for I := Low(NumArray) to High(NumArray) do
-    Write(NumArray[I], ' '); // Order not guaranteed, e.g., "10 30 " or "30 10 "
+    Write(NumArray[I], ' ');
   WriteLn;
 
   IntSet.Clear;
   WriteLn('Integer Set count after clear: ', IntSet.Count); // Output: 0
-  WriteLn;
+end;
+```
 
-  // --- Custom Record HashSet Example ---
-  WriteLn('--- TPerson HashSet Example ---');
+### Advanced Example: Custom Record Type
+
+This example demonstrates how to use `THashSet` with a custom record type, using the built-in hash functions:
+
+```pascal
+uses
+  SysUtils, TidyKit.Collections.HashSet;
+
+type
+  TPerson = record
+    ID: Integer;
+    Name: string;
+  end;
+
+// Define hash function for TPerson using built-in hash functions
+function PersonHash(const Value: TPerson): Integer;
+begin
+  // Use built-in hash functions from TidyKit
+  Result := TidyKitIntegerHash(Value.ID) xor TidyKitStringHash(Value.Name);
+end;
+
+function PersonEquals(const A, B: TPerson): Boolean;
+begin
+  Result := (A.ID = B.ID) and (A.Name = B.Name);
+end;
+
+var
+  PersonSet: specialize IHashSet<TPerson>;
+  P1, P2, P3: TPerson;
+begin
+  // Create a hash set for TPerson records
   PersonSet := CreateHashSet<TPerson>(@PersonHash, @PersonEquals);
 
+  // Create some test records
   P1.ID := 1; P1.Name := 'Alice';
   P2.ID := 2; P2.Name := 'Bob';
   P3.ID := 1; P3.Name := 'Alice'; // Duplicate of P1
 
+  // Add records to the set
   PersonSet.Add(P1);
   PersonSet.Add(P2);
-
+  
   WriteLn('Person Set count: ', PersonSet.Count); // Output: 2
 
-  if PersonSet.Contains(P1) then WriteLn(P1.Name, ' is in the set.');
-  if not PersonSet.Add(P3) then WriteLn(P3.Name, ' (duplicate) was not added again.');
+  // Test contains and duplicate detection
+  if PersonSet.Contains(P1) then 
+    WriteLn(P1.Name, ' is in the set.');
+    
+  if not PersonSet.Add(P3) then 
+    WriteLn(P3.Name, ' (duplicate) was not added again.');
 
-  WriteLn('Person Set count (should still be 2): ', PersonSet.Count); // Output: 2
-
-  // PersonSet and IntSet will be automatically freed when they go out of scope
-  // due to ARC, as they are interface variables.
-end.
+  WriteLn('Person Set count (should still be 2): ', PersonSet.Count);
+end;
 ```
 
 This manual provides a comprehensive overview of the `TidyKit.Collections.HashSet` unit. The performance and correctness of the hash set depend significantly on the quality and consistency of the user-provided hash (`THashFunc<T>`) and equality (`TEqualityFunc<T>`) functions.

@@ -5,8 +5,10 @@ unit TidyKit.Collections.HashSet.Test;
 interface
 
 uses
-  Classes, SysUtils, fpcunit, testregistry, DateUtils, Math, // Added fpcunit, testregistry
-  TidyKit.Collections.HashSet;
+  Classes, SysUtils, fpcunit, testregistry, DateUtils, Math,
+  TidyKit.Collections.HashSet,
+  TidyKit.Collections.HashFunction,
+  TidyKit.Collections.EqualityFunction;
 
 type
   // Custom record type for testing hash set performance
@@ -18,12 +20,8 @@ type
   end;
 
   THashSetTest = class(TTestCase)
-  private
-    // No private fields needed for these tests as instances are created per method
-  protected
-    // procedure SetUp; override; // Optional: if common setup is needed
-    // procedure TearDown; override; // Optional: if common teardown is needed
   published
+    // Existing tests
     procedure TestBasicAddAndContains_Integer;
     procedure TestRemove_String;
     procedure TestClear_Record;
@@ -35,27 +33,22 @@ type
     procedure TestToArray_EmptyAndCleared;       
     procedure TestInterfaceBasedMemoryManagement;
     procedure TestBenchmarkContains_Integer; 
-    // New tests for TStudent
     procedure TestBasicOperations_Student;
     procedure TestBenchmarkAddItems_Student;
     procedure TestBenchmarkContains_Student;
+    procedure TestBasicOperations_Float;
+    procedure TestEdgeCases_Float;
+    procedure TestBasicOperations_Boolean;
+    procedure TestBasicOperations_DateTime;
+    procedure TestBasicOperations_Char;
+    procedure TestBasicOperations_Int64;
+    procedure TestLargeValues_Int64;
+
+    // New tests using advanced hash functions
+    procedure TestAdvancedHashFunctions;
   end;
 
 implementation
-
-// Helper functions remain at unit level
-
-// Integer Equality (now using TidyKitIntegerHash from the unit)
-function IntegerEquals(const A, B: Integer): Boolean;
-begin
-  Result := A = B;
-end;
-
-// String Equality (now using TidyKitStringHash from the unit)
-function StringEquals(const A, B: string): Boolean;
-begin
-  Result := A = B;
-end;
 
 // Record Type for Testing
 type
@@ -64,13 +57,13 @@ type
     Name: string;
   end;
 
-// Updated to use built-in hash functions
+// Updated to use basic hash functions directly
 function TestRecordHash(const Value: TTestRecord): Integer;
 var
   HName: Integer;
 begin
-  HName := TidyKitStringHash(Value.Name);
-  Result := TidyKitIntegerHash(Value.ID) xor HName;
+  HName := XXHash32(Value.Name);
+  Result := MultiplicativeHash(Value.ID) xor HName;
 end;
 
 function TestRecordEquals(const A, B: TTestRecord): Boolean;
@@ -78,24 +71,22 @@ begin
   Result := (A.ID = B.ID) and (A.Name = B.Name);
 end;
 
-// TStudent hash and equality functions - SIMPLIFIED VERSION FOR TESTING
+// TStudent hash function updated to use basic hash functions
 function StudentHash(const Value: TStudent): Integer;
 var
   H_ID, H_FirstName, H_LastName, H_GPA: Integer;
   GPAAsInt: Integer;
 begin
-  H_ID := TidyKitIntegerHash(Value.StudentID);
-  H_FirstName := TidyKitStringHash(Value.FirstName); // Safe now with our length-only implementation
-  H_LastName := TidyKitStringHash(Value.LastName);   // Safe now with our length-only implementation
+  H_ID := MultiplicativeHash(Value.StudentID);
+  H_FirstName := XXHash32(Value.FirstName);
+  H_LastName := XXHash32(Value.LastName);
   
-  // Convert GPA to integer for hashing
   if IsNan(Value.GPA) then
     GPAAsInt := 0
   else
     GPAAsInt := Round(Value.GPA * 100.0);
   
-  H_GPA := TidyKitIntegerHash(GPAAsInt);
-  
+  H_GPA := MultiplicativeHash(GPAAsInt);
   Result := (H_ID xor H_FirstName xor H_LastName xor H_GPA) and $7FFFFFFF;
 end;
 
@@ -117,15 +108,15 @@ begin
   Result := CollisionTestHashValue;
 end;
 
-{ THashSetTest }
+{ THashSetTest implementation }
 
 procedure THashSetTest.TestBasicAddAndContains_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
   I: Integer;
 begin
-  // Updated to use TidyKitIntegerHash
-  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
+  // Use basic hash function directly
+  SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
 
   AssertTrue('Add 10', SetInstance.Add(10));
   AssertEquals('Count after adding 10', 1, SetInstance.Count);
@@ -151,8 +142,7 @@ procedure THashSetTest.TestRemove_String;
 var
   SetInstance: specialize IHashSet<string>;
 begin
-  // Updated to use TidyKitStringHash
-  SetInstance := specialize CreateHashSet<string>(@TidyKitStringHash, @StringEquals);
+  SetInstance := specialize CreateHashSet<string>(@XXHash32, @TidyKitStringEquals);
 
   SetInstance.Add('apple');
   SetInstance.Add('banana');
@@ -177,7 +167,6 @@ var
   SetInstance: specialize IHashSet<TTestRecord>;
   Rec1, Rec2: TTestRecord;
 begin
-  // TestRecordHash now uses TidyKit built-in hash functions
   SetInstance := specialize CreateHashSet<TTestRecord>(@TestRecordHash, @TestRecordEquals);
 
   Rec1.ID := 1; Rec1.Name := 'Test1';
@@ -200,12 +189,11 @@ end;
 procedure THashSetTest.TestToArray_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
-  Arr: specialize TArray<Integer>; // Use specialize TArray<T> for consistency with HashSet.ToArray
+  Arr: specialize TArray<Integer>;
   I, J: Integer;
   Found: Boolean;
 begin
-  // Updated to use TidyKitIntegerHash
-  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, 5);
+  SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals, 5);
 
   SetInstance.Add(1);
   SetInstance.Add(5);
@@ -239,7 +227,7 @@ var
 const
   NumItems = 10;
 begin
-  SetInstance := specialize CreateHashSet<Integer>(@CollisionHashForTest, @IntegerEquals, 4);
+  SetInstance := specialize CreateHashSet<Integer>(@CollisionHashForTest, @TidyKitIntegerEquals, 4);
 
   for I := 1 to NumItems do
   begin
@@ -266,8 +254,7 @@ var
   InitialCap: Integer = 4;
   NumToAdd: Integer = 20;
 begin
-  // Updated to use TidyKitIntegerHash
-  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals, InitialCap, 0.75);
+  SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals, InitialCap, 0.75);
 
   for I := 1 to NumToAdd do
   begin
@@ -307,9 +294,8 @@ begin
   for J := Low(Counts) to High(Counts) do
   begin
     NumItems := Counts[J];
-    WriteLn(Format('    Benchmarking Add for %d items...', [NumItems])); // Keep WriteLn for benchmarks
-    // Updated to use TidyKitIntegerHash
-    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
+    WriteLn(Format('    Benchmarking Add for %d items...', [NumItems]));
+    SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
 
     StartTime := Now;
     for I := 1 to NumItems do
@@ -326,8 +312,101 @@ begin
 
     WriteLn(Format('    Adding %d items took: %.3f seconds (%.2f items/sec)',
               [NumItems, ElapsedMS / 1000.0, ItemsPerSecond]));
-    // No specific assert for benchmark time, just that it completes and count is correct.
   end;
+end;
+
+procedure THashSetTest.TestConstructor_Validations;
+var
+  SetInstance: specialize IHashSet<Integer>;
+  RaisedException: Boolean;
+begin
+  RaisedException := False;
+  try
+    SetInstance := specialize CreateHashSet<Integer>(nil, @TidyKitIntegerEquals);
+    Fail('Constructor should raise exception for nil HashFunc');
+  except
+    on E: Exception do
+    begin
+      RaisedException := True;
+      AssertEquals('Nil HashFunc exception message', 'HashFunc cannot be nil.', E.Message);
+    end;
+  end;
+  AssertTrue('Exception was raised for nil HashFunc', RaisedException);
+
+  RaisedException := False;
+  try
+    SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, nil);
+    Fail('Constructor should raise exception for nil EqualityFunc');
+  except
+    on E: Exception do
+    begin
+      RaisedException := True;
+      AssertEquals('Nil EqualityFunc exception message', 'EqualityFunc cannot be nil.', E.Message);
+    end;
+  end;
+  AssertTrue('Exception was raised for nil EqualityFunc', RaisedException);
+
+  // Test successful creation with valid functions
+  SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
+  AssertNotNull('SetInstance should not be nil with valid functions', SetInstance);
+end;
+
+procedure THashSetTest.TestToArray_EmptyAndCleared;
+var
+  SetInstance: specialize IHashSet<Integer>;
+  Arr: specialize TArray<Integer>;
+begin
+  // Test ToArray on a newly created (empty) set
+  SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
+  Arr := SetInstance.ToArray;
+  AssertEquals('ToArray on new empty set should return empty array', 0, Length(Arr));
+
+  // Add an item, then clear, then ToArray
+  SetInstance.Add(100);
+  AssertEquals('Count should be 1 after adding an item', 1, SetInstance.Count);
+  SetInstance.Clear;
+  AssertEquals('Count should be 0 after clear', 0, SetInstance.Count);
+  Arr := SetInstance.ToArray;
+  AssertEquals('ToArray after clear should return empty array', 0, Length(Arr));
+
+  // Add an item after clear, then ToArray
+  SetInstance.Add(200);
+  Arr := SetInstance.ToArray;
+  AssertEquals('ToArray after clear and re-add should have 1 item', 1, Length(Arr));
+  if Length(Arr) = 1 then // Prevent range check error if previous assert fails
+    AssertEquals('Item in ToArray after clear and re-add should be 200', 200, Arr[0]);
+end;
+
+procedure THashSetTest.TestInterfaceBasedMemoryManagement;
+var
+  Set1: specialize IHashSet<Integer>;
+  Set2: specialize IHashSet<Integer>;
+begin
+  Set1 := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
+  Set1.Add(10);
+  Set1.Add(20);
+  AssertEquals('Set1 count after adds', 2, Set1.Count);
+
+  Set2 := Set1; // Assign to another interface variable
+  AssertEquals('Set2 count should match Set1', 2, Set2.Count);
+  AssertTrue('Set2 should contain 10', Set2.Contains(10));
+
+  Set1.Add(30);
+  AssertEquals('Set1 count after adding to original', 3, Set1.Count);
+  AssertEquals('Set2 count should reflect change via Set1', 3, Set2.Count);
+  AssertTrue('Set2 should contain 30', Set2.Contains(30));
+
+  Set1 := nil; // Release one reference
+  // Set2 should still be valid and hold the data
+  AssertNotNull('Set2 should still be valid', Set2);
+  AssertEquals('Set2 count should remain 3', 3, Set2.Count);
+  AssertTrue('Set2 should still contain 20', Set2.Contains(20));
+
+  Set2.Remove(20);
+  AssertEquals('Set2 count after remove', 2, Set2.Count);
+  AssertFalse('Set2 should not contain 20 after remove', Set2.Contains(20));
+
+  // Set2 will be released when it goes out of scope, ARC handles freeing the THashSet object
 end;
 
 procedure THashSetTest.TestBenchmarkContains_Integer;
@@ -339,7 +418,7 @@ var
   OpsPerSecond: Double;
   Counts: array[0..2] of Integer;
   J: Integer;
-  Found: Boolean; // To ensure the compiler doesn't optimize away the Contains call
+  Found: Boolean;
 begin
   Counts[0] := 10000;
   Counts[1] := 100000;
@@ -349,8 +428,7 @@ begin
   begin
     NumItems := Counts[J];
     WriteLn(Format('    Benchmarking Contains for %d items...', [NumItems]));
-    // Updated to use TidyKitIntegerHash
-    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
+    SetInstance := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
 
     // Populate the set
     for I := 1 to NumItems do
@@ -400,105 +478,6 @@ begin
   end;
 end;
 
-procedure THashSetTest.TestConstructor_Validations;
-var
-  SetInstance: specialize IHashSet<Integer>;
-  RaisedException: Boolean;
-begin
-  RaisedException := False;
-  try
-    SetInstance := specialize CreateHashSet<Integer>(nil, @IntegerEquals);
-    Fail('Constructor should raise exception for nil HashFunc');
-  except
-    on E: Exception do
-    begin
-      RaisedException := True;
-      AssertEquals('Nil HashFunc exception message', 'HashFunc cannot be nil.', E.Message);
-    end;
-  end;
-  AssertTrue('Exception was raised for nil HashFunc', RaisedException);
-
-  RaisedException := False;
-  try
-    // Updated to use TidyKitIntegerHash for the valid hash function part
-    SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, nil);
-    Fail('Constructor should raise exception for nil EqualityFunc');
-  except
-    on E: Exception do
-    begin
-      RaisedException := True;
-      AssertEquals('Nil EqualityFunc exception message', 'EqualityFunc cannot be nil.', E.Message);
-    end;
-  end;
-  AssertTrue('Exception was raised for nil EqualityFunc', RaisedException);
-
-  // Test successful creation with valid functions (implicitly tested elsewhere, but good for completeness)
-  // Updated to use TidyKitIntegerHash
-  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
-  AssertNotNull('SetInstance should not be nil with valid functions', SetInstance);
-end;
-
-procedure THashSetTest.TestToArray_EmptyAndCleared;
-var
-  SetInstance: specialize IHashSet<Integer>;
-  Arr: specialize TArray<Integer>;
-begin
-  // Test ToArray on a newly created (empty) set
-  // Updated to use TidyKitIntegerHash
-  SetInstance := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
-  Arr := SetInstance.ToArray;
-  AssertEquals('ToArray on new empty set should return empty array', 0, Length(Arr));
-
-  // Add an item, then clear, then ToArray
-  SetInstance.Add(100);
-  AssertEquals('Count should be 1 after adding an item', 1, SetInstance.Count);
-  SetInstance.Clear;
-  AssertEquals('Count should be 0 after clear', 0, SetInstance.Count);
-  Arr := SetInstance.ToArray;
-  AssertEquals('ToArray after clear should return empty array', 0, Length(Arr));
-
-  // Add an item after clear, then ToArray
-  SetInstance.Add(200);
-  Arr := SetInstance.ToArray;
-  AssertEquals('ToArray after clear and re-add should have 1 item', 1, Length(Arr));
-  if Length(Arr) = 1 then // Prevent range check error if previous assert fails
-    AssertEquals('Item in ToArray after clear and re-add should be 200', 200, Arr[0]);
-end;
-
-procedure THashSetTest.TestInterfaceBasedMemoryManagement;
-var
-  Set1: specialize IHashSet<Integer>;
-  Set2: specialize IHashSet<Integer>;
-begin
-  // Updated to use TidyKitIntegerHash
-  Set1 := specialize CreateHashSet<Integer>(@TidyKitIntegerHash, @IntegerEquals);
-  Set1.Add(10);
-  Set1.Add(20);
-  AssertEquals('Set1 count after adds', 2, Set1.Count);
-
-  Set2 := Set1; // Assign to another interface variable
-  AssertEquals('Set2 count should match Set1', 2, Set2.Count);
-  AssertTrue('Set2 should contain 10', Set2.Contains(10));
-
-  Set1.Add(30);
-  AssertEquals('Set1 count after adding to original', 3, Set1.Count);
-  AssertEquals('Set2 count should reflect change via Set1', 3, Set2.Count);
-  AssertTrue('Set2 should contain 30', Set2.Contains(30));
-
-  Set1 := nil; // Release one reference
-  // Set2 should still be valid and hold the data
-  AssertNotNull('Set2 should still be valid', Set2);
-  AssertEquals('Set2 count should remain 3', 3, Set2.Count);
-  AssertTrue('Set2 should still contain 20', Set2.Contains(20));
-
-  Set2.Remove(20);
-  AssertEquals('Set2 count after remove', 2, Set2.Count);
-  AssertFalse('Set2 should not contain 20 after remove', Set2.Contains(20));
-
-  // Set2 will be released when it goes out of scope, ARC handles freeing the THashSet object
-end;
-
-// New TStudent Test Methods
 procedure THashSetTest.TestBasicOperations_Student;
 var
   StudentSet: specialize IHashSet<TStudent>;
@@ -680,6 +659,228 @@ begin
     WriteLn(Format('    Contains (non-existing) %d TStudent records took: %.3f seconds (%.2f ops/sec)',
               [NumItems, ElapsedMS / 1000.0, OpsPerSecond]));
   end;
+end;
+
+procedure THashSetTest.TestBasicOperations_Float;
+var
+  SetInstance: specialize IHashSet<Extended>;
+begin
+  SetInstance := specialize CreateHashSet<Extended>(@FloatHash, @TidyKitFloatEquals);
+  
+  AssertTrue('Add 3.14159', SetInstance.Add(3.14159));
+  AssertTrue('Add 2.71828', SetInstance.Add(2.71828));
+  AssertTrue('Add 1.41421', SetInstance.Add(1.41421));
+  
+  AssertEquals('Count should be 3', 3, SetInstance.Count);
+  
+  AssertTrue('Contains 3.14159', SetInstance.Contains(3.14159));
+  AssertTrue('Contains 2.71828', SetInstance.Contains(2.71828));
+  AssertFalse('Should not contain 1.61803', SetInstance.Contains(1.61803));
+  
+  AssertTrue('Remove 2.71828', SetInstance.Remove(2.71828));
+  AssertEquals('Count after remove', 2, SetInstance.Count);
+  AssertFalse('Should not contain removed item', SetInstance.Contains(2.71828));
+end;
+
+procedure THashSetTest.TestEdgeCases_Float;
+var
+  SetInstance: specialize IHashSet<Extended>;
+  PositiveInfinity, NegativeInfinity, PositiveZero, NegativeZero: Extended;
+  NaNValue: Extended;
+begin
+  SetInstance := specialize CreateHashSet<Extended>(@FloatHash, @TidyKitFloatEquals);
+  
+  PositiveInfinity := Infinity;
+  NegativeInfinity := -Infinity;
+  NaNValue := NaN;
+  PositiveZero := 0.0;
+  
+  // Create a true negative zero using a division that ensures sign bit is preserved
+  NegativeZero := -1.0;
+  NegativeZero := NegativeZero * 0.0; // This will create -0.0 reliably
+  
+  // Test NaN handling
+  AssertTrue('Add NaN', SetInstance.Add(NaNValue));
+  AssertTrue('Contains NaN', SetInstance.Contains(NaNValue));
+  
+  // Test infinities
+  AssertTrue('Add +Infinity', SetInstance.Add(PositiveInfinity));
+  AssertTrue('Add -Infinity', SetInstance.Add(NegativeInfinity));
+  AssertTrue('Contains +Infinity', SetInstance.Contains(PositiveInfinity));
+  AssertTrue('Contains -Infinity', SetInstance.Contains(NegativeInfinity));
+  
+  // Test both zero values
+  AssertTrue('Add +0.0', SetInstance.Add(PositiveZero));
+  AssertTrue('Add -0.0', SetInstance.Add(NegativeZero));
+  
+  // Test very small/large values
+  AssertTrue('Add very small value', SetInstance.Add(1.0e-300));
+  AssertTrue('Add very large value', SetInstance.Add(1.0e+300));
+  
+  AssertEquals('Count should be 7 after adding edge cases', 7, SetInstance.Count);
+end;
+
+procedure THashSetTest.TestBasicOperations_Boolean;
+var
+  SetInstance: specialize IHashSet<Boolean>;
+begin
+  SetInstance := specialize CreateHashSet<Boolean>(@BooleanHash, @TidyKitBooleanEquals);
+  
+  AssertTrue('Add True', SetInstance.Add(True));
+  AssertEquals('Count after adding True', 1, SetInstance.Count);
+  
+  AssertTrue('Add False', SetInstance.Add(False));
+  AssertEquals('Count after adding False', 2, SetInstance.Count);
+  
+  // Test adding duplicates
+  AssertFalse('Add True again should fail', SetInstance.Add(True));
+  AssertFalse('Add False again should fail', SetInstance.Add(False));
+  AssertEquals('Count should still be 2', 2, SetInstance.Count);
+  
+  // Test contains
+  AssertTrue('Contains True', SetInstance.Contains(True));
+  AssertTrue('Contains False', SetInstance.Contains(False));
+  
+  // Test remove
+  AssertTrue('Remove True', SetInstance.Remove(True));
+  AssertEquals('Count after removing True', 1, SetInstance.Count);
+  AssertFalse('Should not contain True after removal', SetInstance.Contains(True));
+  AssertTrue('Should still contain False', SetInstance.Contains(False));
+end;
+
+procedure THashSetTest.TestBasicOperations_DateTime;
+var
+  SetInstance: specialize IHashSet<TDateTime>;
+  Date1, Date2, Date3: TDateTime;
+begin
+  SetInstance := specialize CreateHashSet<TDateTime>(@DateTimeHash, @TidyKitDateTimeEquals);
+  
+  Date1 := EncodeDate(2023, 6, 15) + EncodeTime(10, 30, 0, 0);
+  Date2 := EncodeDate(2023, 6, 16) + EncodeTime(10, 30, 0, 0);
+  Date3 := EncodeDate(2023, 6, 15) + EncodeTime(10, 30, 1, 0);
+  
+  AssertTrue('Add Date1', SetInstance.Add(Date1));
+  AssertTrue('Add Date2', SetInstance.Add(Date2));
+  AssertTrue('Add Date3', SetInstance.Add(Date3));
+  AssertEquals('Count after adding dates', 3, SetInstance.Count);
+  
+  AssertTrue('Contains Date1', SetInstance.Contains(Date1));
+  AssertTrue('Contains Date2', SetInstance.Contains(Date2));
+  
+  // Test with reconstructed but equivalent date
+  AssertTrue('Contains reconstructed date', 
+    SetInstance.Contains(EncodeDate(2023, 6, 16) + EncodeTime(10, 30, 0, 0)));
+    
+  // Test removal
+  AssertTrue('Remove Date2', SetInstance.Remove(Date2));
+  AssertEquals('Count after removing Date2', 2, SetInstance.Count);
+  AssertFalse('Should not contain Date2 after removal', SetInstance.Contains(Date2));
+end;
+
+procedure THashSetTest.TestBasicOperations_Char;
+var
+  SetInstance: specialize IHashSet<Char>;
+begin
+  SetInstance := specialize CreateHashSet<Char>(@CharHash, @TidyKitCharEquals);
+  
+  AssertTrue('Add ''a''', SetInstance.Add('a'));
+  AssertTrue('Add ''b''', SetInstance.Add('b'));
+  AssertTrue('Add ''Z''', SetInstance.Add('Z'));
+  AssertTrue('Add special character', SetInstance.Add('#'));
+  
+  AssertEquals('Count after adding characters', 4, SetInstance.Count);
+  
+  AssertTrue('Contains ''a''', SetInstance.Contains('a'));
+  AssertFalse('Does not contain ''c''', SetInstance.Contains('c'));
+  
+  // Test adding duplicate
+  AssertFalse('Adding duplicate ''Z'' should fail', SetInstance.Add('Z'));
+  AssertEquals('Count should remain 4', 4, SetInstance.Count);
+  
+  // Test removal
+  AssertTrue('Remove ''b''', SetInstance.Remove('b'));
+  AssertEquals('Count after removal', 3, SetInstance.Count);
+  AssertFalse('Should not contain ''b'' after removal', SetInstance.Contains('b'));
+end;
+
+procedure THashSetTest.TestBasicOperations_Int64;
+var
+  SetInstance: specialize IHashSet<Int64>;
+begin
+  SetInstance := specialize CreateHashSet<Int64>(@Int64Hash, @TidyKitInt64Equals);
+  
+  AssertTrue('Add 1000', SetInstance.Add(1000));
+  AssertTrue('Add 2000', SetInstance.Add(2000));
+  AssertTrue('Add 3000', SetInstance.Add(3000));
+  
+  AssertEquals('Count should be 3', 3, SetInstance.Count);
+  
+  AssertTrue('Contains 2000', SetInstance.Contains(2000));
+  AssertFalse('Does not contain 4000', SetInstance.Contains(4000));
+  
+  // Test removing
+  AssertTrue('Remove 1000', SetInstance.Remove(1000));
+  AssertEquals('Count after removal', 2, SetInstance.Count);
+  AssertFalse('Should not contain 1000 after removal', SetInstance.Contains(1000));
+end;
+
+procedure THashSetTest.TestLargeValues_Int64;
+var
+  SetInstance: specialize IHashSet<Int64>;
+  LargeValue1, LargeValue2: Int64;
+begin
+  SetInstance := specialize CreateHashSet<Int64>(@Int64Hash, @TidyKitInt64Equals);
+  
+  // Test values beyond 32-bit range
+  LargeValue1 := 2147483648;  // 2^31, just beyond 32-bit signed int
+  LargeValue2 := 9223372036854775807;  // Maximum Int64 value
+  
+  AssertTrue('Add value beyond 32-bit range', SetInstance.Add(LargeValue1));
+  AssertTrue('Add maximum Int64 value', SetInstance.Add(LargeValue2));
+  AssertEquals('Count after adding large values', 2, SetInstance.Count);
+  
+  AssertTrue('Contains value beyond 32-bit range', SetInstance.Contains(LargeValue1));
+  AssertTrue('Contains maximum Int64 value', SetInstance.Contains(LargeValue2));
+  
+  // Test negative large values
+  AssertTrue('Add large negative value', SetInstance.Add(-LargeValue1));
+  AssertEquals('Count after adding negative value', 3, SetInstance.Count);
+  AssertTrue('Contains large negative value', SetInstance.Contains(-LargeValue1));
+  
+  // Test removal of large value
+  AssertTrue('Remove maximum Int64 value', SetInstance.Remove(LargeValue2));
+  AssertEquals('Count after removal', 2, SetInstance.Count);
+  AssertFalse('Should not contain maximum Int64 after removal', 
+    SetInstance.Contains(LargeValue2));
+end;
+
+// New test for advanced hash functions
+procedure THashSetTest.TestAdvancedHashFunctions;
+var
+  IntSet: specialize IHashSet<Integer>;
+  StrSet: specialize IHashSet<string>;
+  FloatSet: specialize IHashSet<Extended>;
+begin
+  // Test Integer with MultiplicativeHash
+  IntSet := specialize CreateHashSet<Integer>(@MultiplicativeHash, @TidyKitIntegerEquals);
+  AssertTrue('Add int 123', IntSet.Add(123));
+  AssertTrue('Add int 456', IntSet.Add(456));
+  AssertTrue('Contains 123', IntSet.Contains(123));
+  AssertEquals('Count should be 2', 2, IntSet.Count);
+  
+  // Test String with XXHash32
+  StrSet := specialize CreateHashSet<string>(@XXHash32, @TidyKitStringEquals);
+  AssertTrue('Add string "test"', StrSet.Add('test'));
+  AssertTrue('Add string "example"', StrSet.Add('example'));
+  AssertTrue('Contains "test"', StrSet.Contains('test'));
+  AssertEquals('Count should be 2', 2, StrSet.Count);
+  
+  // Test Float with FloatHash
+  FloatSet := specialize CreateHashSet<Extended>(@FloatHash, @TidyKitFloatEquals);
+  AssertTrue('Add float 3.14', FloatSet.Add(3.14));
+  AssertTrue('Add float 2.71', FloatSet.Add(2.71));
+  AssertTrue('Contains 3.14', FloatSet.Contains(3.14));
+  AssertEquals('Count should be 2', 2, FloatSet.Count);
 end;
 
 initialization
