@@ -25,55 +25,55 @@ type
     procedure TearDown; override;
   published
     { Basic operations tests }
-    procedure TestCreate;
-    procedure TestAdd;
-    procedure TestAddRange;
-    procedure TestInsert;
-    procedure TestDelete;
-    procedure TestRemove;
-    procedure TestClear;
+    procedure Test01_Create;
+    procedure Test02_Add;
+    procedure Test03_AddRange;
+    procedure Test04_Insert;
+    procedure Test05_Delete;
+    procedure Test06_Remove;
+    procedure Test07_Clear;
     
     { Search operation tests }
-    procedure TestIndexOf;
-    procedure TestContains;
+    procedure Test08_IndexOf;
+    procedure Test09_Contains;
     
     { Predicate-based tests }
-    procedure TestFind;
-    procedure TestFindAll;
+    procedure Test10_Find;
+    procedure Test11_FindAll;
     
     { Transformation tests }
-    procedure TestSort;
-    procedure TestReverse;
-    procedure TestSlice;
+    procedure Test12_Sort;
+    procedure Test13_Reverse;
+    procedure Test14_Slice;
     
     { Property tests }
-    procedure TestCapacity;
-    procedure TestCount;
-    procedure TestItemAccess;
+    procedure Test15_Capacity;
+    procedure Test16_Count;
+    procedure Test17_ItemAccess;
     
     { Stress tests }
-    procedure TestLargeArrayOperations;
+    procedure Test18_LargeArrayOperations;
 
     { Additional tests for capacity management }
-    procedure TestGrowCapacity;
-    procedure TestCapacityEfficiency;
+    procedure Test19_GrowCapacity;
+    procedure Test20_CapacityEfficiency;
     
     { Additional tests for edge cases }
-    procedure TestEmptyOperations;
-    procedure TestBoundaryConditions;
+    procedure Test21_EmptyOperations;
+    procedure Test22_BoundaryConditions;
     
     { Additional tests for complex operations }
-    procedure TestSortEmptyAndSingle;
-    procedure TestReverseWithOddCount;
-    procedure TestManualCapacityManagement;
+    procedure Test23_SortEmptyAndSingle;
+    procedure Test24_ReverseWithOddCount;
+    procedure Test25_ManualCapacityManagement;
 
     { Benchmark tests }
-    procedure TestBenchmarkAddItems;
-    procedure TestBenchmarkSearch;
-    procedure TestBenchmarkSorting;
+    procedure Test26_BenchmarkAddItems;
+    procedure Test27_BenchmarkSearch;
+    procedure Test28_BenchmarkSorting;
 
     { Interface-based memory management tests }
-    procedure TestInterfaceBasedMemoryManagement;
+    procedure Test29_InterfaceBasedMemoryManagement;
   end;
 
 { Simple comparison and equality functions for testing }
@@ -165,13 +165,13 @@ begin
   FStrList.Free;
 end;
 
-procedure TListTest.TestCreate;
+procedure TListTest.Test01_Create;
 begin
   AssertEquals('New list should be empty', 0, FIntList.Count);
   AssertEquals('New list should have capacity 0', 0, FIntList.Capacity);
 end;
 
-procedure TListTest.TestAdd;
+procedure TListTest.Test02_Add;
 var
   Idx: Integer;
 begin
@@ -193,7 +193,7 @@ begin
   AssertEquals('Value should be stored correctly', 'Hello', FStrList[0]);
 end;
 
-procedure TListTest.TestAddRange;
+procedure TListTest.Test03_AddRange;
 var
   Values: array[0..2] of Integer;
   I: Integer;
@@ -226,7 +226,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestInsert;
+procedure TListTest.Test04_Insert;
 begin
   // Add some initial items
   FIntList.Add(1);
@@ -274,7 +274,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestDelete;
+procedure TListTest.Test05_Delete;
 begin
   // Add some items
   FIntList.Add(1);
@@ -324,7 +324,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestRemove;
+procedure TListTest.Test06_Remove;
 var
   Success: Boolean;
 begin
@@ -350,7 +350,7 @@ begin
   AssertEquals('List count should be unchanged', 2, FIntList.Count);
 end;
 
-procedure TListTest.TestClear;
+procedure TListTest.Test07_Clear;
 begin
   // Add some items
   FIntList.Add(1);
@@ -372,7 +372,7 @@ begin
   AssertEquals('Item should be stored correctly after clear', 42, FIntList[0]);
 end;
 
-procedure TListTest.TestIndexOf;
+procedure TListTest.Test08_IndexOf;
 var
   Idx: Integer;
 begin
@@ -408,7 +408,7 @@ begin
   AssertEquals('Should return -1 for non-existent string', -1, Idx);
 end;
 
-procedure TListTest.TestContains;
+procedure TListTest.Test09_Contains;
 begin
   // Add items to test
   FIntList.Add(10);
@@ -432,7 +432,7 @@ begin
   AssertFalse('Should not contain date', FStrList.Contains('date', @StringEquals));
 end;
 
-procedure TListTest.TestFind;
+procedure TListTest.Test10_Find;
 var
   FoundValue: Integer;
   Success: Boolean;
@@ -463,7 +463,7 @@ begin
   AssertFalse('Should not find even numbers', Success);
 end;
 
-procedure TListTest.TestFindAll;
+procedure TListTest.Test11_FindAll;
 var
   List: specialize IList<Integer>;
   StringList: specialize IList<string>;
@@ -507,7 +507,7 @@ begin
     WriteLn(StringResults[I]);
 end;
 
-procedure TListTest.TestSort;
+procedure TListTest.Test12_Sort;
 var
   SortedArray: specialize TArray<Integer>;
   I: Integer;
@@ -536,7 +536,7 @@ begin
   AssertEquals('Fourth item should be 4', 4, SortedArray[3]);
 end;
 
-procedure TListTest.TestReverse;
+procedure TListTest.Test13_Reverse;
 begin
   // Add some items
   FIntList.Add(1);
@@ -565,7 +565,7 @@ begin
   AssertEquals('Single-item list should be unchanged after reverse', 42, FIntList[0]);
 end;
 
-procedure TListTest.TestSlice;
+procedure TListTest.Test14_Slice;
 var
   SlicedArray: specialize TArray<Integer>;
 begin
@@ -614,7 +614,7 @@ begin
   AssertEquals('First slice item should be from index 1', 20, SlicedArray[0]);
 end;
 
-procedure TListTest.TestCapacity;
+procedure TListTest.Test15_Capacity;
 var
   NewCapacity: Integer;
 begin
@@ -659,7 +659,7 @@ begin
   AssertEquals('Count should be 0 after setting to 0 capacity', 0, FIntList.Count);
 end;
 
-procedure TListTest.TestCount;
+procedure TListTest.Test16_Count;
 begin
   // Initial count should be 0
   AssertEquals('Initial count should be 0', 0, FIntList.Count);
@@ -683,7 +683,7 @@ begin
   AssertEquals('Count should be 0 after clear', 0, FIntList.Count);
 end;
 
-procedure TListTest.TestItemAccess;
+procedure TListTest.Test17_ItemAccess;
 begin
   // Add some items
   FIntList.Add(10);
@@ -725,7 +725,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestLargeArrayOperations;
+procedure TListTest.Test18_LargeArrayOperations;
 var
   I, ItemCount: Integer;
   LargeList: specialize TList<Integer>;
@@ -769,7 +769,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestGrowCapacity;
+procedure TListTest.Test19_GrowCapacity;
 var
   InitialCapacity, I, FinalCapacity: Integer;
 begin
@@ -802,7 +802,7 @@ begin
   AssertEquals('Capacity should remain stable until exceeded', FinalCapacity, FIntList.Capacity);
 end;
 
-procedure TListTest.TestCapacityEfficiency;
+procedure TListTest.Test20_CapacityEfficiency;
 var
   InitialCapacity: Integer;
 begin
@@ -833,7 +833,7 @@ begin
   AssertTrue('Capacity should be at least 10', FIntList.Capacity >= 10);
 end;
 
-procedure TListTest.TestEmptyOperations;
+procedure TListTest.Test21_EmptyOperations;
 var
   EmptyInts: specialize TArray<Integer>;
   EmptyStrings: specialize TArray<string>;
@@ -865,7 +865,7 @@ begin
   AssertEquals('FindAll on empty string list should return empty array', 0, Length(EmptyStrings));
 end;
 
-procedure TListTest.TestBoundaryConditions;
+procedure TListTest.Test22_BoundaryConditions;
 var
   LargeIndex: Integer;
 begin
@@ -931,7 +931,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestSortEmptyAndSingle;
+procedure TListTest.Test23_SortEmptyAndSingle;
 var
   SingleArray: specialize TArray<Integer>;
 begin
@@ -952,7 +952,7 @@ begin
   AssertEquals('Element should be preserved', 42, SingleArray[0]);
 end;
 
-procedure TListTest.TestReverseWithOddCount;
+procedure TListTest.Test24_ReverseWithOddCount;
 begin
   // Test reverse on list with odd number of elements
   FIntList.AddRange([1, 2, 3, 4, 5]);
@@ -971,7 +971,7 @@ begin
   AssertEquals('Item at index 4 should be 1', 1, FIntList[4]);
 end;
 
-procedure TListTest.TestManualCapacityManagement;
+procedure TListTest.Test25_ManualCapacityManagement;
 begin
   // Set capacity, add fewer elements
   FIntList.Capacity := 10;
@@ -1008,7 +1008,7 @@ end;
 
 { Interface memory management test }
 
-procedure TListTest.TestInterfaceBasedMemoryManagement;
+procedure TListTest.Test29_InterfaceBasedMemoryManagement;
 var
   InterfaceList: specialize IList<Integer>;
   AnotherRef: specialize IList<Integer>;
@@ -1050,7 +1050,7 @@ end;
 
 { Benchmark tests }
 
-procedure TListTest.TestBenchmarkAddItems;
+procedure TListTest.Test26_BenchmarkAddItems;
 var
   StartTime, EndTime: TDateTime;
   ElapsedMS: Int64;
@@ -1137,7 +1137,7 @@ begin
   end;
 end;
 
-procedure TListTest.TestBenchmarkSearch;
+procedure TListTest.Test27_BenchmarkSearch;
   // Local function to benchmark search operations
   procedure BenchmarkSearch(NumItems: Integer);
   var
@@ -1243,7 +1243,7 @@ begin
   BenchmarkSearch(1000000);
 end;
 
-procedure TListTest.TestBenchmarkSorting;
+procedure TListTest.Test28_BenchmarkSorting;
   // Local function to benchmark sorting operations
   procedure BenchmarkSort(NumItems: Integer; RandomSeed: Integer);
   var

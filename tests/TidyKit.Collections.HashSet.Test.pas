@@ -22,30 +22,30 @@ type
   THashSetTest = class(TTestCase)
   published
     // Existing tests
-    procedure TestBasicAddAndContains_Integer;
-    procedure TestRemove_String;
-    procedure TestClear_Record;
-    procedure TestToArray_Integer;
-    procedure TestCollisions;
-    procedure TestResizeBehavior;
-    procedure TestBenchmarkAddItems_Integer;
-    procedure TestConstructor_Validations;       
-    procedure TestToArray_EmptyAndCleared;       
-    procedure TestInterfaceBasedMemoryManagement;
-    procedure TestBenchmarkContains_Integer; 
-    procedure TestBasicOperations_Student;
-    procedure TestBenchmarkAddItems_Student;
-    procedure TestBenchmarkContains_Student;
-    procedure TestBasicOperations_Float;
-    procedure TestEdgeCases_Float;
-    procedure TestBasicOperations_Boolean;
-    procedure TestBasicOperations_DateTime;
-    procedure TestBasicOperations_Char;
-    procedure TestBasicOperations_Int64;
-    procedure TestLargeValues_Int64;
+    procedure Test01_BasicAddAndContains_Integer;
+    procedure Test02_Remove_String;
+    procedure Test03_Clear_Record;
+    procedure Test04_ToArray_Integer;
+    procedure Test05_Collisions;
+    procedure Test06_ResizeBehavior;
+    procedure Test07_BenchmarkAddItems_Integer;
+    procedure Test08_Constructor_Validations;       
+    procedure Test09_ToArray_EmptyAndCleared;       
+    procedure Test10_InterfaceBasedMemoryManagement;
+    procedure Test11_BenchmarkContains_Integer; 
+    procedure Test12_BasicOperations_Student;
+    procedure Test13_BenchmarkAddItems_Student;
+    procedure Test14_BenchmarkContains_Student;
+    procedure Test15_BasicOperations_Float;
+    procedure Test16_EdgeCases_Float;
+    procedure Test17_BasicOperations_Boolean;
+    procedure Test18_BasicOperations_DateTime;
+    procedure Test19_BasicOperations_Char;
+    procedure Test20_BasicOperations_Int64;
+    procedure Test21_LargeValues_Int64;
 
     // New tests using advanced hash functions
-    procedure TestAdvancedHashFunctions;
+    procedure Test22_AdvancedHashFunctions;
   end;
 
 implementation
@@ -110,7 +110,7 @@ end;
 
 { THashSetTest implementation }
 
-procedure THashSetTest.TestBasicAddAndContains_Integer;
+procedure THashSetTest.Test01_BasicAddAndContains_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
   I: Integer;
@@ -138,7 +138,7 @@ begin
   AssertEquals('Count after 50 more unique adds', 2 + 50, SetInstance.Count);
 end;
 
-procedure THashSetTest.TestRemove_String;
+procedure THashSetTest.Test02_Remove_String;
 var
   SetInstance: specialize IHashSet<string>;
 begin
@@ -162,7 +162,7 @@ begin
   AssertEquals('Count should be 0 after removing all', 0, SetInstance.Count);
 end;
 
-procedure THashSetTest.TestClear_Record;
+procedure THashSetTest.Test03_Clear_Record;
 var
   SetInstance: specialize IHashSet<TTestRecord>;
   Rec1, Rec2: TTestRecord;
@@ -186,7 +186,7 @@ begin
   AssertTrue('Should contain Rec1 after adding post-clear', SetInstance.Contains(Rec1));
 end;
 
-procedure THashSetTest.TestToArray_Integer;
+procedure THashSetTest.Test04_ToArray_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
   Arr: specialize TArray<Integer>;
@@ -220,7 +220,7 @@ begin
   AssertTrue('Element 100 should be in ToArray result', Found);
 end;
 
-procedure THashSetTest.TestCollisions;
+procedure THashSetTest.Test05_Collisions;
 var
   SetInstance: specialize IHashSet<Integer>;
   I: Integer;
@@ -247,7 +247,7 @@ begin
   AssertTrue('Other item in bucket should still be present', SetInstance.Contains(NumItems div 2 + 1));
 end;
 
-procedure THashSetTest.TestResizeBehavior;
+procedure THashSetTest.Test06_ResizeBehavior;
 var
   SetInstance: specialize IHashSet<Integer>;
   I: Integer;
@@ -277,7 +277,7 @@ begin
   AssertTrue('Item 2 still present', SetInstance.Contains(2));
 end;
 
-procedure THashSetTest.TestBenchmarkAddItems_Integer;
+procedure THashSetTest.Test07_BenchmarkAddItems_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
   I, NumItems: Integer;
@@ -315,7 +315,7 @@ begin
   end;
 end;
 
-procedure THashSetTest.TestConstructor_Validations;
+procedure THashSetTest.Test08_Constructor_Validations;
 var
   SetInstance: specialize IHashSet<Integer>;
   RaisedException: Boolean;
@@ -351,7 +351,7 @@ begin
   AssertNotNull('SetInstance should not be nil with valid functions', SetInstance);
 end;
 
-procedure THashSetTest.TestToArray_EmptyAndCleared;
+procedure THashSetTest.Test09_ToArray_EmptyAndCleared;
 var
   SetInstance: specialize IHashSet<Integer>;
   Arr: specialize TArray<Integer>;
@@ -377,7 +377,7 @@ begin
     AssertEquals('Item in ToArray after clear and re-add should be 200', 200, Arr[0]);
 end;
 
-procedure THashSetTest.TestInterfaceBasedMemoryManagement;
+procedure THashSetTest.Test10_InterfaceBasedMemoryManagement;
 var
   Set1: specialize IHashSet<Integer>;
   Set2: specialize IHashSet<Integer>;
@@ -409,7 +409,7 @@ begin
   // Set2 will be released when it goes out of scope, ARC handles freeing the THashSet object
 end;
 
-procedure THashSetTest.TestBenchmarkContains_Integer;
+procedure THashSetTest.Test11_BenchmarkContains_Integer;
 var
   SetInstance: specialize IHashSet<Integer>;
   I, NumItems, ValueToTest: Integer;
@@ -478,7 +478,7 @@ begin
   end;
 end;
 
-procedure THashSetTest.TestBasicOperations_Student;
+procedure THashSetTest.Test12_BasicOperations_Student;
 var
   StudentSet: specialize IHashSet<TStudent>;
   S1, S2, S3, S1_Duplicate: TStudent;
@@ -523,7 +523,7 @@ begin
   AssertFalse('Should not contain S1 after clear', StudentSet.Contains(S1));
 end;
 
-procedure THashSetTest.TestBenchmarkAddItems_Student;
+procedure THashSetTest.Test13_BenchmarkAddItems_Student;
 var
   StudentSet: specialize IHashSet<TStudent>;
   I, NumItems: Integer;
@@ -574,7 +574,7 @@ begin
   end;
 end;
 
-procedure THashSetTest.TestBenchmarkContains_Student;
+procedure THashSetTest.Test14_BenchmarkContains_Student;
 var
   StudentSet: specialize IHashSet<TStudent>;
   I, NumItems: Integer;
@@ -661,7 +661,7 @@ begin
   end;
 end;
 
-procedure THashSetTest.TestBasicOperations_Float;
+procedure THashSetTest.Test15_BasicOperations_Float;
 var
   SetInstance: specialize IHashSet<Extended>;
 begin
@@ -682,7 +682,7 @@ begin
   AssertFalse('Should not contain removed item', SetInstance.Contains(2.71828));
 end;
 
-procedure THashSetTest.TestEdgeCases_Float;
+procedure THashSetTest.Test16_EdgeCases_Float;
 var
   SetInstance: specialize IHashSet<Extended>;
   PositiveInfinity, NegativeInfinity, PositiveZero, NegativeZero: Extended;
@@ -720,7 +720,7 @@ begin
   AssertEquals('Count should be 7 after adding edge cases', 7, SetInstance.Count);
 end;
 
-procedure THashSetTest.TestBasicOperations_Boolean;
+procedure THashSetTest.Test17_BasicOperations_Boolean;
 var
   SetInstance: specialize IHashSet<Boolean>;
 begin
@@ -748,7 +748,7 @@ begin
   AssertTrue('Should still contain False', SetInstance.Contains(False));
 end;
 
-procedure THashSetTest.TestBasicOperations_DateTime;
+procedure THashSetTest.Test18_BasicOperations_DateTime;
 var
   SetInstance: specialize IHashSet<TDateTime>;
   Date1, Date2, Date3: TDateTime;
@@ -777,7 +777,7 @@ begin
   AssertFalse('Should not contain Date2 after removal', SetInstance.Contains(Date2));
 end;
 
-procedure THashSetTest.TestBasicOperations_Char;
+procedure THashSetTest.Test19_BasicOperations_Char;
 var
   SetInstance: specialize IHashSet<Char>;
 begin
@@ -803,7 +803,7 @@ begin
   AssertFalse('Should not contain ''b'' after removal', SetInstance.Contains('b'));
 end;
 
-procedure THashSetTest.TestBasicOperations_Int64;
+procedure THashSetTest.Test20_BasicOperations_Int64;
 var
   SetInstance: specialize IHashSet<Int64>;
 begin
@@ -824,7 +824,7 @@ begin
   AssertFalse('Should not contain 1000 after removal', SetInstance.Contains(1000));
 end;
 
-procedure THashSetTest.TestLargeValues_Int64;
+procedure THashSetTest.Test21_LargeValues_Int64;
 var
   SetInstance: specialize IHashSet<Int64>;
   LargeValue1, LargeValue2: Int64;
@@ -855,7 +855,7 @@ begin
 end;
 
 // New test for advanced hash functions
-procedure THashSetTest.TestAdvancedHashFunctions;
+procedure THashSetTest.Test22_AdvancedHashFunctions;
 var
   IntSet: specialize IHashSet<Integer>;
   StrSet: specialize IHashSet<string>;

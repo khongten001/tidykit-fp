@@ -31,32 +31,32 @@ type
     
   published
     // Basic operations
-    procedure TestCreate;
-    procedure TestPushFrontPopFront;
-    procedure TestPushBackPopBack;
-    procedure TestMixedOperations;
-    procedure TestPeek;
-    procedure TestClear;
+    procedure Test01_Create;
+    procedure Test02_PushFrontPopFront;
+    procedure Test03_PushBackPopBack;
+    procedure Test04_MixedOperations;
+    procedure Test05_Peek;
+    procedure Test06_Clear;
     
     // Access operations
-    procedure TestGetSetItem;
+    procedure Test07_GetSetItem;
     
     // Search operations
-    procedure TestContains;
-    procedure TestIndexOf;
+    procedure Test08_Contains;
+    procedure Test09_IndexOf;
     
     // Transformation methods
-    procedure TestReverse;
-    procedure TestToArray;
+    procedure Test10_Reverse;
+    procedure Test11_ToArray;
     
     // Error conditions
-    procedure TestPopEmptyDeque;
-    procedure TestPeekEmptyDeque;
-    procedure TestAccessOutOfBounds;
+    procedure Test12_PopEmptyDeque;
+    procedure Test13_PeekEmptyDeque;
+    procedure Test14_AccessOutOfBounds;
     
     // Memory management
-    procedure TestAutoCreateInterface;
-    procedure TestCapacityManagement;
+    procedure Test15_AutoCreateInterface;
+    procedure Test16_CapacityManagement;
     
     // Benchmarks
     procedure BenchmarkPushBackSmall;
@@ -110,12 +110,12 @@ begin
   FDeque := nil; // This should release the interface
 end;
 
-procedure TDequeTest.TestCreate;
+procedure TDequeTest.Test01_Create;
 begin
   AssertEquals('New deque should be empty', 0, FDeque.Count);
 end;
 
-procedure TDequeTest.TestPushFrontPopFront;
+procedure TDequeTest.Test02_PushFrontPopFront;
 var
   I, Value: Integer;
 begin
@@ -135,7 +135,7 @@ begin
   AssertEquals('Deque should be empty after popping', 0, FDeque.Count);
 end;
 
-procedure TDequeTest.TestPushBackPopBack;
+procedure TDequeTest.Test03_PushBackPopBack;
 var
   I, Value: Integer;
 begin
@@ -155,7 +155,7 @@ begin
   AssertEquals('Deque should be empty after popping', 0, FDeque.Count);
 end;
 
-procedure TDequeTest.TestMixedOperations;
+procedure TDequeTest.Test04_MixedOperations;
 var
   Value: Integer;
 begin
@@ -181,7 +181,7 @@ begin
   AssertEquals('Deque should be empty', 0, FDeque.Count);
 end;
 
-procedure TDequeTest.TestPeek;
+procedure TDequeTest.Test05_Peek;
 begin
   FDeque.PushFront(1);
   FDeque.PushBack(2);
@@ -193,7 +193,7 @@ begin
   AssertEquals('Deque count should still be 2', 2, FDeque.Count);
 end;
 
-procedure TDequeTest.TestClear;
+procedure TDequeTest.Test06_Clear;
 begin
   FDeque.PushFront(1);
   FDeque.PushBack(2);
@@ -202,7 +202,7 @@ begin
   AssertEquals('Deque should be empty after Clear', 0, FDeque.Count);
 end;
 
-procedure TDequeTest.TestGetSetItem;
+procedure TDequeTest.Test07_GetSetItem;
 var
   I: Integer;
 begin
@@ -223,7 +223,7 @@ begin
     AssertEquals('GetItem should return updated value', I * 100, FDeque.Items[I]);
 end;
 
-procedure TDequeTest.TestContains;
+procedure TDequeTest.Test08_Contains;
 begin
   FDeque.PushBack(10);
   FDeque.PushBack(20);
@@ -235,7 +235,7 @@ begin
   AssertFalse('Deque should not contain 40', FDeque.Contains(40, @IntEquals));
 end;
 
-procedure TDequeTest.TestIndexOf;
+procedure TDequeTest.Test09_IndexOf;
 begin
   FDeque.PushBack(10);
   FDeque.PushBack(20);
@@ -247,7 +247,7 @@ begin
   AssertEquals('IndexOf 40 should be -1', -1, FDeque.IndexOf(40, @IntEquals));
 end;
 
-procedure TDequeTest.TestReverse;
+procedure TDequeTest.Test10_Reverse;
 begin
   FDeque.PushBack(10);
   FDeque.PushBack(20);
@@ -262,7 +262,7 @@ begin
   AssertEquals('After reverse, index 3 should be 10', 10, FDeque.Items[3]);
 end;
 
-procedure TDequeTest.TestToArray;
+procedure TDequeTest.Test11_ToArray;
 var
   Arr: specialize TArray<Integer>;
 begin
@@ -278,7 +278,7 @@ begin
   AssertEquals('Array[2] should be 30', 30, Arr[2]);
 end;
 
-procedure TDequeTest.TestPopEmptyDeque;
+procedure TDequeTest.Test12_PopEmptyDeque;
 var
   ExceptionRaised: Boolean;
 begin
@@ -301,7 +301,7 @@ begin
   AssertTrue('PopBack on empty deque should raise exception', ExceptionRaised);
 end;
 
-procedure TDequeTest.TestPeekEmptyDeque;
+procedure TDequeTest.Test13_PeekEmptyDeque;
 var
   ExceptionRaised: Boolean;
 begin
@@ -324,7 +324,7 @@ begin
   AssertTrue('PeekBack on empty deque should raise exception', ExceptionRaised);
 end;
 
-procedure TDequeTest.TestAccessOutOfBounds;
+procedure TDequeTest.Test14_AccessOutOfBounds;
 var
   ExceptionRaised: Boolean;
   Dummy: Integer;
@@ -352,7 +352,7 @@ begin
   AssertTrue('Access with too large index should raise exception', ExceptionRaised);
 end;
 
-procedure TDequeTest.TestAutoCreateInterface;
+procedure TDequeTest.Test15_AutoCreateInterface;
 var
   Deque: specialize IDeque<Integer>;
 begin
@@ -370,7 +370,7 @@ begin
   // Interface should be automatically freed
 end;
 
-procedure TDequeTest.TestCapacityManagement;
+procedure TDequeTest.Test16_CapacityManagement;
 var
   I: Integer;
 begin
