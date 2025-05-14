@@ -158,6 +158,11 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Thoroughly tested with 34 comprehensive test cases
 
 - 📚 **Collections (`TList<T>`, `TDeque<T>`, `THashSet<T>`, `TDictionary<K, V>`)**
+  - **When to use each collection:**
+    - `TidyKit.Collections.List` - For sequential access and general-purpose ordered collections
+    - `TidyKit.Collections.Deque` - For double-ended queues and efficient operations at both ends
+    - `TidyKit.Collections.HashSet` - For unique unordered collections with fast lookups
+    - `TidyKit.Collections.Dictionary` - For key-value mapping and efficient key-based retrieval
   - **`TList<T>`**: Generic list with dynamic array backing, offering operations like `Add`, `Insert`, `Delete`, `Sort`, `Find`, etc.
   - **`TDeque<T>`**: Generic double-ended queue with circular buffer backing, providing efficient `PushFront`, `PushBack`, `PopFront`, `PopBack` operations.
   - **`THashSet<T>`**: Generic hash set for storing unique elements with high-performance add, remove, and contains operations. Supports custom hashing and equality functions. See [TidyKit.Collections.HashSet Documentation](./docs/TidyKit.Collections.HashSet.md) for more details.
