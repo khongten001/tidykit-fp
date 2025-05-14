@@ -12,11 +12,20 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## Release [0.1.8] - 2025-05-14
 
 ### Added
-- Major improvements to documentation, including cheat sheet and dedicated user manuals for all collections.
-- Enhanced documentation for `TidyKit.Collections.List`, `TidyKit.Collections.Deque`, and `TidyKit.Collections.HashSet`.
-- Clarified that `for..in..do` enumeration is not supported in collections; recommend indexed access or `ToArray` for traversal.
-- Improved usability and documentation for `TidyKit.ParseArgs` to help new developers.
-- Expanded test coverage for all collections.
+- New TidyKit.Collections.* units with comprehensive generic collection implementations:
+  - `TList<T>`: Generic list with dynamic array backing for general-purpose collections
+  - `TDeque<T>`: Generic double-ended queue with efficient operations at both ends
+  - `THashSet<T>`: Generic hash set for storing unique elements with O(1) lookups
+  - `TDictionary<K, V>`: Generic key-value dictionary for efficient key-based storage and retrieval
+  - All collections include interface-based memory management via their respective interfaces
+  - Added custom hash functions and equality comparisons in supporting units:
+    - `TidyKit.Collections.HashFunction`: Optimized hash functions for common data types
+    - `TidyKit.Collections.EqualityFunction`: Type-specific equality comparisons
+  - Comprehensive documentation including dedicated user manuals for all collections
+  - Added all collection operations to the cheat sheet for quick reference
+  - Extensive test coverage with interface-based memory management tests
+- New `TidyKit.ParseArgs` unit for record-based command-line argument parsing with a user-friendly API
+- Clarified that `for..in..do` enumeration is not supported in collections; recommend indexed access or `ToArray` for traversal
 
 ### Changed
 - Refined README to better explain collection features and limitations.

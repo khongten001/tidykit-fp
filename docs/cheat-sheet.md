@@ -563,6 +563,30 @@ property Items[Index: Integer]: T read GetItem write SetItem; default;
 for Item in Deque do ...
 ```
 
+### Dictionary<K, V> Operations
+```pascal
+// Creation
+TDictionary<K, V>.New(KeyHashFunc: TKeyHashFunc<K>; KeyEqualityFunc: TKeyEqualityFunc<K>;
+  InitialCapacity: Integer = 16; LoadFactor: Single = 0.75): IDictionary<K, V>;
+IDictionary<K, V> := CreateDictionary<K, V>(@HashFunction, @EqualityFunction);
+
+// Basic Operations
+function Add(const Key: K; const Value: V): Boolean; // Returns true if added
+function Remove(const Key: K): Boolean;              // Returns true if removed
+function ContainsKey(const Key: K): Boolean;        // Check if key exists
+function TryGetValue(const Key: K; out Value: V): Boolean; // Safe key lookup
+procedure Clear;                                   // Remove all entries
+
+// Access Operations
+Value := Dict[Key];                               // Get value by key (raises exception if not found)
+Dict[Key] := Value;                              // Set value by key (adds if key doesn't exist)
+Count := Dict.Count;                             // Get number of entries
+
+// Bulk Operations
+Keys := Dict.GetKeys;                             // Get array of all keys
+Values := Dict.GetValues;                         // Get array of all values
+```
+
 ### Hash Functions (TidyKit.Collections.HashFunction)
 ```pascal
 // String Hashing

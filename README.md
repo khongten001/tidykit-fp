@@ -157,10 +157,11 @@ TidyKit currently uses a mix of architectural patterns. We are actively working 
   - Specialized logger factory methods
   - Thoroughly tested with 34 comprehensive test cases
 
-- 📚 **Collections (`TList<T>`, `TDeque<T>`, `THashSet<T>`)**
+- 📚 **Collections (`TList<T>`, `TDeque<T>`, `THashSet<T>`, `TDictionary<K, V>`)**
   - **`TList<T>`**: Generic list with dynamic array backing, offering operations like `Add`, `Insert`, `Delete`, `Sort`, `Find`, etc.
   - **`TDeque<T>`**: Generic double-ended queue with circular buffer backing, providing efficient `PushFront`, `PushBack`, `PopFront`, `PopBack` operations.
   - **`THashSet<T>`**: Generic hash set for storing unique elements with high-performance add, remove, and contains operations. Supports custom hashing and equality functions. See [TidyKit.Collections.HashSet Documentation](./docs/TidyKit.Collections.HashSet.md) for more details.
+  - **`TDictionary<K, V>`**: Generic key-value dictionary providing efficient key-based storage and retrieval. Supports custom key hashing and equality functions for complex types. See [TidyKit.Collections.Dictionary Documentation](./docs/TidyKit.Collections.Dictionary.md) for more details.
     - **Robust Hash Functions**: Specialized implementations for common data types in `TidyKit.Collections.HashFunction` (XXHash32, FNV1a, etc.)
     - **Equality Functions**: Type-specific equality comparisons in `TidyKit.Collections.EqualityFunction`
   - **Strongly Typed**: Utilizes Free Pascal generics for type safety with any data type.
