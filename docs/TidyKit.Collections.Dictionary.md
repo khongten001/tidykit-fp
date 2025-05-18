@@ -2,6 +2,22 @@
 
 The `TidyKit.Collections.Dictionary` unit provides a generic key-value dictionary collection, `TDictionary<K, V>`. This collection is designed to store unique keys and their associated values, offering high-performance operations for adding, removing, and looking up values by their keys. It is optimized for scenarios where fast key-based lookups are critical.
 
+## Implementation Details
+
+`TDictionary<K, V>` is implemented as a **separate chaining hash table**, which provides the following characteristics:
+
+- **Collision Resolution**: Uses separate chaining with linked lists (implemented via indices for better memory locality)
+- **Time Complexity**: 
+  - Average case: O(1) for add, remove, and lookup operations
+  - Worst case: O(n) when all keys hash to the same bucket (unlikely with a good hash function)
+- **Memory Usage**: 
+  - Uses an array of buckets (indices) and a separate array for entries
+  - Maintains a free list for reusing slots from removed entries
+- **Resizing**: Automatically grows when the load factor (default 0.75) is exceeded, doubling the bucket count
+- **Thread Safety**: Not thread-safe by default (synchronization must be handled by the caller)
+
+This implementation is similar to Java's `HashMap` (pre-Java 8) and provides a good balance between performance and memory usage for most use cases. The separate chaining approach makes it more resilient to poor hash functions compared to open addressing schemes.
+
 ## Key Features
 
 *   **Key-Value Storage**: Associates values with unique keys for efficient retrieval.

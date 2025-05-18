@@ -292,11 +292,12 @@ Extensive documentation for all features
 - 🌐 **Network**: HTTP client with request/response handling
 - 🔁 **JSON**: Memory-managed JSON with full Unicode support
 - 📝 **Logging**: Multi-destination logging with structured data support
-- 📚 **Collections**: Type-safe lists, dictionaries, sets, and queues
-  - **When to use each collection:**
-    - `TidyKit.Collections.List` - For sequential access and general-purpose ordered collections
-    - `TidyKit.Collections.Deque` - For double-ended queues and efficient operations at both ends
-    - `TidyKit.Collections.HashSet` - For unique unordered collections with fast lookups
+  - 📚 **Collections**: Type-safe lists, dictionaries, sets, and queues
+    - **When to use each collection:**
+      - `TidyKit.Collections.List` - For sequential access and general-purpose ordered collections
+      - `TidyKit.Collections.Dictionary` - For key-value storage with O(1) average time complexity (uses separate chaining for collision resolution)
+      - `TidyKit.Collections.Deque` - For double-ended queues and efficient operations at both ends
+      - `TidyKit.Collections.HashSet` - For unique unordered collections with fast lookups
     - `TidyKit.Collections.Dictionary` - For key-value mapping and efficient key-based retrieval
   - **Documentation**: See our detailed docs for [Dictionary](./docs/TidyKit.Collections.Dictionary.md) and [HashSet](./docs/TidyKit.Collections.HashSet.md)
   - All collections support automatic memory management via interfaces (no manual Destroy calls needed)
