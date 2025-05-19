@@ -292,16 +292,22 @@ Extensive documentation for all features
 - 🌐 **Network**: HTTP client with request/response handling
 - 🔁 **JSON**: Memory-managed JSON with full Unicode support
 - 📝 **Logging**: Multi-destination logging with structured data support
+  - 🛠️ **Command Line Parsing**: Easy-to-use argument parser with support for various data types
+    - `TidyKit.ParseArgs` - For parsing command-line arguments with support for:
+      - String, integer, float, and boolean options
+      - Required and optional parameters
+      - Automatic help generation
+      - Callback support for custom argument handling
+      - Array parameters for handling multiple values
   - 📚 **Collections**: Type-safe lists, dictionaries, sets, and queues
     - **When to use each collection:**
       - `TidyKit.Collections.List` - For sequential access and general-purpose ordered collections
       - `TidyKit.Collections.Dictionary` - For key-value storage with O(1) average time complexity (uses separate chaining for collision resolution)
       - `TidyKit.Collections.Deque` - For double-ended queues and efficient operations at both ends
       - `TidyKit.Collections.HashSet` - For unique unordered collections with fast lookups
-    - `TidyKit.Collections.Dictionary` - For key-value mapping and efficient key-based retrieval
-  - **Documentation**: See our detailed docs for [Dictionary](./docs/TidyKit.Collections.Dictionary.md) and [HashSet](./docs/TidyKit.Collections.HashSet.md)
-  - All collections support automatic memory management via interfaces (no manual Destroy calls needed)
-  - Note: `for..in..do` enumeration is not supported; use indexed access or `ToArray` for traversal
+    - **Documentation**: See our detailed docs for [Dictionary](./docs/TidyKit.Collections.Dictionary.md) and [HashSet](./docs/TidyKit.Collections.HashSet.md)
+    - All collections support automatic memory management via interfaces (no manual Destroy calls needed)
+    - Note: `for..in..do` enumeration is not supported; use indexed access or `ToArray` for traversal
 
 ## 💻 Installation (Lazarus IDE)
 

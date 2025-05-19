@@ -26,10 +26,45 @@ Thank you for your interest in contributing to TidyKit! We want to make contribu
 
 ### Code Style
 
-- Use meaningful variable and function names
-- Add comments for complex logic
-- Keep functions focused and small
-- Follow existing code formatting
+#### Naming Conventions
+- `T` prefix for types (e.g., `TStringKit`, `TDictionary<K,V>`)
+- `I` prefix for interfaces (e.g., `IDictionary<K,V>`)
+- `F` prefix for private fields (e.g., `FCount`, `FBuckets`)
+- `A` prefix for parameters in documentation (e.g., `APath`, `AText`)
+- PascalCase for types, methods, and variables
+- UPPERCASE for constants
+
+#### Formatting
+- 2 spaces for indentation (no tabs)
+- No space before opening parenthesis in method calls
+- Space after commas in parameter lists
+- Operators surrounded by spaces (`a := b + c`)
+- Begin/end on new lines for procedures/functions
+- Begin/end on same line for control structures
+
+#### Documentation
+- Block comments for class/interface documentation
+- Line comments for implementation details
+- Document public methods using:
+  ```pascal
+  { @description Detailed description
+    @param ParamName Description
+    @return Description of return value }
+  ```
+- Comments should explain why, not what (the code should be self-documenting)
+
+#### Code Organization
+- Public methods first, then protected, then private
+- Group related methods together
+- Implementation details after interface
+- Local variables at the beginning of methods
+- Keep methods focused and small (ideally < 50 lines)
+
+#### Error Handling
+- Use exceptions for error conditions
+- Clean up resources in `finally` blocks
+- Provide meaningful error messages
+- Use custom exception types for specific error cases
 
 ### Commit Messages
 
