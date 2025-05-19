@@ -147,23 +147,30 @@ function FloatHash(const Value: Extended): Integer;
 var
   IsNegativeZero: Boolean;
   HashValue: Integer;
+  {$IFDEF LINUX}
+  // On Linux, Extended is 80 bits with sign bit at bit 79 (0-based)
+  ExtBytes: array[0..9] of Byte absolute Value;
+  {$ENDIF}
 begin
   // Handle special floating-point values explicitly
   if IsNan(Value) then
     HashValue := 1
   else if Value = 0 then 
   begin
-    // More reliable test for negative zero - using bit pattern check instead of division
-    // This avoids division by zero exceptions
+    // Check for negative zero
+    {$IFDEF LINUX}
+    // On Linux, check the sign bit in the 80-bit Extended format
+    IsNegativeZero := (ExtBytes[9] and $80) <> 0;
+    {$ELSE}
+    // On other platforms, use the original check
     try
       IsNegativeZero := False;
-      // Check sign bit by examining memory representation
       if (PInt64(@Value)^ and $8000000000000000) <> 0 then
         IsNegativeZero := True;
     except
-      // If bit manipulation fails, fall back to a safe default
       IsNegativeZero := False;
     end;
+    {$ENDIF}
     
     if IsNegativeZero then
       HashValue := 3  // Negative zero

@@ -36,7 +36,27 @@ function TidyKitFloatEquals(const A, B: Extended): Boolean;
 const
   Epsilon = 1E-10;
 var
-  AIsNegativeZero, BIsNegativeZero: Boolean; 
+  AIsNegativeZero, BIsNegativeZero: Boolean;
+  
+  function IsNegativeZero(Value: Extended): Boolean;
+  {$IFDEF LINUX}
+  var
+    ExtBytes: array[0..9] of Byte absolute Value;
+  begin
+    // On Linux, check the sign bit in the 80-bit Extended format (bit 79)
+    Result := (ExtBytes[9] and $80) <> 0;
+  end;
+  {$ELSE}
+  begin
+    // On other platforms, use the original 64-bit check
+    try
+      Result := (PInt64(@Value)^ and $8000000000000000) <> 0;
+    except
+      Result := False;
+    end;
+  end;
+  {$ENDIF}
+  
 begin
   if IsNan(A) then
     Result := IsNan(B)
@@ -46,19 +66,9 @@ begin
     Result := (A > 0) = (B > 0)  // Check if both are +Inf or both are -Inf
   else if (A = 0) and (B = 0) then
   begin
-    // IMPORTANT: Use exactly the same test for negative zero as in FloatHash function
-    try
-      AIsNegativeZero := IsInfinite(1/A) and (1/A < 0);
-    except
-      AIsNegativeZero := False;
-    end;
-    
-    try
-      BIsNegativeZero := IsInfinite(1/B) and (1/B < 0);
-    except
-      BIsNegativeZero := False;
-    end;
-    
+    // Use the same negative zero detection as in FloatHash
+    AIsNegativeZero := IsNegativeZero(A);
+    BIsNegativeZero := IsNegativeZero(B);
     Result := AIsNegativeZero = BIsNegativeZero;
   end
   else

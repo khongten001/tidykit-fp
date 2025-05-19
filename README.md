@@ -739,17 +739,32 @@ end;
 
 ### Tested Environments
 
-| Module                | Windows 11 | Ubuntu 24.04.2 |
-|-----------------------|------------|----------------|
-| TidyKit.Strings       | ✅         | ✅            |
-| TidyKit.FS            | ✅         | ✅            |
-| TidyKit.DateTime      | ✅         | ✅            |
-| TidyKit.JSON          | ✅         | ✅            |
-| TidyKit.Logger        | ✅         | ✅            |
-| TidyKit.Request       | ✅         | ✅            |
-| TidyKit.Crypto        | ✅         | ✅            |
-| TidyKit.Archive       | ✅         | ✅            |
-| TidyKit.Collections   | ✅         | ✅            |
+| Module                          | Windows 11 | Ubuntu 24.04.2 |
+|---------------------------------|------------|----------------|
+| TidyKit.Strings                 | ✅         | ✅             |
+| TidyKit.FS                      | ✅         | ✅             |
+| TidyKit.DateTime                | ✅         | ✅             |
+| TidyKit.JSON                    | ✅         | ✅             |
+| TidyKit.JSON.Factory            | ✅         | ✅             |
+| TidyKit.JSON.Parser             | ✅         | ✅             |
+| TidyKit.JSON.Scanner            | ✅         | ✅             |
+| TidyKit.JSON.Types              | ✅         | ✅             |
+| TidyKit.JSON.Writer             | ✅         | ✅             |
+| TidyKit.Logger                  | ✅         | ✅             |
+| TidyKit.Request                 | ✅         | ✅             |
+| TidyKit.Crypto                  | ✅         | ✅             |
+| TidyKit.Crypto.AES256           | ✅         | ✅             |
+| TidyKit.Crypto.SHA2             | ✅         | ✅             |
+| TidyKit.Crypto.SHA3             | ✅         | ✅             |
+| TidyKit.Archive                 | ✅         | ✅             |
+| TidyKit.Collections             | ✅         | ✅             |
+| TidyKit.Collections.Deque       | ✅         | ✅             |
+| TidyKit.Collections.Dictionary  | ✅         | ✅             |
+| TidyKit.Collections.EqualityFunction | ✅  | ✅             |
+| TidyKit.Collections.HashFunction| ✅         | ✅             |
+| TidyKit.Collections.HashSet     | ✅         | ✅             |
+| TidyKit.Collections.List        | ✅         | ✅             |
+| TidyKit.ParseArgs               | ✅         | ✅             |
 
 ### Dependencies
 
