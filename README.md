@@ -1,4 +1,4 @@
-# 🔧 TidyKit: Make Pascal Development Fun Again!
+# 🔧 TidyKit: Robust Tools for Free Pascal Development!
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
 [![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
