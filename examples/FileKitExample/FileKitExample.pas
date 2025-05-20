@@ -18,7 +18,7 @@ uses
   cthreads,
   {$ENDIF}
   Classes, SysUtils, 
-  TidyKit.Core, TidyKit.FS;
+  TidyKit.FS;
 
 type
   { TFileOperations

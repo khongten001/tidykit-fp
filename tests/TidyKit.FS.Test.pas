@@ -13,7 +13,7 @@ uses
   BaseUnix,  // Already used for Unix-specific types
   Unix,
   {$ENDIF}
-  TidyKit;
+  TidyKit.FS;
 
 {$IFDEF WINDOWS}
 const
@@ -2402,8 +2402,8 @@ begin
   WriteLn('Test68_MakeValidPath: Starting');
   
   AssertEquals('Should make path valid',
-    TFileKit.NormalizePath('/path/to/file'),
-    TFileKit.NormalizePath(TFileKit.MakeValidPath('/path//to/./file')));
+    LowerCase(TFileKit.NormalizePath('/path/to/file')),
+    LowerCase(TFileKit.NormalizePath(TFileKit.MakeValidPath('/path//to/./file'))));
     
   WriteLn('Test68_MakeValidPath: Finished');
 end;

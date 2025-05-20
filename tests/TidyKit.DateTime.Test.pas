@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, DateUtils, fpcunit, testregistry,
-  TidyKit;
+  TidyKit.DateTime;
 
 type
   TStringArray = array of string;

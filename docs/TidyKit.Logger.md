@@ -39,31 +39,45 @@ There are two main ways to use the logger:
 
 #### Option A: Global Logger (Recommended for Most Applications)
 
-```pascal
-// Set up once at application startup
-TLogger.CreateConsoleAndFileLogger('application.log', llInfo);
+The easiest way to use TidyKit.Logger is via the global logger, accessible from anywhere in your application via the `Logger` function. You can initialize the global logger with **any** of several factory methods, depending on your needs:
 
-// Then use anywhere in your code through the Logger function
-Logger.Info('Application started');
+```pascal
+// Set up once at application startup using any factory method:
+TLogger.CreateConsoleAndFileLogger('application.log', llInfo); // Console + file
+TLogger.CreateConsoleLogger(llDebug);                          // Console only
+TLogger.CreateFileLogger('myapp.log', llWarning);              // File only
+TLogger.CreateDefaultLogger([ldConsole, ldFile], 'myapp.log', llDebug); // Fully custom
 ```
 
-This approach provides easy access throughout your application without passing logger instances.
+You can also add custom sinks for advanced scenarios:
+
+```pascal
+Logger.AddSink(TMemorySink.Create(1000)); // In-memory log buffer
+```
+
+Then, simply use the logger anywhere in your code:
+
+```pascal
+Logger.Info('Application started');
+Logger.Warning('Low disk space');
+```
+
+This approach gives you easy, global access to logging without passing logger instances around. Choose the factory method that matches your needs! For even more control, see the next section.
 
 #### Option B: Individual Logger Instances (For Specialized Components)
+
+If you want separate logging configurations for different parts of your application, you can create individual logger instances:
 
 ```pascal
 var
   MyLogger: TLogger;
 begin
-  // Create a logger instance for this specific component
-  MyLogger := TLogger.CreateFileLogger('component.log', llDebug);
-  
-  // Use your specific logger
+  MyLogger := TLogger.CreateFileLogger('component.log', llDebug); // File-only logger for this component
   MyLogger.Debug('Component initialized');
 end;
 ```
 
-This approach gives you more control with separate configurations for different parts of your application.
+This approach is ideal for libraries, plugins, or when you want complete isolation between logging outputs.
 
 ### Step 3: Log Messages
 
@@ -240,6 +254,7 @@ end;
 - **Simple One-Line Setup**: Set up the logger with a single method call
 - **Category Support**: Group logs by categories for better organization
 - **Extensible Sink Architecture**: Easily add custom output destinations
+- **Not limited to console and file!** Add memory sinks, callback sinks, daily/rotating file sinks, or your own sinks by implementing `ILogSink`.
 - **Pattern-Based Formatting**: Customize log message format with patterns
 - **Structured Logging**: Log structured data as key-value pairs
 - **Performance Timing**: Measure and log operation durations

@@ -6,7 +6,7 @@ interface
 
 uses
   Classes, SysUtils, fpcunit, testregistry,
-  TidyKit,
+  TidyKit.JSON,
   // Alternatively, TidyKit.JSON,
   Math;
 

@@ -13,7 +13,7 @@ program StringKitExample;
   of functionality with sample text input. }
 
 uses
-  Classes, SysUtils, TidyKit;
+  Classes, SysUtils, TidyKit.Strings;
 
 type
   { TTextProcessor

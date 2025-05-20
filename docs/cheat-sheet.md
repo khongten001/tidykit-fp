@@ -16,6 +16,8 @@ A comprehensive reference of TidyKit's features and usage examples.
   - [📁File System Operations](#file-system-operations)
   - [🌐 HTTP Request Operations](#-http-request-operations)
   - [🧵String operations](#string-operations)
+  - [📚 Collection Operations](#-collection-operations)
+    - [List Operations](#list-operations)
   - [🕙 DateTime Operations](#-datetime-operations)
     - [Basic Operations](#basic-operations)
     - [Component Access](#component-access)
@@ -36,15 +38,11 @@ A comprehensive reference of TidyKit's features and usage examples.
     - [Common Use Cases](#common-use-cases)
     - [Best Practices](#best-practices)
     - [Security Notes](#security-notes)
-    - [Financial Calculations (TFinanceKit)](#financial-calculations-tfinancekit)
-    - [Matrix Operations (TMatrixKit)](#matrix-operations-tmatrixkit)
-    - [Trigonometry (TTrigKit)](#trigonometry-ttrigkit)
-  - [📝 Logging Operations](#-logging-operations)
-    - [Getting Started with TidyKit.Logger](#getting-started-with-tidykitlogger)
     - [Common Scenarios](#common-scenarios)
     - [Advanced Use](#advanced-use)
   - [📁 Archive Operations](#-archive-operations)
   - [🛠️ Error Handling](#️-error-handling)
+  - [⚙️ Command-Line Argument Parsing](#️-command-line-argument-parsing)
 
 ## 🔄 JSON Operations
 
@@ -484,12 +482,157 @@ Encoded := TStringKit.URLEncode('a b');                // URL encoding (a+b)
 Decoded := TStringKit.URLDecode('a+b');                // URL decoding
 
 // Base64 and Hex Encoding
-// Note: Base64 functions have been removed from TStringKit - use TCryptoKit instead
-// TCryptoKit.Base64Encode('Hello World!');            // Base64 encoding (SGVsbG8gV29ybGQh)
-// TCryptoKit.Base64Decode('SGVsbG8gV29ybGQh');        // Base64 decoding
-
 HexStr := TStringKit.HexEncode('abc');                   // Hex encoding (616263)
 Original := TStringKit.HexDecode('616263');              // Hex decoding
+```
+
+## 📚 Collection Operations
+
+### List Operations
+
+```pascal
+// TList<T> - Generic List Operations
+List := TList<Integer>.Create;              // Create a new list
+List := TList<Integer>.New;                 // Create list with interface (auto-cleanup)
+IList := CreateList<Integer>;               // Alternative interface creation helper
+
+// Basic Methods
+List.Add(Item)                              // Add item to list, returns index
+List.AddRange([Item1, Item2, Item3])        // Add multiple items
+List.Insert(Index, Item)                    // Insert at specific position
+List.Delete(Index)                          // Delete by index
+List.Remove(Item, @EqualityFunc)            // Remove by value using equality function
+List.Clear                                  // Remove all items
+
+// Search & Access
+Value := List[Index]                        // Get item by index
+List[Index] := Value                        // Set item by index
+Count := List.Count                         // Get number of items
+List.Capacity := Value                      // Set/get allocated capacity
+Index := List.IndexOf(Item, @EqualityFunc)  // Find item index
+Found := List.Contains(Item, @EqualityFunc) // Check if item exists
+Success := List.Find(@Predicate, FoundValue) // Find by predicate
+Results := List.FindAll(@Predicate)         // Get all matching items
+
+### HashSet<T> Operations
+```pascal
+// Creation
+THashSet<T>.New(HashFunc: THashFunc<T>; EqualityFunc: TEqualityFunc<T>; 
+  InitialCapacity: Integer = 16; LoadFactor: Single = 0.75): IHashSet<T>;
+
+// Basic Operations
+function Add(const Value: T): Boolean;
+function Remove(const Value: T): Boolean;
+function Contains(const Value: T): Boolean;
+procedure Clear;
+function ToArray: TArray<T>;
+property Count: Integer read GetCount;
+
+// Enumeration
+for Item in HashSet do ...
+```
+
+### Deque<T> Operations
+```pascal
+// Creation
+TDeque<T>.New: IDeque<T>;
+
+// Basic Operations
+procedure PushFront(const Value: T);
+procedure PushBack(const Value: T);
+function PopFront: T;
+function PopBack: T;
+function PeekFront: T;
+function PeekBack: T;
+procedure Clear;
+function ToArray: TArray<T>;
+
+// Search Operations
+function Contains(const Value: T; EqualityFunc: TEqualityFunc<T>): Boolean;
+function IndexOf(const Value: T; EqualityFunc: TEqualityFunc<T>): Integer;
+
+// Transformation
+procedure Reverse;
+
+// Properties
+property Count: Integer read GetCount;
+property Capacity: Integer read GetCapacity write SetCapacity;
+property Items[Index: Integer]: T read GetItem write SetItem; default;
+
+// Enumeration
+for Item in Deque do ...
+```
+
+### Dictionary<K, V> Operations
+```pascal
+// Creation
+TDictionary<K, V>.New(KeyHashFunc: TKeyHashFunc<K>; KeyEqualityFunc: TKeyEqualityFunc<K>;
+  InitialCapacity: Integer = 16; LoadFactor: Single = 0.75): IDictionary<K, V>;
+IDictionary<K, V> := CreateDictionary<K, V>(@HashFunction, @EqualityFunction);
+
+// Basic Operations
+function Add(const Key: K; const Value: V): Boolean; // Returns true if added
+function Remove(const Key: K): Boolean;              // Returns true if removed
+function ContainsKey(const Key: K): Boolean;        // Check if key exists
+function TryGetValue(const Key: K; out Value: V): Boolean; // Safe key lookup
+procedure Clear;                                   // Remove all entries
+
+// Access Operations
+Value := Dict[Key];                               // Get value by key (raises exception if not found)
+Dict[Key] := Value;                              // Set value by key (adds if key doesn't exist)
+Count := Dict.Count;                             // Get number of entries
+
+// Bulk Operations
+Keys := Dict.GetKeys;                             // Get array of all keys
+Values := Dict.GetValues;                         // Get array of all values
+```
+
+### Hash Functions (TidyKit.Collections.HashFunction)
+```pascal
+// String Hashing
+function XXHash32(const Key: string): Integer;     // Best for strings > 64 bytes
+function FNV1aHash(const Key: string): Integer;    // Good for short strings
+
+// Numeric Hashing
+function MultiplicativeHash(const Key: Integer): Integer;
+function FloatHash(const Value: Extended): Integer;
+function Int64Hash(const Value: Int64): Integer;
+
+// Other Types
+function BooleanHash(const Value: Boolean): Integer;
+function DateTimeHash(const Value: TDateTime): Integer;
+function CharHash(const Value: Char): Integer;
+
+// Generic Fallback
+function DefaultHash(const Key; Size: Integer): Integer;
+```
+
+### Equality Functions (TidyKit.Collections.EqualityFunction)
+```pascal
+// Basic Types
+function TidyKitStringEquals(const A, B: string): Boolean;
+function TidyKitIntegerEquals(const A, B: Integer): Boolean;
+function TidyKitFloatEquals(const A, B: Extended): Boolean;
+function TidyKitBooleanEquals(const A, B: Boolean): Boolean;
+function TidyKitDateTimeEquals(const A, B: TDateTime): Boolean;
+function TidyKitCharEquals(const A, B: Char): Boolean;
+function TidyKitInt64Equals(const A, B: Int64): Boolean;
+
+// Complex Types
+function TidyKitPointEquals(const A, B: TPoint): Boolean;
+function TidyKitRectEquals(const A, B: TRect): Boolean;
+```
+
+// Transformations
+List.Sort(@CompareFunc)                     // Sort using comparison function
+List.Reverse                                // Reverse list order
+Slice := List.Slice(StartIdx, Count)        // Get subrange as array
+Array := List.ToArray                       // Convert to array
+
+// Function Types
+// TEqualityFunc<T> = function(const A, B: T): Boolean
+// TCompareFunc<T> = function(const A, B: T): Integer
+// TPredicateFunc<T> = function(const Item: T): Boolean of object
 ```
 
 ## 🕙 DateTime Operations
@@ -768,7 +911,6 @@ begin
   CipherText := TCryptoKit.AES256EncryptCBC('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCBC(CipherText, Key, IV);
   
-  // CTR Mode (no padding needed)
   CipherText := TCryptoKit.AES256EncryptCTR('secret text', Key, IV);
   PlainText := TCryptoKit.AES256DecryptCTR(CipherText, Key, IV);
 end;
@@ -882,299 +1024,6 @@ end;
    - Supports FIPS-compliant modes of operation
    - Includes PKCS7 padding for CBC mode
    - Raw mode available for NIST test vectors
-```
-
-## 📊 Math Operations
-
-### Statistics (TStatsKit)
-```pascal
-// Basic descriptive statistics
-Stats := TStatsKit.Describe(Data);
-// Returns comprehensive statistics with full Double precision:
-// - Mean: Full precision (e.g., 5.500000)
-// - StdDev: Full precision (e.g., 2.872281)
-// - Variance: Full precision (e.g., 8.250000)
-
-// Hypothesis testing with p-values
-TStatsKit.ShapiroWilkTest(Data, WPValue);
-if WPValue >= 0.05 then
-  WriteLn('Data is normally distributed');
-
-// Error handling
-try
-  Result := TStatsKit.StandardDeviation(Data);
-except
-  on E: EInvalidArgument do
-    WriteLn('Error: Need at least 2 data points');
-  on E: Exception do
-    WriteLn('Unexpected error: ', E.Message);
-end;
-```
-
-### Financial Calculations (TFinanceKit)
-```pascal
-// All financial calculations use 4 decimal precision by default
-// Precision can be customized using the ADecimals parameter
-
-// Modified Duration (Expected: 4.3009)
-ModDur := TFinanceKit.ModifiedDuration(
-  1000.0,  // Face value
-  0.06,    // Coupon rate
-  0.05,    // Yield rate
-  2,       // Periods per year
-  5        // Years to maturity
-);
-
-// Black-Scholes Option Pricing
-// Call Option (Expected: 10.4506)
-// Put Option (Expected: 5.5723)
-CallPrice := TFinanceKit.BlackScholes(
-  100.0,   // Spot price
-  100.0,   // Strike price
-  0.05,    // Risk-free rate
-  0.20,    // Volatility
-  1.0,     // Time to maturity
-  otCall
-);
-
-// Operating Leverage (Expected DOL: 2.0000)
-Leverage := TFinanceKit.OperatingLeverage(
-  10000.0,  // Quantity
-  50.0,     // Price per unit
-  30.0,     // Variable cost per unit
-  100000.0  // Fixed costs
-);
-
-// Error handling for financial calculations
-try
-  IRR := TFinanceKit.InternalRateOfReturn(InitialInvestment, CashFlows);
-except
-  on E: EInvalidOperation do
-    WriteLn('Error: IRR calculation did not converge');
-  on E: EArgumentException do
-    WriteLn('Error: Invalid cash flow data');
-end;
-```
-
-### Matrix Operations (TMatrixKit)
-```pascal
-// Creating matrices
-M := TMatrixKit.CreateFromArray([[1.0, 2.0], [3.0, 4.0]]);  // From 2D array
-M := TMatrixKit.Identity(3);                                // 3x3 identity matrix
-M := TMatrixKit.Zeros(2, 3);                                // 2x3 matrix of zeros
-M := TMatrixKit.Ones(3, 2);                                 // 3x2 matrix of ones
-M := TMatrixKit.CreateDiagonal([1.0, 2.0, 3.0]);            // Diagonal matrix
-M := TMatrixKit.CreateRandom(3, 3, 0.0, 1.0);               // Random matrix
-
-// Advanced matrix creation
-M := TMatrixKit.CreateHilbert(3);                           // Hilbert matrix
-M := TMatrixKit.CreateToeplitz(FirstRow, FirstCol);         // Toeplitz matrix
-M := TMatrixKit.CreateVandermonde(Vector);                  // Vandermonde matrix
-M := TMatrixKit.CreateBandMatrix(3, 1, 1);                  // Band matrix
-M := TMatrixKit.CreateSymmetric([[1.0, 2.0], [2.0, 3.0]]);  // Symmetric matrix
-
-// Basic operations
-C := A.Add(B);                                              // Matrix addition
-C := A.Subtract(B);                                         // Matrix subtraction
-C := A.Multiply(B);                                         // Matrix multiplication
-C := A.ScalarMultiply(2.0);                                 // Scalar multiplication
-C := A.ElementWiseMultiply(B);                              // Element-wise multiplication
-C := A.ElementWiseDivide(B);                                // Element-wise division
-
-// Matrix transformations
-T := M.Transpose;                                           // Transpose
-I := M.Inverse;                                             // Inverse
-P := M.PseudoInverse;                                       // Pseudoinverse (Moore-Penrose)
-E := M.Exp;                                                 // Matrix exponential
-P := M.Power(2.0);                                          // Matrix power
-
-// Matrix properties
-D := M.Determinant;                                         // Determinant
-T := M.Trace;                                               // Trace
-R := M.Rank;                                                // Rank
-C := M.Condition;                                           // Condition number
-
-// Matrix norms
-N1 := M.NormOne;                                            // One norm (max column sum)
-NI := M.NormInf;                                            // Infinity norm (max row sum)
-NF := M.NormFrobenius;                                      // Frobenius norm
-
-// Matrix type checks
-if M.IsSquare then ...                                      // Check if square
-if M.IsSymmetric then ...                                   // Check if symmetric
-if M.IsDiagonal then ...                                    // Check if diagonal
-if M.IsTriangular(True) then ...                            // Check if upper triangular
-if M.IsTriangular(False) then ...                           // Check if lower triangular
-if M.IsPositiveDefinite then ...                            // Check if positive definite
-if M.IsPositiveSemidefinite then ...                        // Check if positive semidefinite
-if M.IsOrthogonal then ...                                  // Check if orthogonal
-
-// Matrix decompositions
-LU := M.LU;                                                 // LU decomposition
-QR := M.QR;                                                 // QR decomposition
-Eigen := M.EigenDecomposition;                              // Eigendecomposition
-SVD := M.SVD;                                               // Singular Value Decomposition
-Chol := M.Cholesky;                                         // Cholesky decomposition
-
-// Vector operations
-if V.IsVector then ...                                      // Check if vector
-if V.IsColumnVector then ...                                // Check if column vector
-if V.IsRowVector then ...                                   // Check if row vector
-D := V1.DotProduct(V2);                                     // Dot product
-C := V1.CrossProduct(V2);                                   // Cross product (3D vectors)
-N := V.Normalize;                                           // Normalize vector
-
-// Statistical operations
-Mean := M.Mean;                                             // Overall mean
-ColMeans := M.Mean(0);                                      // Column means
-RowMeans := M.Mean(1);                                      // Row means
-Cov := M.Covariance;                                        // Covariance matrix
-Corr := M.Correlation;                                      // Correlation matrix
-
-// Block operations
-Sub := M.GetSubMatrix(0, 0, 2, 2);                          // Get submatrix
-M.SetSubMatrix(1, 1, Sub);                                  // Set submatrix
-
-// Solving linear systems
-X := A.Inverse.Multiply(B);                                 // Direct solution
-X := A.PseudoInverse.Multiply(B);                           // For non-square systems
-X := A.SolveIterative(B, imConjugateGradient);              // Iterative solution
-
-// Advanced eigenvalue methods
-Pair := M.PowerMethod;                                      // Power method for dominant eigenvalue
-
-// String representations
-S := M.ToString;                                            // String representation of matrix
-S := LU.ToString;                                           // Format LU decomposition (L, U, P)
-S := QR.ToString;                                           // Format QR decomposition (Q, R)
-S := Eigen.ToString;                                        // Format eigendecomposition (values, vectors)
-S := SVD.ToString;                                          // Format SVD (U, S, V)
-S := Chol.ToString;                                         // Format Cholesky decomposition (L)
-S := Pair.ToString;                                         // Format eigenpair (value, vector)
-
-// Memory-safe matrix usage
-var
-  A, B, C: IMatrix;
-begin
-  // Create matrices with automatic cleanup
-  A := TMatrixKit.CreateFromArray([
-    [1.0, 2.0],
-    [3.0, 4.0]
-  ]);
-  B := TMatrixKit.CreateFromArray([
-    [5.0, 6.0],
-    [7.0, 8.0]
-  ]);
-  
-  // Operations are memory-safe and handle cleanup
-  C := A.Multiply(B);
-  // All matrices are freed when they go out of scope
-end;
-
-// IMPORTANT: Memory Management
-// 1. Always use IMatrix interface (not TMatrixKit objects directly)
-// 2. Let interface references go out of scope naturally for cleanup
-// 3. Never manually free IMatrix references
-// 4. If you must use TMatrixKit objects directly (rare), use try-finally:
-var
-  M: TMatrixKit;  // Direct object - requires manual management
-begin
-  M := TMatrixKit.CreateMatrix(3, 3);  // Internal constructor
-  try
-    // Use M...
-  finally
-    M.Free;  // Manual cleanup required
-  end;
-end;
-
-// Safe decomposition usage
-var
-  M: IMatrix;
-  QR: TQRDecomposition;
-  SVD: TSVD;
-  Chol: TCholeskyDecomposition;
-begin
-  M := TMatrixKit.CreateFromArray([
-    [4.0, 1.0],
-    [1.0, 3.0]
-  ]);
-  
-  // All decompositions handle memory cleanup automatically
-  QR := M.QR;
-  SVD := M.SVD;
-  Chol := M.Cholesky;
-  
-  // Use decomposition results...
-  // All temporary matrices are properly managed
-end;
-
-// Power method for dominant eigenvalue/vector
-Pair := M.PowerMethod;                                      // Get dominant eigenpair
-WriteLn('Eigenvalue: ', Pair.EigenValue);                   // Access eigenvalue
-WriteLn('Eigenvector: ', Pair.EigenVector.ToString);        // Access eigenvector
-
-// Fractional matrix powers
-PowerM := M.Power(0.5);                                     // Square root of matrix
-PowerM := M.Power(-0.5);                                    // Inverse square root
-
-// Sparse matrix operations
-SM := TMatrixKit.CreateSparse(5, 5);                        // Create empty sparse matrix
-SM.SetValue(0, 0, 1.0);                                     // Set specific element
-SM.SetValue(1, 1, 2.0);                                     // Only non-zero elements stored
-SM2 := SM.Add(SM);                                          // Add sparse matrices
-Value := SM.GetValue(0, 0);                                 // Get element value
-```
-
-### Trigonometry (TTrigKit)
-```pascal
-// Angle conversions
-Rad := TTrigKit.DegToRad(Degrees);           // Convert degrees to radians
-Deg := TTrigKit.RadToDeg(Radians);           // Convert radians to degrees
-Rad := TTrigKit.GradToRad(Grads);            // Convert grads to radians
-Grad := TTrigKit.RadToGrad(Radians);         // Convert radians to grads
-Rad := TTrigKit.NormalizeAngle(Radians);     // Normalize angle to [0, 2π]
-Deg := TTrigKit.NormalizeAngleDeg(Degrees);  // Normalize angle to [0, 360]
-
-// Basic trigonometric functions
-Sin := TTrigKit.Sin(X);                      // Sine of X (radians)
-Cos := TTrigKit.Cos(X);                      // Cosine of X (radians)
-Tan := TTrigKit.Tan(X);                      // Tangent of X (radians)
-Sec := TTrigKit.Sec(X);                      // Secant of X (radians)
-Csc := TTrigKit.Csc(X);                      // Cosecant of X (radians)
-Cot := TTrigKit.Cot(X);                      // Cotangent of X (radians)
-
-// Inverse trigonometric functions
-ASin := TTrigKit.ArcSin(X);                  // Inverse sine
-ACos := TTrigKit.ArcCos(X);                  // Inverse cosine
-ATan := TTrigKit.ArcTan(X);                  // Inverse tangent
-ATan2 := TTrigKit.ArcTan2(Y, X);            // Two-argument inverse tangent
-
-// Hyperbolic functions
-SinH := TTrigKit.Sinh(X);                    // Hyperbolic sine
-CosH := TTrigKit.Cosh(X);                    // Hyperbolic cosine
-TanH := TTrigKit.Tanh(X);                    // Hyperbolic tangent
-
-// Inverse hyperbolic functions
-ASinH := TTrigKit.ArcSinh(X);                // Inverse hyperbolic sine
-ACosH := TTrigKit.ArcCosh(X);                // Inverse hyperbolic cosine
-ATanH := TTrigKit.ArcTanh(X);                // Inverse hyperbolic tangent
-
-// Triangle calculations
-Area := TTrigKit.TriangleArea(Base, Height); // Triangle area from base and height
-Area := TTrigKit.TriangleAreaSAS(A, Angle, B); // Triangle area from SAS
-Area := TTrigKit.TriangleAreaSSS(A, B, C);   // Triangle area from three sides
-Perim := TTrigKit.TrianglePerimeter(A, B, C); // Triangle perimeter
-InRad := TTrigKit.TriangleInRadius(A, B, C);  // Radius of inscribed circle
-CircumRad := TTrigKit.TriangleCircumRadius(A, B, C); // Radius of circumscribed circle
-
-// Circle sector and segment calculations
-SectorArea := TTrigKit.CircularSectorArea(R, Angle); // Area of circular sector
-SegmentArea := TTrigKit.CircularSegmentArea(R, Angle); // Area of circular segment
-ChordLen := TTrigKit.ChordLength(R, Angle);  // Length of chord
-
-// Vector operations
-Mag := TTrigKit.VectorMagnitude(X, Y);       // Vector magnitude
-Angle := TTrigKit.VectorAngle(X1, Y1, X2, Y2); // Angle between vectors
 ```
 
 ## 📝 Logging Operations
@@ -1388,14 +1237,6 @@ TArchiveKit.DecompressFromTar('archive.tar', 'destdir', '*.txt');     // Extract
 TidyKit uses module-specific exception classes for better error granularity:
 
 ```pascal
-// Core exception (base class)
-try
-  // Generic operations
-except
-  on E: ETidyKitException do
-    // Handle general TidyKit errors
-end;
-
 // Module-specific exceptions
 try
   // JSON operations
@@ -1414,11 +1255,11 @@ except
 end;
 
 try
-  // Matrix operations
-  InvertedMatrix := TMatrixKit.Inverse(Matrix);
+  // HTTP operations
+  Response := Http.Get(URL);
 except
-  on E: EMatrixError do
-    // Handle matrix-specific errors (e.g., singular matrix)
+  on E: ERequestError do
+    // Handle HTTP-specific errors
 end;
 
 try
@@ -1430,14 +1271,6 @@ except
 end;
 
 try
-  // Financial operations
-  IRR := TFinanceKit.InternalRateOfReturn(Investment, CashFlows);
-except
-  on E: EFinanceError do
-    // Handle finance-specific errors (e.g., convergence failure)
-end;
-
-try
   // Cryptographic operations
   Encrypted := TCryptoKit.AES256EncryptCBC(Data, Key, IV);
 except
@@ -1445,14 +1278,6 @@ except
     // Handle general crypto errors
   on E: EAESError do
     // Handle AES-specific errors
-end;
-
-try
-  // HTTP operations
-  Response := Http.Get(URL);
-except
-  on E: ERequestError do
-    // Handle HTTP-specific errors
 end;
 
 try
@@ -1473,3 +1298,19 @@ end;
 ```
 
 This modular approach makes error handling more precise and maintainable.
+
+## ⚙️ Command-Line Argument Parsing
+
+```pascal
+var
+  Parser: TArgParser;
+begin
+  Parser.Init;
+  Parser.AddString('n', 'name', 'Your name', 'Guest');
+  Parser.AddInteger('a', 'age', 'Your age', 30);
+  Parser.Parse(ParamStrArray);
+  if Parser.HasError then
+    WriteLn('Error: ', Parser.Error)
+  else
+    WriteLn('Name: ', Parser.GetString('name'), ', Age: ', Parser.GetInteger('age'));
+end;

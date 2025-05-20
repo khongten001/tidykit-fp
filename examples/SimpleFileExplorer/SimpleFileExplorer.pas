@@ -21,7 +21,7 @@ uses
   cthreads,
   {$ENDIF}
   Classes, SysUtils,
-  TidyKit.Core, TidyKit.FS;
+  TidyKit.FS;
 
 var
   // The current directory we're exploring

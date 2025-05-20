@@ -1,4 +1,4 @@
-# 🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development
+# 🔧 TidyKit: Make Pascal Development Fun Again!
 
 [![FPC](https://img.shields.io/badge/Free%20Pascal-3.2.2-blue.svg)](https://www.freepascal.org/)
 [![Lazarus](https://img.shields.io/badge/Lazarus-3.6+-blue.svg)](https://www.lazarus-ide.org/)
@@ -6,26 +6,60 @@
 [![Documentation](https://img.shields.io/badge/Docs-Available-brightgreen.svg)](docs/)
 [![Tests](https://img.shields.io/badge/Tests-Passing-brightgreen.svg)](tests/)
 [![Status](https://img.shields.io/badge/Status-Development-yellow.svg)]()
-[![Version](https://img.shields.io/badge/Version-0.1.7-blueviolet.svg)]()
+[![Version](https://img.shields.io/badge/Version-0.1.8-blueviolet.svg)]()
 
-**Providing utilities and development tools without external dependencies.**
+**TidyKit streamlines your Pascal development experience.**
 
 > [!WARNING]
 > ⚠️ This library is under active development and is not yet ready for production use. APIs may change without notice.
 
+## ✨ Say Goodbye to Boilerplate
+
+Tired of writing the same code over and over? TidyKit helps you focus on your application logic instead of reinventing the wheel.
+
+```pascal
+// JSON has never been easier
+var
+  Json: TJSONValue;
+begin
+  Json := TJSON.Parse('{"name":"Pascal","age":50}');
+  WriteLn('Name: ', Json['name'].AsString);
+
+  // Easy file operations
+  var
+    Files: TStringArray;
+    FileName: string;
+  begin
+    Files := TFileKit.ListFiles('./data', '*.csv', True); // Recursively find all CSVs
+    for FileName in Files do
+      TFileKit.CopyFile(FileName, './backup/' + TFileKit.GetFileName(FileName));
+  end;
+  
+  // Easy-to-use collections with interface-based memory management
+  var
+    NameList: IList<string>;
+  begin
+    NameList := CreateList<string>;  // no need to worry about freeing!
+    NameList.Add('Alice');
+    NameList.Add('Bob');
+    NameList.Sort;
+  end;
+end;
+```
+
 ## 🌟 Why TidyKit?
 
-- **All-in-One Solution**: Stop hunting for separate libraries - TidyKit provides everything in one package
-- **Modern Pascal**: Designed with modern programming practices while maintaining FPC 3.2.2 compatibility
-- **Thoroughly Tested**: Extensive test suite ensures reliability and stability
-- **Cross-Platform**: Tested on both Windows and Ubuntu Linux environments
-- **Well-Documented**: Every component has detailed documentation with examples
-- **Memory Management**: Mixed approach with interface-based automatic reference counting for complex objects and traditional memory management for simpler operations
-- **Easy to use API**: Currently transitioning toward a simpler API design (see [Roadmap](#️-roadmap))
+- **Everything You Need**: One library with everything from JSON to file handling to collections
+- **Modern Pascal**: Clean, consistent APIs with FPC 3.2.2 compatibility
+- **Rock-Solid Reliability**: Extensive test suite ensures things just work
+- **No Dependency Nightmares**: Works on Windows and Linux with minimal external requirements
+- **Smart Memory Management**: Forget manual Destroy calls with interface-based reference counting
+- **Ready-to-Use Collections**: Lists, dictionaries, sets, and more with generic type safety
 
 ## 📑 Table of Contents 
 
-- [🧰 TidyKit: Comprehensive Free Pascal Toolkit for Development](#-tidykit-comprehensive-free-pascal-toolkit-for-development)
+- [🔧 TidyKit: Make Pascal Development Fun Again!](#-tidykit-make-pascal-development-fun-again)
+  - [✨ Say Goodbye to Boilerplate](#-say-goodbye-to-boilerplate)
   - [🌟 Why TidyKit?](#-why-tidykit)
   - [📑 Table of Contents](#-table-of-contents)
   - [🏗️ Architectural Patterns](#️-architectural-patterns)
@@ -42,6 +76,7 @@
     - [🌐 HTTP Request Operations](#-http-request-operations)
     - [🔐 Crypto Operations](#-crypto-operations)
     - [📦 Archive Operations](#-archive-operations)
+    - [📚 Collections Operations](#-collections-operations)
   - [📖 System Requirements](#-system-requirements)
     - [Tested Environments](#tested-environments)
     - [Dependencies](#dependencies)
@@ -59,102 +94,220 @@
     - [Planned for v0.3.0 (Q4 2025) - Examples \& Refinements](#planned-for-v030-q4-2025---examples--refinements)
     - [Future Goals](#future-goals)
 
-## 🏗️ Architectural Patterns
+## 💪 How TidyKit Makes Your Life Easier
 
-TidyKit currently uses a mix of architectural patterns. We are actively working towards a more simplified API for release **v0.2.0**.
+We've designed TidyKit with one goal in mind: **making your development experience smoother**. Here's how we've organized things:
 
-| Pattern | Modules | Characteristics | Memory Management |
-|---------|-------------------------|-----------------|-------------------|
-| **Factory/Interface** | `TidyKit.JSON`, `TidyKit.Logger` | <ul><li>Object-oriented design</li><li>Fluent API</li></ul> | Automatic reference counting via interfaces |
-| **Advanced Records** | `TidyKit.Request` | <ul><li>Record-based design</li><li>Fluent API</li><li>Value semantics</li></ul> | No manual management needed |
-| **Static Class Functions** | `TidyKit.FS`, `TidyKit.DateTime`, `TidyKit.Strings`, `TidyKit.Archive`, `TidyKit.Crypto.*` | <ul><li>Procedural-style API</li><li>Simple usage for stateless utilities</li><li>No instance creation</li></ul> | No manual management needed |
+### 🧰 Three Simple Approaches
 
-> [!IMPORTANT]
-> The goal for **v0.2.0** is to finalise this structure, providing a clear distinction: Factory/Interface for components interacting with external state or benefiting from mocking, and Static Methods for stateless utilities.
+**1. Just Call It** - For simple operations like file handling or string manipulation:
+```pascal
+// No objects to create, just call and go!
+TFileKit.WriteTextFile('log.txt', 'Hello World');
+NewStr := TStringKit.ToUpperCase('make me shout');
+```
 
-## ✨ Features
+**2. Smart Objects** - For complex operations like JSON handling, with automatic cleanup:
+```pascal
+// No manual memory management needed!
+var JsonObj := TJSON.Parse(JsonText);
+JsonObj['config']['enabled'] := True;
+// When JsonObj goes out of scope, memory is automatically freed
+```
 
-- 📝 **String Operations**
-  - String manipulation and transformations
-  - Case conversion and formatting
-  - Pattern matching and validation
-  - Unicode support
-  - String comparison and searching
-  - Text encoding/decoding
+**3. Simple Records** - For operations that need state without complexity:
+```pascal
+// Easy to use with method chaining
+var Request := TRequest.Create('https://api.example.com')
+  .AddHeader('Content-Type', 'application/json')
+  .SetTimeout(5000);
+var Response := Request.Get;
+```
 
-- 📂 **File System Operations**
-  - File and directory manipulation
-  - Path operations
-  - File searching and filtering
+> [!NOTE]
+> In our next version, we're streamlining things even further to make the API even more consistent and intuitive.
 
-- 📦 **Archive Operations**
-  - ZIP file compression and decompression
-  - TAR file creation and extraction
-  - Pattern-based file filtering
-  - Recursive directory handling
+## ✨ What's Inside TidyKit?
 
-- 🔐 **Cryptography**
-  - SHA3 implementation
-  - SHA2 family (SHA-256, SHA-512, SHA-512/256)
-  - AES-256 encryption
-    - CBC and CTR modes
-    - High-level interface with automatic Base64 encoding
-    - Low-level interface with raw binary operations
-    - Configurable padding modes (PKCS7 or None)
-  - Secure hashing
-  - Encryption utilities
-  - Base64 encoding/decoding
-  - Legacy support (MD5, SHA1, Blowfish)
+TidyKit is packed with tools that make common programming tasks simple. Here's a taste of what you can do:
 
-- 🌐 **Network Operations**
-  - HTTP client
-  - Request handling
-  - Response parsing
+### 📝 Text & Strings
+Transform, validate, and manipulate text with ease
+```pascal
+// Convert case styles seamlessly
+var
+  snake, kebab: string;
+begin
+  snake := TStringKit.ToSnakeCase('HelloWorld');
+  kebab := TStringKit.ToKebabCase('HelloWorld');
 
-- 🔄 **JSON Operations**
-  - Interface-based JSON manipulation with automatic memory management
-  - Property order preservation in JSON objects
-  - Full Unicode support
-    - Unicode escape sequence parsing (\uXXXX)
-    - UTF-8/16 character handling
-  - Support for all JSON data types
-    - Objects with ordered properties
-    - Arrays with type-safe elements
-    - Strings with proper escaping
-    - Numbers (both integer and floating-point)
-    - Booleans (true/false)
-    - Null (singleton implementation)
-  - Output formatting
-    - Pretty printing with configurable indentation
-    - Compact output for storage/transmission
-  - Memory safety
-    - Automatic reference counting through interfaces
-    - Safe singleton management for null values
-    - Proper cleanup of nested structures
-  - Thoroughly tested with 17 comprehensive test cases
+  // Validate email addresses
+  if TStringKit.IsValidEmail(email) then ...
+end;
+```
 
-- 📝 **Logging Operations**
-  - Easy to use logging system with multiple output destinations
-  - Configurable log levels (Debug, Info, Warning, Error, Fatal)
-  - Console and file output with automatic coloring
-  - File rotation based on size
-  - Multiple log file support
-  - Category-based logging for better organization
-  - Automatic context management with reference counting
-  - Format string support for convenient message formatting
-  - Thread-safety considerations for multi-threaded applications
-  - Singleton pattern with unique instance tracking
-  - Method chaining for fluent configuration
-  - Error recovery to prevent logging failures from crashing the application
-  - Default log directory creation
-  - Extensible sink architecture with built-in implementations
-  - Pattern-based message formatting
-  - Structured logging for key-value data
-  - Performance timing capabilities
-  - Batch logging for improved performance
-  - Environment and file-based configuration
-  - Specialized logger factory methods
-  - Thoroughly tested with 34 comprehensive test cases
+### 📂 Files & Directories
+Work with files without the headaches
+```pascal
+// Find and filter files
+var
+  PascalFiles: TStringArray;
+  Dir, FileName: string;
+begin
+  PascalFiles := TFileKit.ListFiles('.', '*.pas', True, fsDateDesc);
+
+  // Easy path operations
+  Dir := TFileKit.GetDirectory(Path);
+  FileName := TFileKit.GetFileName(Path);
+end;
+```
+
+### 📦 Archives & Compression
+Create and extract ZIP/TAR archives
+```pascal
+// Extract ZIP files
+TArchiveKit.ExtractZipFile('archive.zip', 'output_dir');
+
+// Create TAR archives
+TArchiveKit.CreateTarFile('src_dir', 'output.tar', '*.txt');
+```
+
+### 🔐 Security & Crypto
+Modern encryption and hashing
+```pascal
+// Modern SHA3 hashing
+var
+  hash, encrypted: string;
+begin
+  hash := TCrypto.SHA3.ComputeHash(Data);
+
+  // Simple AES-256 encryption
+  encrypted := TCrypto.AES.Encrypt(plaintext, password);
+end;
+```
+
+### 🌐 HTTP & Networking
+Simplified web requests without the complexity
+```pascal
+// GET request with just one line
+var
+  Response: TResponse;
+begin
+  Response := TRequest.Create(url).Get();
+  
+  // POST JSON data easily
+  Response := TRequest.Create(url)
+    .SetJSON(jsonObj).Post();
+end;
+```
+
+### 🔁 JSON Handling
+Parse, create and modify JSON with ease
+```pascal
+// Parse existing JSON
+var
+  config, user: TJSONValue;
+begin
+  config := TJSON.Parse(jsonText);
+
+  // Build JSON programmatically
+  user := TJSON.Obj
+    .Add('name', 'Alice')
+    .Add('age', 30);
+end;
+```
+
+### 📝 Powerful Logging
+Flexible logging with multiple outputs
+```pascal
+// Quick console logging (correct usage)
+TLogger.CreateConsoleLogger();
+Logger.Info('Starting up...');
+
+// Structured file logging (correct usage)
+TLogger.CreateFileLogger('app.log');
+Logger.LogStructured(llInfo, 'UserLogin', [NameValuePair('user', username)]);
+```
+
+### 📚 Type-Safe Collections
+Modern generic collections with memory management
+```pascal
+// Create a dictionary with string keys
+var
+  Dict: IDictionary<string, Integer>;
+begin
+  Dict := CreateDictionary<string, Integer>(@FNV1aHash, @TidyKitStringEquals);
+
+  // Add and retrieve values
+  Dict.Add('Alice', 30);
+  WriteLn(Dict['Alice']); // Displays: 30
+end;
+```
+
+### 📅 DateTime Handling
+Powerful date and time operations
+```pascal
+// Date calculations made simple
+var
+  Today, Tomorrow, NextWeek: TDateTime;
+  FormattedDate: string;
+begin
+  Today := TDateTimeKit.Today;
+  Tomorrow := TDateTimeKit.AddDays(Today, 1);
+  NextWeek := TDateTimeKit.AddWeeks(Today, 1);
+  
+  // Format dates easily
+  FormattedDate := TDateTimeKit.Format(Today, 'yyyy-mm-dd');
+end;
+```
+
+### 💡 Command-Line Parsing
+Parse command-line arguments with ease
+```pascal
+// Define and parse arguments
+var
+  Args: TParseArgs;
+begin
+  Args := TParseArgs.Create
+    .Add('v|verbose', 'Enable verbose output')
+    .Add('f|file=', 'Input file path')
+    .Parse;
+end;
+```
+
+### 📚 Documentation
+Extensive documentation for all features
+```pascal
+// Documentation for all units
+// See our detailed docs for more information
+```
+
+
+### All Features at a Glance
+
+- 📝 **String Operations**: Case conversion, validation, pattern matching, Unicode support
+- 📂 **File System**: File manipulation, path operations, searching and filtering
+- 📦 **Archive**: ZIP/TAR compression with pattern-based filtering
+- 🔐 **Cryptography**: SHA3, SHA2, AES-256 encryption, secure hashing
+- 🌐 **Network**: HTTP client with request/response handling
+- 🔁 **JSON**: Memory-managed JSON with full Unicode support
+- 📝 **Logging**: Multi-destination logging with structured data support
+  - 🛠️ **Command Line Parsing**: Easy-to-use argument parser with support for various data types
+    - `TidyKit.ParseArgs` - For parsing command-line arguments with support for:
+      - String, integer, float, and boolean options
+      - Required and optional parameters
+      - Automatic help generation
+      - Callback support for custom argument handling
+      - Array parameters for handling multiple values
+  - 📚 **Collections**: Type-safe lists, dictionaries, sets, and queues
+    - **When to use each collection:**
+      - `TidyKit.Collections.List` - For sequential access and general-purpose ordered collections
+      - `TidyKit.Collections.Dictionary` - For key-value storage with O(1) average time complexity (uses separate chaining for collision resolution)
+      - `TidyKit.Collections.Deque` - For double-ended queues and efficient operations at both ends
+      - `TidyKit.Collections.HashSet` - For unique unordered collections with fast lookups
+    - **Documentation**: See our detailed docs for [Dictionary](./docs/TidyKit.Collections.Dictionary.md) and [HashSet](./docs/TidyKit.Collections.HashSet.md)
+    - All collections support automatic memory management via interfaces (no manual Destroy calls needed)
+    - Note: `for..in..do` enumeration is not supported; use indexed access or `ToArray` for traversal
 
 ## 💻 Installation (Lazarus IDE)
 
@@ -189,53 +342,43 @@ git clone https://github.com/ikelaiah/tidykit-fp
 
 ## 📝 Library Usage
 
-Add either the all-inclusive TidyKit unit or choose specific units you need:
-
 ```pascal
-// Option 1: All-inclusive unit (includes all functionality)
-uses
-  TidyKit;
-
-// Option 2: Choose specific units based on your needs
 uses
   // String manipulation unit
   TidyKit.Strings,           // String operations
-  
+
   // File system operations
   TidyKit.FS,                // File system operations
-  
+
   // Date Time manipulation unit
   TidyKit.DateTime,          // Date Time operations
-  
+
   // JSON functionality
   TidyKit.JSON,              // All JSON functionality
-  
+
   // Logging functionality
   TidyKit.Logger,            // Easy to use logging system
-  
+
   // Network units
   TidyKit.Request,           // HTTP client with simple and advanced features
-  
+
   // Cryptography units
   TidyKit.Crypto,            // Base crypto operations
   TidyKit.Crypto.SHA2,       // SHA2 implementation
   TidyKit.Crypto.SHA3,       // SHA3 implementation
   TidyKit.Crypto.AES256,     // AES-256 implementation
-  
+
   // Archive operations
-  TidyKit.Archive;           // Archive operations
+  TidyKit.Archive,           // Archive operations
+
+  // Command-line argument parsing
+  TidyKit.ParseArgs,         // Simple argument parser
+
+  // Collections
+  TidyKit.Collections.List,  // Generic List implementation
+  TidyKit.Collections.Deque, // Generic Deque implementation
+  TidyKit.Collections.HashSet; // Generic HashSet implementation
 ```
-
-Choose Option 1 if you want to include all functionality with a single unit. This is convenient but may increase compilation time and executable size.
-
-Choose Option 2 if you want to optimize your application by including only the specific functionality you need. This approach:
-
-- ⚡ Reduces compilation time
-- 📦 Minimizes executable size
-- 🔍 Makes dependencies more explicit
-- 🔧 Improves code maintainability
-
-Note: Some units may have interdependencies. The compiler will inform you if additional units need to be included.
 
 ## 🚀 Quick Start
 
@@ -534,20 +677,94 @@ begin
 end;
 ```
 
+### 📚 Collections Operations
+
+```pascal
+uses
+  TidyKit.Collections.List, TidyKit.Collections.Deque, 
+  TidyKit.Collections.HashSet, TidyKit.Collections.HashFunction, 
+  TidyKit.Collections.EqualityFunction;
+
+var
+  // Example for TList<T>
+  MyIntList: IList<Integer>;
+  I: Integer;
+
+  // Example for TDeque<T>
+  MyStringDeque: IDeque<string>;
+
+  // Example for THashSet<T>
+  MyHashSet: IHashSet<string>;
+begin
+  // --- TList<T> Example ---
+  MyIntList := CreateList<Integer>; // Using helper for interface-based management
+  MyIntList.Add(10);
+  MyIntList.Add(20);
+  MyIntList.Insert(1, 15); // List is now: 10, 15, 20
+
+  Write('List items: ');
+  for I := 0 to MyIntList.Count - 1 do
+    Write(MyIntList[I], ' ');
+  WriteLn; // Output: 10 15 20
+
+  // --- TDeque<T> Example ---
+  MyStringDeque := CreateDeque<string>; // Using helper for interface-based management
+  MyStringDeque.PushBack('apples');
+  MyStringDeque.PushFront('bananas'); // Deque is now: 'bananas', 'apples'
+  MyStringDeque.PushBack('cherries'); // Deque is now: 'bananas', 'apples', 'cherries'
+
+  Write('Deque items (popping from front): ');
+  while MyStringDeque.Count > 0 do
+    Write(MyStringDeque.PopFront, ' ');
+  WriteLn; // Output: bananas apples cherries
+
+  // --- THashSet<T> Example with specialized hash functions ---
+  MyHashSet := CreateHashSet<string>(@XXHash32, @TidyKitStringEquals);
+  MyHashSet.Add('apple');
+  MyHashSet.Add('banana');
+  MyHashSet.Add('cherry');
+  MyHashSet.Add('apple'); // Duplicate, won't be added
+
+  Write('HashSet items: ');
+  for I := 0 to MyHashSet.ToArray.Count - 1 do
+    Write(MyHashSet.ToArray[I], ' ');
+  WriteLn; // Output: apple banana cherry
+
+  // No explicit Free needed as these are interface variables
+  // and will be automatically managed.
+end;
+```
+
 ## 📖 System Requirements
 
 ### Tested Environments
 
-| Module                | Windows 11 | Ubuntu 24.04.2 |
-|-----------------------|------------|----------------|
-| TidyKit.Strings       | ✅         | ✅            |
-| TidyKit.FS            | ✅         | ✅            |
-| TidyKit.DateTime      | ✅         | ✅            |
-| TidyKit.JSON          | ✅         | ✅            |
-| TidyKit.Logger        | ✅         | ✅            |
-| TidyKit.Request       | ✅         | ✅            |
-| TidyKit.Crypto        | ✅         | ✅            |
-| TidyKit.Archive       | ✅         | ✅            |
+| Module                          | Windows 11 | Ubuntu 24.04.2 |
+|---------------------------------|------------|----------------|
+| TidyKit.Strings                 | ✅         | ✅             |
+| TidyKit.FS                      | ✅         | ✅             |
+| TidyKit.DateTime                | ✅         | ✅             |
+| TidyKit.JSON                    | ✅         | ✅             |
+| TidyKit.JSON.Factory            | ✅         | ✅             |
+| TidyKit.JSON.Parser             | ✅         | ✅             |
+| TidyKit.JSON.Scanner            | ✅         | ✅             |
+| TidyKit.JSON.Types              | ✅         | ✅             |
+| TidyKit.JSON.Writer             | ✅         | ✅             |
+| TidyKit.Logger                  | ✅         | ✅             |
+| TidyKit.Request                 | ✅         | ✅             |
+| TidyKit.Crypto                  | ✅         | ✅             |
+| TidyKit.Crypto.AES256           | ✅         | ✅             |
+| TidyKit.Crypto.SHA2             | ✅         | ✅             |
+| TidyKit.Crypto.SHA3             | ✅         | ✅             |
+| TidyKit.Archive                 | ✅         | ✅             |
+| TidyKit.Collections             | ✅         | ✅             |
+| TidyKit.Collections.Deque       | ✅         | ✅             |
+| TidyKit.Collections.Dictionary  | ✅         | ✅             |
+| TidyKit.Collections.EqualityFunction | ✅  | ✅             |
+| TidyKit.Collections.HashFunction| ✅         | ✅             |
+| TidyKit.Collections.HashSet     | ✅         | ✅             |
+| TidyKit.Collections.List        | ✅         | ✅             |
+| TidyKit.ParseArgs               | ✅         | ✅             |
 
 ### Dependencies
 
@@ -578,6 +795,12 @@ For detailed documentation, see:
 - 🌐 [Network](docs/TidyKit.Request.md)
 - 🔐 [Crypto](docs/TidyKit.Crypto.md)
 - 📦 [Archive](docs/TidyKit.Archive.md)
+- 📚 Collections:
+  - [List Collection (TList<T>)](docs/TidyKit.Collections.List.md)
+  - [Deque Collection (TDeque<T>)](docs/TidyKit.Collections.Deque.md)
+  - [HashSet Collection (THashSet<T>)](docs/TidyKit.Collections.HashSet.md)
+  - [Hash Functions](docs/TidyKit.Collections.HashFunction.md)
+  - [Equality Functions](docs/TidyKit.Collections.EqualityFunction.md)
 
 ## 📊 Real-World Examples
 
@@ -593,7 +816,6 @@ TidyKit can be used to build a wide variety of applications quickly:
 | Configuration Manager | Load, parse, and validate JSON configuration files | [View Example](examples/ConfigKitExample/) |
 | Secure Password Storage | Hash and verify passwords with SHA-256 | [View Example](examples/CryptoKitExample/) |
 | Date Calculator | Business day calculator with timezone handling | [View Example](examples/DateTimeExample/) |
-
 
 ## 💬 Community & Support
 

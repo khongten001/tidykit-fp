@@ -15,7 +15,7 @@ program DateTimeExample;
 
 uses
   SysUtils,
-  TidyKit;
+  TidyKit.DateTime;
 
 procedure DemonstrateBasicOperations;
 var
